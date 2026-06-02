@@ -1,10 +1,14 @@
 # Goose Swift
 
-Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.
+**Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.**
+
+If you don't know what Xcode is, or how to build the Rust core, this build is not for you. Come back on 13 June 2026 for the first public beta on TestFlight.
 
 ![Goose app hero showing a connected WHOOP 5.0 device](docs/assets/readme-hero.png)
 
 This prototype targets WHOOP 5.0 only. Other WHOOP generations are not supported in this build.
+
+The app and backend have had very little attention put into performance. The app will lag, very considerably. Performance PRs are welcome, or you can wait until I address it in due course.
 
 Goose Swift is the native SwiftUI iOS app for Goose, a local-first WHOOP data and health metrics project. It connects to WHOOP 5.0 bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views.
 
