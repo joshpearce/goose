@@ -115,6 +115,8 @@ struct MoreView: View {
       MoreDebugView(store: store)
     case .privacy:
       MorePrivacyView(store: store)
+    case .remoteServer:
+      MoreRemoteServerView()
     case .support:
       MoreSupportView(store: store)
     case .about:

@@ -138,6 +138,7 @@ final class MoreDataStore: ObservableObject {
       algorithms: .ready,
       debug: coreVersionStatus.hasPrefix("Rust core") ? .ready : .pending,
       privacy: privacyLintStatus == "Not linted" ? .pending : .ready,
+      remoteServer: (UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL)?.isEmpty ?? true) ? .pending : .ready,
       support: .pending,
       about: .ready,
       developer: .pending
