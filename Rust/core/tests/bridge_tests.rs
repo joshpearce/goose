@@ -8827,3 +8827,176 @@ fn put_u16(bytes: &mut [u8], offset: usize, value: u16) {
 fn put_i16(bytes: &mut [u8], offset: usize, value: i16) {
     bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
 }
+
+// HR monitor upload stream integration tests (WEAR-01/WEAR-03, CR-02)
+// flags=0x10: 8-bit HR, RR intervals present; HR=72 bpm; RR=0x0400 LE (1024 raw = 1000.0 ms)
+const HR_MONITOR_GATT_BYTES_WITH_RR: &str = "10480004";
+// flags=0x00: 8-bit HR only, no RR intervals; HR=72 bpm
+const HR_MONITOR_GATT_BYTES_NO_RR: &str = "0048";
+
+#[test]
+fn bridge_hr_monitor_upload_stream_contains_bpm_and_rr() {
+    // RED: import an HR monitor frame then call upload.get_recent_decoded_streams
+    // and assert the hr stream is populated with bpm and rr_intervals entries.
+    // This test fails until bridge.rs upload bridge adds the HR monitor branch.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import an HR monitor frame via capture.import_frame_batch
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-1",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [{
+                "evidence_id": "hr-mon-ev-1",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-04T10:00:00.000Z",
+                "device_model": "HR-Monitor-Test",
+                "frame_hex": HR_MONITOR_GATT_BYTES_WITH_RR,
+                "sensitivity": "user-owned-capture",
+                "device_type": "HR_MONITOR"
+            }]
+        }
+    }));
+    assert!(import_resp.ok, "HR monitor import should succeed: {:?}", import_resp.error);
+    assert_eq!(
+        import_resp.result.as_ref().unwrap()["raw_inserted"], 1,
+        "Should insert 1 raw evidence row"
+    );
+    assert_eq!(
+        import_resp.result.as_ref().unwrap()["frames_inserted"], 1,
+        "Should insert 1 decoded_frames row for HR monitor"
+    );
+
+    // Query upload.get_recent_decoded_streams — hr stream must be non-empty
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-1",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(streams_resp.ok, "upload streams should succeed: {:?}", streams_resp.error);
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(hr.len(), 1, "hr stream should have 1 entry, got: {:?}", hr);
+    assert_eq!(hr[0]["bpm"], 72, "bpm should be 72");
+    let rr = hr[0]["rr_intervals"].as_array().expect("rr_intervals must be array");
+    assert_eq!(rr.len(), 1, "should have 1 RR interval");
+    // 1024 raw units * 1000 / 1024 = 1000.0 ms
+    let rr_ms = rr[0].as_f64().expect("rr value must be f64");
+    assert!((rr_ms - 1000.0).abs() < 1.0, "RR interval should be ~1000ms, got {rr_ms}");
+
+    // HR monitor RR data must NOT appear in the top-level rr stream (D-02)
+    let rr_top = result["rr"].as_array().expect("rr must be an array");
+    assert!(rr_top.is_empty(), "top-level rr stream must be empty for HR monitor data (D-02)");
+}
+
+#[test]
+fn bridge_hr_monitor_upload_stream_no_rr_when_not_present() {
+    // RED: import an HR monitor frame without RR intervals and assert rr_intervals is [].
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-norr",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [{
+                "evidence_id": "hr-mon-ev-norr",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-04T10:01:00.000Z",
+                "device_model": "HR-Monitor-Test",
+                "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                "sensitivity": "user-owned-capture",
+                "device_type": "HR_MONITOR"
+            }]
+        }
+    }));
+    assert!(import_resp.ok, "HR monitor import (no RR) should succeed: {:?}", import_resp.error);
+
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-norr",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(streams_resp.ok, "upload streams (no RR) should succeed: {:?}", streams_resp.error);
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(hr.len(), 1, "hr stream should have 1 entry for no-RR frame");
+    assert_eq!(hr[0]["bpm"], 72, "bpm should be 72 for no-RR frame");
+    let rr = hr[0]["rr_intervals"].as_array().expect("rr_intervals must be array");
+    assert!(rr.is_empty(), "rr_intervals must be [] when RR intervals are absent in GATT payload");
+}
+
+#[test]
+fn bridge_hr_monitor_upload_stream_device_id_filter() {
+    // RED: device_id filter (CR-02) — only frames from the matching device are returned.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import two frames from different device models
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-filter",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [
+                {
+                    "evidence_id": "hr-mon-dev-a",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-04T10:02:00.000Z",
+                    "device_model": "device-A",
+                    "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "HR_MONITOR"
+                },
+                {
+                    "evidence_id": "hr-mon-dev-b",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-04T10:03:00.000Z",
+                    "device_model": "device-B",
+                    "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "HR_MONITOR"
+                }
+            ]
+        }
+    }));
+    assert!(import_resp.ok, "import for device filter test failed: {:?}", import_resp.error);
+
+    // With device_id = "device-A", only device-A's frame should appear
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-filter",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": "device-A"
+        }
+    }));
+    assert!(streams_resp.ok, "upload streams with device_id filter failed: {:?}", streams_resp.error);
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(hr.len(), 1, "device_id filter should return only 1 frame (device-A), got: {:?}", hr);
+}
