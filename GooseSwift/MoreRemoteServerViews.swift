@@ -18,7 +18,7 @@ final class MoreRemoteServerViewModel: ObservableObject {
 
   func save() {
     guard RemoteServerURLValidator.validate(serverURL) else {
-      urlValidationError = "URL inválida. Use https://hostname (não IPs numéricos)."
+      urlValidationError = "Invalid URL. Use http://hostname or http://192.168.x.x:port"
       return
     }
     urlValidationError = nil
@@ -73,11 +73,11 @@ struct MoreRemoteServerView: View {
           Label {
             switch model.serverReachable {
             case .none:
-              Text("A verificar...").foregroundStyle(.secondary)
+              Text("Checking...").foregroundStyle(.secondary)
             case .some(true):
-              Text("Servidor acessível").foregroundStyle(.green)
+              Text("Server reachable").foregroundStyle(.green)
             case .some(false):
-              Text("Servidor inacessível").foregroundStyle(.red)
+              Text("Server unreachable").foregroundStyle(.red)
             }
           } icon: {
             switch model.serverReachable {
@@ -115,7 +115,7 @@ struct MoreRemoteServerView: View {
           }
 
           // Row 3: Pending batch count
-          LabeledContent("Batches pendentes") {
+          LabeledContent("Pending batches") {
             Text("\(model.pendingBatchCount)")
               .foregroundStyle(model.pendingBatchCount > 0 ? .orange : .secondary)
           }
@@ -137,7 +137,7 @@ struct MoreRemoteServerView: View {
     .navigationBarTitleDisplayMode(.inline)
     .listStyle(.insetGrouped)
     .gooseListBackground()
-    .alert("Configurações guardadas", isPresented: $vm.saveSuccess) {
+    .alert("Settings saved", isPresented: $vm.saveSuccess) {
       Button("OK") {}
     }
   }
@@ -145,7 +145,7 @@ struct MoreRemoteServerView: View {
 
 // MARK: - Previews
 
-#Preview("Status — A verificar") {
+#Preview("Status — Checking") {
   NavigationStack {
     MoreRemoteServerView()
   }
@@ -158,7 +158,7 @@ struct MoreRemoteServerView: View {
   }())
 }
 
-#Preview("Status — Acessível") {
+#Preview("Status — Reachable") {
   NavigationStack {
     MoreRemoteServerView()
   }
@@ -171,7 +171,7 @@ struct MoreRemoteServerView: View {
   }())
 }
 
-#Preview("Status — Inacessível") {
+#Preview("Status — Unreachable") {
   NavigationStack {
     MoreRemoteServerView()
   }

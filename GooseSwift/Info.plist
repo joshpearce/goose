@@ -57,7 +57,7 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Goose usa a rede local para enviar dados WHOOP ao servidor pessoal</string>
+	<string>Goose uses the local network to send WHOOP data to your personal server</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp.</string>
