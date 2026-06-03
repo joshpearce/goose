@@ -51,8 +51,6 @@ final class GooseAppModel: ObservableObject {
   @Published var overnightGuardExportManifestURL: URL?
   @Published var overnightGuardExportManifestError: String?
   @Published var overnightGuardCanExportLastSession = false
-  @Published var uploadLastTimestamp: Date? = nil
-  @Published var uploadPendingBatchCount: Int = 0
   @Published var serverReachable: Bool? = nil
   @Published var lastUploadAt: Date? = nil
   @Published var pendingBatchCount: Int = 0

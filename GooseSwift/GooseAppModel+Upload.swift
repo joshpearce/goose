@@ -11,8 +11,6 @@ extension GooseAppModel {
   func configureUploadService() {
     uploadService.onStatusUpdate = { [weak self] status in
       // Called on @MainActor via DispatchQueue.main.async in GooseUploadService
-      self?.uploadLastTimestamp = status.lastUploadTimestamp
-      self?.uploadPendingBatchCount = status.pendingBatchCount
       self?.lastUploadAt = status.lastUploadTimestamp
       self?.pendingBatchCount = status.pendingBatchCount
     }
