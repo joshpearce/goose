@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-03T16:42:38.026Z"
+status: ready_to_plan
+last_updated: 2026-06-03T16:59:27.946Z
 last_activity: 2026-06-03 -- Phase 03 execution started
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 17
-  completed_plans: 2
+  completed_plans: 5
   percent: 0
+stopped_at: Phase 03 complete (3/3) — ready to discuss Phase 04
 ---
 
 # Project State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Utilizador captura dados WHOOP no iPhone e estes são persistidos automaticamente no seu servidor pessoal — sem depender de infraestrutura externa.
-**Current focus:** Phase 03 — ios-upload-client
+**Current focus:** Phase 04 — upload status feedback
 
 ## Current Position
 
-Phase: 03 (ios-upload-client) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 03
-Last activity: 2026-06-03 -- Phase 03 execution started
+Phase: 04
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-03
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -35,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -43,7 +44,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 03 | 3 | - | - |
 
 **Recent Trend:**
 

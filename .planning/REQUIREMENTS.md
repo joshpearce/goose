@@ -24,13 +24,13 @@
 
 ### iOS Upload Client
 
-- [ ] **UPLD-01**: App faz upload automático de dados biométricos decodificados após cada batch SQLite confirmado
-- [ ] **UPLD-02**: Upload usa POST `/v1/ingest-decoded` com Bearer token no header Authorization
-- [ ] **UPLD-03**: Payload inclui `device_id` (UUID do dispositivo BLE) e `device_generation` correto ("5.0" ou "4.0")
-- [ ] **UPLD-04**: Upload faz retry automático em falha de rede (3 tentativas, backoff 1s/2s/4s)
-- [ ] **UPLD-05**: `batch_id` é derivado deterministicamente (não UUID aleatório) para garantir idempotência no servidor
-- [ ] **UPLD-06**: Upload não bloqueia a thread principal (DispatchQueue serial dedicada, padrão CaptureFrameWriteQueue)
-- [ ] **UPLD-07**: Upload só ocorre quando upload está habilitado e servidor configurado
+- [x] **UPLD-01**: App faz upload automático de dados biométricos decodificados após cada batch SQLite confirmado
+- [x] **UPLD-02**: Upload usa POST `/v1/ingest-decoded` com Bearer token no header Authorization
+- [x] **UPLD-03**: Payload inclui `device_id` (UUID do dispositivo BLE) e `device_generation` correto ("5.0" ou "4.0")
+- [x] **UPLD-04**: Upload faz retry automático em falha de rede (3 tentativas, backoff 1s/2s/4s)
+- [x] **UPLD-05**: `batch_id` é derivado deterministicamente (não UUID aleatório) para garantir idempotência no servidor
+- [x] **UPLD-06**: Upload não bloqueia a thread principal (DispatchQueue serial dedicada, padrão CaptureFrameWriteQueue)
+- [x] **UPLD-07**: Upload só ocorre quando upload está habilitado e servidor configurado
 
 ### Upload Status Feedback
 
@@ -96,13 +96,13 @@
 | SETT-03 | Phase 2 | Pending |
 | SETT-04 | Phase 2 | Pending |
 | SETT-05 | Phase 2 | Pending |
-| UPLD-01 | Phase 3 | Pending |
-| UPLD-02 | Phase 3 | Pending |
-| UPLD-03 | Phase 3 | Pending |
-| UPLD-04 | Phase 3 | Pending |
-| UPLD-05 | Phase 3 | Pending |
-| UPLD-06 | Phase 3 | Pending |
-| UPLD-07 | Phase 3 | Pending |
+| UPLD-01 | Phase 3 | Complete |
+| UPLD-02 | Phase 3 | Complete |
+| UPLD-03 | Phase 3 | Complete |
+| UPLD-04 | Phase 3 | Complete |
+| UPLD-05 | Phase 3 | Complete |
+| UPLD-06 | Phase 3 | Complete |
+| UPLD-07 | Phase 3 | Complete |
 | FEED-01 | Phase 4 | Pending |
 | FEED-02 | Phase 4 | Pending |
 | FEED-03 | Phase 4 | Pending |
