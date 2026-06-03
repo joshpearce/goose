@@ -230,6 +230,7 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
     messageStore.messages
   }
   var commandCharacteristic: CBCharacteristic?
+  var activeDescriptor: WearableDescriptor?
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
   var batteryLevelStatusCharacteristic: CBCharacteristic?
