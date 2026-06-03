@@ -19,7 +19,7 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-06-03)
 
-**Core value:** Utilizador captura dados WHOOP no iPhone e estes são persistidos automaticamente no seu servidor pessoal — sem depender de infraestrutura externa.
+**Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
 **Current focus:** Phase 04 — upload status feedback
 
 ## Current Position
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-06-03 — Completed quick task 260603-rls: adicionar codeql no git
+Last activity: 2026-06-03 — Completed quick task 260603-rls: add codeql to git
 
 ## Performance Metrics
 
@@ -57,9 +57,9 @@ Last activity: 2026-06-03 — Completed quick task 260603-rls: adicionar codeql 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Setup: Copiar servidor completo de my-whoop para server/ — repo único, deploy simples
-- Setup: Upload via URLSession nativo (sem dependências externas iOS)
-- Setup: Bearer token simples para auth do servidor (OAuth desnecessário para uso pessoal)
+- Setup: Copy full server from my-whoop to server/ — single repo, simple deployment
+- Setup: Upload via native URLSession (no external iOS dependencies)
+- Setup: Simple Bearer token for server auth (OAuth unnecessary for personal use)
 
 ### Pending Todos
 
@@ -67,29 +67,29 @@ None yet.
 
 ### Blockers/Concerns
 
-- **ATS hostname:** Decidir estratégia de hostname antes da Phase 3 (mDNS `whoop.local`, DNS real, ou hostname local) — documentar na Phase 2 settings UI
-- **PR #12 FFI threading:** Ler diff completo antes de planear Phase 5 — risco elevado de conflito com Phase 3
+- **ATS hostname:** Decide hostname strategy before Phase 3 (mDNS `whoop.local`, real DNS, or local hostname) — document in the Phase 2 settings UI
+- **PR #12 FFI threading:** Read the full diff before planning Phase 5 — high risk of conflict with Phase 3
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260603-rls | adicionar codeql no git | 2026-06-03 | 13e3498 | [260603-rls-adicionar-codeql-no-git](.planning/quick/260603-rls-adicionar-codeql-no-git/) |
+| 260603-rls | add codeql to git | 2026-06-03 | 13e3498 | [260603-rls-adicionar-codeql-no-git](.planning/quick/260603-rls-adicionar-codeql-no-git/) |
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Upload | Fila de upload persistida em SQLite (UPLD-V2-01) | v2 | Init |
+| Upload | Upload queue persisted in SQLite (UPLD-V2-01) | v2 | Init |
 | Upload | Background URLSession (UPLD-V2-02) | v2 | Init |
-| Upload | Cursor de sincronização/watermark (UPLD-V2-03) | v2 | Init |
-| Dashboard | Gráficos HR/RR/SpO2 no iOS (DASH-V2-01) | v2 | Init |
-| Upstream | PRs de volta ao b-nnett/goose (UPSTREAM-V2-01) | v2 | Init |
+| Upload | Sync cursor/watermark (UPLD-V2-03) | v2 | Init |
+| Dashboard | HR/RR/SpO2 charts on iOS (DASH-V2-01) | v2 | Init |
+| Upstream | PRs back to b-nnett/goose (UPSTREAM-V2-01) | v2 | Init |
 
 ## Session Continuity
 
 Last session: 2026-06-03T16:31:26.968Z
-Stopped at: Phase 5 context gathered — todos os contextos capturados
+Stopped at: Phase 5 context gathered — all contexts captured
 Resume file: .planning/phases/05-upstream-pr-integration/05-CONTEXT.md
 
 ## Operator Next Steps
