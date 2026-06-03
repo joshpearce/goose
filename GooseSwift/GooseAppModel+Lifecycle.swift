@@ -32,6 +32,7 @@ extension GooseAppModel {
       ble.record(source: "overnight.guard", title: "lifecycle.flush", body: "phase=\(phase) raw=\(snapshot.notificationCount) range=\(snapshot.historicalRangePollCount) commands=\(snapshot.commandWriteCount) events=\(snapshot.eventLogCount)")
     } else if phase == "active" || phase == "foreground" {
       resumeOvernightGuardStreamsIfReady(reason: "scene_phase_\(phase)")
+      triggerHealthCheckIfNeeded()
     }
     writeOvernightGuardStatus(reason: "scene_phase_\(phase)")
   }
