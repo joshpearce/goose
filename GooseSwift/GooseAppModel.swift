@@ -339,7 +339,9 @@ final class GooseAppModel: ObservableObject {
       )
     }
     ble.onNotification = { [weak self] event in
-      self?.handleNotification(event)
+      Task { @MainActor [weak self] in
+        self?.handleNotification(event)
+      }
     }
     ble.onLiveHeartRate = { bpm, source, capturedAt in
       heartRateSamplePipeline.recordHeartRateSample(bpm: bpm, source: source, capturedAt: capturedAt)
