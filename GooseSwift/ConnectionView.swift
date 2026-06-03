@@ -74,7 +74,7 @@ private struct ConnectionContentView: View {
               HStack {
                 VStack(alignment: .leading) {
                   Text(device.name)
-                  Text(device.id.uuidString)
+                  Text("Gen \(device.generation == "unknown" ? "?" : String(device.generation.prefix(1))) · \(device.rssi) dBm")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
