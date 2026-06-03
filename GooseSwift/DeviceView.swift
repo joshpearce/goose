@@ -546,6 +546,11 @@ private struct DeviceActionButton: View {
   }
 }
 
+private func generationMajorVersion(_ generation: String) -> String {
+  // "4.0" -> "4", "5.0" -> "5", "unknown" -> "?"
+  generation == "unknown" ? "?" : String(generation.prefix(1))
+}
+
 private struct DiscoveredDeviceList: View {
   @ObservedObject var ble: GooseBLEClient
 
@@ -571,15 +576,12 @@ private struct DiscoveredDeviceList: View {
                     .font(deviceBodyFont.weight(.black))
                     .foregroundStyle(devicePrimaryText)
                     .lineLimit(1)
-                  Text(device.id.uuidString)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                  Text("Gen \(generationMajorVersion(device.generation)) · \(device.rssi) dBm")
+                    .font(.system(size: 12, weight: .semibold, design: .default))
                     .foregroundStyle(mutedText)
                     .lineLimit(1)
                 }
                 Spacer()
-                Text("\(device.rssi)")
-                  .font(deviceBodyFont.weight(.black))
-                  .foregroundStyle(secondaryText)
               }
               .padding(.vertical, 13)
               .contentShape(Rectangle())
