@@ -10,11 +10,11 @@ struct GooseUploadStatus {
 }
 
 final class GooseUploadService: @unchecked Sendable {
-  private let uploadQueue = DispatchQueue(label: "com.goose.swift.upload", qos: .utility)
   private let rust = GooseRustBridge()
   private let databasePath: String
   private let session: URLSession
 
+  // Protected by Swift's cooperative thread pool — only mutated from upload tasks
   private var lastUploadTimestamp: Date?
   private var pendingBatchCount: Int = 0
   private var lastSyncedCount: Int?
@@ -29,15 +29,13 @@ final class GooseUploadService: @unchecked Sendable {
   }
 
   func upload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) {
-    uploadQueue.async { [weak self] in
-      guard let self else { return }
-      self.pendingBatchCount += 1
-      self.performUpload(deviceID: deviceID, deviceType: deviceType, sinceTimestamp: sinceTimestamp)
+    pendingBatchCount += 1
+    Task.detached(priority: .utility) { [weak self] in
+      await self?.performUpload(deviceID: deviceID, deviceType: deviceType, sinceTimestamp: sinceTimestamp)
     }
   }
 
-  private func performUpload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) {
-    // Guard: upload only when enabled, URL configured, and token present
+  private func performUpload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) async {
     guard UserDefaults.standard.bool(forKey: RemoteServerStorage.uploadEnabled) else {
       pendingBatchCount = max(0, pendingBatchCount - 1)
       return
@@ -52,7 +50,7 @@ final class GooseUploadService: @unchecked Sendable {
       return
     }
 
-    // Fetch recent decoded streams from Rust bridge (runs on uploadQueue — never @MainActor)
+    // Fetch recent decoded streams from Rust bridge (synchronous — runs on detached task thread)
     let streamsResult: [String: Any]
     do {
       streamsResult = try rust.request(
@@ -69,7 +67,6 @@ final class GooseUploadService: @unchecked Sendable {
       return
     }
 
-    // Skip empty batches to avoid unnecessary POST requests
     let hr = streamsResult["hr"] as? [Any] ?? []
     let rr = streamsResult["rr"] as? [Any] ?? []
     let events = streamsResult["events"] as? [Any] ?? []
@@ -86,25 +83,13 @@ final class GooseUploadService: @unchecked Sendable {
       return
     }
 
-    // Build payload matching DecodedBatch server contract
     let deviceGeneration = deviceType == "GEN4" ? "4.0" : "5.0"
-    let streams: [String: Any] = [
-      "hr": hr,
-      "rr": rr,
-      "events": events,
-      "battery": battery,
-      "spo2": spo2,
-      "skin_temp": skinTemp,
-      "resp": resp,
-      "gravity": gravity,
-    ]
     let payload: [String: Any] = [
-      "device": [
-        "id": deviceID.uuidString,
-        "mac": NSNull(),
-        "name": NSNull(),
+      "device": ["id": deviceID.uuidString, "mac": NSNull(), "name": NSNull()],
+      "streams": [
+        "hr": hr, "rr": rr, "events": events, "battery": battery,
+        "spo2": spo2, "skin_temp": skinTemp, "resp": resp, "gravity": gravity,
       ],
-      "streams": streams,
       "device_generation": deviceGeneration,
     ]
 
@@ -113,22 +98,21 @@ final class GooseUploadService: @unchecked Sendable {
       return
     }
 
-    // Build URLRequest
     var request = URLRequest(url: baseURL.appendingPathComponent("v1/ingest-decoded"))
     request.httpMethod = "POST"
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = body
 
-    // Retry loop: 3 attempts with backoff 1s/2s/4s
-    let delays: [TimeInterval] = [1, 2, 4]
+    // Retry with async backoff — no thread blocking
+    let delays: [UInt64] = [1_000_000_000, 2_000_000_000, 4_000_000_000]
     var uploadSucceeded = false
     var syncedCount: Int?
     for attempt in 0..<3 {
       if attempt > 0 {
-        Thread.sleep(forTimeInterval: delays[attempt - 1])
+        try? await Task.sleep(nanoseconds: delays[attempt - 1])
       }
-      if let count = performRequest(request) {
+      if let count = await performRequest(request) {
         uploadSucceeded = true
         syncedCount = count
         break
@@ -145,28 +129,22 @@ final class GooseUploadService: @unchecked Sendable {
     publishStatus()
   }
 
-  // Returns the total upserted record count on success, nil on failure.
-  private func performRequest(_ request: URLRequest) -> Int? {
-    let semaphore = DispatchSemaphore(value: 0)
-    var result: Int?
-    session.dataTask(with: request) { data, response, error in
-      if let error {
-        logger.debug("upload request error: \(error)")
-      } else if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
-        if let data,
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let upserted = json["upserted"] as? [String: Int] {
-          result = upserted.values.reduce(0, +)
-        } else {
-          result = 0
-        }
-      } else if let http = response as? HTTPURLResponse {
+  private func performRequest(_ request: URLRequest) async -> Int? {
+    guard let (data, response) = try? await session.data(for: request) else {
+      logger.debug("upload request error")
+      return nil
+    }
+    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+      if let http = response as? HTTPURLResponse {
         logger.debug("upload server error: \(http.statusCode)")
       }
-      semaphore.signal()
-    }.resume()
-    semaphore.wait()
-    return result
+      return nil
+    }
+    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+       let upserted = json["upserted"] as? [String: Int] {
+      return upserted.values.reduce(0, +)
+    }
+    return 0
   }
 
   private func publishStatus() {
@@ -175,7 +153,7 @@ final class GooseUploadService: @unchecked Sendable {
       pendingBatchCount: pendingBatchCount,
       lastSyncedCount: lastSyncedCount
     )
-    DispatchQueue.main.async { [weak self] in
+    Task { @MainActor [weak self] in
       self?.onStatusUpdate?(status)
     }
   }

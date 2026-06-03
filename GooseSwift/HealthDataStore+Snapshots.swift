@@ -1018,7 +1018,12 @@ extension HealthDataStore {
   }
 
   // 7-day rolling average strain on 0–21 scale from the HR series store
+  private var sevenDayStrainCache: (value: Double?, computedAt: Date)?
+
   private func hkSevenDayAverageStrain() -> Double? {
+    if let cache = sevenDayStrainCache, Date().timeIntervalSince(cache.computedAt) < 300 {
+      return cache.value
+    }
     var dailyTrimpValues: [Double] = []
     let cal = Calendar.current
     let ageBestGuess: Double = hkUserAge() ?? 30
@@ -1045,8 +1050,9 @@ extension HealthDataStore {
         dailyTrimpValues.append(min(trimp / 6.0, 21.0))
       }
     }
-    guard !dailyTrimpValues.isEmpty else { return nil }
-    return dailyTrimpValues.reduce(0, +) / Double(dailyTrimpValues.count)
+    let result = dailyTrimpValues.isEmpty ? nil : dailyTrimpValues.reduce(0, +) / Double(dailyTrimpValues.count)
+    sevenDayStrainCache = (value: result, computedAt: Date())
+    return result
   }
 
 }
