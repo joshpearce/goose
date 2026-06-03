@@ -96,6 +96,13 @@ extension GooseAppModel {
   }
 
   func handleBLEConnectionStateChange(_ state: String) {
+    if state == "ready" {
+      connectedDeviceGeneration = ble.discoveredDevices
+        .first(where: { $0.id == ble.activeDeviceIdentifier })?.generation
+    } else if state == "disconnected" || state == "connect failed" {
+      connectedDeviceGeneration = nil
+    }
+
     if overnightGuardActive {
       if state == "ready" {
         resumeOvernightGuardStreamsIfReady(reason: "ble_ready")

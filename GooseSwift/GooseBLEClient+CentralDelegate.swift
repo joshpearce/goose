@@ -260,6 +260,7 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     )
     activePeripheral = nil
     commandCharacteristic = nil
+    activeDescriptor = nil
     batteryLevelCharacteristic = nil
     batteryLevelStatusCharacteristic = nil
     clientHelloSentForCurrentConnection = false

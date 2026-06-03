@@ -55,6 +55,7 @@ final class GooseAppModel: ObservableObject {
   @Published var lastUploadAt: Date? = nil
   @Published var pendingBatchCount: Int = 0
   @Published var lastSyncedCount: Int? = nil
+  @Published var connectedDeviceGeneration: String? = nil
 
   let ble: GooseBLEClient
   let packetMonitor = PacketMonitorModel()
