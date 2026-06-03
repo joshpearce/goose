@@ -333,6 +333,16 @@ extension GooseBLEClient {
     whoopServices.contains(uuid)
   }
 
+  // Gen4 service UUID prefix 61080001-, Gen5 prefix fd4b0001-
+  static func generation(from serviceUUIDs: [CBUUID]) -> String {
+    for uuid in serviceUUIDs {
+      let lower = uuid.uuidString.lowercased()
+      if lower.hasPrefix("61080001") { return "4.0" }
+      if lower.hasPrefix("fd4b0001") { return "5.0" }
+    }
+    return "unknown"
+  }
+
   func isWhoopName(_ name: String?) -> Bool {
     guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
       return false
