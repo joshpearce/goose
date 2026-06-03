@@ -39,7 +39,12 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. Onboarding copy references WHOOP 4.0 alongside WHOOP 5.0
   4. The connected device view displays a generation label ("Gen 4" or "Gen 5") while connected
   5. Upload payload contains `device_generation: "4.0"` for Gen4 captures, verified by a unit or integration test
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 08-P01-PLAN.md — Rust 0x2A37 HR GATT parser + integration tests (WEAR-01)
+- [ ] 08-P02-PLAN.md — iOS BLE HR monitor extension, genericHRMonitor descriptor, empty-prefix guard, normalized UUID matching, background notification routing (WEAR-02)
+- [ ] 08-P03-PLAN.md — Upload fix: remove silent Gen5 fallback, add device_class for HR monitors, add DeviceType::HrMonitor variant (WEAR-03)
+- [ ] 08-P04-PLAN.md — Upload payload unit tests: Gen4 / Gen5 / HR monitor device_class / manual-upload derivation (WEAR-03)
 **UI hint**: yes
 
 ### Phase 7: Android Port Foundations + CI
@@ -60,7 +65,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Success Criteria** (what must be TRUE):
   1. `Rust/core/src/heart_rate_gatt_protocol.rs` parses the standard 0x2A37 HR Measurement characteristic (HR value + optional RR intervals); integration tests cover the standard encoding variants
   2. The iOS BLE client scans for and connects standard 0x180D Heart Rate Service devices; frames are routed through the existing notification pipeline via an extended `rustDeviceType` heuristic
-  3. Upload payload identifies HR monitor data with a distinct `device_type` or `device_generation` value; `GooseUploadService` handles all device classes without the silent WHOOP Gen5 fallback
+  3. Upload payload identifies HR monitor data with BOTH `device_type` (sanitized BLE device name) AND `device_class: "HR_MONITOR"`; `GooseUploadService` handles all device classes without the silent WHOOP Gen5 fallback; a real `DeviceType::HrMonitor` Rust variant backs the routing
 **Plans**: TBD
 
 ## Backlog
