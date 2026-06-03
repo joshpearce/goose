@@ -15,9 +15,24 @@ enum RemoteServerURLValidator {
           !host.isEmpty else {
       return false
     }
-    // Reject bare IP addresses (only digits and dots)
     let isNumericIP = host.range(of: #"^[0-9.]+$"#, options: .regularExpression) != nil
-    return !isNumericIP
+    if isNumericIP {
+      return isPrivateIP(host)
+    }
+    return true
+  }
+
+  // Allows RFC 1918 private ranges: 10.x, 172.16-31.x, 192.168.x
+  private static func isPrivateIP(_ host: String) -> Bool {
+    let parts = host.split(separator: ".").compactMap { Int($0) }
+    guard parts.count == 4, parts.allSatisfy({ $0 >= 0 && $0 <= 255 }) else { return false }
+    switch parts[0] {
+    case 10: return true
+    case 172: return parts[1] >= 16 && parts[1] <= 31
+    case 192: return parts[1] == 168
+    case 127: return true
+    default: return false
+    }
   }
 }
 
