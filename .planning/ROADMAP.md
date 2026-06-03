@@ -65,6 +65,27 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 ## Backlog
 
+### Phase 999.2: Multi-Language Support (BACKLOG)
+
+**Goal:** Add localisation support so the app UI can be presented in multiple languages. Currently all UI strings are hardcoded in English. Add Portuguese (pt-PT) as the first localisation target, using Apple's standard String Catalog (`.xcstrings`) localisation system.
+
+**Current state (2026-06-03):**
+- All user-facing strings are hardcoded in Swift source (no `NSLocalizedString` or `String(localized:)`)
+- A small number of Portuguese strings were found and corrected to English as a first pass
+- No `.lproj` directories, no `.xcstrings` files, no `localizable` strings infrastructure
+
+**What's needed:**
+1. Enable localisation in `GooseSwift.xcodeproj` — add pt-PT locale
+2. Create `Localizable.xcstrings` (String Catalog, Xcode 15+ format)
+3. Wrap all user-facing strings in `String(localized:)` or `LocalizedStringKey`
+4. Provide pt-PT translations for all strings
+5. Test locale switching on device
+
+**Requirements:** TBD
+**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+
+---
+
 ### Phase 999.1: Coach Multi-Provider & Custom Endpoint (BACKLOG)
 
 **Goal:** Expand the Coach tab from a single hardcoded provider (OpenAI GPT-5.5 via Responses API) to support multiple named accounts per provider, additional providers, and a user-configured custom endpoint using an OpenAI-compatible Chat Completions API (`POST /v1/chat/completions`).
