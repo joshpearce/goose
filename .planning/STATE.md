@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Multi-Device & Platform Foundations
 status: executing
-last_updated: "2026-06-03T22:23:25.963Z"
-last_activity: 2026-06-03 -- Phase 08 planning complete
+last_updated: "2026-06-03T22:25:19.866Z"
+last_activity: 2026-06-03 -- Phase 08 execution started
 progress:
   total_phases: 7
   completed_phases: 1
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 06 — whoop-gen4-ios-support
+**Current focus:** Phase 08 — additional-wearables-e2e
 
 ## Current Position
 
-Phase: 06 (whoop-gen4-ios-support) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-06-03 -- Phase 08 planning complete
+Phase: 08 (additional-wearables-e2e) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 08
+Last activity: 2026-06-03 -- Phase 08 execution started
 
 ```
 Phase 6 [          ] 0%   WHOOP Gen4 iOS Support
