@@ -74,7 +74,7 @@ struct CapturedFrameWriteRow {
   }
 }
 
-final class CaptureFrameEnqueueAggregator {
+final class CaptureFrameEnqueueAggregator: @unchecked Sendable {
   var onSnapshot: ((CaptureFrameEnqueueSnapshot) -> Void)?
 
   private let queue = DispatchQueue(label: "com.goose.swift.capture-frame-enqueue", qos: .utility)

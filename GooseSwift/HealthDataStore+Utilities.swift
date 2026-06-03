@@ -152,7 +152,7 @@ extension HealthDataStore {
     ]
   }
 
-  static func shortError(_ error: Error) -> String {
+  nonisolated static func shortError(_ error: Error) -> String {
     let text = String(describing: error)
     return text.count > 96 ? "\(text.prefix(96))..." : text
   }
@@ -592,11 +592,11 @@ extension HealthDataStore {
     return formatter.string(from: date)
   }
 
-  static func algorithmRows(from value: Any) -> [[String: Any]] {
+  nonisolated static func algorithmRows(from value: Any) -> [[String: Any]] {
     value as? [[String: Any]] ?? []
   }
 
-  static func preferenceRows(from value: Any) -> [String: String] {
+  nonisolated static func preferenceRows(from value: Any) -> [String: String] {
     guard let rows = value as? [[String: Any]] else {
       return [:]
     }

@@ -20,11 +20,11 @@ extension GooseAppModel {
     return nil
   }
 
-  static func intString(_ value: Any?) -> String {
+  nonisolated static func intString(_ value: Any?) -> String {
     intValue(value).map(String.init) ?? "?"
   }
 
-  static func intValue(_ value: Any?) -> Int? {
+  nonisolated static func intValue(_ value: Any?) -> Int? {
     if let value = value as? Int {
       return value
     }
