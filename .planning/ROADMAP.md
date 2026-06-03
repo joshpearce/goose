@@ -63,6 +63,32 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. Upload payload identifies HR monitor data with a distinct `device_type` or `device_generation` value; `GooseUploadService` handles all device classes without the silent WHOOP Gen5 fallback
 **Plans**: TBD
 
+## Backlog
+
+### Phase 999.1: Coach Multi-Provider & Custom Endpoint (BACKLOG)
+
+**Goal:** Expand the Coach tab from a single hardcoded provider (OpenAI GPT-5.5 via Responses API) to support multiple named accounts per provider, additional providers, and a user-configured custom endpoint using an OpenAI-compatible Chat Completions API (`POST /v1/chat/completions`).
+
+**Current implementation assessment (2026-06-03):**
+- `OpenAICoachResponsesClient` — calls OpenAI Responses API (`/v1/responses`), hardcoded to `gpt-5.5`
+- `CoachModelPreset` — enum with 3 GPT-5.5 effort variants only (`low`/`medium`/`high`)
+- `OpenAICoachChatModel` — single-provider `@Published` model; no provider abstraction
+- API key stored as a single Keychain item — no multi-account support
+- No `CoachProvider` protocol or provider registry exists
+
+**What's needed:**
+1. `CoachProvider` protocol — abstract interface `send(messages:systemPrompt:) async throws -> AsyncStream<String>`
+2. Named accounts per provider — stored in Keychain with a provider prefix (multiple keys)
+3. Additional providers: Claude API (Anthropic), Gemini (Google), local (Ollama/LM Studio)
+4. Custom endpoint — user-configured base URL + API key + model ID; must implement OpenAI Chat Completions-compatible protocol (`POST /v1/chat/completions` with SSE streaming)
+5. Provider picker UI — in Coach settings or More tab, shows configured accounts, lets user add/remove/select active account
+6. Migration path — existing single OpenAI key promoted to named account on first launch
+
+**Requirements:** TBD
+**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
