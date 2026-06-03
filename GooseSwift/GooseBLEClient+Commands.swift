@@ -144,24 +144,20 @@ extension GooseBLEClient {
     }
   }
 
-  var supportsV5HistoricalSync: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsHistoricalSync: Bool {
+    commandCharacteristic.map { activeDescriptor?.isCommandCharacteristic($0) == true } == true
   }
 
-  var supportsV5AlarmCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsAlarmCommands: Bool {
+    commandCharacteristic.map { activeDescriptor?.isCommandCharacteristic($0) == true } == true
   }
 
-  var supportsV5ClockCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsClockCommands: Bool {
+    commandCharacteristic.map { activeDescriptor?.isCommandCharacteristic($0) == true } == true
   }
 
-  var supportsV5SensorCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
-  }
-
-  func isV5CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
-    characteristic.uuid.uuidString.lowercased().hasPrefix("fd4b0002")
+  var supportsSensorCommands: Bool {
+    commandCharacteristic.map { activeDescriptor?.isCommandCharacteristic($0) == true } == true
   }
 
   func shouldUseCommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
@@ -171,7 +167,11 @@ extension GooseBLEClient {
     guard let current = commandCharacteristic else {
       return true
     }
-    return !isV5CommandCharacteristic(current) && isV5CommandCharacteristic(characteristic)
+    // Prefer command characteristic matching active descriptor; if no descriptor, accept first found
+    if let desc = activeDescriptor {
+      return desc.isCommandCharacteristic(characteristic) && !desc.isCommandCharacteristic(current)
+    }
+    return false
   }
 
   func validatedAlarmID(_ rawValue: Int) -> UInt8? {
@@ -206,8 +206,8 @@ extension GooseBLEClient {
       failClockCommand("Clock command needs ready connection; current state \(connectionState).")
       return
     }
-    guard supportsV5ClockCommands else {
-      failClockCommand("Clock command needs fd4b0002 V5 command framing. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
+    guard supportsClockCommands else {
+      failClockCommand("Clock command needs command characteristic. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
       return
     }
     guard let writeType = writeType(for: commandCharacteristic) else {
@@ -299,8 +299,8 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: alarmCommandStatus)
       return
     }
-    guard supportsV5AlarmCommands else {
-      alarmCommandStatus = "Alarm writes need fd4b0002 V5 command framing"
+    guard supportsAlarmCommands else {
+      alarmCommandStatus = "Alarm writes need command characteristic"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
     }
@@ -390,9 +390,9 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: "Needs ready connection; current state \(connectionState)")
       return
     }
-    guard supportsV5SensorCommands else {
+    guard supportsSensorCommands else {
       if updatePhysiologyStatus {
-        physiologyCaptureStatus = "Needs fd4b0002 V5 command framing"
+        physiologyCaptureStatus = "Needs command characteristic"
       }
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
@@ -903,7 +903,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5SensorCommands else {
+          supportsSensorCommands else {
       return
     }
 
@@ -924,7 +924,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5HistoricalSync,
+          supportsHistoricalSync,
           !isHistoricalSyncing else {
       return
     }
