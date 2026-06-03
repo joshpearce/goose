@@ -3,10 +3,12 @@ name: CodeQL
 # Static analysis for security vulnerabilities in application source code.
 #
 # Coverage:
-#   * swift  - GooseSwift/ — data flow analysis, injection patterns, insecure iOS
-#               API usage (CoreBluetooth, Keychain, URLSession).
 #   * python - server/    — SQL injection, path traversal, insecure deserialization,
 #               weak cryptography patterns (FastAPI + TimescaleDB stack).
+#
+# Swift is temporarily excluded: the project targets iOS 26.0 (Xcode 26 beta),
+# which is not available on standard GitHub Actions runners (macos-15 supports
+# up to iOS 18.5.99). Re-enable when Xcode 26 runners become generally available.
 #
 # Rust is excluded: CodeQL support is experimental and cargo-audit already covers
 # known advisories via the RustSec database (see security.yml).
@@ -37,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [swift, python]
+        language: [python]
 
     steps:
       - name: Check out repository
@@ -48,21 +50,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
-
-      # Swift: CodeQL requires a real compilation pass to trace data flow accurately.
-      # CODE_SIGNING_ALLOWED=NO avoids certificate requirements on CI runners.
-      # GOOSE_SKIP_RUST_CORE_BUILD=1 uses the committed pre-built libgoose_core.a
-      # instead of recompiling Rust (which would require iOS Rust targets on the runner).
-      - name: Build Swift target (Swift only)
-        if: matrix.language == 'swift'
-        run: |
-          xcodebuild \
-            -project GooseSwift.xcodeproj \
-            -scheme GooseSwift \
-            -destination 'generic/platform=iOS Simulator' \
-            build \
-            CODE_SIGNING_ALLOWED=NO \
-            GOOSE_SKIP_RUST_CORE_BUILD=1
 
       # Python: CodeQL analyses Python without a build step.
 
