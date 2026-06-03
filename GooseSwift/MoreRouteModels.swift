@@ -11,6 +11,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case algorithms
   case debug
   case privacy
+  case remoteServer
   case support
   case about
   case developer
@@ -29,6 +30,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: "Algorithms"
     case .debug: "Debug"
     case .privacy: "Privacy"
+    case .remoteServer: "Remote Server"
     case .support: "Support"
     case .about: "About"
     case .developer: "Developer"
@@ -47,6 +49,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: "Operational algorithm preferences"
     case .debug: "Rust, parser, command groups, and gated controls"
     case .privacy: "Local data, export, lint, and deletion state"
+    case .remoteServer: "Server URL, API key, and upload toggle"
     case .support: "Logs, support bundles, and troubleshooting"
     case .about: "App, Rust core, and licenses"
     case .developer: "Capture, exports, bridge diagnostics, and debug tools"
@@ -65,6 +68,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: "function"
     case .debug: "terminal"
     case .privacy: "hand.raised"
+    case .remoteServer: "network"
     case .support: "lifepreserver"
     case .about: "info.circle"
     case .developer: "hammer"
@@ -83,6 +87,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: \.algorithms
     case .debug: \.debug
     case .privacy: \.privacy
+    case .remoteServer: \.remoteServer
     case .support: \.support
     case .about: \.about
     case .developer: \.developer
@@ -91,7 +96,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
 
   static let deviceRoutes: [MoreRoute] = [.device]
   static let appRoutes: [MoreRoute] = [.healthSync]
-  static let settingsRoutes: [MoreRoute] = [.privacy]
+  static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer]
   static let supportRoutes: [MoreRoute] = [.support, .about]
   static let developerRoutes: [MoreRoute] = [.developer]
   static let developerToolRoutes: [MoreRoute] = [.connectionLab, .capture, .localStore, .rawExport, .algorithms, .debug]
@@ -108,6 +113,7 @@ struct MoreRouteStatus {
   var algorithms: MoreStatusKind
   var debug: MoreStatusKind
   var privacy: MoreStatusKind
+  var remoteServer: MoreStatusKind
   var support: MoreStatusKind
   var about: MoreStatusKind
   var developer: MoreStatusKind
