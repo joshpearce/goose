@@ -52,6 +52,9 @@
 			D10000000000000000000050 /* WhoopDataSignalPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000050 /* WhoopDataSignalPipeline.swift */; };
 			D10000000000000000000052 /* PacketMonitorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000052 /* PacketMonitorModel.swift */; };
 			D10000000000000000000053 /* GooseMessageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000053 /* GooseMessageStore.swift */; };
+			D10000000000000000000054 /* GooseUploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000054 /* GooseUploadService.swift */; };
+			D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000055 /* RemoteServerPersistence.swift */; };
+			D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000056 /* MoreRemoteServerViews.swift */; };
 			D1000000000000000000001C /* ActivityPersistenceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001C /* ActivityPersistenceTypes.swift */; };
 			D1000000000000000000001D /* HealthPacketCaptureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001D /* HealthPacketCaptureTypes.swift */; };
 			D1000000000000000000001E /* WhoopEventSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001E /* WhoopEventSamples.swift */; };
@@ -194,6 +197,9 @@
 			D20000000000000000000050 /* WhoopDataSignalPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDataSignalPipeline.swift; sourceTree = "<group>"; };
 			D20000000000000000000052 /* PacketMonitorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketMonitorModel.swift; sourceTree = "<group>"; };
 			D20000000000000000000053 /* GooseMessageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseMessageStore.swift; sourceTree = "<group>"; };
+			D20000000000000000000054 /* GooseUploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadService.swift; sourceTree = "<group>"; };
+			D20000000000000000000055 /* RemoteServerPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteServerPersistence.swift; sourceTree = "<group>"; };
+			D20000000000000000000056 /* MoreRemoteServerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRemoteServerViews.swift; sourceTree = "<group>"; };
 			D2000000000000000000001C /* ActivityPersistenceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPersistenceTypes.swift; sourceTree = "<group>"; };
 			D2000000000000000000001D /* HealthPacketCaptureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPacketCaptureTypes.swift; sourceTree = "<group>"; };
 			D2000000000000000000001E /* WhoopEventSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopEventSamples.swift; sourceTree = "<group>"; };
@@ -376,6 +382,9 @@
 				D20000000000000000000050 /* WhoopDataSignalPipeline.swift */,
 				D20000000000000000000052 /* PacketMonitorModel.swift */,
 				D20000000000000000000053 /* GooseMessageStore.swift */,
+				D20000000000000000000054 /* GooseUploadService.swift */,
+				D20000000000000000000055 /* RemoteServerPersistence.swift */,
+				D20000000000000000000056 /* MoreRemoteServerViews.swift */,
 				D2000000000000000000001C /* ActivityPersistenceTypes.swift */,
 				D2000000000000000000001D /* HealthPacketCaptureTypes.swift */,
 				D2000000000000000000001E /* WhoopEventSamples.swift */,
@@ -681,6 +690,9 @@
 				D10000000000000000000050 /* WhoopDataSignalPipeline.swift in Sources */,
 				D10000000000000000000052 /* PacketMonitorModel.swift in Sources */,
 				D10000000000000000000053 /* GooseMessageStore.swift in Sources */,
+				D10000000000000000000054 /* GooseUploadService.swift in Sources */,
+				D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */,
+				D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */,
 				D1000000000000000000001C /* ActivityPersistenceTypes.swift in Sources */,
 				D1000000000000000000001D /* HealthPacketCaptureTypes.swift in Sources */,
 				D1000000000000000000001E /* WhoopEventSamples.swift in Sources */,
