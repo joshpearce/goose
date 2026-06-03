@@ -814,7 +814,7 @@ extension GooseAppModel {
 
       let expectedLength = declaredLength + headerLength
       guard bytes.count >= expectedLength else {
-        expectedBytes = expectedLength
+        expectedBytes = expectedLength
         break
       }
       frames.append(Data(bytes[0..<expectedLength]))
