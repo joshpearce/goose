@@ -119,7 +119,8 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     let device = GooseDiscoveredDevice(
       id: peripheral.identifier,
       name: name,
-      rssi: RSSI.intValue
+      rssi: RSSI.intValue,
+      generation: Self.generation(from: advertisedServices)
     )
 
     discoveredDevices.removeAll { $0.id == device.id }
