@@ -38,6 +38,16 @@ extension GooseAppModel {
     )
   }
 
+  // Explicit health check — always runs regardless of session state.
+  // Called after user saves server settings.
+  func checkServerHealth() {
+    let serverURLString = UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL) ?? ""
+    guard !serverURLString.isEmpty else { return }
+    GooseAppModel._didRunHealthCheck = true
+    Task { @MainActor in self.serverReachable = nil }
+    runHealthCheck(serverURLString: serverURLString)
+  }
+
   // Runs the GET /healthz check once per app session when upload is enabled
   // and a server URL is configured. Result is published via serverReachable.
   func triggerHealthCheckIfNeeded() {
@@ -46,7 +56,10 @@ extension GooseAppModel {
     let serverURLString = UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL) ?? ""
     guard uploadEnabled, !serverURLString.isEmpty else { return }
     GooseAppModel._didRunHealthCheck = true
+    runHealthCheck(serverURLString: serverURLString)
+  }
 
+  private func runHealthCheck(serverURLString: String) {
     DispatchQueue.global(qos: .utility).async { [weak self] in
       guard let self else { return }
       guard let url = URL(string: serverURLString + "/healthz") else {
@@ -66,8 +79,6 @@ extension GooseAppModel {
         semaphore.signal()
       }.resume()
       semaphore.wait()
-      // Logging runs on the background queue (not inside the @Sendable dataTask closure)
-      // so @MainActor-isolated ble can be safely captured here via Task.
       let logBody = taskError.map { "error=\($0)" } ?? "reachable=\(isReachable)"
       let logTitle = taskError != nil ? "healthz.error" : "healthz"
       Task { @MainActor [weak self] in
