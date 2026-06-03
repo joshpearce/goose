@@ -51,6 +51,8 @@ jobs:
 
       # Swift: CodeQL requires a real compilation pass to trace data flow accurately.
       # CODE_SIGNING_ALLOWED=NO avoids certificate requirements on CI runners.
+      # GOOSE_SKIP_RUST_CORE_BUILD=1 uses the committed pre-built libgoose_core.a
+      # instead of recompiling Rust (which would require iOS Rust targets on the runner).
       - name: Build Swift target (Swift only)
         if: matrix.language == 'swift'
         run: |
@@ -59,7 +61,8 @@ jobs:
             -scheme GooseSwift \
             -destination 'generic/platform=iOS Simulator' \
             build \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            GOOSE_SKIP_RUST_CORE_BUILD=1
 
       # Python: CodeQL analyses Python without a build step.
 
