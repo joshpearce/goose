@@ -75,7 +75,9 @@ struct AppShellView: View {
   }
 
   private func openHomeHealthRoute(_ route: HealthRoute) {
-    homeHealthPath = [route]
+    Task { @MainActor in
+      homeHealthPath = [route]
+    }
   }
 }
 

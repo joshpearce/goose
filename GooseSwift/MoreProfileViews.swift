@@ -27,7 +27,7 @@ struct MoreGreetingHeader: View {
 
       Spacer(minLength: 8)
 
-      Label("Update Profile", systemImage: "person.crop.circle.badge.pencil")
+      Label("Update Profile", systemImage: "person.crop.circle")
         .font(.caption.weight(.semibold))
         .labelStyle(.titleAndIcon)
         .foregroundStyle(.blue)
