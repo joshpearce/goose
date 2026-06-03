@@ -168,5 +168,5 @@ Plans:
 | 4. Upload Status Feedback | v1.0 | 2/2 | Complete | 2026-06-03 |
 | 5. Upstream PR Integration | v1.0 | 4/4 | Complete | 2026-06-03 |
 | 6. WHOOP Gen4 iOS Support | v2.0 | 3/3 | Complete   | 2026-06-03 |
-| 7. Android Port Foundations + CI | v2.0 | 4/4 | Complete   | 2026-06-03 |
+| 7. Android Port Foundations + CI | v2.0 | 4/4 | Complete    | 2026-06-03 |
 | 8. Additional Wearables E2E | v2.0 | 4/4 | Complete    | 2026-06-03 |
