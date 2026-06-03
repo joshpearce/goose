@@ -4,6 +4,12 @@ import SwiftUI
 import UIKit
 
 extension HealthDataStore {
+  fileprivate static let relativeFormatter: RelativeDateTimeFormatter = {
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .short
+    return f
+  }()
+
   static func stressTrendStatus(score: Double) -> String {
     if score >= 55 {
       return "Above normal"
@@ -1027,8 +1033,6 @@ extension HealthDataStore {
     if abs(date.timeIntervalSinceNow) < 10 {
       return "Now"
     }
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: Date()).capitalized
+    return Self.relativeFormatter.localizedString(for: date, relativeTo: Date()).capitalized
   }
 }

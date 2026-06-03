@@ -33,6 +33,12 @@ struct MoreRemoteServerView: View {
   @StateObject private var vm = MoreRemoteServerViewModel()
   @EnvironmentObject private var model: GooseAppModel
 
+  private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .short
+    return f
+  }()
+
   private var uploadIsActive: Bool {
     vm.uploadEnabled && !vm.serverURL.isEmpty
   }
@@ -89,7 +95,7 @@ struct MoreRemoteServerView: View {
             HStack(spacing: 8) {
               if let lastUpload = model.lastUploadAt {
                 VStack(alignment: .trailing, spacing: 1) {
-                  Text(RelativeDateTimeFormatter().localizedString(for: lastUpload, relativeTo: Date()))
+                  Text(Self.relativeDateFormatter.localizedString(for: lastUpload, relativeTo: Date()))
                     .foregroundStyle(.secondary)
                   if let count = model.lastSyncedCount {
                     Text("\(count) records acked")

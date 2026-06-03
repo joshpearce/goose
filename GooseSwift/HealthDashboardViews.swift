@@ -472,6 +472,7 @@ struct HealthMetricCard: View {
 struct HealthMonitorView: View {
   @ObservedObject var store: HealthDataStore
   @State private var selectedTrend: HealthMetricSnapshot?
+  @State private var cachedMonitorSnapshots: [HealthMetricSnapshot] = []
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
@@ -484,7 +485,7 @@ struct HealthMonitorView: View {
         HealthHero(snapshot: store.snapshot(for: .healthMonitor), subtitle: "Vitals, timeline, and primary sleep inputs")
 
         LazyVGrid(columns: columns, spacing: 10) {
-          ForEach(store.healthMonitorSnapshots()) { snapshot in
+          ForEach(cachedMonitorSnapshots) { snapshot in
             Button {
               selectedTrend = snapshot
             } label: {
@@ -540,9 +541,13 @@ struct HealthMonitorView: View {
     .gooseScreenBackground()
     .navigationTitle("Health Monitor")
     .task {
+      cachedMonitorSnapshots = store.healthMonitorSnapshots()
       store.refreshHeartRateTimeline()
       store.refreshPacketInputsIfNeeded()
     }
+    .onChange(of: store.packetScoreStatus) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: store.hkHRVRmssdMs) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: store.hkRestingHR) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
     .sheet(item: $selectedTrend) { snapshot in
       if snapshot.id == "resting-hr" || snapshot.id == "resting-hrv" {
         SleepV2BevelTrendSheet(snapshot: snapshot)
