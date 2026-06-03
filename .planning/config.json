@@ -84,5 +84,12 @@
   "agent_skills": {},
   "features": {},
   "mode": "yolo",
-  "granularity": "standard"
+  "granularity": "standard",
+  "review": {
+    "default_reviewers": [
+      "gemini",
+      "codex",
+      "claude"
+    ]
+  }
 }
