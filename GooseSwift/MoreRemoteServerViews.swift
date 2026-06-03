@@ -40,7 +40,7 @@ struct MoreRemoteServerView: View {
   var body: some View {
     Form {
       Section("Server") {
-        TextField("https://meu-servidor.local", text: $vm.serverURL)
+        TextField("http://hostname:8770", text: $vm.serverURL)
           .keyboardType(.URL)
           .autocorrectionDisabled()
           .textInputAutocapitalization(.never)
@@ -119,6 +119,9 @@ struct MoreRemoteServerView: View {
       Section {
         Button("Save") {
           vm.save()
+          if vm.urlValidationError == nil {
+            model.checkServerHealth()
+          }
         }
         .frame(maxWidth: .infinity)
         .foregroundStyle(.white)
