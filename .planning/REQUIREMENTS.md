@@ -36,9 +36,9 @@ As a developer, I want the server pytest suite to run on CI, so that server regr
 
 > `crate-type = ["cdylib"]` is already declared in Cargo.toml. No full Android app — only the Rust core cross-compilation, a thin JNI shim, and an ADR.
 
-- [ ] **ANDROID-01**: `cargo build --target aarch64-linux-android` produces a library (`libgoose_core.so`) without errors; verified on CI (GitHub Actions) with `cargo-ndk` and Android NDK r29
-- [ ] **ANDROID-02**: A thin JNI wrapper module (`#[cfg(target_os = "android")]`) in `bridge.rs` exposes the existing C FFI API as JNI-callable functions (`Java_*` naming convention); `tungstenite` WebSocket module excluded on Android via `cfg` guard; `panic = "abort"` overridden for Android target profile
-- [ ] **ANDROID-03**: Architecture Decision Record at `docs/ADR-android-jni.md` documents: why `cdylib` + JNI shim over a separate crate, `panic` strategy, MUTF-8 string handling policy, `rusqlite bundled` target limitation (aarch64 only), and the overall choices that keep the door open for a future Android app
+- [x] **ANDROID-01**: `cargo build --target aarch64-linux-android` produces a library (`libgoose_core.so`) without errors; verified on CI (GitHub Actions) with `cargo-ndk` and Android NDK r29
+- [x] **ANDROID-02**: A thin JNI wrapper module (`#[cfg(target_os = "android")]`) in `bridge.rs` exposes the existing C FFI API as JNI-callable functions (`Java_*` naming convention); `tungstenite` WebSocket module excluded on Android via `cfg` guard; `panic = "abort"` overridden for Android target profile
+- [x] **ANDROID-03**: Architecture Decision Record at `docs/ADR-android-jni.md` documents: why `cdylib` + JNI shim over a separate crate, `panic` strategy, MUTF-8 string handling policy, `rusqlite bundled` target limitation (aarch64 only), and the overall choices that keep the door open for a future Android app
 
 ### Additional Wearables — Standard HR GATT
 
@@ -50,7 +50,7 @@ As a developer, I want the server pytest suite to run on CI, so that server regr
 
 ### CI Coverage
 
-- [ ] **CI-01**: Server pytest suite (`server/ingest/tests/`) runs on GitHub Actions on push/PR to `main`; uses a real TimescaleDB container (matching the existing `conftest.py` pattern); failures block merge
+- [x] **CI-01**: Server pytest suite (`server/ingest/tests/`) runs on GitHub Actions on push/PR to `main`; uses a real TimescaleDB container (matching the existing `conftest.py` pattern); failures block merge
 
 ### Upload ACK
 
@@ -100,10 +100,10 @@ As a developer, I want the server pytest suite to run on CI, so that server regr
 | GEN4-03 | Phase 6 | Pending |
 | GEN4-04 | Phase 6 | Pending |
 | GEN4-05 | Phase 6 | Pending |
-| ANDROID-01 | Phase 7 | Pending |
-| ANDROID-02 | Phase 7 | Pending |
-| ANDROID-03 | Phase 7 | Pending |
-| CI-01 | Phase 7 | Pending |
+| ANDROID-01 | Phase 7 | Complete |
+| ANDROID-02 | Phase 7 | Complete |
+| ANDROID-03 | Phase 7 | Complete |
+| CI-01 | Phase 7 | Complete |
 | WEAR-01 | Phase 8 | Complete |
 | WEAR-02 | Phase 8 | Complete |
 | WEAR-03 | Phase 8 | Complete |
