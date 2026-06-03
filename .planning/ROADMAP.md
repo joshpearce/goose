@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: iOS Server Settings** - Configuração de URL/token na tab More com persistência Keychain/UserDefaults
 - [x] **Phase 3: iOS Upload Client** - Serviço de upload automático POST /v1/ingest-decoded com retry e idempotência (completed 2026-06-03)
 - [ ] **Phase 4: Upload Status Feedback** - Health check ao arrancar e estado de upload visível na tab More
-- [ ] **Phase 5: Upstream PR Integration** - Integrar 9 PRs do upstream b-nnett/goose em ordem de risco
+- [x] **Phase 5: Upstream PR Integration** - Integrar 9 PRs do upstream b-nnett/goose em ordem de risco (completed 2026-06-03)
 
 ## Phase Details
 
@@ -100,4 +100,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. iOS Server Settings | 0/TBD | Not started | - |
 | 3. iOS Upload Client | 3/3 | Complete    | 2026-06-03 |
 | 4. Upload Status Feedback | 0/TBD | Not started | - |
-| 5. Upstream PR Integration | 0/TBD | Not started | - |
+| 5. Upstream PR Integration | 4/4 | Complete    | 2026-06-03 |
