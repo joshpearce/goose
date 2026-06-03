@@ -6,11 +6,7 @@ use std::{
 use goose_core::store::GooseStore;
 
 fn python_cmd() -> &'static str {
-    if cfg!(windows) {
-        "python"
-    } else {
-        "python3"
-    }
+    if cfg!(windows) { "python" } else { "python3" }
 }
 
 #[test]
