@@ -162,6 +162,7 @@ extension GooseAppModel {
   }
 
   func importCapturedFrames(_ frames: [NotificationFrame], event: GooseNotificationEvent) {
+    lastNotificationEvent = event
     guard activeHealthPacketCapture != nil || activeActivityPersistence != nil else {
       return
     }
@@ -294,6 +295,10 @@ extension GooseAppModel {
       title: "capture.import.ok",
       body: "batches \(result.batchCount) | raw \(result.rawInserted) inserted, \(result.rawExisting) existing | decoded \(result.inserted) inserted, \(result.existing) existing | \(result.frameCount) queued\(timingSuffix)"
     )
+    if result.pass, result.errorDescription == nil,
+       let event = lastNotificationEvent {
+      triggerUpload(for: result, deviceEvent: event)
+    }
   }
 
   func shouldWriteCapturedFrame(at capturedAt: Date) -> Bool {

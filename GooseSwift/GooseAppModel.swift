@@ -51,6 +51,8 @@ final class GooseAppModel: ObservableObject {
   @Published var overnightGuardExportManifestURL: URL?
   @Published var overnightGuardExportManifestError: String?
   @Published var overnightGuardCanExportLastSession = false
+  @Published var uploadLastTimestamp: Date? = nil
+  @Published var uploadPendingBatchCount: Int = 0
 
   let ble: GooseBLEClient
   let packetMonitor = PacketMonitorModel()
@@ -82,6 +84,7 @@ final class GooseAppModel: ObservableObject {
     maxQueuedRows: GooseAppModel.captureFrameWriteQueueMaxRows,
     maxBatchRows: GooseAppModel.captureFrameWriteBatchMaxRows
   )
+  let uploadService = GooseUploadService(databasePath: HealthDataStore.defaultDatabasePath())
   let captureFrameEnqueueAggregator = CaptureFrameEnqueueAggregator(
     publishInterval: GooseAppModel.packetUIStatePublishInterval
   )
@@ -172,6 +175,7 @@ final class GooseAppModel: ObservableObject {
   var activityTimelineRefreshGeneration = 0
   var skippedNotificationDiagnostics = SkippedNotificationDiagnostics()
   var frameReassemblyBuffers: [String: Data] = [:]
+  var lastNotificationEvent: GooseNotificationEvent?
   let autoStartHealthPacketCaptureOnReady: Bool = {
     let processInfo = ProcessInfo.processInfo
     return processInfo.arguments.contains("--goose-start-health-packet-capture")
@@ -402,6 +406,7 @@ final class GooseAppModel: ObservableObject {
     ble.onMessage = { [weak self] message in
       self?.persistOvernightEventLog(message)
     }
+    configureUploadService()
     refreshHeartRateHourlyRanges()
     ble.record(source: "app", title: "model.init")
     prepareClientHello()

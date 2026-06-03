@@ -54,6 +54,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Goose usa a rede local para enviar dados WHOOP ao servidor pessoal</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp.</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>
