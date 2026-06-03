@@ -12,7 +12,7 @@ Milestone que adiciona três capacidades ao fork tigercraft4/goose: (1) servidor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Server Infrastructure** - Copiar servidor my-whoop para `server/`, empacotar em Docker multi-stage, garantir higiene de segredos
+- [ ] **Phase 1: Server Infrastructure** - Copiar servidor my-whoop para `server/`, empacotar em Docker multi-stage, garantir higiene de segredos [3 plans]
 - [ ] **Phase 2: iOS Server Settings** - Configuração de URL/token na tab More com persistência Keychain/UserDefaults
 - [ ] **Phase 3: iOS Upload Client** - Serviço de upload automático POST /v1/ingest-decoded com retry e idempotência
 - [ ] **Phase 4: Upload Status Feedback** - Health check ao arrancar e estado de upload visível na tab More
@@ -30,7 +30,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `GET /healthz` retorna `{"status":"ok"}` após deploy
   3. `POST /v1/ingest-decoded` com Bearer token válido escreve rows nas hypertables TimescaleDB
   4. `.env` e ficheiros com segredos estão no `.gitignore`; apenas `.env.example` com placeholders está commitado
-**Plans**: TBD
+**Plans**:
+- Wave 1: 01-PLAN (Copy server + rename WHOOP_ → GOOSE_ + .gitignore)
+- Wave 2 *(blocked on Wave 1 completion)*: 02-PLAN (Dockerfile multi-stage + docker-compose named volumes)
+- Wave 3 *(blocked on Wave 2 completion)*: 03-PLAN (Verification end-to-end — stack up + endpoints)
+
+**Cross-cutting constraints:**
+- server/.env nunca commitado (T-1-01 em todos os planos)
+- docker build context é sempre server/ (não repo root)
 
 ### Phase 2: iOS Server Settings
 **Goal**: Utilizador pode configurar URL do servidor e API key na tab More, com persistência segura entre sessões
