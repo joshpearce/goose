@@ -933,12 +933,17 @@ extension HealthDataStore {
     return (strain_0_21 / 21.0) * 100
   }
 
+  private static let dobFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "yyyy-MM-dd"
+    f.locale = Locale(identifier: "en_US_POSIX")
+    return f
+  }()
+
   private func hkUserAge() -> Double? {
     guard let dob = UserDefaults.standard.string(forKey: OnboardingStorage.dateOfBirth),
           !dob.isEmpty else { return nil }
-    let f = DateFormatter()
-    f.dateFormat = "yyyy-MM-dd"
-    guard let date = f.date(from: dob) else { return nil }
+    guard let date = Self.dobFormatter.date(from: dob) else { return nil }
     return Double(Calendar.current.dateComponents([.year], from: date, to: Date()).year ?? 30)
   }
 
