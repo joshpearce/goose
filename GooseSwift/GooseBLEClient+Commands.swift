@@ -844,10 +844,17 @@ extension GooseBLEClient {
     for characteristic in characteristics {
       if shouldUseCommandCharacteristic(characteristic) {
         commandCharacteristic = characteristic
+        activeDescriptor = characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
+          ? .whoopGen4 : .whoopGen5
         record(
           source: "ble",
           title: cached ? "command_characteristic.cached" : "command_characteristic.discovered",
           body: "\(service.uuid.uuidString) \(characteristic.uuid.uuidString) properties=\(propertyNames(characteristic.properties))"
+        )
+        record(
+          source: "ble",
+          title: "wearable_descriptor.set",
+          body: characteristic.uuid.uuidString.lowercased().hasPrefix("61080002") ? "gen4" : "gen5"
         )
       } else if commandCharacteristicIDs.contains(characteristic.uuid) {
         record(
