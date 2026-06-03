@@ -702,6 +702,31 @@ extension GooseAppModel {
   }
 
   nonisolated func notificationIngestResult(for event: GooseNotificationEvent) -> NotificationIngestResult {
+    // HR monitor 0x2A37 payloads are standard GATT bytes, not 0xaa-framed WHOOP frames.
+    // Bypass the WHOOP reassembly path and treat the entire notification value as one frame.
+    // This function is intentionally NOT @MainActor — HR notifications arrive at high frequency
+    // and must stay off the main thread (review MEDIUM-3).
+    if event.rustDeviceType == "HR_MONITOR" {
+      let frameHex = event.value.hexString
+      guard !frameHex.isEmpty else {
+        return NotificationIngestResult(
+          event: event,
+          frames: [],
+          bufferedBytes: 0,
+          expectedBytes: nil,
+          droppedBytes: 0,
+          usedBufferedData: false
+        )
+      }
+      return NotificationIngestResult(
+        event: event,
+        frames: [NotificationFrame(hex: frameHex)],
+        bufferedBytes: 0,
+        expectedBytes: nil,
+        droppedBytes: 0,
+        usedBufferedData: false
+      )
+    }
     let reassembly = gooseFrames(in: event.value, event: event)
     return NotificationIngestResult(
       event: event,
