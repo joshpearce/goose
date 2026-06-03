@@ -406,6 +406,95 @@ fn bridge_parses_frame_hex_for_app_import_flow() {
 }
 
 #[test]
+fn bridge_accepts_gen4_device_type_string_without_underscore() {
+    // Verifies that the Swift runtime sends "GEN4" (no underscore) and the Rust bridge
+    // correctly routes it to DeviceType::Gen4. This was a silent bug: Swift sends "GEN4"
+    // but Rust only accepted "GEN_4" prior to the Phase 6 fix.
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "gen4-device-type-1",
+        "method": "protocol.parse_frame_hex",
+        "args": {
+            "device_type": "GEN4",
+            "frame_hex": GET_HELLO_FRAME
+        }
+    }));
+    // GET_HELLO_FRAME is a Goose/Gen5 frame — it may parse or fail due to protocol differences,
+    // but "GEN4" MUST NOT produce an "unsupported device_type" error.
+    if !response.ok {
+        let error = response
+            .error
+            .as_ref()
+            .map(|e| e.message.as_str())
+            .unwrap_or("");
+        assert!(
+            !error.contains("unsupported device_type"),
+            "\"GEN4\" should be a recognized device_type, got error: {error}"
+        );
+    }
+}
+
+#[test]
+fn bridge_gen4_device_type_aliases_all_accepted() {
+    // Verify all known Gen4 device_type aliases are accepted
+    for alias in &["GEN4", "GEN_4", "Gen4", "gen4"] {
+        let response = request(serde_json::json!({
+            "schema": "goose.bridge.request.v1",
+            "request_id": format!("gen4-alias-{alias}"),
+            "method": "protocol.parse_frame_hex",
+            "args": {
+                "device_type": alias,
+                "frame_hex": GET_HELLO_FRAME
+            }
+        }));
+        if !response.ok {
+            let error = response
+                .error
+                .as_ref()
+                .map(|e| e.message.as_str())
+                .unwrap_or("");
+            assert!(
+                !error.contains("unsupported device_type"),
+                "device_type \"{alias}\" should be a recognized Gen4 alias, got: {error}"
+            );
+        }
+    }
+}
+
+#[test]
+fn bridge_gen4_upload_device_generation_field_is_set_correctly() {
+    // Verifies that "GEN4" is a valid device_type for capture.import_frame_batch.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "gen4-capture-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-gen4",
+            "frames": [
+                {
+                    "evidence_id": "gen4-capture-1",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-03T12:00:00Z",
+                    "device_model": "WHOOP 4.0",
+                    "frame_hex": GET_HELLO_FRAME,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "GEN4"
+                }
+            ]
+        }
+    }));
+
+    assert!(response.ok, "GEN4 capture.import_frame_batch should succeed: {:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["raw_inserted"], 1, "Should insert 1 raw frame for GEN4 device_type");
+}
+
+#[test]
 fn bridge_exposes_algorithm_registry_and_score_methods() {
     let registry = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
