@@ -293,6 +293,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "storage.check",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",
+    "upload.get_recent_decoded_streams",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
