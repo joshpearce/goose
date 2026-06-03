@@ -1018,8 +1018,8 @@ extension HealthDataStore {
   }
 
   // 7-day rolling average strain on 0–21 scale from the HR series store
-  private var sevenDayStrainCache: (value: Double?, computedAt: Date)?
-
+  // sevenDayStrainCache is declared on the main HealthDataStore class body (stored properties
+  // are not allowed in Swift extensions).
   private func hkSevenDayAverageStrain() -> Double? {
     if let cache = sevenDayStrainCache, Date().timeIntervalSince(cache.computedAt) < 300 {
       return cache.value
