@@ -489,9 +489,16 @@ fn bridge_gen4_upload_device_generation_field_is_set_correctly() {
         }
     }));
 
-    assert!(response.ok, "GEN4 capture.import_frame_batch should succeed: {:?}", response.error);
+    assert!(
+        response.ok,
+        "GEN4 capture.import_frame_batch should succeed: {:?}",
+        response.error
+    );
     let result = response.result.unwrap();
-    assert_eq!(result["raw_inserted"], 1, "Should insert 1 raw frame for GEN4 device_type");
+    assert_eq!(
+        result["raw_inserted"], 1,
+        "Should insert 1 raw frame for GEN4 device_type"
+    );
 }
 
 #[test]

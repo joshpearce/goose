@@ -8654,10 +8654,10 @@ mod tests {
 
 #[cfg(target_os = "android")]
 pub mod android {
-    use std::ptr;
+    use jni::JNIEnv;
     use jni::objects::{JClass, JString};
     use jni::sys::jstring;
-    use jni::JNIEnv;
+    use std::ptr;
 
     /// JNI entry point for com.goose.core.GooseBridge.handle(String) -> String.
     ///
