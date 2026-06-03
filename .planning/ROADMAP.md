@@ -25,7 +25,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **ACK-01**: Upload ACK — iOS reads `upserted` count from server response, shows "N records acked" (shipped 2026-06-03)
 - [x] **Phase 6: WHOOP Gen4 iOS Support** - iOS app layer changes to expose full Gen4 connect/capture/upload (completed 2026-06-03)
 - [ ] **Phase 7: Android Port Foundations + CI** - Rust core cross-compiles to Android; JNI shim; ADR; server CI
-- [ ] **Phase 8: Additional Wearables E2E** - Standard HR GATT device supported BLE to SQLite to upload
+- [x] **Phase 8: Additional Wearables E2E** - Standard HR GATT device supported BLE to SQLite to upload (completed 2026-06-03)
 
 ## Phase Details
 
@@ -44,7 +44,7 @@ Plans:
 - [x] 08-P01-PLAN.md — Rust 0x2A37 HR GATT parser + integration tests (WEAR-01)
 - [x] 08-P02-PLAN.md — iOS BLE HR monitor extension, genericHRMonitor descriptor, empty-prefix guard, normalized UUID matching, background notification routing (WEAR-02)
 - [x] 08-P03-PLAN.md — Upload fix: remove silent Gen5 fallback, add device_class for HR monitors, add DeviceType::HrMonitor variant (WEAR-03)
-- [ ] 08-P04-PLAN.md — Upload payload unit tests: Gen4 / Gen5 / HR monitor device_class / manual-upload derivation (WEAR-03)
+- [x] 08-P04-PLAN.md — Upload payload unit tests: Gen4 / Gen5 / HR monitor device_class / manual-upload derivation (WEAR-03)
 **UI hint**: yes
 
 ### Phase 7: Android Port Foundations + CI
@@ -169,4 +169,4 @@ Plans:
 | 5. Upstream PR Integration | v1.0 | 4/4 | Complete | 2026-06-03 |
 | 6. WHOOP Gen4 iOS Support | v2.0 | 3/3 | Complete   | 2026-06-03 |
 | 7. Android Port Foundations + CI | v2.0 | 0/? | Not started | - |
-| 8. Additional Wearables E2E | v2.0 | 3/4 | In Progress|  |
+| 8. Additional Wearables E2E | v2.0 | 4/4 | Complete   | 2026-06-03 |
