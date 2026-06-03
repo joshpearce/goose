@@ -847,11 +847,11 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   }
 
   var canSyncHistorical: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5HistoricalSync
+    canSendHello && !isHistoricalSyncing && supportsHistoricalSync
   }
 
   var canWriteHighFrequencyHistorySync: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5SensorCommands
+    canSendHello && !isHistoricalSyncing && supportsSensorCommands
   }
 
   var debugResearchCommands: [GooseDebugCommandDefinition] {
@@ -859,13 +859,13 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   }
 
   var canWriteAlarm: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5AlarmCommands && pendingAlarmCommand == nil
+    canSendHello && !isHistoricalSyncing && supportsAlarmCommands && pendingAlarmCommand == nil
   }
 
   var canSyncClock: Bool {
     canSendHello
       && !isHistoricalSyncing
-      && supportsV5ClockCommands
+      && supportsClockCommands
       && pendingClockCommand == nil
       && pendingAlarmCommand == nil
   }
@@ -896,8 +896,8 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
     if pendingAlarmCommand != nil {
       return "Alarm command in flight"
     }
-    if !supportsV5AlarmCommands {
-      return "Alarm writes need fd4b0002 V5 command framing; active \(commandCharacteristic.uuid.uuidString)"
+    if !supportsAlarmCommands {
+      return "Alarm writes need command characteristic; active \(commandCharacteristic.uuid.uuidString)"
     }
     if !canSendHello {
       return "WHOOP connection is not ready"
