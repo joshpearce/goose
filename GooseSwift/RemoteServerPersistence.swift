@@ -19,7 +19,11 @@ enum RemoteServerURLValidator {
     if isNumericIP {
       return isPrivateIP(host)
     }
-    return true
+    // .local and localhost are on the local network — HTTP is fine (NSAllowsLocalNetworking).
+    // Public hostnames require HTTPS to satisfy App Transport Security.
+    let isLocalHost = host == "localhost" || host.hasSuffix(".local")
+    if isLocalHost { return true }
+    return scheme == "https"
   }
 
   // Allows RFC 1918 private ranges: 10.x, 172.16-31.x, 192.168.x

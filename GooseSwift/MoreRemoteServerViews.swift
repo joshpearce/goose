@@ -18,7 +18,7 @@ final class MoreRemoteServerViewModel: ObservableObject {
 
   func save() {
     guard RemoteServerURLValidator.validate(serverURL) else {
-      urlValidationError = "Invalid URL. Use http://hostname or http://192.168.x.x:port"
+      urlValidationError = "Invalid URL. Use https://hostname for public servers, or http:// for local IPs and .local hostnames."
       return
     }
     urlValidationError = nil
@@ -46,7 +46,7 @@ struct MoreRemoteServerView: View {
   var body: some View {
     Form {
       Section("Server") {
-        TextField("http://hostname:8770", text: $vm.serverURL)
+        TextField("https://hostname:8770", text: $vm.serverURL)
           .keyboardType(.URL)
           .autocorrectionDisabled()
           .textInputAutocapitalization(.never)
