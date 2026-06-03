@@ -151,6 +151,9 @@
 		D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000055 /* RemoteServerPersistence.swift */; };
 		D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000056 /* MoreRemoteServerViews.swift */; };
 		D10000000000000000000057 /* GooseAppModel+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000057 /* GooseAppModel+Upload.swift */; };
+		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
+		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
+		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -178,6 +181,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		T20000000000000000000001 /* GooseSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GooseSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		T20000000000000000000002 /* WearableDescriptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableDescriptorTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000003 /* GooseBLETypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypesTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		T20000000000000000000005 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Xcode/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		A20000000000000000000001 /* GooseSwiftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseSwiftApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* GooseAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseAppModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -348,6 +356,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		T60000000000000000000001 /* Frameworks (GooseSwiftTests) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				T10000000000000000000003 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -356,6 +372,7 @@
 			children = (
 				A40000000000000000000002 /* GooseSwift */,
 				B40000000000000000000001 /* GooseWorkoutLiveActivityExtension */,
+				T40000000000000000000001 /* GooseSwiftTests */,
 				A40000000000000000000003 /* Scripts */,
 				A40000000000000000000004 /* Frameworks */,
 				A40000000000000000000005 /* Products */,
@@ -533,6 +550,7 @@
 			children = (
 				A2000000000000000000000D /* GooseSwift.app */,
 				B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */,
+				T20000000000000000000001 /* GooseSwiftTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -544,6 +562,16 @@
 				B20000000000000000000005 /* Info.plist */,
 			);
 			path = GooseWorkoutLiveActivityExtension;
+			sourceTree = "<group>";
+		};
+		T40000000000000000000001 /* GooseSwiftTests */ = {
+			isa = PBXGroup;
+			children = (
+				T20000000000000000000002 /* WearableDescriptorTests.swift */,
+				T20000000000000000000003 /* GooseBLETypesTests.swift */,
+				T20000000000000000000004 /* Info.plist */,
+			);
+			path = GooseSwiftTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -568,6 +596,22 @@
 			productName = GooseSwift;
 			productReference = A2000000000000000000000D /* GooseSwift.app */;
 			productType = "com.apple.product-type.application";
+		};
+		T50000000000000000000001 /* GooseSwiftTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = T90000000000000000000001 /* Build configuration list for PBXNativeTarget "GooseSwiftTests" */;
+			buildPhases = (
+				T60000000000000000000002 /* Sources (GooseSwiftTests) */,
+				T60000000000000000000001 /* Frameworks (GooseSwiftTests) */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GooseSwiftTests;
+			productName = GooseSwiftTests;
+			productReference = T20000000000000000000001 /* GooseSwiftTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		B50000000000000000000001 /* GooseWorkoutLiveActivityExtension */ = {
 			isa = PBXNativeTarget;
@@ -624,6 +668,7 @@
 			targets = (
 				A50000000000000000000001 /* GooseSwift */,
 				B50000000000000000000001 /* GooseWorkoutLiveActivityExtension */,
+				T50000000000000000000001 /* GooseSwiftTests */,
 			);
 		};
 /* End PBXProject section */
@@ -820,6 +865,15 @@
 			files = (
 				B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */,
 				B10000000000000000000004 /* WorkoutLiveActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		T60000000000000000000002 /* Sources (GooseSwiftTests) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */,
+				T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1096,6 +1150,54 @@
 			};
 			name = Release;
 		};
+		T80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 26594BLKQ8;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GooseSwiftTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tigercraft4.goose.tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GooseSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GooseSwift";
+				VALID_ARCHS = arm64;
+			};
+			name = Debug;
+		};
+		T80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 26594BLKQ8;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GooseSwiftTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tigercraft4.goose.tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GooseSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GooseSwift";
+				VALID_ARCHS = arm64;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1122,6 +1224,15 @@
 			buildConfigurations = (
 				B80000000000000000000001 /* Debug */,
 				B80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		T90000000000000000000001 /* Build configuration list for PBXNativeTarget "GooseSwiftTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				T80000000000000000000001 /* Debug */,
+				T80000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
