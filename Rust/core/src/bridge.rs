@@ -7959,6 +7959,7 @@ fn parse_device_type(value: &str) -> GooseResult<DeviceType> {
         "MAVERICK" | "Maverick" | "maverick" => Ok(DeviceType::Maverick),
         "PUFFIN" | "Puffin" | "puffin" => Ok(DeviceType::Puffin),
         "GOOSE" | "Goose" | "goose" => Ok(DeviceType::Goose),
+        "HR_MONITOR" | "hr_monitor" => Ok(DeviceType::HrMonitor),
         other => Err(GooseError::message(format!(
             "unsupported device_type: {other}"
         ))),
