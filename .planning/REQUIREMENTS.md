@@ -44,9 +44,9 @@ As a developer, I want the server pytest suite to run on CI, so that server regr
 
 > The standard Heart Rate Service UUID (`0x180D`) is already defined in `GooseBLEClient.swift`. The 0x2A37 format is fully public (Bluetooth SIG). This track validates that the Rust core + BLE pipeline architecture is extensible.
 
-- [ ] **WEAR-01**: Rust module `Rust/core/src/heart_rate_gatt_protocol.rs` parses the standard 0x2A37 HR Measurement characteristic format (HR value + optional RR intervals), with integration tests covering the standard encoding variants
-- [ ] **WEAR-02**: iOS BLE client scans for and connects standard 0x180D Heart Rate Service devices; frames are routed through the existing notification pipeline using the `rustDeviceType` heuristic extended for the new device class
-- [ ] **WEAR-03**: Upload payload correctly identifies HR monitor data separately from WHOOP data (distinct `device_type` or `device_generation` value); `GooseUploadService` device-type mapping extended to handle all device classes without the silent WHOOP Gen5 fallback
+- [x] **WEAR-01**: Rust module `Rust/core/src/heart_rate_gatt_protocol.rs` parses the standard 0x2A37 HR Measurement characteristic format (HR value + optional RR intervals), with integration tests covering the standard encoding variants
+- [x] **WEAR-02**: iOS BLE client scans for and connects standard 0x180D Heart Rate Service devices; frames are routed through the existing notification pipeline using the `rustDeviceType` heuristic extended for the new device class
+- [x] **WEAR-03**: Upload payload correctly identifies HR monitor data separately from WHOOP data (distinct `device_type` or `device_generation` value); `GooseUploadService` device-type mapping extended to handle all device classes without the silent WHOOP Gen5 fallback
 
 ### CI Coverage
 
@@ -104,6 +104,6 @@ As a developer, I want the server pytest suite to run on CI, so that server regr
 | ANDROID-02 | Phase 7 | Pending |
 | ANDROID-03 | Phase 7 | Pending |
 | CI-01 | Phase 7 | Pending |
-| WEAR-01 | Phase 8 | Pending |
-| WEAR-02 | Phase 8 | Pending |
-| WEAR-03 | Phase 8 | Pending |
+| WEAR-01 | Phase 8 | Complete |
+| WEAR-02 | Phase 8 | Complete |
+| WEAR-03 | Phase 8 | Complete |
