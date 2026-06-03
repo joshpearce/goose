@@ -2,7 +2,7 @@
 name = "goose-core"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.94"
+rust-version = "1.96"
 description = "Rust protocol, evidence, validation, and local calculation core for Goose."
 license = "GPL-3.0-or-later"
 

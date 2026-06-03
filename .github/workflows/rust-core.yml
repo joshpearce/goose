@@ -18,9 +18,9 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  # MSRV pulled from Rust/core/Cargo.toml (`rust-version = "1.94"`).
+  # MSRV pulled from Rust/core/Cargo.toml (`rust-version = "1.96"`).
   # Keep this in sync if Cargo.toml is bumped.
-  RUST_TOOLCHAIN: "1.94"
+  RUST_TOOLCHAIN: "1.96"
 
 jobs:
   fmt:
