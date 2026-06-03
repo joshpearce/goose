@@ -30,7 +30,8 @@ private struct DeviceContentView: View {
             connected: deviceConnected,
             statusText: connectionHeadline,
             deviceName: ble.activeDeviceName,
-            lastSync: lastSyncSummary
+            lastSync: lastSyncSummary,
+            generation: model.connectedDeviceGeneration
           )
           .padding(.bottom, 30)
 
@@ -205,6 +206,7 @@ private struct DeviceConnectionHeader: View {
   let statusText: String
   let deviceName: String
   let lastSync: String
+  let generation: String?  // nil when disconnected
 
   var body: some View {
     HStack(alignment: .bottom, spacing: 16) {
@@ -218,6 +220,11 @@ private struct DeviceConnectionHeader: View {
           .foregroundStyle(devicePrimaryText)
           .lineLimit(2)
           .minimumScaleFactor(0.78)
+        if let gen = generation, gen != "unknown" {
+          Text("Gen \(gen.prefix(1))")
+            .font(deviceLabelFont)
+            .foregroundStyle(secondaryText)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
 
