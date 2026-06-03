@@ -1,9 +1,19 @@
-# Goose — Servidor Remoto + Contribuições Upstream
+# Goose — Multi-Device Biometric Platform
 
 ## What This Is
 
-Fork do `b-nnett/goose`: app iOS (SwiftUI + Rust core) que lê dados biométricos de dispositivos WHOOP via BLE.
-Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted FastAPI+TimescaleDB para armazenar dados biométricos, (2) upload automático desses dados do iOS para o servidor, (3) review e integração dos PRs abertos do upstream `b-nnett/goose`.
+Fork do `b-nnett/goose`: app iOS (SwiftUI + Rust core) que lê dados biométricos de dispositivos WHOOP via BLE e persiste no servidor self-hosted.
+v1.0 entregou: servidor FastAPI+TimescaleDB, upload automático iOS→servidor, integração dos 9 PRs upstream.
+v2.0 expande: suporte completo ao WHOOP 4.0 (Gen4) no app iOS, fundações para port Android via JNI, e validação de extensibilidade para wearables adicionais.
+
+## Current Milestone: v2.0 Multi-Device & Platform Foundations
+
+**Goal:** Expandir a app além do WHOOP 5.0 — suporte completo ao Gen4, fundações para port Android, e validação da extensibilidade da pipeline para novos wearables.
+
+**Target features:**
+- WHOOP 4.0 (Gen4): onboarding reconhece Gen4, BLE scan inclui UUID Gen4, frames capturados e upload com device_generation "4.0"
+- Android Port Foundations: Rust core compila para aarch64-linux-android, FFI bridge documentada para JNI, ADR de arquitetura
+- Additional Wearables: segundo tipo de wearable suportado E2E (BLE→SQLite→upload) com módulo Rust separado
 
 ## Core Value
 
@@ -24,17 +34,23 @@ O utilizador deve poder capturar dados WHOOP no iPhone e tê-los persistidos aut
 - ✓ Estado de upload visível na tab More (health check + último upload + batches pendentes) — v1.0
 - ✓ 9 PRs do upstream b-nnett/goose integrados via git merge --no-ff — v1.0
 
-### Active
+### Active (v2.0)
 
-- [ ] Fila de upload persistida em SQLite para sobreviver ao restart da app (v2)
-- [ ] Background URLSession para upload quando a app está suspensa (v2)
-- [ ] PRs de volta ao upstream b-nnett/goose com as correções do fork (v2)
+- [ ] WHOOP 4.0 (Gen4): onboarding + BLE scan + capture + upload (GEN4-01 a GEN4-05)
+- [ ] Android Port Foundations: Rust core JNI-ready + FFI docs + ADR (ANDROID-01 a ANDROID-03)
+- [ ] Additional Wearables: segundo wearable E2E + módulo Rust separado (WEAR-01 a WEAR-03)
+
+### Deferred (v3+)
+
+- [ ] Fila de upload persistida em SQLite para sobreviver ao restart da app
+- [ ] Background URLSession para upload quando a app está suspensa
+- [ ] PRs de volta ao upstream b-nnett/goose com as correções do fork
 
 ### Out of Scope
 
-- Análise de dados no servidor (dashboard, alertas) — fora deste milestone
-- Suporte Android — discutido no upstream mas fora do scope do fork agora
+- Análise de dados no servidor (dashboard, alertas) — fora de scope
 - Autenticação avançada (OAuth, 2FA) — Bearer token simples é suficiente
+- Android app completa — apenas fundações de arquitetura no v2.0
 
 ## Context
 
@@ -78,7 +94,7 @@ O utilizador deve poder capturar dados WHOOP no iPhone e tê-los persistidos aut
 **Hardware pendente:** Fluxo BLE→upload→TimescaleDB (requer WHOOP físico + servidor activo)
 
 ---
-*Last updated: 2026-06-03 após v1.0 milestone*
+*Last updated: 2026-06-03 — v2.0 milestone iniciado*
 
 ## Evolution
 
