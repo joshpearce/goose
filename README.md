@@ -1,4 +1,5 @@
-# Goose - Local Companion for WHOOP 5.0
+<!-- generated-by: gsd-doc-writer -->
+# Goose - Local Companion for WHOOP Devices
 
 **Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.**
 
@@ -6,11 +7,11 @@ If you don't know what Xcode is, or how to build the Rust core, this build is no
 
 ![Goose app hero showing a connected WHOOP 5.0 device](docs/assets/readme-hero.png)
 
-This prototype targets WHOOP 5.0 only. Other WHOOP generations are not supported in this build.
+This prototype targets WHOOP 5.0 and WHOOP 4.0. Other WHOOP generations are not supported in this build.
 
 The app and backend have had very little attention put into performance. The app will lag, very considerably. Performance PRs are welcome, or you can wait until I address it in due course.
 
-Goose is a local-first WHOOP 5.0 data and health metrics project. The iOS app connects to WHOOP 5.0 bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views.
+Goose is a local-first WHOOP data and health metrics project. The iOS app connects to WHOOP bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views. An optional self-hosted server lets you persist decoded biometric streams outside the device.
 
 ## Project Layout
 
@@ -19,6 +20,7 @@ GooseSwift/                         SwiftUI app source
 GooseWorkoutLiveActivityExtension/  Live Activity widget extension
 Rust/                               iOS static library, headers, per-platform outputs
 Scripts/build_ios_rust.sh           Xcode build phase for the Goose Rust core
+server/                             Self-hosted FastAPI+TimescaleDB server (Docker)
 docs/goose-swift-mvp/               MVP plans, contracts, and data-readiness docs
 GooseSwift.xcodeproj                Xcode project
 ```
@@ -39,7 +41,7 @@ This is an active prototype. Because the data pipeline is still evolving, some m
 
 ## Independence
 
-Goose is an independent project and is not affiliated with WHOOP. This repository does not include or reference source code owned by WHOOP. The app communicates with WHOOP 5.0 bands over Bluetooth using services and data exposed by the device, then parses and stores that local data through the Goose Rust core. Product names are used only to describe compatibility.
+Goose is an independent project and is not affiliated with WHOOP. This repository does not include or reference source code owned by WHOOP. The app communicates with WHOOP bands over Bluetooth using services and data exposed by the device, then parses and stores that local data through the Goose Rust core. Product names are used only to describe compatibility.
 
 ## Design Credit
 
@@ -49,8 +51,10 @@ The current health metric UI draws heavily from [Bevel](https://www.bevel.health
 
 - SwiftUI app shell with Home, Health, Coach, and More tabs.
 - Onboarding and persisted profile state.
-- CoreBluetooth scan/connect flows for WHOOP 5.0 devices.
+- CoreBluetooth scan/connect flows for WHOOP 5.0 and WHOOP 4.0 devices.
 - JSON-over-C bridge into the Goose Rust core.
+- Self-hosted server (`server/`): FastAPI + TimescaleDB, Dockerized; supports both device generations via `device_generation` field.
+- Automatic upload of decoded biometric data from iOS to server.
 - Health metric surfaces for Sleep, Recovery, Strain, Stress, Cardio Load, Energy Bank, Health Monitor, Packet Inputs, Algorithms, References, and Calibration.
 - HealthKit sleep import and workout write support.
 - Coach surfaces that summarize local metrics and explain missing data.
@@ -64,6 +68,7 @@ The current health metric UI draws heavily from [Bevel](https://www.bevel.health
 - Apple Developer signing configured for the `com.goose.swift` bundle identifier.
 - Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source.
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
+- Docker (for the self-hosted server — optional).
 
 Built Rust `.a` archives are generated locally during Xcode builds and are not committed. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` only when the matching local archive already exists for the active Xcode platform.
 
@@ -120,6 +125,21 @@ xcrun devicectl device process launch \
   --terminate-existing \
   com.goose.swift
 ```
+
+## Self-Hosted Server
+
+The `server/` directory contains an optional FastAPI + TimescaleDB backend. The iOS app works standalone without it.
+
+```bash
+cd server
+cp .env.example .env
+# Set GOOSE_API_KEY and GOOSE_DB_PASSWORD in .env
+docker compose up -d --build
+```
+
+Check it started: `curl -s localhost:8770/healthz` → `{"status":"ok"}`
+
+Configure the server URL and Bearer token in the iOS app under More > Server Settings. See `server/README.md` for API details and the full list of environment variables.
 
 ## Rust Core Bridge
 

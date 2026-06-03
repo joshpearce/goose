@@ -1,259 +1,337 @@
-# Technology Stack — Goose Server Integration
+# Stack Research — v2.0 Multi-Device & Platform Foundations
 
-**Project:** Goose (tigercraft4/goose fork)
+**Domain:** Multi-device BLE biometric platform — iOS + Rust core + Android JNI foundations
 **Researched:** 2026-06-03
-**Scope:** iOS upload client + server Docker packaging for self-hosted deployment
+**Confidence:** HIGH (CoreBluetooth and Android NDK verified against official docs; wearable UUIDs verified from Polar SDK source; existing codebase verified directly)
 
 ---
 
-## Context: What Already Exists
+## Context: What Already Exists (Do Not Re-Research)
 
-This is brownfield integration, not greenfield. The existing pieces constrain choices more than any preference does.
+The v1.0 stack is validated and locked. This document covers only the **additions and changes** needed for v2.0.
 
-| Component | State | Location |
-|-----------|-------|----------|
-| FastAPI ingest server | Working, tested | `my-whoop/server/ingest/` |
-| TimescaleDB schema | Stable, has migrations | `my-whoop/server/db/init.sql` |
-| Docker Compose stack | Working | `my-whoop/server/docker-compose.yml` |
-| Dockerfile | Working (single-stage) | `my-whoop/server/ingest/Dockerfile` |
-| iOS URLSession HTTP client | Pattern exists in codebase | `OpenAICoachResponsesClient.swift` |
-| iOS Keychain secrets | Pattern exists in codebase | `OnboardingPersistence.swift` |
-| iOS settings persistence | UserDefaults | `OnboardingPersistence.swift` |
-
-The constraint from `PROJECT.md` is explicit: **no external iOS dependencies**. URLSession only.
+| Layer | v1.0 Status |
+|-------|------------|
+| Swift/SwiftUI + URLSession | Locked — no new external dependencies permitted |
+| Rust core (`goose-core`) | Locked — `rusqlite 0.37 bundled`, `serde 1.0`, `serde_json 1.0`, `tungstenite 0.28`, `zip 0.6`, `sha2 0.10`, `crc32fast 1.4`, `thiserror 2.0` |
+| FastAPI + TimescaleDB + Docker | Locked — no changes for v2.0 |
+| `crate-type = ["rlib", "staticlib", "cdylib"]` | Already present — `cdylib` is already there for Android |
 
 ---
 
-## Recommended Stack
+## Feature 1: WHOOP 4.0 (Gen4) iOS App Layer
 
-### iOS Upload Client
+### What the Rust Core Already Has (Verified)
 
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| URLSession | System (iOS 15+) | HTTP POST to `/v1/ingest-decoded` | Zero dependencies; already used in OpenAICoachResponsesClient |
-| Codable / JSONEncoder | System | Serialize DecodedBatch payload | Native; matches server Pydantic model field names exactly |
-| Keychain (SecItem*) | System | Store bearer token + server URL | Already used in OnboardingPersistence for ChatGPT auth |
-| UserDefaults | System | Upload enabled flag, last-upload timestamp | Consistent with existing settings pattern |
-| DispatchQueue | System | Offline queue drain, retry loop | Used everywhere in GooseAppModel |
+The Rust protocol layer is fully Gen4-aware — no Rust changes needed for this feature:
 
-**No third-party networking library.** Alamofire, AsyncHTTPClient etc. are out of scope by project constraint and unnecessary for a single POST endpoint.
+- `DeviceType::Gen4` defined in `Rust/core/src/protocol.rs` line 27
+- Gen4 frame format: 4-byte header, CRC8 (`crc8(&frame[1..3]) == frame[3]`), `u16::from_le_bytes([frame[1], frame[2]])` payload length
+- `bridge.rs` parses `"GEN_4" | "Gen4" | "gen4"` string tokens and routes to Gen4 parsing
+- Gen4 primary service UUID `61080001-8d6d-82b8-614a-1c8cb0f8dcc6` already in `GooseBLEClient.swift`'s `whoopServices` array
 
-#### URLSession upload pattern for this project
+### CoreBluetooth Multi-UUID Scan — No API Changes Needed
 
-**Do NOT use background URLSession (`URLSessionConfiguration.background`).** Here's why:
-
-1. Background upload tasks require writing the body to a temp file on disk before upload — the payload is ephemeral decoded stream data, not a file.
-2. Background tasks require `application(_:handleEventsForBackgroundURLSession:)` in the AppDelegate and a separate delegate object — significant complexity for no user benefit. The app already uses `UIBackgroundTaskIdentifier` (see `GooseAppModel`) for overnight guard.
-3. The upload is opportunistic (best-effort while connected), not guaranteed delivery. An offline queue persisted to SQLite or UserDefaults is simpler and sufficient.
-4. The server already handles idempotent upserts (`ON CONFLICT … DO UPDATE`) — retrying the same batch is safe.
-
-**Use instead:** `URLSession.shared.data(for:)` with Swift concurrency (`async/await`) in a `Task`, triggered after each successful BLE decode batch. Add a lightweight persist-and-retry mechanism using an in-process queue (e.g. a `DispatchQueue` serializing POST attempts, with exponential backoff for 5xx/network errors). If the app goes to background, drain any pending batch inside an existing `UIBackgroundTaskIdentifier` — the pattern is already established in `GooseAppModel+OvernightRun.swift`.
-
-**Confidence: HIGH** — this follows the exact pattern already in `OpenAICoachResponsesClient.swift` and `GooseAppModel` background task management. No new patterns are introduced.
-
-#### iOS request structure
+The current scan call is already correct:
 
 ```swift
-// Matches server DecodedBatch exactly (snake_case via CodingKeys)
-struct ServerUploadBatch: Encodable {
-    let device: ServerDevice
-    let streams: ServerStreams
-    let deviceGeneration: String
+central.scanForPeripherals(
+  withServices: whoopServices,  // [CBUUID("fd4b0001-..."), CBUUID("61080001-...")]
+  options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+)
+```
 
-    enum CodingKeys: String, CodingKey {
-        case device, streams
-        case deviceGeneration = "device_generation"
-    }
+`whoopServices` already contains both Gen5 (`fd4b0001-...`) and Gen4 (`61080001-...`) service UUIDs. `scanForPeripherals(withServices:)` applies OR logic: a peripheral advertising **any** of the listed UUIDs triggers `didDiscover`. The array already works as a multi-device scanner. No API change is needed.
+
+**Verified from Apple CoreBluetooth official documentation:** `scanForPeripherals(withServices:)` with an array of `CBUUID` objects — peripherals advertising any of the listed services are returned.
+
+### What Does Need to Change in Swift
+
+1. **`GooseBLEClient+CentralDelegate.swift` — device generation inference.** In `didDiscover`, read `advertisementData[CBAdvertisementDataServiceUUIDsKey]` to determine which service UUID was matched. If the advertised UUIDs include `61080001-8d6d-82b8-614a-1c8cb0f8dcc6`, the device is Gen4. The existing method `advertisedServiceUUIDs(from:)` in `GooseBLEClient+Parsing.swift` already extracts this array — just add a generation check.
+
+2. **Device generation propagation to upload payload.** The bridge call for frame ingestion already takes `device_type: String`. Swift must pass `"Gen4"` vs `"Maverick"` based on which service UUID triggered the connection. Currently there is no `deviceGeneration` property on the discovered device object.
+
+3. **Onboarding copy.** Display "WHOOP 4.0" for Gen4 devices. The model string from the Device Information Service characteristic `0x2A24` identifies the hardware revision — add a case for known Gen4 model strings.
+
+**No new frameworks or libraries.** These are logic changes to existing Swift files.
+
+### Background Scanning Note
+
+The app already declares `bluetooth-central` in `UIBackgroundModes`. Multi-UUID background scanning works: iOS filters on advertised service UUIDs using OR logic, and the `willRestoreState` delegate receives `CBCentralManagerRestoredStateScanServicesKey` with the full UUID array. `CBCentralManagerOptionRestoreIdentifierKey` is not required for v2.0 (state restoration across app termination is deferred to v3+).
+
+**Confidence: HIGH** — verified against Apple CoreBluetooth official docs and direct codebase inspection.
+
+---
+
+## Feature 2: Android JNI Bridge Foundations
+
+### Toolchain
+
+| Tool | Version | Purpose | Source |
+|------|---------|---------|--------|
+| `cargo-ndk` | 4.1.2 (released Aug 2025) | Cross-compile Rust for Android ABIs | github.com/bbqsrc/cargo-ndk |
+| Android NDK | r29 (auto-detected by cargo-ndk) | Clang cross-toolchain | Android Studio SDK Manager |
+| Rust targets | 3 targets (see below) | Android ABI support | `rustup target add` |
+| `jni` crate | 0.22.4 | Safe Rust-to-JVM bridging | docs.rs/jni |
+
+**Required rustup targets:**
+```bash
+rustup target add aarch64-linux-android      # ARM64 devices — primary target
+rustup target add armv7-linux-androideabi    # ARMv7 32-bit — legacy devices
+rustup target add x86_64-linux-android      # x86_64 emulators — known issues, see below
+```
+
+Goose's MSRV is 1.94, exceeding cargo-ndk's minimum of Rust 1.86. No conflict.
+
+cargo-ndk auto-detects the installed NDK. Override with `ANDROID_NDK_HOME` if needed. No Gradle or Android Studio project files are needed for v2.0 — this is a pure library + documentation milestone.
+
+### Cargo.toml Changes Required
+
+**`crate-type` is already correct.** The existing Cargo.toml already declares:
+```toml
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]
+```
+
+`cdylib` produces the `.so` the JVM loads via `System.loadLibrary(...)`. No change here.
+
+**Add the `jni` crate as an optional dependency:**
+```toml
+[dependencies]
+jni = { version = "0.22", optional = true }
+
+[features]
+android-jni = ["dep:jni"]
+```
+
+Using `optional = true` with a feature flag keeps the iOS build clean (no JNI linkage, no additional symbols). The feature is activated only for Android cross-compilation.
+
+**`panic = "abort"` is already set** in `[profile.release]`. JNI requires that Rust panics do not unwind across FFI boundaries — this is already satisfied. The `jni` crate additionally wraps calls in `catch_unwind` as defence-in-depth.
+
+### Known Issue: `rusqlite` Bundled + Android
+
+The `bundled` feature compiles SQLite from source via the `cc` crate. Known upstream issues:
+
+| Target | Status | Issue |
+|--------|--------|-------|
+| `aarch64-linux-android` | Likely works | No reported blockers |
+| `armv7-linux-androideabi` | Partial | `-latomic` linking issue (PR #1037 unmerged) |
+| `x86_64-linux-android` | Known broken | Build failures (issue #1380, PR #1592 in progress) |
+
+**Recommendation for v2.0:** test `aarch64-linux-android` only. The `x86_64-linux-android` issue affects emulators only and can be deferred. If bundled compilation fails on any target, the fallback is linking against Android's system SQLite (API level 24+) by removing the `bundled` feature — but this changes persistence behaviour and is a risk to defer.
+
+### JNI Calling Convention for the Goose Bridge
+
+The existing iOS bridge exposes two C symbols: `goose_bridge_handle_json` and `goose_bridge_free_string`. For Android, **wrap these in a thin JNI shim** rather than replacing them:
+
+```rust
+// In a new src/android.rs module, gated behind the android-jni feature
+#[cfg(feature = "android-jni")]
+#[no_mangle]
+pub extern "C" fn Java_com_goose_GooseBridge_handleJson(
+    env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    request: jni::objects::JString,
+) -> jni::sys::jstring {
+    // Convert JString -> Rust &str -> call goose_bridge_handle_json -> JString
 }
 ```
 
-The server's Pydantic `DecodedBatch` uses `device_generation` (snake_case). JSONEncoder needs custom CodingKeys or a `keyEncodingStrategy = .convertToSnakeCase` — either works; explicit CodingKeys are safer against future field additions.
+The `jni` crate calling convention (verified from docs.rs/jni 0.22.4):
+1. First argument: `JNIEnv` (the JNI environment pointer, wrapped safely)
+2. Second argument: `JClass` (for static methods) or `JObject` (for instance methods)
+3. Subsequent arguments: Java types mapped to JNI equivalents (`JString`, `jint`, etc.)
 
-#### Bearer token + server URL storage
+The first action inside the function must be `.attach_current_thread()` or use `with_env(...)` — this is the `jni` crate's safety requirement.
 
-Store in Keychain using `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` — same attribute as existing `OnboardingPersistence.writeKeychainData`. Server URL can go in UserDefaults (not secret). Bearer token must go in Keychain (secret).
+**Why a shim over a full rewrite:** the existing C bridge is tested with 40+ integration tests. A thin JNI shim wrapping it maximises reuse, keeps the iOS and Android paths aligned, and adds minimal new Rust code. This approach is consistent with the ADR milestone scope.
 
-#### Upload trigger points
+### `tungstenite` on Android
 
-Preferred: trigger upload at the end of each `upsert_streams` equivalent in the iOS decoded-stream pipeline — after frames are written to SQLite (captureFrameWriteQueue drain) so the local store is always the authoritative record. Upload is fire-and-forget with retry queue; SQLite is the source of truth.
+The WebSocket debug server (`ws://127.0.0.1:8765`) is an iOS-only debug feature. For Android builds, guard with:
+```rust
+#[cfg(not(target_os = "android"))]
+```
+This is a compile-time guard, not a Cargo.toml change. No dependency removal needed for v2.0 since Android builds are CLI-only (no running app).
 
-**Confidence: HIGH** — consistent with existing `CaptureFrameWriteQueue` drain-and-callback pattern.
+**Confidence: HIGH** for toolchain and calling conventions. **MEDIUM** for bundled SQLite on Android (aarch64 likely works; x86_64 known broken; unverified without Android hardware test).
 
 ---
 
-### Server Packaging
+## Feature 3: Additional Wearable — Recommended Candidate
 
-#### Dockerfile — Multi-Stage Build
+### Recommended: Polar H10 (Heart Rate + RR Intervals via Standard GATT)
 
-The existing Dockerfile is single-stage (`python:3.11-slim`). For production Docker packaging, upgrade to multi-stage to separate build-time deps (pip, wheel compilation for neurokit2/scipy) from the runtime image.
+**Why Polar H10:**
+- Standard Bluetooth SIG Heart Rate Service (`0x180D`) — no reverse engineering, publicly specified
+- Includes RR interval data — maps directly to existing HRV computation in Rust core
+- Published GATT UUIDs verified from Polar's own open-source SDK (`polarofficial/polar-ble-sdk` BlePMDClient.swift SHA cc1f2db)
+- Distinct service UUID from WHOOP — clean pipeline separation in Rust parsing module
+- Available to buy; widely used in research; well-documented community implementations
 
-**Recommended Dockerfile pattern:**
+**BLE UUIDs (verified from official sources):**
 
-```dockerfile
-# ── Stage 1: build wheels ──────────────────────────────────────────────────────
-FROM python:3.11-slim AS builder
-WORKDIR /build
-COPY ingest/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+| Service / Characteristic | UUID | Specification |
+|--------------------------|------|--------------|
+| Heart Rate Service | `0x180D` | Bluetooth SIG standard |
+| Heart Rate Measurement | `0x2A37` | Bluetooth SIG standard |
+| Body Sensor Location | `0x2A38` | Bluetooth SIG standard |
+| PMD Service (ECG/Acc) | `FB005C80-02E7-F387-1CAD-8ACD2D8DF0C8` | Polar proprietary (verified from SDK) |
+| PMD Control Point | `FB005C81-02E7-F387-1CAD-8ACD2D8DF0C8` | Polar proprietary (verified from SDK) |
+| PMD Data | `FB005C82-02E7-F387-1CAD-8ACD2D8DF0C8` | Polar proprietary (verified from SDK) |
 
-# ── Stage 2: runtime ───────────────────────────────────────────────────────────
-FROM python:3.11-slim
-WORKDIR /app
-COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links /wheels /wheels/*.whl
-COPY packages/whoop-protocol /app/whoop-protocol
-RUN pip install --no-cache-dir /app/whoop-protocol
-COPY db /app/db
-COPY ingest/app /app/app
-EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+**Heart Rate Measurement data format (`0x2A37`) — Bluetooth SIG standard:**
+- Byte 0: flags — bit 0 = HR format (0 = uint8, 1 = uint16), bit 4 = RR-interval present
+- Bytes 1+: HR value (uint8 or uint16)
+- If RR flag set: subsequent uint16 values in 1/1024 second units
+
+**v2.0 scope: standard Heart Rate Service only.** Implement `0x180D` + `0x2A37` for HR and RR intervals. The proprietary PMD service (ECG at 130Hz) is out of scope — it requires the full PMD control-point protocol and is disproportionately complex relative to the goal of validating pipeline extensibility.
+
+### iOS Changes for Polar H10
+
+Add service UUID to the scan filter. The cleanest architecture is a separate `GoosePolarBLEClient.swift` with its own `CBCentralManager` instance, following the same delegate pattern as `GooseBLEClient`. This avoids entangling WHOOP-specific logic with Polar-specific logic and proves multi-device architecture more clearly than extending the existing client.
+
+```swift
+// GoosePolarBLEClient.swift
+let polarH10Services = [CBUUID(string: "180D")]
+
+central.scanForPeripherals(
+  withServices: polarH10Services,
+  options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+)
 ```
 
-**Why multi-stage matters here:** scipy, neurokit2, scikit-learn, and numpy have C extensions. The builder stage installs build tools; the runtime stage gets only pre-built wheels. The resulting image is smaller and has no compiler installed (smaller attack surface).
+Device disambiguation within `didDiscover`: check peripheral name prefix `"Polar H10"` and/or presence of `0x180D` in advertised services (the same UUID could be advertised by other HR monitors — name prefix disambiguates).
 
-**Why Python 3.11, not 3.12+:** The existing `requirements.txt` pins `python:3.11-slim`. neurokit2 0.2.13 and scipy 1.17.1 are tested against 3.11. Changing the base image version risks breaking C extension compatibility without a full test run. Staying on 3.11 is correct for this brownfield copy.
+**Note:** iOS allows multiple `CBCentralManager` instances, each scanning for different UUIDs simultaneously. They use the same Bluetooth radio but are separate logical scanners. No coordination issue.
 
-**Confidence: HIGH** — multi-stage is standard practice; the specific image choice matches existing requirements.
+### Rust Changes for Polar H10
 
-#### Health Check
+New module `src/polar_h10.rs`:
+- Parse HR Measurement bytes from `0x2A37` notifications
+- Extract RR intervals if RR flag is set in flags byte
+- Parse HR value as uint8 or uint16 based on bit 0 of flags byte
 
-The server already exposes `GET /healthz` which checks the DB connection with a 3-second timeout. Use it in the HEALTHCHECK directive (shown above). The Docker Compose already has a `pg_isready` healthcheck on `whoop-db` and `depends_on: condition: service_healthy` — this pattern is correct and should be preserved verbatim.
+New bridge method `polar.ingest_hr_sample`:
+- Accept HR + RR array + timestamp + device identifier
+- Store to SQLite with `device_type = "polar_h10"` in a separate table or tagged in the existing frames table
 
-**Confidence: HIGH** — observed directly in the existing `docker-compose.yml` and `main.py`.
+The module is intentionally separate from `src/protocol.rs` (WHOOP-specific). This separation is the architectural validation point of this feature.
 
-#### Secrets Management
+### Rejected Wearable Candidates
 
-**Do NOT use Docker secrets (Swarm), Vault, or any secrets manager.** This is a self-hosted personal server. The correct pattern for this scope:
+| Candidate | Reason for Rejection |
+|-----------|---------------------|
+| Amazfit Helio Strap | "Sport Research Open Protocol" has no publicly accessible GATT specification; SDK-gated only; insufficient documentation for a safe Rust parser |
+| Fitbit Inspire Air | Proprietary BLE protocol; no published GATT spec; reverse engineering required |
+| Garmin HRM-Pro | Primarily ANT+; BLE HR profile available but Polar H10 is better documented and more common in research contexts |
+| Polar OH1 | Optical HR only; no ECG; Polar H10 is strictly superior for the validation scope |
 
-1. `.env` file on the host machine (already has `.env.example`)
-2. `docker compose --env-file .env up` reads it automatically
-3. `.env` is `.gitignore`d — never committed
-4. The only required secrets are `WHOOP_API_KEY` and `WHOOP_DB_PASSWORD`
-
-This is exactly what the existing setup does. Preserve it. Do not complicate it.
-
-**Confidence: HIGH** — verified against existing `.env.example` and `docker-compose.yml`.
-
----
-
-### TimescaleDB + Docker Compose
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| timescale/timescaledb | 2.17.2-pg16 | Time-series storage for biometric streams | Already in use, schema tested |
-| Docker Compose v2 | System (`docker compose`) | Stack orchestration | Standard for self-hosted; no Swarm/K8s needed |
-
-**The existing `docker-compose.yml` is correct.** Copy it verbatim. The only adjustments needed:
-
-1. Update the `build.context` path if the server moves to `server/` within the Goose repo (it currently assumes `server/` is the build context).
-2. Verify `DATA_ROOT` is documented clearly in the README — it must be an absolute path on the host.
-
-**Hypertable design is already correct:** `hr_samples`, `rr_intervals`, `events`, `battery`, `spo2_samples`, `skin_temp_samples`, `resp_samples`, `gravity_samples` are hypertables on `ts`. `daily_metrics`, `sleep_sessions`, `exercise_sessions`, `profile` are plain tables (low-cardinality, exact-key lookups). This split is the right TimescaleDB design.
-
-**Confidence: HIGH** — schema observed directly, design rationale matches TimescaleDB docs for high-frequency vs. derived data.
+**Confidence: HIGH** for BLE UUIDs (Bluetooth SIG spec + Polar SDK source). **MEDIUM** for exact iOS multi-client approach (architecturally sound but unverified against this specific codebase).
 
 ---
 
-### Docker Image Distribution — Dockerfile in Repo vs Pre-Built Image
+## Recommended Stack Additions Summary
 
-**Recommendation: Dockerfile in repo, no pre-built image registry.**
+### New Tools (Development Only)
 
-Rationale:
+| Tool | Version | Purpose |
+|------|---------|---------|
+| `cargo-ndk` | 4.1.2 | Android cross-compilation |
+| Android NDK | r29 | Clang toolchain for Android ABIs |
 
-| Option | Pros | Cons | Verdict |
-|--------|------|------|---------|
-| Dockerfile in repo + `docker compose build` | User owns the build; no registry account needed; self-contained; works with `git pull && docker compose up --build` | Slightly slower first deploy (builds locally) | **Recommended** |
-| GitHub Container Registry (ghcr.io) | Faster pull; no local build | Requires registry account; version pinning; private repo needs PAT; adds CI complexity | Out of scope |
-| Docker Hub | Easier to share publicly | Public image exposes server internals; bearer token flow unclear | Not appropriate |
+### New Rust Dependency
 
-The target user is a single person running their own server. `git pull && docker compose up --build` is the correct deploy story. Pre-built images add CI/CD complexity with no benefit for one user.
+| Crate | Version | Purpose | Feature-Gated |
+|-------|---------|---------|---------------|
+| `jni` | 0.22 | Safe JNI bridge types for Android | `android-jni` feature |
 
-**Confidence: HIGH** — matches the project constraint ("servidor pessoal"; "git pull").
+### No New iOS Dependencies
 
----
+Zero new Swift packages, frameworks, or CocoaPods entries.
 
-## Alternatives Considered
+### New Rust Modules (Written, Not Imported)
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| iOS networking | URLSession | Alamofire, AsyncHTTPClient | Explicit project constraint; URLSession sufficient |
-| iOS upload session | `URLSession.shared` (foreground) | `URLSessionConfiguration.background` | Background upload requires file-based body + AppDelegate callbacks; unnecessary complexity; retry queue achieves same reliability |
-| iOS secret storage | Keychain | UserDefaults | Bearer token is a secret; Keychain is mandatory |
-| Python base image | `python:3.11-slim` | `python:3.12-slim`, `python:3.13-slim` | Existing requirements pinned to 3.11; neurokit2/scipy C extensions need testing per Python version |
-| Dockerfile | Multi-stage (builder + runtime) | Single-stage (existing) | Multi-stage reduces image size and removes compiler from runtime |
-| Secrets | `.env` file | Docker secrets, Vault | Personal server; `.env` is correct complexity level |
-| Distribution | Dockerfile in repo | GHCR pre-built image | Single user; no CI/CD needed |
+| Module | Purpose |
+|--------|---------|
+| `src/polar_h10.rs` | Parse Polar H10 BLE HR + RR frames |
+| `src/android.rs` | JNI shim wrapping existing C bridge (feature-gated) |
 
 ---
 
 ## Installation
 
-No new dependencies are introduced on either side.
-
-### iOS
-No `Package.swift` or CocoaPods changes. New files are pure Swift using Foundation only.
-
-### Server (copy to `server/` in Goose repo)
 ```bash
-# First deploy
-cp -r /path/to/my-whoop/server server/
-echo "DATA_ROOT=/your/data/path" >> server/.env
-echo "WHOOP_API_KEY=$(openssl rand -hex 32)" >> server/.env
-echo "WHOOP_DB_PASSWORD=$(openssl rand -hex 32)" >> server/.env
-cd server
-docker compose up --build -d
-```
+# cargo-ndk (install once on development machine)
+cargo install cargo-ndk
+# or faster:
+cargo binstall cargo-ndk
 
-### Verifying the server is healthy
-```bash
-curl http://localhost:8770/healthz
-# {"status":"ok"}
+# Android Rust targets (install once)
+rustup target add aarch64-linux-android
+rustup target add armv7-linux-androideabi
+rustup target add x86_64-linux-android
+
+# Build Rust core for Android (in Rust/core/)
+cargo ndk -t aarch64-linux-android build --release --features android-jni
 ```
 
 ---
 
-## Confidence Assessment
+## Alternatives Considered
 
-| Area | Confidence | Basis |
-|------|------------|-------|
-| iOS URLSession pattern | HIGH | Pattern directly observed in `OpenAICoachResponsesClient.swift`; no third-party deps per constraint |
-| iOS Keychain for token | HIGH | Pattern directly observed in `OnboardingPersistence.swift` |
-| Background upload approach (foreground only) | HIGH | iOS docs + project constraint analysis; retry queue is simpler |
-| FastAPI + Uvicorn | HIGH | Observed working in existing server; Context7 FastAPI docs verified |
-| Multi-stage Dockerfile | HIGH | Standard Docker practice; matches existing Dockerfile structure |
-| Python 3.11 base image | HIGH | Matches existing `requirements.txt`; avoids C extension regression risk |
-| TimescaleDB version (2.17.2-pg16) | HIGH | Observed directly in `docker-compose.yml`; already working |
-| Dockerfile in repo vs registry | HIGH | Project scope and user profile make this unambiguous |
-| `.env` for secrets | HIGH | Already the pattern in `.env.example`; correct complexity level |
+| Decision | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| JNI approach | Thin shim wrapping existing C FFI | Full JNI bridge rewrite | Existing C bridge has 40+ integration tests; shim minimises new code and risk |
+| Android target scope | `aarch64-linux-android` only for v2.0 | All 4 targets | x86_64 has known rusqlite bundled failures; armv7 has `-latomic` issue; emulator targets can be deferred |
+| Second wearable BLE scope | Standard `0x180D` only | Polar H10 + PMD (ECG) | ECG at 130Hz requires full PMD control-point protocol; disproportionate for extensibility validation |
+| Polar iOS integration | Separate `GoosePolarBLEClient` | Extend `GooseBLEClient` | Separation proves multi-device architecture; avoids WHOOP-specific logic entanglement |
+| `jni` crate vs raw FFI | `jni` 0.22 | Raw `extern "C"` with `*mut JNIEnv` | `jni` crate provides lifetime-safe wrappers preventing GC-related memory bugs |
+| `rust-android-gradle` | Not used | cargo-ndk | Gradle plugin is for full Android apps; library-only foundation only needs cargo-ndk |
+| Polar BLE SDK (iOS) | Not used — raw CoreBluetooth | polarofficial/polar-ble-sdk iOS framework | Introduces external Swift dependency; violates project constraint |
 
 ---
 
-## Key Integration Points for Implementation
+## What NOT to Add
 
-1. **Upload payload is already defined server-side.** The `DecodedBatch` Pydantic model in `main.py` is the contract. The Swift `Encodable` struct must match it field-for-field. `device_generation` must snake_case to `"device_generation"` — use `CodingKeys` or `keyEncodingStrategy`.
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `rust-android-gradle` Gradle plugin | Requires full Android Gradle project; out of scope for library-only foundation | `cargo-ndk` CLI |
+| Polar BLE SDK iOS framework | External Swift dependency — violates the no-external-deps constraint | Raw CoreBluetooth with standard `0x180D` |
+| Third-party BLE abstraction (RxBluetoothKit, SpeziBluetooth) | External Swift dependency; overkill for two known devices | Extend existing CBCentralManager delegate pattern |
+| Full Android Activity/Gradle project | Scope — v2.0 is JNI bridge + ADR, not a working Android app | Defer to v3+ |
+| `panic = "unwind"` on Android | JNI boundary requires abort or catch_unwind; current `panic = "abort"` is correct | Keep existing setting |
+| PMD ECG service for Polar | Requires proprietary protocol; complexity disproportionate to v2.0 goal | Defer to v3+ if Polar support is expanded |
 
-2. **Server is idempotent.** All stream upserts use `ON CONFLICT … DO UPDATE` or `DO NOTHING`. The iOS client can safely retry any failed upload without creating duplicates. This eliminates the need for complex exactly-once delivery logic.
+---
 
-3. **Upload trigger point.** The existing iOS pipeline already writes frames to SQLite via `CaptureFrameWriteQueue`. The upload should happen after each successful batch write (post-drain callback), not during BLE frame reception. This keeps the upload decoupled from the real-time pipeline.
+## Version Compatibility
 
-4. **Server URL and token are user-configurable.** They belong in a new "Server" section under the "More" tab (consistent with `MoreRouteModels.swift` structure). URL goes to UserDefaults; token goes to Keychain.
-
-5. **Build context for Docker.** The existing `Dockerfile` uses `COPY packages/whoop-protocol` which requires the build context to be `server/` (the parent of both `ingest/` and `packages/`). This is already correct in `docker-compose.yml` (`context: .` with `dockerfile: ingest/Dockerfile`). Preserve this when copying to the Goose repo.
+| Package | Version | Compatibility Notes |
+|---------|---------|---------------------|
+| `cargo-ndk` | 4.1.2 | Requires Rust >= 1.86; Goose MSRV 1.94 — no conflict |
+| `jni` | 0.22.4 | Targets JNI 1.6 (Android API 16+); works with any modern Android |
+| `rusqlite bundled` | 0.37 | `aarch64-linux-android`: likely works; `x86_64-linux-android`: known broken upstream |
+| Android NDK | r29 | cargo-ndk auto-selects latest installed; min NDK not enforced by cargo-ndk |
+| CoreBluetooth multi-UUID scan | iOS 5.0+ | OR semantics verified; no minimum iOS version concern for this feature |
+| `CBCentralManagerOptionRestoreIdentifierKey` | iOS 7.0+ | Available if state restoration added later; not required for v2.0 |
 
 ---
 
 ## Sources
 
-- Existing `my-whoop/server/ingest/Dockerfile` (observed directly)
-- Existing `my-whoop/server/docker-compose.yml` (observed directly)
-- Existing `my-whoop/server/ingest/app/main.py` — `DecodedBatch` model, `/v1/ingest-decoded` endpoint (observed directly)
-- Existing `my-whoop/server/ingest/app/store.py` — idempotent upsert pattern (observed directly)
-- Existing `my-whoop/server/db/init.sql` — full schema (observed directly)
-- Existing `GooseSwift/OpenAICoachResponsesClient.swift` — URLSession pattern (observed directly)
-- Existing `GooseSwift/OnboardingPersistence.swift` — Keychain + UserDefaults pattern (observed directly)
-- Existing `GooseSwift/GooseAppModel.swift` — `UIBackgroundTaskIdentifier` pattern (observed directly)
-- FastAPI deployment docs via Context7 `/fastapi/fastapi` — uvicorn, Docker, multi-worker (HIGH reputation source)
-- `PROJECT.md` constraints: no external iOS deps; URLSession only; Bearer token simple auth
+- Apple CoreBluetooth docs — `CBCentralManager.scanForPeripherals(withServices:options:)` — verified OR semantics for UUID array, background scan restrictions — **HIGH confidence**
+- Apple CoreBluetooth docs — `CBCentralManagerOptionRestoreIdentifierKey`, `willRestoreState` — verified state restoration API — **HIGH confidence**
+- `polarofficial/polar-ble-sdk` GitHub — `BlePMDClient.swift` (SHA: cc1f2db0fae5c957422e528e63b0766b2e2de099) — verified PMD service UUID `FB005C80-02E7-F387-1CAD-8ACD2D8DF0C8` — **HIGH confidence**
+- `polarofficial/polar-ble-sdk` GitHub — `BleHrClient.swift` — verified standard HR service `0x180D`, characteristics `0x2A37`, `0x2A38` — **HIGH confidence**
+- Bluetooth SIG Heart Rate Service 1.0 specification — verified `0x180D` service and `0x2A37` data format — **HIGH confidence**
+- `bbqsrc/cargo-ndk` GitHub README — version 4.1.2, Rust MSRV 1.86, NDK auto-detection — **HIGH confidence**
+- `docs.rs/jni/0.22.4` — jni crate API, `cdylib` requirement, calling convention — **HIGH confidence**
+- Android NDK Context7 docs (`/android/ndk`) — JNI `JNI_OnLoad` registration, `RegisterNatives` pattern — **HIGH confidence**
+- `rusqlite/rusqlite` GitHub issues — Android bundled issues #1380, #1037 — **MEDIUM confidence** (open issues, not release notes)
+- Goose codebase — `GooseBLEClient.swift` lines 366–420, `Rust/core/src/protocol.rs` lines 26–63, `Rust/core/Cargo.toml` — direct code verification — **HIGH confidence**
+
+---
+
+*Stack research for: Goose v2.0 Multi-Device & Platform Foundations*
+*Researched: 2026-06-03*
