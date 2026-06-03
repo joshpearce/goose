@@ -8651,3 +8651,37 @@ mod tests {
         }
     }
 }
+
+#[cfg(target_os = "android")]
+pub mod android {
+    use std::ptr;
+    use jni::objects::{JClass, JString};
+    use jni::sys::jstring;
+    use jni::JNIEnv;
+
+    /// JNI entry point for com.goose.core.GooseBridge.handle(String) -> String.
+    ///
+    /// Converts the Java string to a Rust str, delegates to the existing
+    /// handle_bridge_request_json dispatch function, and returns the response
+    /// as a new Java string. Never panics — all errors are returned as JSON.
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_goose_core_GooseBridge_handle(
+        mut env: JNIEnv,
+        _class: JClass,
+        request_json: JString,
+    ) -> jstring {
+        let request = match env.get_string(&request_json) {
+            Ok(s) => s.to_string_lossy().into_owned(),
+            Err(_) => {
+                return env
+                    .new_string("{\"ok\":false,\"error\":\"jni_string_conversion_error\"}")
+                    .map(|s| s.into_raw())
+                    .unwrap_or(ptr::null_mut());
+            }
+        };
+        let response = super::handle_bridge_request_json(&request);
+        env.new_string(response)
+            .map(|s| s.into_raw())
+            .unwrap_or(ptr::null_mut())
+    }
+}
