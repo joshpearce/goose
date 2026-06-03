@@ -241,7 +241,7 @@ final class GooseAppModel: ObservableObject {
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter
   }()
-  static let maximumBufferedFrameBytes = 64 * 1024
+  nonisolated static let maximumBufferedFrameBytes = 64 * 1024
   static let packetImportRevisionInterval: TimeInterval = 5
   static let healthPacketCaptureUIUpdateInterval: TimeInterval = 1
   static let healthPacketCaptureSummaryLogInterval: TimeInterval = 10
