@@ -2,6 +2,33 @@ import CoreBluetooth
 import Foundation
 import OSLog
 
+// MARK: - WearableDescriptor
+
+struct WearableDescriptor {
+  let serviceUUIDPrefix: String
+  let commandCharacteristicPrefix: String
+
+  func isCommandCharacteristic(_ c: CBCharacteristic) -> Bool {
+    c.uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
+  }
+}
+
+extension WearableDescriptor {
+  // Gen5 service UUID prefix fd4b0001-, command UUID prefix fd4b0002-
+  static let whoopGen5 = WearableDescriptor(
+    serviceUUIDPrefix: "fd4b0001",
+    commandCharacteristicPrefix: "fd4b0002"
+  )
+
+  // Gen4 service UUID prefix 61080001-, command UUID prefix 61080002-
+  static let whoopGen4 = WearableDescriptor(
+    serviceUUIDPrefix: "61080001",
+    commandCharacteristicPrefix: "61080002"
+  )
+}
+
+// MARK: -
+
 enum GooseLogLevel: String {
   case debug
   case info
@@ -13,6 +40,7 @@ struct GooseDiscoveredDevice: Identifiable, Equatable {
   let id: UUID
   let name: String
   let rssi: Int
+  let generation: String
 }
 
 struct GooseMessage: Identifiable {
