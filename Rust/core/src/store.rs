@@ -6607,21 +6607,21 @@ fn validate_optional_non_negative_i64(name: &str, value: Option<i64>) -> GooseRe
 }
 
 fn validate_optional_finite_f64(name: &str, value: Option<f64>) -> GooseResult<()> {
-    if let Some(value) = value {
-        if !value.is_finite() {
-            return Err(GooseError::message(format!("{name} must be finite")));
-        }
+    if let Some(value) = value
+        && !value.is_finite()
+    {
+        return Err(GooseError::message(format!("{name} must be finite")));
     }
     Ok(())
 }
 
 fn validate_optional_non_negative_f64(name: &str, value: Option<f64>) -> GooseResult<()> {
-    if let Some(value) = value {
-        if !value.is_finite() || value < 0.0 {
-            return Err(GooseError::message(format!(
-                "{name} must be finite and non-negative",
-            )));
-        }
+    if let Some(value) = value
+        && (!value.is_finite() || value < 0.0)
+    {
+        return Err(GooseError::message(format!(
+            "{name} must be finite and non-negative",
+        )));
     }
     Ok(())
 }

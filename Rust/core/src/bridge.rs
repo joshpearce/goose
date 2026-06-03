@@ -2750,10 +2750,10 @@ fn parse_frame_hex_batch_bridge(args: ParseFrameBatchArgs) -> GooseResult<serde_
                     "ok": true,
                     "compact": compact_parsed_frame_summary(&parsed),
                 });
-                if args.include_result {
-                    if let Some(obj) = item.as_object_mut() {
-                        obj.insert("result".to_string(), json!(parsed));
-                    }
+                if args.include_result
+                    && let Some(obj) = item.as_object_mut()
+                {
+                    obj.insert("result".to_string(), json!(parsed));
                 }
                 results.push(item);
             }
@@ -3046,13 +3046,13 @@ fn upload_get_recent_decoded_streams_bridge(
     let frames = store.decoded_frames_between(&since_dt, &now_dt)?;
 
     let mut hr: Vec<serde_json::Value> = Vec::new();
-    let mut rr: Vec<serde_json::Value> = Vec::new();
+    let rr: Vec<serde_json::Value> = Vec::new();
     let mut events: Vec<serde_json::Value> = Vec::new();
-    let mut battery: Vec<serde_json::Value> = Vec::new();
-    let mut spo2: Vec<serde_json::Value> = Vec::new();
-    let mut skin_temp: Vec<serde_json::Value> = Vec::new();
-    let mut resp: Vec<serde_json::Value> = Vec::new();
-    let mut gravity: Vec<serde_json::Value> = Vec::new();
+    let battery: Vec<serde_json::Value> = Vec::new();
+    let spo2: Vec<serde_json::Value> = Vec::new();
+    let skin_temp: Vec<serde_json::Value> = Vec::new();
+    let resp: Vec<serde_json::Value> = Vec::new();
+    let gravity: Vec<serde_json::Value> = Vec::new();
 
     for frame in &frames {
         // Skip CRC-failed frames (matches server-side rule)
@@ -3092,10 +3092,10 @@ fn upload_get_recent_decoded_streams_bridge(
                             ..
                         } => {
                             // Normal history packet: hr_present flag + marker_value = HR bpm
-                            if hr_present.unwrap_or(false) {
-                                if let (Some(ts), Some(bpm)) = (ts_unix, marker_value) {
-                                    hr.push(json!({"ts": ts, "bpm": *bpm}));
-                                }
+                            if hr_present.unwrap_or(false)
+                                && let (Some(ts), Some(bpm)) = (ts_unix, marker_value)
+                            {
+                                hr.push(json!({"ts": ts, "bpm": *bpm}));
                             }
                         }
                         DataPacketBodySummary::RawMotionK10 { heart_rate, .. } => {
@@ -3197,7 +3197,7 @@ fn days_to_ymd(days: u32) -> (u32, u32, u32) {
     let jd = days + 2440588; // Julian Day Number of 1970-01-01 is 2440588
     let l = jd + 68569;
     let n = 4 * l / 146097;
-    let l = l - (146097 * n + 3) / 4;
+    let l = l - (146097 * n).div_ceil(4);
     let i = 4000 * (l + 1) / 1461001;
     let l = l - 1461 * i / 4 + 31;
     let j = 80 * l / 2447;
@@ -3505,14 +3505,14 @@ fn matching_calibration_algorithm_run<'a>(
     provenance: &serde_json::Value,
     options: &CalibrationOptions,
 ) -> Option<&'a AlgorithmRunRecord> {
-    if let Some(run_id) = provenance_algorithm_run_id(provenance) {
-        if let Some(run) = algorithm_runs.iter().find(|run| {
+    if let Some(run_id) = provenance_algorithm_run_id(provenance)
+        && let Some(run) = algorithm_runs.iter().find(|run| {
             run.run_id.as_str() == run_id
                 && run.algorithm_id.as_str() == options.algorithm_id.as_str()
                 && run.version.as_str() == options.algorithm_version.as_str()
-        }) {
-            return Some(run);
-        }
+        })
+    {
+        return Some(run);
     }
 
     algorithm_runs.iter().find(|run| {
@@ -5976,7 +5976,7 @@ fn activity_list_sessions_with_metrics_bridge(
     for metric in metrics {
         metrics_by_session
             .entry(metric.activity_session_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(metric);
     }
 
@@ -7180,7 +7180,7 @@ fn capture_arrival_plan_next_focus(
         arrival_action_is_local_health_validation,
         arrival_action_is_metric_input_work,
     ] {
-        if let Some(action) = actions.iter().find(|action| priority(action)).cloned() {
+        if let Some(action) = actions.iter().find(priority).cloned() {
             return Some(action);
         }
     }
