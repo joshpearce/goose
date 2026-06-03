@@ -9,11 +9,13 @@ struct WearableDescriptor {
   let commandCharacteristicPrefix: String
 
   func isCommandCharacteristic(_ c: CBCharacteristic) -> Bool {
-    c.uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
+    guard !commandCharacteristicPrefix.isEmpty else { return false }
+    return c.uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
   }
 
   func isCommandUUID(_ uuid: CBUUID) -> Bool {
-    uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
+    guard !commandCharacteristicPrefix.isEmpty else { return false }
+    return uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
   }
 }
 
@@ -28,6 +30,13 @@ extension WearableDescriptor {
   static let whoopGen4 = WearableDescriptor(
     serviceUUIDPrefix: "61080001",
     commandCharacteristicPrefix: "61080002"
+  )
+
+  // Standard Bluetooth Heart Rate Service 0x180D / HR Measurement 0x2A37
+  // HR monitors are read-only notify devices with no command characteristic
+  static let genericHRMonitor = WearableDescriptor(
+    serviceUUIDPrefix: "180d",
+    commandCharacteristicPrefix: ""
   )
 }
 
@@ -64,7 +73,14 @@ struct GooseNotificationEvent {
   let capturedAt: Date
 
   var rustDeviceType: String {
-    characteristicUUID.lowercased().hasPrefix("610800") ? "GEN4" : "GOOSE"
+    if characteristicUUID.lowercased().hasPrefix("610800") {
+      return "GEN4"
+    }
+    let normalizedUUID = characteristicUUID.replacingOccurrences(of: "-", with: "").lowercased()
+    if normalizedUUID == "2a37" || normalizedUUID.hasPrefix("00002a37") {
+      return "HR_MONITOR"
+    }
+    return "GOOSE"
   }
 }
 
