@@ -16,6 +16,16 @@ extension GooseAppModel {
     }
   }
 
+  func triggerManualUpload() {
+    let deviceID = ble.activeDeviceIdentifier ?? UUID()
+    let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-24 * 3600)
+    uploadService.upload(
+      deviceID: deviceID,
+      deviceType: "GOOSE",
+      sinceTimestamp: sinceTimestamp
+    )
+  }
+
   func triggerUpload(for result: CaptureFrameWriteResult, deviceEvent: GooseNotificationEvent) {
     guard result.pass, result.errorDescription == nil else { return }
     // sinceTimestamp: 30 seconds ago covers the batch window generously

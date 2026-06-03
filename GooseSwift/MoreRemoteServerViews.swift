@@ -84,15 +84,20 @@ struct MoreRemoteServerView: View {
             }
           }
 
-          // Row 2: Last upload timestamp
-          if let lastUpload = model.lastUploadAt {
-            LabeledContent("Último upload") {
-              Text(RelativeDateTimeFormatter().localizedString(for: lastUpload, relativeTo: Date()))
-                .foregroundStyle(.secondary)
-            }
-          } else {
-            LabeledContent("Último upload") {
-              Text("Nunca").foregroundStyle(.secondary)
+          // Row 2: Last sync + manual trigger
+          LabeledContent("Last sync") {
+            HStack(spacing: 8) {
+              if let lastUpload = model.lastUploadAt {
+                Text(RelativeDateTimeFormatter().localizedString(for: lastUpload, relativeTo: Date()))
+                  .foregroundStyle(.secondary)
+              } else {
+                Text("Never").foregroundStyle(.secondary)
+              }
+              Button("Now") {
+                model.triggerManualUpload()
+              }
+              .buttonStyle(.bordered)
+              .controlSize(.mini)
             }
           }
 
