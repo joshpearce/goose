@@ -119,11 +119,11 @@ final class GooseUploadService: @unchecked Sendable {
     request.httpBody = body
 
     // Retry loop: 3 attempts with backoff 1s/2s/4s
-    let delays: [TimeInterval] = [0, 1, 2, 4]
+    let delays: [TimeInterval] = [1, 2, 4]
     var uploadSucceeded = false
     for attempt in 0..<3 {
       if attempt > 0 {
-        Thread.sleep(forTimeInterval: delays[attempt])
+        Thread.sleep(forTimeInterval: delays[attempt - 1])
       }
       if performRequest(request) {
         uploadSucceeded = true
