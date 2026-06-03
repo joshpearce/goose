@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-final class GooseBLEClient: NSObject, ObservableObject {
+final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   @Published var bluetoothState = "not requested"
   @Published var connectionState = "disconnected"
   @Published var isScanning = false

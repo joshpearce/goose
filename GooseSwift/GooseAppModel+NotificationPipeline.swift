@@ -319,7 +319,7 @@ extension GooseAppModel {
     return true
   }
 
-  static func captureEvidenceID(for frame: NotificationFrame, event: GooseNotificationEvent, index: Int) -> String {
+  nonisolated static func captureEvidenceID(for frame: NotificationFrame, event: GooseNotificationEvent, index: Int) -> String {
     let milliseconds = Int((event.capturedAt.timeIntervalSince1970 * 1000).rounded())
     let prefix = String(frame.hex.prefix(16))
     return "ios.\(event.deviceID.uuidString).\(milliseconds).\(index).\(prefix)"
@@ -780,7 +780,7 @@ extension GooseAppModel {
     let usedBufferedData: Bool
   }
 
-  func gooseFrames(in data: Data, event: GooseNotificationEvent) -> FrameReassemblyResult {
+  nonisolated func gooseFrames(in data: Data, event: GooseNotificationEvent) -> FrameReassemblyResult {
     let key = frameReassemblyKey(for: event)
     let hadBufferedData = frameReassemblyBuffers[key]?.isEmpty == false
     var bytes = Array(frameReassemblyBuffers[key] ?? Data())
@@ -839,11 +839,11 @@ extension GooseAppModel {
     )
   }
 
-  func frameReassemblyKey(for event: GooseNotificationEvent) -> String {
+  nonisolated func frameReassemblyKey(for event: GooseNotificationEvent) -> String {
     "\(event.deviceID.uuidString)|\(event.serviceUUID)|\(event.characteristicUUID)|\(event.rustDeviceType)"
   }
 
-  static func frameSummary(_ parsed: [String: Any]) -> String {
+  nonisolated static func frameSummary(_ parsed: [String: Any]) -> String {
     let packet = intString(parsed["packet_type"])
     let packetName = parsed["packet_type_name"] as? String ?? "unknown"
     let sequence = intString(parsed["sequence"])
