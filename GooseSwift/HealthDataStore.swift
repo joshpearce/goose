@@ -53,6 +53,10 @@ final class HealthDataStore: ObservableObject {
   let heartRateTimelineQueue = DispatchQueue(label: "com.goose.swift.health.heart-rate-timeline", qos: .utility)
   lazy var databasePath = HealthDataStore.defaultDatabasePath()
 
+  // Cache for the 7-day rolling average strain computation (moved from extension — stored
+  // properties are not allowed inside Swift extensions).
+  var sevenDayStrainCache: (value: Double?, computedAt: Date)?
+
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
   static let liveHRVRMSSDSampleCountDefaultsKey = "goose.swift.liveHRVRMSSDSampleCount"
