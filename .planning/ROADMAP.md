@@ -59,7 +59,11 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
   4. User can tap a manual retry button to restart reconnection at any time, and a stop button to abort it
   5. A Rust panic in the FFI layer returns a structured JSON error instead of terminating the app process
   6. Raw evidence payload retention is capped at 24 MB; a large history sync does not balloon the SQLite database
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 09-01-PLAN.md — FFI panic safety (catch_unwind + panic=unwind) and storage.compact_raw_evidence bridge method (FIX-04, FIX-05 Rust)
+  - [ ] 09-02-PLAN.md — Propagate active_device_id into capture_sessions (FIX-01 Rust/CR-02)
+  - [ ] 09-03-PLAN.md — ReconnectBackoff + WHOOP reconnect UI + storage compaction call sites + active_device_id arg (FIX-02, FIX-05 Swift, FIX-01 Swift)
+  - [ ] 09-04-PLAN.md — HR monitor reconnect backoff + ConnectionView HR row (FIX-03)
 
 ### Phase 10: HR Monitor Scan/Connect UI
 **Goal**: Users can discover and connect nearby HR monitors from within the app
