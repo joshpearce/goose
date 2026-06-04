@@ -55,8 +55,22 @@ jobs:
 
       # Swift: CodeQL requires a real compilation pass to trace data flow accurately.
       # CODE_SIGNING_ALLOWED=NO avoids certificate requirements on CI runners.
-      # GOOSE_SKIP_RUST_CORE_BUILD=1 uses the committed pre-built libgoose_core.a
-      # instead of recompiling Rust (which would require iOS Rust targets on the runner).
+      # GOOSE_SKIP_RUST_CORE_BUILD=1 skips the Xcode build phase that cross-compiles
+      # Rust for iOS — CodeQL only needs the Swift source to be compiled, not a
+      # production-ready binary. A minimal stub libgoose_core.a satisfies the linker.
+      - name: Create stub libgoose_core.a for CodeQL (Swift only)
+        if: matrix.language == 'swift'
+        run: |
+          mkdir -p Rust/iphonesimulator Rust/iphoneos
+          # Compile a no-op C translation unit and archive it as the stub static lib.
+          # The linker finds the file; no real Rust symbols are needed for CodeQL analysis.
+          echo 'void goose_stub(void){}' > /tmp/goose_stub.c
+          clang -target arm64-apple-ios-simulator \
+            -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) \
+            -c /tmp/goose_stub.c -o /tmp/goose_stub.o
+          ar rcs Rust/iphonesimulator/libgoose_core.a /tmp/goose_stub.o
+          ar rcs Rust/iphoneos/libgoose_core.a /tmp/goose_stub.o
+
       - name: Build Swift target (Swift only)
         if: matrix.language == 'swift'
         run: |
