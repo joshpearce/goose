@@ -3,6 +3,7 @@ import SwiftUI
 enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case profile
   case device
+  case hrMonitor
   case connectionLab
   case capture
   case localStore
@@ -22,6 +23,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: "Profile"
     case .device: "Device"
+    case .hrMonitor: "HR Monitor"
     case .connectionLab: "Connection Lab"
     case .capture: "Capture"
     case .localStore: "Local Store"
@@ -41,6 +43,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: "Name, birthday, height, weight, and profile basics"
     case .device: "WHOOP band, connection, battery, and pairing"
+    case .hrMonitor: "Connect and view live heart rate from a Bluetooth HR monitor"
     case .connectionLab: "Low-level Bluetooth, hello, and event diagnostics"
     case .capture: "Notification capture, imports, and command evidence"
     case .localStore: "SQLite path, schema, and storage health"
@@ -60,6 +63,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: "person.crop.circle"
     case .device: "sensor.tag.radiowaves.forward"
+    case .hrMonitor: "heart.circle"
     case .connectionLab: "antenna.radiowaves.left.and.right"
     case .capture: "record.circle"
     case .localStore: "externaldrive"
@@ -79,6 +83,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: \.profile
     case .device: \.device
+    case .hrMonitor: \.hrMonitor
     case .connectionLab: \.connectionLab
     case .capture: \.capture
     case .localStore: \.localStore
@@ -94,7 +99,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     }
   }
 
-  static let deviceRoutes: [MoreRoute] = [.device]
+  static let deviceRoutes: [MoreRoute] = [.device, .hrMonitor]
   static let appRoutes: [MoreRoute] = [.healthSync]
   static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer]
   static let supportRoutes: [MoreRoute] = [.support, .about]
@@ -105,6 +110,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
 struct MoreRouteStatus {
   var profile: MoreStatusKind
   var device: MoreStatusKind
+  var hrMonitor: MoreStatusKind
   var connectionLab: MoreStatusKind
   var capture: MoreStatusKind
   var localStore: MoreStatusKind
