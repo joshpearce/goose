@@ -86,15 +86,15 @@ Plans:
 **Goal:** Integrate `parse_hr_measurement` into `upload_get_recent_decoded_streams_bridge` so HR monitor (0x2A37) upload payloads contain decoded hr/rr stream data, and fix CR-02 (real device_id filter). Storage path fix required: HR monitor frames must reach `decoded_frames` (they currently fail `parse_frame`'s 0xAA check and land in `raw_evidence` only).
 **Requirements**: WEAR-01, WEAR-03 (gap closure), CR-02
 **Depends on:** Phase 8
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 **Wave 1**
 
-- [ ] 08.1-01-PLAN.md — Store HR monitor GATT frames as decoded_frames rows + integrate parse_hr_measurement into upload bridge + CR-02 device_id filter (Wave 1)
+- [x] 08.1-01-PLAN.md — Store HR monitor GATT frames as decoded_frames rows + integrate parse_hr_measurement into upload bridge + CR-02 device_id filter (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 08.1-02-PLAN.md — Integration tests: HR monitor hr stream (bpm + rr_intervals) and device_id filter (Wave 2)
+- [x] 08.1-02-PLAN.md — Integration tests: HR monitor hr stream (bpm + rr_intervals) and device_id filter (Wave 2)
 
 ### Phase 999.4: Recovery V2 Completion (BACKLOG)
 
