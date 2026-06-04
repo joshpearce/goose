@@ -86,6 +86,11 @@ extension GooseBLEClient: CBCentralManagerDelegate {
       }
       cancelReconnectCycle()
       reconnectBackoff.reset()
+      // iOS may not call didDisconnectPeripheral when BT powers off — clear peripheral state
+      // here so the bt_restored path sees activePeripheral == nil when BT comes back on.
+      activePeripheral = nil
+      commandCharacteristic = nil
+      clientHelloSentForCurrentConnection = false
       updateConnectionState("disconnected")
       updateReconnectState("waiting for bluetooth")
       connectedAt = nil
