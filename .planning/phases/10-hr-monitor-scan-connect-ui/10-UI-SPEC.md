@@ -84,7 +84,7 @@ HRMonitorConnectedPanel
         Text("HEART RATE")             ← deviceLabelFont, secondaryText
         HStack(alignment: .bottom, spacing: 4)
           Text("\(bpm)")               ← .system(size: 52, weight: .black), devicePrimaryText
-          Text("BPM")                  ← deviceBodyFont (.system(size: 17, weight: .bold)), secondaryText, .padding(.bottom, 6)
+          Text("BPM")                  ← deviceBodyFont (.system(size: 17, weight: .bold)), secondaryText, .padding(.bottom, 8)
     [if hrReconnectState != "idle"]
       Text(hrReconnectState)           ← deviceLabelFont, disconnectedRed
     HRDisconnectButton
@@ -106,7 +106,7 @@ Sheet (presented on device tap in scan list)
       .frame(maxWidth: .infinity, minHeight: 50)
       .font(.system(size: 17, weight: .black))
       .foregroundStyle(.white)
-      .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12))
+      .background(connectedGreen, in: RoundedRectangle(cornerRadius: 12))
   .padding(24)
   .presentationDetents([.height(220)])
   .presentationDragIndicator(.visible)
@@ -153,7 +153,8 @@ Weights in use: **bold (700)** and **black (900)** only. Semibold is not used.
 Design constant names (use the same private `let` as DeviceView.swift):
 - `deviceLabelFont` = `.system(size: 15, weight: .black, design: .default)`
 - `deviceBodyFont` = `.system(size: 17, weight: .bold, design: .default)`
-- `advancedBodyFont` = `.system(size: 17, weight: .regular, design: .default)` — not used in this view
+
+Note: `advancedBodyFont` is an inherited constant from DeviceView.swift pattern — not declared as part of this view's type scale; not used in HRMonitorView.
 
 All fonts use `.default` design (SF Pro). No monospaced or rounded variants in this view.
 
@@ -174,10 +175,10 @@ SwiftUI color tokens — sourced from DeviceView.swift private constants and Goo
 | Secondary text | adaptive `#A0A6AB` dark / `.secondaryLabel` light | Section labels, RSSI, BPM unit |
 | Muted text | adaptive `#8F9599` dark / `.tertiaryLabel` light | Empty state copy, ProgressView tint |
 | Divider | adaptive `#303840` dark / `.separator` light | Row bottom border (1pt height) |
-| Accent (10%) | `connectedGreen` = `Color(red: 0.42, green: 0.84, blue: 0.30)` | Header status text when connected ("CONNECTED") |
+| Accent (10%) | `connectedGreen` = `Color(red: 0.42, green: 0.84, blue: 0.30)` | Header status text when connected ("CONNECTED"); Connect button background in connection sheet |
 | Destructive | `disconnectedRed` = `Color(red: 1.0, green: 0.27, blue: 0.23)` | Disconnect button foreground; reconnect error state text; header status when scanning/disconnected is neutral |
 
-Accent reserved for: ONLY the header status label text when `hrConnectionState == "connected"`. Not used on icons, rows, or any other element.
+Accent reserved for: the header status label text when `hrConnectionState == "connected"` AND the primary CTA button background in the connection sheet. Not used on icons, rows, or any other element.
 
 Destructive reserved for: ONLY the Disconnect button label and the `hrReconnectState` text when non-idle (signals an error/degraded state).
 
@@ -423,12 +424,12 @@ No third-party packages, registries, or SDKs introduced.
 
 - [ ] Dimension 1 Copywriting: PASS (empty scan list copy updated — 2026-06-04 revision)
 - [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS (collapsed to 4 sizes / 2 weights — 2026-06-04 revision)
-- [ ] Dimension 5 Spacing: PASS (all values snapped to 4pt grid — 2026-06-04 revision)
+- [ ] Dimension 3 Color: PASS (Connect button changed to connectedGreen; accent reserved-for list updated — 2026-06-04 revision 2)
+- [ ] Dimension 4 Typography: PASS (advancedBodyFont removed from table, moved to note below table — 2026-06-04 revision 2)
+- [ ] Dimension 5 Spacing: PASS (.padding(.bottom, 6) corrected to .padding(.bottom, 8) — 2026-06-04 revision 2)
 - [ ] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending (re-check required after 2026-06-04 revision)
+**Approval:** pending (re-check required after 2026-06-04 revision 2)
 
 ---
 
