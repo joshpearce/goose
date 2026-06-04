@@ -73,7 +73,7 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     if central.state == .poweredOn {
       if !startupReconnectAttempted {
         startupReconnectAttempted = true
-        scheduleNextReconnect(reason: "startup")
+        attemptAutomaticReconnect(reason: "startup")
       } else if activePeripheral == nil && rememberedDeviceID != nil {
         // BT was toggled off and back on with a remembered device — restart backoff cycle.
         reconnectBackoff.reset()
