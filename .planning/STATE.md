@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
 status: executing
-stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-06-04T21:47:51.387Z"
+stopped_at: Phase 10 context gathered
+last_updated: "2026-06-04T22:07:13.349Z"
 last_activity: 2026-06-04
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 1
   total_plans: 4
   completed_plans: 4
-  percent: 10
+  percent: 9
 ---
 
 # Project State
@@ -58,6 +58,10 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 15 added: Recovery Formula V2 (SDNN Accuracy) — rename variable, remove /1.2 population approximation, track SDNN baselines natively in goose_recovery_v0 (triggered by upstream review feedback OKKHALIL3, PR #5)
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
@@ -91,6 +95,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-04T17:05:54.525Z
-Stopped at: Phase 9 UI-SPEC approved
-Resume file: .planning/phases/09-ble-stability-data-integrity/09-UI-SPEC.md
+Last session: 2026-06-04T22:07:13.341Z
+Stopped at: Phase 10 context gathered
+Resume file: .planning/phases/10-hr-monitor-scan-connect-ui/10-CONTEXT.md
