@@ -40,7 +40,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 **Milestone Goal:** Complete the HR monitor UX, fix foundational BLE and data integrity bugs, deliver Recovery V2 dashboard, sync WHOOP 4.0 clock, and add pt-PT localisation.
 
 - [x] **Phase 9: BLE Stability & Data Integrity** — Fix CR-02 device_id, BLE reconnect backoff, FFI panic safety, storage retention limit (completed 2026-06-04)
-- [ ] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status
+- [x] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status (completed 2026-06-04)
 - [ ] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate
 - [ ] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect
 - [ ] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data
@@ -95,16 +95,16 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 
 Plans:
 
-- [ ] 10-01-PLAN.md — Promote HR monitor BLE state to @Published, add connecting/disconnect/fail handling, test scaffold
-- [ ] 10-02-PLAN.md — Build HRMonitorView (scan list, connect sheet, connected panel) + on-device verification
-- [ ] 10-03-PLAN.md — Wire HRMonitorView into the More tab Device section (MoreRoute.hrMonitor)
+- [x] 10-01-PLAN.md — Promote HR monitor BLE state to @Published, add connecting/disconnect/fail handling, test scaffold
+- [x] 10-02-PLAN.md — Build HRMonitorView (scan list, connect sheet, connected panel) + on-device verification
+- [x] 10-03-PLAN.md — Wire HRMonitorView into the More tab Device section (MoreRoute.hrMonitor)
 
 ### Phase 10.1: BLE Main-Thread Publishing Fix (INSERTED)
 
 **Goal:** All `@Published` property mutations in `GooseBLEClient+Commands.swift` and `GooseBLEClient+Parsing.swift` happen on the main thread, eliminating the runtime "Publishing changes from background threads" warnings produced by CoreBluetooth callbacks.
 **Requirements**: TBD
 **Depends on:** Phase 10
-**Plans:** 0 plans
+**Plans:** 3/3 plans complete
 **Success Criteria** (what must be TRUE):
 
   1. No "Publishing changes from background threads is not allowed" runtime warnings appear when the app is connected to a WHOOP or HR monitor
@@ -184,7 +184,7 @@ Plans:
 | 8. Additional Wearables E2E | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8.1. Gap closure WEAR-01/WEAR-03 | v2.0 | 2/2 | Complete | 2026-06-04 |
 | 9. BLE Stability & Data Integrity | v3.0 | 4/4 | Complete    | 2026-06-04 |
-| 10. HR Monitor Scan/Connect UI | v3.0 | 0/3 | Planned | - |
+| 10. HR Monitor Scan/Connect UI | v3.0 | 3/3 | Complete    | 2026-06-04 |
 | 11. HR Monitor Independent Capture | v3.0 | 0/? | Not started | - |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
 | 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
