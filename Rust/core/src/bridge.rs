@@ -3019,6 +3019,7 @@ fn list_algorithm_preferences_bridge(args: ListPreferencesArgs) -> GooseResult<s
 #[derive(Debug, Deserialize)]
 struct UploadGetRecentDecodedStreamsArgs {
     database_path: String,
+    #[allow(dead_code)] // device_id filter deferred to v3.0 (namespace mismatch: UUID vs BLE name)
     device_id: String,
     since_ts: f64, // Unix timestamp (seconds); fetch decoded frames captured >= since_ts
 }
@@ -3152,11 +3153,10 @@ fn upload_get_recent_decoded_streams_bridge(
                 Ok(b) => b,
                 Err(_) => continue,
             };
-            let measurement =
-                match crate::heart_rate_gatt_protocol::parse_hr_measurement(&bytes) {
-                    Ok(m) => m,
-                    Err(_) => continue,
-                };
+            let measurement = match crate::heart_rate_gatt_protocol::parse_hr_measurement(&bytes) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
             // D-03: captured_at is "YYYY-MM-DDTHH:MM:SS.mmmZ" — parse to f64 unix seconds.
             // T-08.1-02: on parse failure use null rather than panicking.
             let ts_opt: Option<f64> = unix_from_iso8601(&frame.captured_at);
@@ -3252,7 +3252,9 @@ fn unix_from_iso8601(s: &str) -> Option<f64> {
     let millis: f64 = if s.len() > 20 && s.as_bytes().get(19) == Some(&b'.') {
         // Collect digits after "."
         let frac: &str = s[20..].trim_end_matches('Z');
-        let frac_digits: &str = frac.split_once(|c: char| !c.is_ascii_digit()).map_or(frac, |(d, _)| d);
+        let frac_digits: &str = frac
+            .split_once(|c: char| !c.is_ascii_digit())
+            .map_or(frac, |(d, _)| d);
         if frac_digits.is_empty() {
             0.0
         } else {
@@ -3265,7 +3267,12 @@ fn unix_from_iso8601(s: &str) -> Option<f64> {
     };
 
     // Validate calendar ranges
-    if month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || sec > 59 {
+    if !(1..=12).contains(&month)
+        || !(1..=31).contains(&day)
+        || hour > 23
+        || minute > 59
+        || sec > 59
+    {
         return None;
     }
 
@@ -8734,19 +8741,31 @@ mod tests {
     #[test]
     fn parse_device_type_hr_monitor_uppercase() {
         let result = parse_device_type("HR_MONITOR").expect("HR_MONITOR must parse");
-        assert_eq!(result, DeviceType::HrMonitor, "HR_MONITOR must map to DeviceType::HrMonitor");
+        assert_eq!(
+            result,
+            DeviceType::HrMonitor,
+            "HR_MONITOR must map to DeviceType::HrMonitor"
+        );
     }
 
     #[test]
     fn parse_device_type_hr_monitor_lowercase() {
         let result = parse_device_type("hr_monitor").expect("hr_monitor must parse");
-        assert_eq!(result, DeviceType::HrMonitor, "hr_monitor must map to DeviceType::HrMonitor");
+        assert_eq!(
+            result,
+            DeviceType::HrMonitor,
+            "hr_monitor must map to DeviceType::HrMonitor"
+        );
     }
 
     #[test]
     fn parse_device_type_goose_no_regression() {
         let result = parse_device_type("GOOSE").expect("GOOSE must parse");
-        assert_eq!(result, DeviceType::Goose, "GOOSE must still map to DeviceType::Goose");
+        assert_eq!(
+            result,
+            DeviceType::Goose,
+            "GOOSE must still map to DeviceType::Goose"
+        );
     }
 }
 

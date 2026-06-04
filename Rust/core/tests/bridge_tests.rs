@@ -8862,13 +8862,19 @@ fn bridge_hr_monitor_upload_stream_contains_bpm_and_rr() {
             }]
         }
     }));
-    assert!(import_resp.ok, "HR monitor import should succeed: {:?}", import_resp.error);
+    assert!(
+        import_resp.ok,
+        "HR monitor import should succeed: {:?}",
+        import_resp.error
+    );
     assert_eq!(
-        import_resp.result.as_ref().unwrap()["raw_inserted"], 1,
+        import_resp.result.as_ref().unwrap()["raw_inserted"],
+        1,
         "Should insert 1 raw evidence row"
     );
     assert_eq!(
-        import_resp.result.as_ref().unwrap()["frames_inserted"], 1,
+        import_resp.result.as_ref().unwrap()["frames_inserted"],
+        1,
         "Should insert 1 decoded_frames row for HR monitor"
     );
 
@@ -8883,20 +8889,32 @@ fn bridge_hr_monitor_upload_stream_contains_bpm_and_rr() {
             "device_id": ""
         }
     }));
-    assert!(streams_resp.ok, "upload streams should succeed: {:?}", streams_resp.error);
+    assert!(
+        streams_resp.ok,
+        "upload streams should succeed: {:?}",
+        streams_resp.error
+    );
     let result = streams_resp.result.unwrap();
     let hr = result["hr"].as_array().expect("hr must be an array");
     assert_eq!(hr.len(), 1, "hr stream should have 1 entry, got: {:?}", hr);
     assert_eq!(hr[0]["bpm"], 72, "bpm should be 72");
-    let rr = hr[0]["rr_intervals"].as_array().expect("rr_intervals must be array");
+    let rr = hr[0]["rr_intervals"]
+        .as_array()
+        .expect("rr_intervals must be array");
     assert_eq!(rr.len(), 1, "should have 1 RR interval");
     // 1024 raw units * 1000 / 1024 = 1000.0 ms
     let rr_ms = rr[0].as_f64().expect("rr value must be f64");
-    assert!((rr_ms - 1000.0).abs() < 1.0, "RR interval should be ~1000ms, got {rr_ms}");
+    assert!(
+        (rr_ms - 1000.0).abs() < 1.0,
+        "RR interval should be ~1000ms, got {rr_ms}"
+    );
 
     // HR monitor RR data must NOT appear in the top-level rr stream (D-02)
     let rr_top = result["rr"].as_array().expect("rr must be an array");
-    assert!(rr_top.is_empty(), "top-level rr stream must be empty for HR monitor data (D-02)");
+    assert!(
+        rr_top.is_empty(),
+        "top-level rr stream must be empty for HR monitor data (D-02)"
+    );
 }
 
 #[test]
@@ -8924,7 +8942,11 @@ fn bridge_hr_monitor_upload_stream_no_rr_when_not_present() {
             }]
         }
     }));
-    assert!(import_resp.ok, "HR monitor import (no RR) should succeed: {:?}", import_resp.error);
+    assert!(
+        import_resp.ok,
+        "HR monitor import (no RR) should succeed: {:?}",
+        import_resp.error
+    );
 
     let streams_resp = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
@@ -8936,13 +8958,22 @@ fn bridge_hr_monitor_upload_stream_no_rr_when_not_present() {
             "device_id": ""
         }
     }));
-    assert!(streams_resp.ok, "upload streams (no RR) should succeed: {:?}", streams_resp.error);
+    assert!(
+        streams_resp.ok,
+        "upload streams (no RR) should succeed: {:?}",
+        streams_resp.error
+    );
     let result = streams_resp.result.unwrap();
     let hr = result["hr"].as_array().expect("hr must be an array");
     assert_eq!(hr.len(), 1, "hr stream should have 1 entry for no-RR frame");
     assert_eq!(hr[0]["bpm"], 72, "bpm should be 72 for no-RR frame");
-    let rr = hr[0]["rr_intervals"].as_array().expect("rr_intervals must be array");
-    assert!(rr.is_empty(), "rr_intervals must be [] when RR intervals are absent in GATT payload");
+    let rr = hr[0]["rr_intervals"]
+        .as_array()
+        .expect("rr_intervals must be array");
+    assert!(
+        rr.is_empty(),
+        "rr_intervals must be [] when RR intervals are absent in GATT payload"
+    );
 }
 
 #[test]
@@ -8996,8 +9027,17 @@ fn bridge_hr_monitor_upload_stream_device_id_deferred() {
             "device_id": "A1B2C3D4-E5F6-0000-0000-000000000001"
         }
     }));
-    assert!(streams_resp.ok, "upload streams failed: {:?}", streams_resp.error);
+    assert!(
+        streams_resp.ok,
+        "upload streams failed: {:?}",
+        streams_resp.error
+    );
     let result = streams_resp.result.unwrap();
     let hr = result["hr"].as_array().expect("hr must be an array");
-    assert_eq!(hr.len(), 2, "both frames returned (per-row filter deferred to v3.0), got: {:?}", hr);
+    assert_eq!(
+        hr.len(),
+        2,
+        "both frames returned (per-row filter deferred to v3.0), got: {:?}",
+        hr
+    );
 }
