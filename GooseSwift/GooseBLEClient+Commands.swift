@@ -919,12 +919,20 @@ extension GooseBLEClient {
       )
       return
     }
+    guard characteristic.value == nil else {
+      record(source: "ble", title: "metadata.read.skipped", body: "\(characteristic.uuid.uuidString) value_already_cached reason=\(reason)")
+      return
+    }
     peripheral.readValue(for: characteristic)
     record(source: "ble", title: "metadata.read.requested", body: "\(characteristic.uuid.uuidString) reason=\(reason)")
   }
 
   func subscribeIfPossible(_ peripheral: CBPeripheral, _ characteristic: CBCharacteristic) {
     guard notificationCandidate(characteristic) else {
+      return
+    }
+    guard !characteristic.isNotifying else {
+      record(source: "ble", title: "notify.skipped", body: "\(characteristic.uuid.uuidString) already_subscribed")
       return
     }
     guard characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate) else {
