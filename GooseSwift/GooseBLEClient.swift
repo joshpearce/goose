@@ -22,6 +22,8 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   @Published var liveHRVRMSSDSampleCount = 0
   @Published var reconnectState = "idle"
   @Published var hrReconnectState = "idle"
+  @Published var discoveredHRDevices: [GooseDiscoveredDevice] = []
+  @Published var hrConnectionState: String = "disconnected"
   @Published var rememberedDeviceDescription = "none"
   @Published var activeDeviceName = "WHOOP"
   @Published var activeDeviceIdentifier: UUID?

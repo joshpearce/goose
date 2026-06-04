@@ -139,7 +139,7 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     discoveredHRDevices.sort { $0.rssi > $1.rssi }
 
     DispatchQueue.main.async { [weak self] in
-      self?.owner?.objectWillChange.send()
+      self?.owner?.discoveredHRDevices = self?.discoveredHRDevices ?? []
     }
   }
 
