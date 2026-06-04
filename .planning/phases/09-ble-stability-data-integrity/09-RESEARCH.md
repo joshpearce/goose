@@ -518,17 +518,15 @@ No authentication, encryption, or network-facing changes in this phase.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where does `CaptureFrameWriteQueue` get the `activeDeviceID`?**
+1. **Where does `CaptureFrameWriteQueue` get the `activeDeviceID`?** — RESOLVED
    - What we know: The queue currently holds `databasePath` and a `GooseRustBridge` instance. It does not hold a reference to `GooseBLEClient` or the active peripheral.
-   - What's unclear: The cleanest way to thread `peripheral.identifier.uuidString` to the write call — either as a parameter to `enqueue()`, or as a mutable property on the queue, or via a closure.
-   - Recommendation: Add `var activeDeviceID: String?` as a mutable property on `CaptureFrameWriteQueue`, set by `GooseAppModel` whenever the peripheral connects/disconnects. The queue reads it at write time. This avoids changing `enqueue()` signatures across all callers.
+   - Resolution: Add `var activeDeviceID: String?` as a mutable property on `CaptureFrameWriteQueue`, set by `GooseAppModel` whenever the peripheral connects/disconnects. The queue reads it at write time. This avoids changing `enqueue()` signatures across all callers.
 
-2. **Does `ReconnectBackoff` state need to be @Published for the `GooseBLEHRMonitorManager`?**
+2. **Does `ReconnectBackoff` state need to be @Published for the `GooseBLEHRMonitorManager`?** — RESOLVED
    - What we know: `GooseBLEHRMonitorManager` is not an `ObservableObject`. It notifies the UI by calling `owner?.objectWillChange.send()` (line 83 in GooseBLEClient+HRMonitor.swift).
-   - What's unclear: How the ConnectionView will read `hrReconnectState` — does `GooseBLEHRMonitorManager` expose a `hrReconnectState: String` property that `GooseBLEClient` republishes as `@Published var hrReconnectState`?
-   - Recommendation: Add `@Published var hrReconnectState: String = "idle"` to `GooseBLEClient`. `GooseBLEHRMonitorManager` calls `owner?.hrReconnectState = backoff.statusString` (dispatching to main via `Task { @MainActor in ... }` or via the existing `DispatchQueue.main.async` pattern used at line 82). ConnectionView then uses `ble.hrReconnectState`.
+   - Resolution: Add `@Published var hrReconnectState: String = "idle"` to `GooseBLEClient`. `GooseBLEHRMonitorManager` calls `owner?.hrReconnectState = backoff.statusString` (dispatching to main via `Task { @MainActor in ... }` or via the existing `DispatchQueue.main.async` pattern used at line 82). ConnectionView then uses `ble.hrReconnectState`.
 
 ---
 
