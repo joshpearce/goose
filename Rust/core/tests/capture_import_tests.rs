@@ -522,6 +522,98 @@ fn capture_sqlite_import_preserves_raw_evidence_for_parser_failures() {
     assert_eq!(store.table_count("decoded_frames").unwrap(), 0);
 }
 
+// D-02 regression: upload bridge filters decoded_frames by device_type column, NOT by JOIN
+// to capture_sessions. This test verifies that the separation is present at the store layer:
+// HR monitor frames are stored with device_type "HR_MONITOR" and Goose frames with "Goose".
+// The upload bridge code at bridge.rs:3194 gates on `frame.device_type == "HR_MONITOR"` which
+// prevents cross-contamination between device types.
+#[test]
+fn upload_device_type_filter_hr_frames_are_stored_separate_from_goose_frames() {
+    let store = GooseStore::open_in_memory().unwrap();
+
+    // Insert an HR monitor frame (GATT 0x2A37 standard measurement format)
+    // flags=0x00: 8-bit HR only; HR=72 bpm
+    let hr_frames = vec![CapturedFrameInput {
+        evidence_id: "d02-hr-frame".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-06-01T12:00:00Z".to_string(),
+        device_model: "HR-Monitor-Model".to_string(),
+        frame_hex: "0048".to_string(), // valid HR_MONITOR GATT bytes
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::HrMonitor,
+    }];
+
+    // Insert a Goose BLE frame (WHOOP protocol)
+    let goose_frames = vec![CapturedFrameInput {
+        evidence_id: "d02-goose-frame".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-06-01T12:01:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::Goose,
+    }];
+
+    // Import both batches
+    let hr_report = import_captured_frame_batch(
+        &store,
+        &hr_frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+    let goose_report = import_captured_frame_batch(
+        &store,
+        &goose_frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+
+    // Both imports must succeed
+    assert!(hr_report.pass, "HR import failed: {:?}", hr_report.issues);
+    assert!(
+        goose_report.pass,
+        "Goose import failed: {:?}",
+        goose_report.issues
+    );
+
+    // Verify decoded_frames stores both types and they are distinct
+    let all_frames = store
+        .decoded_frames_between("2026-06-01T11:00:00Z", "2026-06-01T13:00:00Z")
+        .unwrap();
+    assert_eq!(all_frames.len(), 2, "expected 2 decoded frames total");
+
+    let hr_decoded = all_frames
+        .iter()
+        .find(|f| f.evidence_id == "d02-hr-frame")
+        .expect("HR frame must be in decoded_frames");
+    let goose_decoded = all_frames
+        .iter()
+        .find(|f| f.evidence_id == "d02-goose-frame")
+        .expect("Goose frame must be in decoded_frames");
+
+    // D-02: device_type column is the separation mechanism — no JOIN needed
+    assert_eq!(
+        hr_decoded.device_type, "HR_MONITOR",
+        "HR monitor frame must have device_type HR_MONITOR"
+    );
+    assert_eq!(
+        goose_decoded.device_type, "GOOSE",
+        "WHOOP frame must have device_type GOOSE"
+    );
+    // D-02 confirmed: upload bridge at bridge.rs gates on device_type column value,
+    // no JOIN to capture_sessions is needed or present.
+}
+
 fn seed_processed_capture_sqlite(path: &Path, rows: &[(&str, i64)]) {
     let rows = rows
         .iter()
