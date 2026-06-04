@@ -13,11 +13,11 @@
 
 ### FIX — Bug Fixes & Tech Debt
 
-- [ ] **FIX-01**: HR monitor frames are stored with the correct non-NULL `device_id` per row (CR-02 fix in `capture_import.rs`)
-- [ ] **FIX-02**: WHOOP BLE reconnection uses exponential backoff (1 s base, doubles, 60 s cap, 10-attempt circuit breaker) with manual retry and stop buttons in the UI
-- [ ] **FIX-03**: HR monitor BLE reconnection uses the same exponential backoff parameters as WHOOP (applied to `GooseBLEHRMonitorManager`)
-- [ ] **FIX-04**: Rust FFI dispatch wraps in `catch_unwind` and release profile uses `panic = "unwind"` so any Rust panic returns a JSON error instead of crashing the app (upstream PR #19)
-- [ ] **FIX-05**: Raw evidence payload retention limit reduced from 512 MB to 24 MB to prevent unbounded SQLite growth during large WHOOP history syncs (upstream PR #19)
+- [x] **FIX-01**: HR monitor frames are stored with the correct non-NULL `device_id` per row (CR-02 fix in `capture_import.rs`)
+- [x] **FIX-02**: WHOOP BLE reconnection uses exponential backoff (1 s base, doubles, 60 s cap, 10-attempt circuit breaker) with manual retry and stop buttons in the UI
+- [x] **FIX-03**: HR monitor BLE reconnection uses the same exponential backoff parameters as WHOOP (applied to `GooseBLEHRMonitorManager`)
+- [x] **FIX-04**: Rust FFI dispatch wraps in `catch_unwind` and release profile uses `panic = "unwind"` so any Rust panic returns a JSON error instead of crashing the app (upstream PR #19)
+- [x] **FIX-05**: Raw evidence payload retention limit reduced from 512 MB to 24 MB to prevent unbounded SQLite growth during large WHOOP history syncs (upstream PR #19)
 
 ### RTC — WHOOP 4.0 Clock Sync
 
@@ -63,11 +63,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 9 | Pending |
-| FIX-02 | Phase 9 | Pending |
-| FIX-03 | Phase 9 | Pending |
-| FIX-04 | Phase 9 | Pending |
-| FIX-05 | Phase 9 | Pending |
+| FIX-01 | Phase 9 | Complete |
+| FIX-02 | Phase 9 | Complete |
+| FIX-03 | Phase 9 | Complete |
+| FIX-04 | Phase 9 | Complete |
+| FIX-05 | Phase 9 | Complete |
 | WEAR-04 | Phase 10 | Pending |
 | WEAR-05 | Phase 10 | Pending |
 | WEAR-06 | Phase 11 | Pending |
@@ -77,6 +77,7 @@
 | L10N-02 | Phase 14 | Pending |
 
 **Coverage:**
+
 - v3.0 requirements: 12 total
 - Mapped to phases: 12 (Phases 9-14)
 - Unmapped: 0 ✓
