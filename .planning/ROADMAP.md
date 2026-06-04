@@ -72,7 +72,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-  - [ ] 09-03-PLAN.md — ReconnectBackoff + WHOOP reconnect UI + storage compaction call sites + active_device_id arg (FIX-02, FIX-05 Swift, FIX-01 Swift)
+  - [x] 09-03-PLAN.md — ReconnectBackoff + WHOOP reconnect UI + storage compaction call sites + active_device_id arg (FIX-02, FIX-05 Swift, FIX-01 Swift)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -160,7 +160,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 | 7. Android Port Foundations + CI | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8. Additional Wearables E2E | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8.1. Gap closure WEAR-01/WEAR-03 | v2.0 | 2/2 | Complete | 2026-06-04 |
-| 9. BLE Stability & Data Integrity | v3.0 | 2/4 | In Progress|  |
+| 9. BLE Stability & Data Integrity | v3.0 | 3/4 | In Progress|  |
 | 10. HR Monitor Scan/Connect UI | v3.0 | 0/? | Not started | - |
 | 11. HR Monitor Independent Capture | v3.0 | 0/? | Not started | - |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
@@ -199,7 +199,7 @@ Promoted to Phase 13: Recovery V2 Dashboard.
 4. Verify: deep links to read-only commands still work, state-changing commands are blocked
 
 **Requirements:** TBD
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 ---
 
