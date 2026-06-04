@@ -107,7 +107,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   static let developerToolRoutes: [MoreRoute] = [.connectionLab, .capture, .localStore, .rawExport, .algorithms, .debug]
 }
 
-struct MoreRouteStatus {
+struct MoreRouteStatus: Equatable {
   var profile: MoreStatusKind
   var device: MoreStatusKind
   var hrMonitor: MoreStatusKind

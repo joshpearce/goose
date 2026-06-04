@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import CryptoKit
 import SwiftUI
@@ -9,6 +10,24 @@ import HealthKit
 
 @MainActor
 final class MoreDataStore: ObservableObject {
+  @Published var routeStatus = MoreRouteStatus(
+    profile: .pending,
+    device: .pending,
+    hrMonitor: .pending,
+    connectionLab: .pending,
+    capture: .pending,
+    localStore: .pending,
+    healthSync: .pending,
+    rawExport: .pending,
+    algorithms: .ready,
+    debug: .pending,
+    privacy: .pending,
+    remoteServer: .pending,
+    support: .pending,
+    about: .ready,
+    developer: .pending
+  )
+
   @Published var databasePath: String
   @Published var storageStatus = "Not checked"
   @Published var storageNextAction = "Run Check after Goose has created the local database"
@@ -93,6 +112,8 @@ final class MoreDataStore: ObservableObject {
   let bridge = GooseRustBridge()
   let outputDirectory: String
 
+  private var bleStatusCancellables = Set<AnyCancellable>()
+
   struct RawExportArtifactValidationResult {
     let bundleValidation: String
     let zipValidation: String
@@ -126,8 +147,43 @@ final class MoreDataStore: ObservableObject {
     rawExportEnd = end
   }
 
-  func routeStatus(ble: GooseBLEClient, model: GooseAppModel) -> MoreRouteStatus {
-    MoreRouteStatus(
+  // Subscribe to BLE state changes that affect route status. Calling this binds
+  // the store to the BLE client and GooseAppModel so that routeStatus is only
+  // updated when a relevant property actually changes, not on every render.
+  func bindRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
+    bleStatusCancellables.removeAll()
+    ble.$connectionState
+      .removeDuplicates()
+      .sink { [weak self, weak ble, weak model] _ in
+        Task { @MainActor [weak self] in
+          guard let self, let ble, let model else { return }
+          self.refreshRouteStatus(ble: ble, model: model)
+        }
+      }
+      .store(in: &bleStatusCancellables)
+    ble.$hrConnectionState
+      .removeDuplicates()
+      .sink { [weak self, weak ble, weak model] _ in
+        Task { @MainActor [weak self] in
+          guard let self, let ble, let model else { return }
+          self.refreshRouteStatus(ble: ble, model: model)
+        }
+      }
+      .store(in: &bleStatusCancellables)
+    model.$helloSummary
+      .removeDuplicates()
+      .sink { [weak self, weak ble, weak model] _ in
+        Task { @MainActor [weak self] in
+          guard let self, let ble, let model else { return }
+          self.refreshRouteStatus(ble: ble, model: model)
+        }
+      }
+      .store(in: &bleStatusCancellables)
+    refreshRouteStatus(ble: ble, model: model)
+  }
+
+  func refreshRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
+    let newStatus = MoreRouteStatus(
       profile: OnboardingProfileSnapshot().hasRequiredDetails ? .ready : .pending,
       device: ble.connectionState == "ready" ? .ready : .pending,
       hrMonitor: ble.hrConnectionState == "connected" ? .ready : .pending,
@@ -144,6 +200,7 @@ final class MoreDataStore: ObservableObject {
       about: .ready,
       developer: .pending
     )
+    routeStatus = newStatus
   }
 
   func refreshBridgeStatus(model: GooseAppModel) {

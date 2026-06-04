@@ -99,18 +99,15 @@ struct MoreView: View {
       model.recordUIAction("page.opened", detail: "More")
       store.refreshBridgeStatus(model: model)
       store.refreshRecentCaptureSessions()
+      store.bindRouteStatus(ble: model.ble, model: model)
     }
-  }
-
-  private var routeStatus: MoreRouteStatus {
-    store.routeStatus(ble: model.ble, model: model)
   }
 
   @ViewBuilder
   private func routeRows(_ routes: [MoreRoute]) -> some View {
     ForEach(routes) { route in
       NavigationLink(value: route) {
-        MoreRouteRow(route: route, status: routeStatus[keyPath: route.statusKeyPath])
+        MoreRouteRow(route: route, status: store.routeStatus[keyPath: route.statusKeyPath])
       }
       .accessibilityLabel(route.title)
     }
@@ -150,7 +147,7 @@ struct MoreView: View {
     case .about:
       MoreAboutView(store: store)
     case .developer:
-      MoreDeveloperView(routes: MoreRoute.developerToolRoutes, routeStatus: routeStatus)
+      MoreDeveloperView(routes: MoreRoute.developerToolRoutes, routeStatus: store.routeStatus)
     }
   }
 
