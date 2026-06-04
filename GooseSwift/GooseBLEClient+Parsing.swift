@@ -24,6 +24,10 @@ extension GooseBLEClient {
   }
 
   func applyBatteryLevel(_ rawLevel: Int, capturedAt: Date, sourceTitle: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.applyBatteryLevel(rawLevel, capturedAt: capturedAt, sourceTitle: sourceTitle) }
+      return
+    }
     let normalizedLevel = min(max(rawLevel, 0), 100)
     let previousSample = lastBatteryLevelSample
     batteryLevelPercent = normalizedLevel
@@ -48,6 +52,10 @@ extension GooseBLEClient {
     previousSample: (percent: Int, capturedAt: Date)?,
     capturedAt: Date
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateBatteryChargingInference(currentPercent: currentPercent, previousSample: previousSample, capturedAt: capturedAt) }
+      return
+    }
     guard let previousSample else {
       return
     }
@@ -81,6 +89,10 @@ extension GooseBLEClient {
   }
 
   func applyBatteryStatus(_ status: BatteryLevelStatus, rawValue: Data, capturedAt: Date) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.applyBatteryStatus(status, rawValue: rawValue, capturedAt: capturedAt) }
+      return
+    }
     if let batteryLevel = status.batteryLevelPercent {
       applyBatteryLevel(batteryLevel, capturedAt: capturedAt, sourceTitle: "battery.status.level")
     } else {
@@ -125,6 +137,10 @@ extension GooseBLEClient {
     characteristic: CBCharacteristic,
     capturedAt: Date
   ) -> Bool {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.handleStandardReadValue(value, characteristic: characteristic, capturedAt: capturedAt) }
+      return true
+    }
     switch characteristic.uuid {
     case batteryLevelCharacteristicID:
       guard let raw = value.first else {
@@ -390,6 +406,10 @@ extension GooseBLEClient {
     fallbackName: String? = nil,
     disconnect: Bool = false
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.rejectNonWhoopPeripheral(peripheral, reason: reason, fallbackName: fallbackName, disconnect: disconnect) }
+      return
+    }
     let name = peripheral.name ?? fallbackName ?? "unknown"
     record(
       level: .warn,
@@ -427,11 +447,19 @@ extension GooseBLEClient {
   }
 
   func updateActiveDevice(_ peripheral: CBPeripheral, fallbackName: String? = nil) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateActiveDevice(peripheral, fallbackName: fallbackName) }
+      return
+    }
     activeDeviceIdentifier = peripheral.identifier
     updateActiveDeviceName(Self.sanitizedWhoopDisplayName(peripheral.name ?? fallbackName ?? rememberedDeviceName ?? "WHOOP strap"))
   }
 
   func resetLiveDeviceFieldsIfNeeded(for peripheral: CBPeripheral) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.resetLiveDeviceFieldsIfNeeded(for: peripheral) }
+      return
+    }
     guard activeDeviceIdentifier != peripheral.identifier else {
       return
     }
