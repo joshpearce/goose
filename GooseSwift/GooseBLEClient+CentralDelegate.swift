@@ -80,6 +80,8 @@ extension GooseBLEClient: CBCentralManagerDelegate {
       if isHistoricalSyncing {
         failHistoricalSync("Bluetooth became unavailable during historical sync. State: \(bluetoothState).")
       }
+      cancelReconnectCycle()
+      reconnectBackoff.reset()
       updateConnectionState("disconnected")
       updateReconnectState("waiting for bluetooth")
       connectedAt = nil
@@ -162,7 +164,8 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     let fallbackName = discoveredDevices.first { $0.id == peripheral.identifier }?.name
     guard let evidence = whoopIdentityEvidence(for: peripheral, fallbackName: fallbackName) else {
       pendingConnectionReason = nil
-      autoReconnectInFlight = false
+      cancelReconnectCycle()
+      reconnectBackoff.reset()
       autoReconnectTargetID = nil
       rejectNonWhoopPeripheral(peripheral, reason: "connected_without_whoop_evidence", fallbackName: fallbackName, disconnect: true)
       return
@@ -172,7 +175,9 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     activePeripheral = peripheral
     peripheral.delegate = self
     clientHelloSentForCurrentConnection = false
-    autoReconnectInFlight = false
+    // Cancel any pending scheduled retry and reset backoff before updating state.
+    cancelReconnectCycle()
+    reconnectBackoff.reset()
     autoReconnectTargetID = nil
     let reason = pendingConnectionReason ?? "unknown"
     pendingConnectionReason = nil
@@ -215,12 +220,16 @@ extension GooseBLEClient: CBCentralManagerDelegate {
       return
     }
 
-    autoReconnectInFlight = false
     autoConnectForPhysiologyCapture = false
     pendingConnectionReason = nil
     updateConnectionState("connect failed")
-    updateReconnectState("connect failed")
     record(level: .error, source: "ble", title: "connect.failed", body: error?.localizedDescription ?? "unknown")
+    // If we were in a backoff cycle, schedule the next attempt.
+    if isReconnecting || reconnectBackoff.attemptCount > 0 {
+      scheduleNextReconnect(reason: "backoff_retry")
+    } else {
+      updateReconnectState("connect failed")
+    }
   }
 
   func centralManager(
@@ -235,7 +244,6 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     }
 
     let shouldReconnect = rememberedDeviceID == peripheral.identifier
-    autoReconnectInFlight = false
     autoConnectForPhysiologyCapture = false
     autoStartedPhysiologyCapture = false
     readySyncWorkItem?.cancel()
@@ -277,8 +285,9 @@ extension GooseBLEClient: CBCentralManagerDelegate {
           body: "reason=\(reconnectReason) autoHistoricalSync=\(autoHistoricalSyncOnReady) prioritizeLive=\(prioritizeLiveCaptureOnReady)"
         )
       }
-      updateReconnectState("reconnecting after disconnect")
-      connect(peripheral, reason: reconnectReason)
+      // Use exponential backoff (D-06): first attempt fires after baseDelay (1s), not immediately.
+      reconnectBackoff.reset()
+      scheduleNextReconnect(reason: "backoff_retry")
     }
   }
 }

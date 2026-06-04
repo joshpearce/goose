@@ -193,6 +193,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
   private var completionFlushScheduled = false
   private var queuedRowCount = 0
   private var isWriting = false
+  var activeDeviceID: String?
 
   init(databasePath: String, maxQueuedRows: Int, maxBatchRows: Int) {
     self.databasePath = databasePath
@@ -281,6 +282,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
             "compact_raw_payloads": false,
             "include_results": false,
             "frames": rows.map(\.bridgeObject),
+            "active_device_id": activeDeviceID ?? NSNull(),
           ]
         )
         result = CaptureFrameWriteResult(
@@ -317,6 +319,16 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       if let completion {
         recordCompletion(result, completion: completion)
       }
+      // FIX-05 (D-09b): trigger storage compaction after each successful batch write.
+      // Fast no-op when already under the 24 MB limit (handled Rust-side).
+      // No ble.record here — GooseAppModel launch-time compaction covers D-10 logging.
+      _ = try? rust.request(
+        method: "storage.compact_raw_evidence",
+        args: [
+          "database_path": databasePath,
+          "limit_bytes": 25_165_824,
+        ]
+      )
     }
   }
 

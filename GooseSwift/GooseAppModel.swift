@@ -380,6 +380,10 @@ final class GooseAppModel: ObservableObject {
     scheduleAutoStartHealthPacketCaptureIfNeeded()
     scheduleAutoStartRespiratoryPacketWatchIfNeeded()
     recoverUncleanOvernightGuardSessionIfNeeded()
+    // FIX-05 (D-09a): trigger storage compaction at launch from a background queue (Pitfall 6).
+    DispatchQueue.global(qos: .utility).async { [weak self] in
+      self?.runStorageCompactionIfNeeded()
+    }
   }
 
   deinit {
@@ -407,6 +411,25 @@ final class GooseAppModel: ObservableObject {
       _ = overnightRawSpool.suspendActive(reason: "model_deinit")
     } else {
       _ = overnightRawSpool.finish(status: "model_deinit")
+    }
+  }
+
+  private func runStorageCompactionIfNeeded() {
+    // Runs on background queue — never call directly from @MainActor (Pitfall 6).
+    guard let report = try? rust.request(
+      method: "storage.compact_raw_evidence",
+      args: [
+        "database_path": HealthDataStore.defaultDatabasePath(),
+        "limit_bytes": 25_165_824,
+      ]
+    ) else { return }
+
+    let compactedRows = (report["compacted_rows"] as? Int) ?? 0
+    let freedBytes = (report["freed_bytes"] as? Int) ?? 0
+    // D-10: log only when compaction actually happened; silent otherwise.
+    if compactedRows > 0 {
+      let mbFreed = String(format: "%.1f", Double(freedBytes) / 1_048_576)
+      ble.record(source: "storage", title: "compact", body: "\(compactedRows) rows, \(mbFreed) MB freed")
     }
   }
 
