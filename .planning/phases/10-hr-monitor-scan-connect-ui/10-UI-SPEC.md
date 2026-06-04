@@ -38,12 +38,12 @@ HRMonitorView                          ← NavigationStack destination for MoreR
     ScrollView
       VStack(alignment: .leading, spacing: 0)
         HRMonitorHeader                ← mirrors DeviceConnectionHeader layout
-          .padding(.bottom, 30)
+          .padding(.bottom, 32)
         [Scanning state] HRMonitorScanList
         [Connected state] HRMonitorConnectedPanel
-      .padding(.horizontal, 22)
+      .padding(.horizontal, 24)
       .padding(.top, 36)
-      .padding(.bottom, 28)
+      .padding(.bottom, 48)
   .navigationTitle("HR Monitor")
   .navigationBarTitleDisplayMode(.inline)
   .toolbarBackground(.hidden, for: .navigationBar)
@@ -56,7 +56,8 @@ HRMonitorScanList
   VStack(alignment: .leading, spacing: 12)
     Text("DISCOVERED")                 ← section label, deviceLabelFont, secondaryText
     [if discoveredHRDevices.isEmpty]
-      Text("No devices found")         ← deviceBodyFont, mutedText
+      Text("No HR monitors found. Make sure your device is nearby and powered on.")
+                                       ← deviceBodyFont, mutedText
     [else]
       VStack(spacing: 0)
         ForEach(discoveredHRDevices)
@@ -64,11 +65,11 @@ HRMonitorScanList
             HStack(spacing: 12)
               VStack(alignment: .leading, spacing: 4)
                 Text(device.name)      ← deviceBodyFont.weight(.black), devicePrimaryText
-                Text("... · ... dBm")  ← 12pt semibold, mutedText
+                Text("... · ... dBm")  ← 12pt bold, mutedText
               Spacer()
               [if connecting to this device]
                 ProgressView()         ← .scaleEffect(0.8), tinted secondaryText
-            .padding(.vertical, 13)
+            .padding(.vertical, 12)
             .contentShape(Rectangle())
           .overlay(alignment: .bottom) Rectangle dividerColor height 1
 ```
@@ -77,13 +78,13 @@ HRMonitorScanList
 
 ```
 HRMonitorConnectedPanel
-  VStack(alignment: .leading, spacing: 22)
+  VStack(alignment: .leading, spacing: 24)
     HRLiveBPMDisplay
-      VStack(alignment: .leading, spacing: 7)
+      VStack(alignment: .leading, spacing: 8)
         Text("HEART RATE")             ← deviceLabelFont, secondaryText
         HStack(alignment: .bottom, spacing: 4)
           Text("\(bpm)")               ← .system(size: 52, weight: .black), devicePrimaryText
-          Text("BPM")                  ← .system(size: 20, weight: .black), secondaryText, .padding(.bottom, 6)
+          Text("BPM")                  ← deviceBodyFont (.system(size: 17, weight: .bold)), secondaryText, .padding(.bottom, 6)
     [if hrReconnectState != "idle"]
       Text(hrReconnectState)           ← deviceLabelFont, disconnectedRed
     HRDisconnectButton
@@ -98,8 +99,8 @@ HRMonitorConnectedPanel
 ```
 Sheet (presented on device tap in scan list)
   VStack(spacing: 20)
-    VStack(alignment: .leading, spacing: 7)
-      Text(device.name.uppercased())   ← .system(size: 20, weight: .black)
+    VStack(alignment: .leading, spacing: 8)
+      Text(device.name.uppercased())   ← deviceBodyFont.weight(.black) (.system(size: 17, weight: .black))
       Text("\(device.rssi) dBm")       ← deviceLabelFont, secondaryText
     Button("Connect") { connectHRMonitor(device); dismiss() }
       .frame(maxWidth: .infinity, minHeight: 50)
@@ -115,17 +116,18 @@ Sheet (presented on device tap in scan list)
 
 ## Spacing Scale
 
-Declared SwiftUI values (consistent with existing DeviceView.swift):
+Declared SwiftUI values — all multiples of 4pt:
 
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4pt | `VStack(spacing: 4)` — device row subtitle gap |
-| sm | 8pt | Icon-text HStack gap in action buttons |
-| md | 12–13pt | Row vertical padding (`.padding(.vertical, 13)`); section item spacing |
+| sm | 8pt | Icon-text HStack gap in action buttons; sheet device name VStack spacing; connected panel inner VStack spacing |
+| md | 12pt | Row vertical padding (`.padding(.vertical, 12)`); section item spacing |
 | lg | 16pt | Minimum spacer width in device rows; sheet horizontal padding baseline |
-| xl | 22pt | Screen horizontal padding (`.padding(.horizontal, 22)`) |
-| 2xl | 24pt | Sheet content padding; VStack panel spacing |
-| 3xl | 30–36pt | Header bottom padding (30pt); scroll top padding (36pt) |
+| xl | 24pt | Screen horizontal padding (`.padding(.horizontal, 24)`); sheet content padding |
+| 2xl | 32pt | Header bottom padding (`.padding(.bottom, 32)`) |
+| 3xl | 36pt | Scroll top padding (`.padding(.top, 36)`) |
+| 4xl | 48pt | Scroll bottom padding (`.padding(.bottom, 48)`) |
 
 Touch targets: minimum `minHeight: 46` on all interactive buttons (per `DeviceActionButton` pattern).
 
@@ -137,17 +139,16 @@ Exceptions: ProgressView spinner inline on row — no padding override, inherits
 
 ## Typography
 
-SwiftUI font declarations — sourced directly from DeviceView.swift private constants:
+SwiftUI font declarations — 4 sizes, 2 weights only:
 
 | Role | SwiftUI Font | Weight | Usage |
 |------|-------------|--------|-------|
-| Section label | `.system(size: 15, weight: .black)` | black (900) | "DISCOVERED", "HEART RATE" labels — all caps |
-| Body / row primary | `.system(size: 17, weight: .bold)` | bold (700) | Device name in scan row, last-sync values |
-| Caption / RSSI | `.system(size: 12, weight: .semibold)` | semibold (600) | Signal strength "· -72 dBm", reconnect state |
+| Caption / RSSI | `.system(size: 12, weight: .bold)` | bold (700) | Signal strength "· -72 dBm", reconnect state text |
+| Section label / action | `.system(size: 15, weight: .black)` | black (900) | "DISCOVERED", "HEART RATE", "Connect", "Disconnect" |
+| Body / row primary / BPM unit / sheet name | `.system(size: 17, weight: .bold)` | bold (700) | Device name in scan row; `deviceBodyFont` baseline |
 | Display / BPM | `.system(size: 52, weight: .black)` | black (900) | Live BPM numeral in connected state |
-| BPM unit label | `.system(size: 20, weight: .black)` | black (900) | "BPM" suffix beside the live numeral |
-| Action buttons | `.system(size: 15, weight: .black)` | black (900) | "Connect" in sheet, "Disconnect" button |
-| Device name heading | `.system(size: 20, weight: .black)` | black (900) | Device name uppercased in sheet |
+
+Weights in use: **bold (700)** and **black (900)** only. Semibold is not used.
 
 Design constant names (use the same private `let` as DeviceView.swift):
 - `deviceLabelFont` = `.system(size: 15, weight: .black, design: .default)`
@@ -155,6 +156,9 @@ Design constant names (use the same private `let` as DeviceView.swift):
 - `advancedBodyFont` = `.system(size: 17, weight: .regular, design: .default)` — not used in this view
 
 All fonts use `.default` design (SF Pro). No monospaced or rounded variants in this view.
+
+Body line-height: system default (SwiftUI manages line-height via `.lineSpacing(0)` implicit default).
+Heading line-height: not applicable — single-line labels only.
 
 ---
 
@@ -185,9 +189,9 @@ Destructive reserved for: ONLY the Disconnect button label and the `hrReconnectS
 
 ```
 HStack(alignment: .bottom, spacing: 16)
-  VStack(alignment: .leading, spacing: 7)
+  VStack(alignment: .leading, spacing: 8)
     Text(statusText)                   ← deviceLabelFont; connectedGreen if connected, secondaryText otherwise
-    Text(deviceDisplayName.uppercased()) ← .system(size: 26, weight: .black); devicePrimaryText
+    Text(deviceDisplayName.uppercased()) ← deviceBodyFont.weight(.black) (.system(size: 17, weight: .black)); devicePrimaryText
   .frame(maxWidth: .infinity, alignment: .leading)
 ```
 
@@ -315,7 +319,7 @@ Connecting device tracking: `@State private var connectingDeviceID: UUID?` in `H
 | Header status — unauthorized | "NOT AUTHORISED" | State 1 |
 | Header device name — not connected | "HR Monitor" | States 1–3 |
 | Section label | "DISCOVERED" | State 2 (scanning) |
-| Empty scan list | "No devices found" | State 2, zero results |
+| Empty scan list | "No HR monitors found. Make sure your device is nearby and powered on." | State 2, zero results |
 | BT off body | "Enable Bluetooth to scan for HR monitors." | State 1 |
 | BT unauthorized body | "Bluetooth access is required. Open Settings to allow access." | State 1 |
 | Sheet — CTA | "Connect" | State 2 sheet |
@@ -417,14 +421,14 @@ No third-party packages, registries, or SDKs introduced.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
+- [ ] Dimension 1 Copywriting: PASS (empty scan list copy updated — 2026-06-04 revision)
 - [ ] Dimension 2 Visuals: PASS
 - [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
+- [ ] Dimension 4 Typography: PASS (collapsed to 4 sizes / 2 weights — 2026-06-04 revision)
+- [ ] Dimension 5 Spacing: PASS (all values snapped to 4pt grid — 2026-06-04 revision)
 - [ ] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** pending (re-check required after 2026-06-04 revision)
 
 ---
 
