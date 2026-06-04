@@ -523,6 +523,119 @@ fn seed_processed_capture_sqlite(path: &Path, rows: &[(&str, i64)]) {
     seed_processed_capture_sqlite_with_hex(path, &rows);
 }
 
+#[test]
+fn batch_import_with_active_device_id_stores_non_null_device_id_in_capture_session() {
+    // FIX-01: capture.import_frame_batch should persist active_device_id in capture_sessions.
+    // RED test — will fail to compile until Task 2 adds the active_device_id field to
+    // CapturedFrameBatchOptions.
+
+    let store = GooseStore::open_in_memory().unwrap();
+
+    // Arrange: create the capture session without an active_device_id (as the Swift side
+    // currently does — the fix will wire it up so the Rust side records it).
+    store
+        .start_capture_session(CaptureSessionInput {
+            session_id: "device-id-test-session",
+            source: "ios.corebluetooth.notification",
+            started_at_unix_ms: 1770000000000,
+            device_model: "WHOOP 5.0 HRMonitor",
+            active_device_id: None,
+            provenance_json: "{}",
+        })
+        .unwrap();
+
+    let frames = vec![CapturedFrameInput {
+        evidence_id: "device-id-test-frame-1".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-05-28T12:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 HRMonitor".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: Some("device-id-test-session".to_string()),
+        device_type: DeviceType::Goose,
+    }];
+
+    // Act: import with active_device_id supplied in batch options.
+    let report = import_captured_frame_batch(
+        &store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: Some("test-uuid-1234"),
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+
+    // Assert: the session row now carries the device id.
+    let session = store
+        .capture_session("device-id-test-session")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        session.active_device_id.as_deref(),
+        Some("test-uuid-1234"),
+        "capture_sessions.active_device_id must be non-NULL after batch import with device id"
+    );
+}
+
+#[test]
+fn batch_import_without_active_device_id_leaves_session_device_id_null() {
+    // FIX-01 backward-compatibility path: when active_device_id is None in options,
+    // the import still succeeds and capture_sessions.active_device_id stays NULL.
+
+    let store = GooseStore::open_in_memory().unwrap();
+
+    store
+        .start_capture_session(CaptureSessionInput {
+            session_id: "device-id-null-session",
+            source: "ios.corebluetooth.notification",
+            started_at_unix_ms: 1770000000000,
+            device_model: "WHOOP 5.0 Goose",
+            active_device_id: None,
+            provenance_json: "{}",
+        })
+        .unwrap();
+
+    let frames = vec![CapturedFrameInput {
+        evidence_id: "device-id-null-frame-1".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-05-28T12:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: Some("device-id-null-session".to_string()),
+        device_type: DeviceType::Goose,
+    }];
+
+    // Act: import WITHOUT active_device_id (backward-compatible path).
+    let report = import_captured_frame_batch(
+        &store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+
+    // Assert: active_device_id remains NULL — backward compat preserved.
+    let session = store
+        .capture_session("device-id-null-session")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        session.active_device_id,
+        None,
+        "capture_sessions.active_device_id must stay NULL when not supplied"
+    );
+}
+
 fn seed_processed_capture_sqlite_with_hex(path: &Path, rows: &[(&str, i64, &str)]) {
     let connection = Connection::open(path).unwrap();
     connection
