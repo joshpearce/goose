@@ -193,7 +193,11 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
   private var completionFlushScheduled = false
   private var queuedRowCount = 0
   private var isWriting = false
-  var activeDeviceID: String?
+  private var _activeDeviceID: String?
+  var activeDeviceID: String? {
+    get { stateLock.withLock { _activeDeviceID } }
+    set { stateLock.withLock { _activeDeviceID = newValue } }
+  }
 
   init(databasePath: String, maxQueuedRows: Int, maxBatchRows: Int) {
     self.databasePath = databasePath
