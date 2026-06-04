@@ -95,6 +95,10 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
       return
     }
     connectedDeviceName = device.name
+    hrConnectionState = "connecting"
+    DispatchQueue.main.async { [weak self] in
+      self?.owner?.hrConnectionState = "connecting"
+    }
     central?.connect(peripheral, options: nil)
   }
 
@@ -152,6 +156,9 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     reconnectBackoff.reset()
     pendingHRPeripheral = nil
     owner?.updateHRReconnectState("idle")
+    DispatchQueue.main.async { [weak self] in
+      self?.owner?.hrConnectionState = "connected"
+    }
   }
 
   func centralManager(
@@ -164,6 +171,21 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     hrPeripheral = nil
     pendingHRPeripheral = disconnectedPeripheral
     scheduleNextHRReconnect()
+    DispatchQueue.main.async { [weak self] in
+      self?.owner?.hrConnectionState = "disconnected"
+    }
+  }
+
+  func centralManager(
+    _ central: CBCentralManager,
+    didFailToConnect peripheral: CBPeripheral,
+    error: Error?
+  ) {
+    hrConnectionState = "disconnected"
+    hrPeripheral = nil
+    DispatchQueue.main.async { [weak self] in
+      self?.owner?.hrConnectionState = "disconnected"
+    }
   }
 
   // MARK: - CBPeripheralDelegate
@@ -229,5 +251,20 @@ extension GooseBLEClient {
   func connectHRMonitor(_ device: GooseDiscoveredDevice) {
     hrMonitorManager.connect(device)
     record(source: "ble.hr_monitor", title: "connect.requested", body: device.name)
+  }
+
+  func disconnectHRMonitor() {
+    hrMonitorManager.stopScan()
+    hrMonitorManager.hrStopReconnect()
+    if let peripheral = hrMonitorManager.hrPeripheral {
+      hrMonitorManager.central?.cancelPeripheralConnection(peripheral)
+    }
+    hrMonitorManager.hrConnectionState = "disconnected"
+    hrMonitorManager.connectedDeviceName = nil
+    hrMonitorManager.pendingHRPeripheral = nil
+    DispatchQueue.main.async { [weak self] in
+      self?.hrConnectionState = "disconnected"
+    }
+    record(source: "ble.hr_monitor", title: "disconnect.requested")
   }
 }
