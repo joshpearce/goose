@@ -8946,13 +8946,14 @@ fn bridge_hr_monitor_upload_stream_no_rr_when_not_present() {
 }
 
 #[test]
-fn bridge_hr_monitor_upload_stream_device_id_filter() {
-    // RED: device_id filter (CR-02) — only frames from the matching device are returned.
+fn bridge_hr_monitor_upload_stream_device_id_deferred() {
+    // CR-02 per-row device_id filtering is deferred to v3.0 (namespace mismatch between
+    // CoreBluetooth UUID and device_model BLE name). Verifies current behaviour:
+    // all frames in the time window are returned regardless of device_id value.
     let tempdir = tempfile::tempdir().unwrap();
     let db = tempdir.path().join("goose.sqlite");
     let db_path = db.display().to_string();
 
-    // Import two frames from different device models
     let import_resp = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
         "request_id": "hr-mon-import-filter",
@@ -8982,9 +8983,9 @@ fn bridge_hr_monitor_upload_stream_device_id_filter() {
             ]
         }
     }));
-    assert!(import_resp.ok, "import for device filter test failed: {:?}", import_resp.error);
+    assert!(import_resp.ok, "import failed: {:?}", import_resp.error);
 
-    // With device_id = "device-A", only device-A's frame should appear
+    // Per-row filter deferred — both frames returned regardless of device_id (UUID namespace)
     let streams_resp = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
         "request_id": "hr-mon-streams-filter",
@@ -8992,11 +8993,11 @@ fn bridge_hr_monitor_upload_stream_device_id_filter() {
         "args": {
             "database_path": db_path,
             "since_ts": 0.0,
-            "device_id": "device-A"
+            "device_id": "A1B2C3D4-E5F6-0000-0000-000000000001"
         }
     }));
-    assert!(streams_resp.ok, "upload streams with device_id filter failed: {:?}", streams_resp.error);
+    assert!(streams_resp.ok, "upload streams failed: {:?}", streams_resp.error);
     let result = streams_resp.result.unwrap();
     let hr = result["hr"].as_array().expect("hr must be an array");
-    assert_eq!(hr.len(), 1, "device_id filter should return only 1 frame (device-A), got: {:?}", hr);
+    assert_eq!(hr.len(), 2, "both frames returned (per-row filter deferred to v3.0), got: {:?}", hr);
 }

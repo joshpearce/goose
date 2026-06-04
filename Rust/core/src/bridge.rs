@@ -3061,23 +3061,12 @@ fn upload_get_recent_decoded_streams_bridge(
             continue;
         }
 
-        // D-06 / CR-02: filter by device_id when set.
-        // device_model in raw_evidence holds the sanitized BLE device name (sent by iOS).
-        // The iOS upload service sends the same name as device_id, so we compare against
-        // raw_evidence.device_model for per-row filtering.
-        if !args.device_id.is_empty() {
-            match store.raw_evidence(&frame.evidence_id) {
-                Ok(Some(evidence)) => {
-                    if evidence.device_model != args.device_id {
-                        continue;
-                    }
-                }
-                _ => {
-                    // No raw evidence found or lookup failed — skip frame to be safe
-                    continue;
-                }
-            }
-        }
+        // CR-02: per-row device_id filtering is deferred to v3.0 multi-device tracking.
+        // The device_id field (iOS CoreBluetooth peripheral UUID) and device_model
+        // (sanitized BLE device name) live in different namespaces — a comparison
+        // between them always mismatches. For the current single-device case, all
+        // captured frames belong to the active device, so the time-window filter
+        // (since_ts) is the correct and sufficient filter.
 
         let parsed: Option<ParsedPayload> =
             serde_json::from_str(&frame.parsed_payload_json).unwrap_or(None);
