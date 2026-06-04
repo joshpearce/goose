@@ -16,6 +16,8 @@
 - [ ] **FIX-01**: HR monitor frames are stored with the correct non-NULL `device_id` per row (CR-02 fix in `capture_import.rs`)
 - [ ] **FIX-02**: WHOOP BLE reconnection uses exponential backoff (1 s base, doubles, 60 s cap, 10-attempt circuit breaker) with manual retry and stop buttons in the UI
 - [ ] **FIX-03**: HR monitor BLE reconnection uses the same exponential backoff parameters as WHOOP (applied to `GooseBLEHRMonitorManager`)
+- [ ] **FIX-04**: Rust FFI dispatch wraps in `catch_unwind` and release profile uses `panic = "unwind"` so any Rust panic returns a JSON error instead of crashing the app (upstream PR #19)
+- [ ] **FIX-05**: Raw evidence payload retention limit reduced from 512 MB to 24 MB to prevent unbounded SQLite growth during large WHOOP history syncs (upstream PR #19)
 
 ### RTC — WHOOP 4.0 Clock Sync
 
@@ -59,26 +61,26 @@
 
 ## Traceability
 
-Populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | — | Pending |
-| FIX-02 | — | Pending |
-| FIX-03 | — | Pending |
-| WEAR-04 | — | Pending |
-| WEAR-05 | — | Pending |
-| WEAR-06 | — | Pending |
-| RTC-01 | — | Pending |
-| DASH-01 | — | Pending |
-| L10N-01 | — | Pending |
-| L10N-02 | — | Pending |
+| FIX-01 | Phase 9 | Pending |
+| FIX-02 | Phase 9 | Pending |
+| FIX-03 | Phase 9 | Pending |
+| FIX-04 | Phase 9 | Pending |
+| FIX-05 | Phase 9 | Pending |
+| WEAR-04 | Phase 10 | Pending |
+| WEAR-05 | Phase 10 | Pending |
+| WEAR-06 | Phase 11 | Pending |
+| RTC-01 | Phase 12 | Pending |
+| DASH-01 | Phase 13 | Pending |
+| L10N-01 | Phase 14 | Pending |
+| L10N-02 | Phase 14 | Pending |
 
 **Coverage:**
-- v3.0 requirements: 10 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 10 ⚠
+- v3.0 requirements: 12 total
+- Mapped to phases: 12 (Phases 9-14)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-04*
-*Last updated: 2026-06-04 — v3.0 initial definition*
+*Last updated: 2026-06-04 — added FIX-04 and FIX-05 from upstream PR #19 review*

@@ -18,6 +18,8 @@ v3.0 completes: HR monitor UX (scan UI, independent capture session), device_id 
 - Recovery V2 dashboard with bridge-backed data
 - Multi-language support (pt-PT localisation)
 - WHOOP 4.0 RTC sync — send current time via BLE to fix clock drift (upstream issue #17)
+- BLE reconnect backoff — exponential backoff + 10-attempt circuit breaker (upstream PR #18)
+- BLE reconnection backoff — exponential backoff + 10-attempt circuit breaker (upstream PR #18)
 
 ## Core Value
 
@@ -55,6 +57,9 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - [ ] Recovery V2 dashboard with bridge-backed data (phase 999.4)
 - [ ] pt-PT localisation — multi-language support
 - [ ] WHOOP 4.0 RTC sync — send current time via BLE to fix clock drift (upstream issue #17)
+- [ ] BLE reconnect backoff — exponential backoff + 10-attempt circuit breaker (upstream PR #18); apply to both WHOOP and HR monitor delegates
+- [ ] FFI panic safety — `catch_unwind` + `panic = "unwind"` in release so panics return JSON error instead of crashing (upstream PR #19)
+- [ ] Storage retention cap — reduce raw evidence retention from 512 MB to 24 MB to prevent SQLite bloat on large history syncs (upstream PR #19)
 
 ### Deferred (v3+)
 

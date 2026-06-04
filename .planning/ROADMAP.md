@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 Remote Server + Upstream PRs** — Phases 1-5 (shipped 2026-06-03)
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
-- 📋 **v3.0 Wearable UX & CI Hardening** — Phases TBD (planned)
+- 🚧 **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-14 (in progress)
 
 ## Phases
 
@@ -35,9 +35,85 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 
 </details>
 
-### 📋 v3.0 Wearable UX & CI Hardening (Planned)
+### 🚧 v3.0 Wearable UX, CI Hardening & RTC Sync (In Progress)
 
-Planned phases — promote with `/gsd-review-backlog` or `/gsd-new-milestone`
+**Milestone Goal:** Complete the HR monitor UX, fix foundational BLE and data integrity bugs, deliver Recovery V2 dashboard, sync WHOOP 4.0 clock, and add pt-PT localisation.
+
+- [ ] **Phase 9: BLE Stability & Data Integrity** — Fix CR-02 device_id, BLE reconnect backoff, FFI panic safety, storage retention limit
+- [ ] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status
+- [ ] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate
+- [ ] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect
+- [ ] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data
+- [ ] **Phase 14: pt-PT Localisation** — Static catalog + dynamic status strings in European Portuguese
+
+## Phase Details
+
+### Phase 9: BLE Stability & Data Integrity
+**Goal**: BLE connections are resilient, HR monitor frames are stored with correct per-row device identifiers, FFI panics return JSON errors instead of crashing, and storage growth is bounded
+**Depends on**: Phase 8.1 (v2.0 complete)
+**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05
+**Success Criteria** (what must be TRUE):
+  1. HR monitor frames written to the database contain a non-NULL `device_id` matching the connected HR monitor device
+  2. After a WHOOP disconnection, the app retries with exponential backoff (1 s base, doubles, 60 s cap) and stops after 10 attempts, showing attempt count in the UI
+  3. After an HR monitor disconnection, the same backoff parameters apply and the UI reflects reconnect state
+  4. User can tap a manual retry button to restart reconnection at any time, and a stop button to abort it
+  5. A Rust panic in the FFI layer returns a structured JSON error instead of terminating the app process
+  6. Raw evidence payload retention is capped at 24 MB; a large history sync does not balloon the SQLite database
+**Plans**: TBD
+
+### Phase 10: HR Monitor Scan/Connect UI
+**Goal**: Users can discover and connect nearby HR monitors from within the app
+**Depends on**: Phase 9
+**Requirements**: WEAR-04, WEAR-05
+**Success Criteria** (what must be TRUE):
+  1. User can initiate an HR monitor scan from the app and see a live list of discovered devices showing device name and RSSI
+  2. The scan list updates in real time as devices appear and disappear
+  3. User can tap a device in the list to initiate a connection to that HR monitor
+  4. The UI shows connection progress and confirms when the HR monitor is connected
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 11: HR Monitor Independent Capture
+**Goal**: Users can run an HR monitor capture session without requiring an active WHOOP session
+**Depends on**: Phase 9, Phase 10
+**Requirements**: WEAR-06
+**Success Criteria** (what must be TRUE):
+  1. HR monitor frames are captured and stored when no WHOOP session is active
+  2. HR monitor capture starts and stops independently of the WHOOP session lifecycle
+  3. Captured HR monitor data (BPM and RR intervals) appears in the upload payload regardless of WHOOP session state
+**Plans**: TBD
+
+### Phase 12: WHOOP 4.0 RTC Clock Sync
+**Goal**: WHOOP 4.0 clock drift is automatically corrected after each BLE connection
+**Depends on**: Phase 9
+**Requirements**: RTC-01
+**Success Criteria** (what must be TRUE):
+  1. After connecting a WHOOP 4.0, the app automatically reads the device clock and compares it to iPhone time
+  2. When drift exceeds the configured threshold, the app writes the current iPhone time to the WHOOP 4.0 via BLE
+  3. The sync is silent (no user prompt required) and does not interrupt normal BLE data capture
+**Plans**: TBD
+
+### Phase 13: Recovery V2 Dashboard
+**Goal**: Users can view a live Recovery V2 dashboard with bridge-backed biometric data
+**Depends on**: Phase 9
+**Requirements**: DASH-01
+**Success Criteria** (what must be TRUE):
+  1. User can see a hero recovery score on the Recovery V2 dashboard derived from live bridge data
+  2. User can see current HRV and resting heart rate values, not placeholder zeros
+  3. User can see a 7-day trend of recovery scores on the dashboard
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 14: pt-PT Localisation
+**Goal**: All user-visible text in the app is presented in European Portuguese
+**Depends on**: Phase 10, Phase 11, Phase 13 (all UI stable)
+**Requirements**: L10N-01, L10N-02
+**Success Criteria** (what must be TRUE):
+  1. All static UI text strings are stored in a `Localizable.xcstrings` String Catalog and rendered in pt-PT when the device language is Portuguese (Portugal)
+  2. Dynamic status strings (BLE connection state, sync state, upload state) displayed in the UI appear in pt-PT
+  3. No hardcoded English text remains visible in the main user-facing UI flows
+**Plans**: TBD
+**UI hint**: yes
 
 ## Progress
 
@@ -52,40 +128,18 @@ Planned phases — promote with `/gsd-review-backlog` or `/gsd-new-milestone`
 | 7. Android Port Foundations + CI | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8. Additional Wearables E2E | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8.1. Gap closure WEAR-01/WEAR-03 | v2.0 | 2/2 | Complete | 2026-06-04 |
-
+| 9. BLE Stability & Data Integrity | v3.0 | 0/? | Not started | - |
+| 10. HR Monitor Scan/Connect UI | v3.0 | 0/? | Not started | - |
+| 11. HR Monitor Independent Capture | v3.0 | 0/? | Not started | - |
+| 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
+| 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
+| 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
 
 ## Backlog
 
-### Phase 08.1: Close gap WEAR-01/WEAR-03: integrate parse_hr_measurement into upload.get_recent_decoded_streams so HR monitor uploads contain decoded hr/rr stream data (INSERTED)
+### Phase 999.4: Recovery V2 Completion (promoted to Phase 13 — v3.0)
 
-**Goal:** Integrate `parse_hr_measurement` into `upload_get_recent_decoded_streams_bridge` so HR monitor (0x2A37) upload payloads contain decoded hr/rr stream data, and fix CR-02 (real device_id filter). Storage path fix required: HR monitor frames must reach `decoded_frames` (they currently fail `parse_frame`'s 0xAA check and land in `raw_evidence` only).
-**Requirements**: WEAR-01, WEAR-03 (gap closure), CR-02
-**Depends on:** Phase 8
-**Plans:** 2/2 plans complete
-Plans:
-**Wave 1**
-
-- [x] 08.1-01-PLAN.md — Store HR monitor GATT frames as decoded_frames rows + integrate parse_hr_measurement into upload bridge + CR-02 device_id filter (Wave 1)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 08.1-02-PLAN.md — Integration tests: HR monitor hr stream (bpm + rr_intervals) and device_id filter (Wave 2)
-
-### Phase 999.4: Recovery V2 Completion (BACKLOG)
-
-**Goal:** Complete the Recovery V2 dashboard with real bridge-backed data, replacing placeholder/zero values with trusted packet-derived metrics.
-
-**What's needed (from `recovery-todo.md`):**
-
-- Wire Recovery V2 trend rows to bridge-backed daily recovery, HRV, and resting HR series when the bridge exposes trusted daily values
-- Replace zero vitals cards with trusted packet-derived respiratory rate, SpO2, and wrist-temperature fields once their semantics are verified
-- Add a real recovery timeline model that links the score to the primary sleep window and the packet/vitals inputs used by the score run
-- Add Recovery V2 snapshot tests or simulator screenshots for no-data, bridge-data, and packet-run-blocked states
-- Keep Recovery V2 free of fixture/sample values; show `0` or empty state until trusted local data exists
-
-**Milestone:** v3.0
-**Requirements:** TBD
-**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+Promoted to Phase 13: Recovery V2 Dashboard.
 
 ---
 
@@ -117,26 +171,9 @@ Plans:
 
 ---
 
-### Phase 999.2: Multi-Language Support (BACKLOG)
+### Phase 999.2: Multi-Language Support (promoted to Phase 14 — v3.0)
 
-**Goal:** Add localisation support so the app UI can be presented in multiple languages. Currently all UI strings are hardcoded in English. Add Portuguese (pt-PT) as the first localisation target, using Apple's standard String Catalog (`.xcstrings`) localisation system.
-
-**Current state (2026-06-03):**
-
-- All user-facing strings are hardcoded in Swift source (no `NSLocalizedString` or `String(localized:)`)
-- A small number of Portuguese strings were found and corrected to English as a first pass
-- No `.lproj` directories, no `.xcstrings` files, no `localizable` strings infrastructure
-
-**What's needed:**
-
-1. Enable localisation in `GooseSwift.xcodeproj` — add pt-PT locale
-2. Create `Localizable.xcstrings` (String Catalog, Xcode 15+ format)
-3. Wrap all user-facing strings in `String(localized:)` or `LocalizedStringKey`
-4. Provide pt-PT translations for all strings
-5. Test locale switching on device
-
-**Requirements:** TBD
-**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+Promoted to Phase 14: pt-PT Localisation.
 
 ---
 
