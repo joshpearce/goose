@@ -52,6 +52,10 @@ extension GooseBLEClient {
   }
 
   func updateBluetoothState() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateBluetoothState() }
+      return
+    }
     let previous = bluetoothState
     switch central?.state {
     case .poweredOn:
@@ -98,6 +102,10 @@ extension GooseBLEClient {
   }
 
   func updateConnectionState(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateConnectionState(value) }
+      return
+    }
     let previous = connectionState
     connectionState = value
     updateNotificationContext(connectionState: value)
@@ -108,6 +116,10 @@ extension GooseBLEClient {
   }
 
   func updateActiveDeviceName(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateActiveDeviceName(value) }
+      return
+    }
     activeDeviceName = value
     updateNotificationContext(activeDeviceName: value)
   }
@@ -198,6 +210,10 @@ extension GooseBLEClient {
   }
 
   func validatedAlarmID(_ rawValue: Int) -> UInt8? {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in _ = self?.validatedAlarmID(rawValue) }
+      return nil
+    }
     guard (0...255).contains(rawValue) else {
       alarmCommandStatus = "Alarm ID must be 0-255"
       record(level: .warn, source: "ble.alarm", title: "alarm.id.invalid", body: "\(rawValue)")
@@ -207,6 +223,10 @@ extension GooseBLEClient {
   }
 
   func writeClockCommand(_ kind: ClockCommandKind, syncIfNeeded: Bool) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeClockCommand(kind, syncIfNeeded: syncIfNeeded) }
+      return
+    }
     guard !isHistoricalSyncing else {
       failClockCommand("Clock command blocked during historical sync.")
       return
@@ -302,6 +322,10 @@ extension GooseBLEClient {
   }
 
   func writeAlarmCommand(_ kind: AlarmCommandKind) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeAlarmCommand(kind) }
+      return
+    }
     guard !isHistoricalSyncing else {
       alarmCommandStatus = "Alarm write blocked during historical sync"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: alarmCommandStatus)
@@ -392,6 +416,10 @@ extension GooseBLEClient {
     requestedStatus: String,
     updatePhysiologyStatus: Bool = true
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeSensorStreamCommands(commands, requestedStatus: requestedStatus, updatePhysiologyStatus: updatePhysiologyStatus) }
+      return
+    }
     guard !isHistoricalSyncing else {
       if updatePhysiologyStatus {
         physiologyCaptureStatus = "Blocked during historical sync"
@@ -459,6 +487,10 @@ extension GooseBLEClient {
     writeType: CBCharacteristicWriteType,
     updatePhysiologyStatus: Bool = true
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeSensorStreamCommand(command, peripheral: peripheral, characteristic: characteristic, writeType: writeType, updatePhysiologyStatus: updatePhysiologyStatus) }
+      return
+    }
     let sequence = nextSensorCommandSequence
     nextSensorCommandSequence = nextSensorCommandSequence == UInt8.max ? 180 : nextSensorCommandSequence + 1
     let frame = Self.buildV5CommandFrame(
@@ -491,6 +523,10 @@ extension GooseBLEClient {
   }
 
   func failClockCommand(_ message: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.failClockCommand(message) }
+      return
+    }
     clockCommandTimeoutWorkItem?.cancel()
     pendingClockCommand = nil
     strapClockStatus = message
@@ -498,6 +534,10 @@ extension GooseBLEClient {
   }
 
   func failAlarmCommand(_ message: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.failAlarmCommand(message) }
+      return
+    }
     alarmCommandTimeoutWorkItem?.cancel()
     pendingAlarmCommand = nil
     alarmCommandStatus = message
@@ -515,6 +555,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedBatterySample() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedBatterySample() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.lastBatteryPercent) != nil else {
       return
     }
@@ -535,6 +579,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedHRVSample() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedHRVSample() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.liveHRVRMSSD) != nil else {
       return
     }
@@ -555,6 +603,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedRestingHeartRateEstimate() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedRestingHeartRateEstimate() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.restingHeartRateEstimateBPM) != nil else {
       return
     }
@@ -600,6 +652,10 @@ extension GooseBLEClient {
   }
 
   func clearRememberedDevice(reason: String, source: String = "ble") {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.clearRememberedDevice(reason: reason, source: source) }
+      return
+    }
     let previous = rememberedDeviceDescription
     defaults.removeObject(forKey: DefaultsKey.rememberedDeviceID)
     defaults.removeObject(forKey: DefaultsKey.rememberedDeviceName)
@@ -622,6 +678,10 @@ extension GooseBLEClient {
   }
 
   func updateRememberedDeviceDescription() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateRememberedDeviceDescription() }
+      return
+    }
     guard let rememberedDeviceID else {
       rememberedDeviceDescription = "none"
       return
