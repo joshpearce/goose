@@ -137,6 +137,10 @@ extension GooseBLEClient {
   }
 
   func updateReconnectState(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateReconnectState(value) }
+      return
+    }
     let previous = reconnectState
     reconnectState = value
     if previous != value {
