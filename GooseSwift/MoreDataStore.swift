@@ -147,38 +147,23 @@ final class MoreDataStore: ObservableObject {
     rawExportEnd = end
   }
 
-  // Subscribe to BLE state changes that affect route status. Calling this binds
-  // the store to the BLE client and GooseAppModel so that routeStatus is only
-  // updated when a relevant property actually changes, not on every render.
+  // Subscribe to BLE state changes that affect route status. Merges all relevant
+  // publishers into a single debounced stream so concurrent state transitions
+  // (e.g. connectionState + hrConnectionState both changing on connect) produce
+  // exactly one refreshRouteStatus call per runloop tick.
   func bindRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
     bleStatusCancellables.removeAll()
-    ble.$connectionState
-      .removeDuplicates()
-      .sink { [weak self, weak ble, weak model] _ in
-        Task { @MainActor [weak self] in
-          guard let self, let ble, let model else { return }
-          self.refreshRouteStatus(ble: ble, model: model)
-        }
-      }
-      .store(in: &bleStatusCancellables)
-    ble.$hrConnectionState
-      .removeDuplicates()
-      .sink { [weak self, weak ble, weak model] _ in
-        Task { @MainActor [weak self] in
-          guard let self, let ble, let model else { return }
-          self.refreshRouteStatus(ble: ble, model: model)
-        }
-      }
-      .store(in: &bleStatusCancellables)
-    model.$helloSummary
-      .removeDuplicates()
-      .sink { [weak self, weak ble, weak model] _ in
-        Task { @MainActor [weak self] in
-          guard let self, let ble, let model else { return }
-          self.refreshRouteStatus(ble: ble, model: model)
-        }
-      }
-      .store(in: &bleStatusCancellables)
+    Publishers.MergeMany(
+      ble.$connectionState.removeDuplicates().map { _ in () },
+      ble.$hrConnectionState.removeDuplicates().map { _ in () },
+      model.$helloSummary.removeDuplicates().map { _ in () }
+    )
+    .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
+    .sink { [weak self, weak ble, weak model] in
+      guard let self, let ble, let model else { return }
+      self.refreshRouteStatus(ble: ble, model: model)
+    }
+    .store(in: &bleStatusCancellables)
     refreshRouteStatus(ble: ble, model: model)
   }
 
