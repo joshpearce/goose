@@ -1,257 +1,306 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-06-03
+**Analysis Date:** 2026-06-04
 
 ## Directory Layout
 
 ```
-goose/                                      # Repo root
-├── GooseSwift/                             # Main iOS app target (Swift sources + assets)
-│   ├── GooseSwiftApp.swift                 # @main entry point
-│   ├── GooseAppModel.swift                 # Central coordinator (@MainActor ObservableObject)
-│   ├── GooseAppModel+*.swift               # Domain extensions (9 files)
-│   ├── GooseBLEClient.swift                # CoreBluetooth central manager
-│   ├── GooseBLEClient+*.swift              # BLE extensions (9 files)
-│   ├── GooseRustBridge.swift               # FFI bridge to Rust core
-│   ├── GooseSwift-Bridging-Header.h        # Imports goose_core_bridge.h
-│   ├── HealthDataStore.swift               # Metric query store (@MainActor ObservableObject)
-│   ├── HealthDataStore+*.swift             # Store extensions (10 files)
-│   ├── AppRouter.swift                     # Navigation state
-│   ├── AppShellView.swift                  # Tab bar shell (Home/Health/Coach/More)
-│   ├── RootView.swift                      # Onboarding gate
-│   ├── Home*.swift                         # Home tab views and models
-│   ├── Health*.swift                       # Health tab views and models
-│   ├── Coach*.swift                        # AI coach tab views and models
-│   ├── More*.swift                         # Settings/debug tab views and models
-│   ├── Onboarding*.swift                   # Onboarding flow views and models
-│   ├── Sleep*.swift / SleepV2*.swift       # Sleep detail views
-│   ├── Fitness*.swift                      # Fitness/workout views
-│   ├── Activity*.swift                     # Activity recording and session models
-│   ├── Workout*.swift                      # Workout live activity models and controller
-│   ├── WorkoutLiveActivityAttributes.swift # Shared ActivityKit type (also used by extension)
-│   ├── Overnight*.swift                    # Overnight guard spool and mirror queue
-│   ├── Whoop*.swift                        # WHOOP data signal pipeline and event samples
-│   ├── *Pipeline*.swift                    # Data pipelines (WhoopDataSignal, PassiveActivity)
-│   ├── *Aggregator*.swift                  # UI state aggregators (coalesced publishing)
-│   ├── *Store.swift                        # Other stores (HealthDataStore, GooseMessageStore, MoreDataStore, HeartRateSeriesStore)
-│   ├── Packet*.swift                       # Packet monitor and UI state types
-│   ├── Notification*.swift                 # BLE notification frame parsing
-│   ├── CaptureFrameWriteQueue.swift        # Batched SQLite frame writes
-│   ├── GooseLocalDataExporter*.swift       # Export helpers (filesystem, metrics, validation)
-│   ├── GooseTheme.swift                    # Appearance configuration
-│   ├── GooseHello.swift                    # WHOOP client-hello handshake helpers
-│   ├── GooseSwift.entitlements             # App entitlements
-│   ├── Info.plist
-│   └── Assets.xcassets/                   # App icons, images
-├── GooseWorkoutLiveActivityExtension/      # WidgetKit / ActivityKit extension target
-│   ├── GooseWorkoutLiveActivityWidget.swift # @main for extension; Dynamic Island + lock screen
-│   └── Info.plist
+goose/                              # Repo root
+├── GooseSwift/                     # iOS app source (137 Swift files)
+├── GooseSwift.xcodeproj/           # Xcode project (two targets: app + widget extension)
+├── GooseSwiftTests/                # Swift unit tests (3 files)
+├── GooseWorkoutLiveActivityExtension/  # WidgetKit/ActivityKit extension (1 Swift file)
 ├── Rust/
-│   └── core/                              # Rust library crate
-│       ├── Cargo.toml
-│       ├── src/
-│       │   ├── lib.rs                     # Module declarations; re-exports GooseError/GooseResult
-│       │   ├── bridge.rs                  # C FFI exports + JSON dispatch (goose_bridge_handle_json)
-│       │   ├── store.rs                   # SQLite schema (v14), CRUD operations via rusqlite
-│       │   ├── protocol.rs                # BLE frame parsing (ParsedFrame, DeviceType)
-│       │   ├── metrics.rs                 # Algorithm definitions (sleep/recovery/strain/stress/HRV)
-│       │   ├── metric_features.rs         # Feature extraction runners
-│       │   ├── metric_readiness.rs        # Input readiness checks
-│       │   ├── capture_import.rs          # Frame batch import to SQLite
-│       │   ├── activity_sessions.rs       # Activity session storage and correction
-│       │   ├── historical_sync.rs         # Historical data sync dry-run and validation
-│       │   ├── health_sync.rs             # HealthKit sync dry-run helpers
-│       │   ├── energy_rollup.rs           # Daily/hourly energy rollup
-│       │   ├── recovery_rollup.rs         # Recovery sensor rollup
-│       │   ├── sleep_validation.rs        # Sleep data validation
-│       │   ├── algorithm_compare.rs       # Algorithm A/B comparison
-│       │   ├── calibration.rs             # Metric calibration records
-│       │   ├── export.rs                  # Raw export filtering and bundle validation
-│       │   ├── debug_ws.rs / debug_ws_server.rs # WebSocket debug server
-│       │   ├── step_counter.rs / step_discovery.rs / step_motion_estimator.rs
-│       │   ├── timeline.rs                # Activity timeline queries
-│       │   ├── commands.rs                # BLE command definitions and validation
-│       │   ├── fixtures.rs                # Test fixture helpers
-│       │   └── ...                        # ~15 more modules
-│       ├── include/
-│       │   └── goose_core_bridge.h        # C header: goose_bridge_handle_json, goose_bridge_free_string
-│       └── fixtures/                      # Owned and synthetic test fixture data
+│   └── core/                       # Rust static library
+│       ├── src/                    # 66 Rust source files + 35 CLI binaries in src/bin/
+│       ├── tests/                  # 42 Rust integration test files
+│       ├── fixtures/               # BLE capture fixtures (owned/ + synthetic/)
+│       └── include/                # C header for FFI (goose_core_bridge.h)
 ├── Packages/
-│   ├── WhoopProtocol/                     # Local Swift package (no Package.swift found — likely embedded)
-│   └── WhoopStore/                        # Local Swift package (no Package.swift found — likely embedded)
-├── GooseSwift.xcodeproj/                  # Xcode project
-├── build/                                 # Build outputs (not committed)
-├── docs/                                  # Project documentation and evidence
-│   ├── goose-swift-mvp/
-│   └── assets/
-├── Scripts/                               # Build or utility scripts
-├── .planning/                             # GSD planning documents (committed)
-│   └── codebase/                          # Codebase map documents
-├── README.md
-└── recovery-todo.md
+│   ├── WhoopProtocol/              # Placeholder SPM package (no source)
+│   └── WhoopStore/                 # Placeholder SPM package (no source)
+├── Scripts/
+│   └── build_ios_rust.sh           # Rust cross-compile script (invoked by Xcode build phase)
+├── server/                         # Self-hosted FastAPI + TimescaleDB server
+│   ├── ingest/                     # FastAPI service
+│   │   ├── app/                    # Python app package (main.py, store.py, ingest.py, read.py, …)
+│   │   └── tests/                  # Python test suite (29 test files)
+│   ├── client/                     # Python upload CLI (uploader.py)
+│   ├── dashboard/                  # Legacy dashboard (server.py)
+│   ├── db/                         # DB init scripts
+│   ├── packages/                   # Shared Python packages
+│   └── docker-compose.yml          # Docker Compose for ingest + TimescaleDB
+├── docs/                           # Architecture decision records, guides, evidence
+├── .planning/                      # GSD planning artifacts (committed)
+│   ├── codebase/                   # Codebase map documents (this file)
+│   ├── milestones/                 # Archived milestone phase docs
+│   ├── phases/                     # Active phase plans
+│   ├── quick/                      # Quick task logs
+│   ├── research/                   # Research notes
+│   └── todos/                      # Pending todo items
+├── .github/
+│   └── workflows/                  # CI: rust-core.yml, server-ci.yml, codeql.yml, security.yml
+├── build/                          # Pre-built Rust static libraries (committed)
+│   └── (libgoose_core.a for device/simulator)
+├── CLAUDE.md                       # Project instructions for Claude
+├── CONTRIBUTING.md
+└── README.md
 ```
 
-## Directory Purposes
+## Swift App (GooseSwift/)
 
-**`GooseSwift/`:**
-- Purpose: All Swift source for the main iOS app target
-- Contains: Entry point, view hierarchy, app model, BLE client, Rust bridge, data stores, pipelines, overnight guard, onboarding, export helpers, assets
-- Key files: `GooseSwiftApp.swift`, `GooseAppModel.swift`, `GooseRustBridge.swift`, `GooseBLEClient.swift`, `HealthDataStore.swift`
+**Total Swift files:** 137 (all in a single flat directory — no subdirectories)
 
-**`GooseWorkoutLiveActivityExtension/`:**
-- Purpose: Separate WidgetKit/ActivityKit extension process; renders Live Activity UI
-- Contains: One widget file; reads `WorkoutLiveActivityAttributes` pushed from main app
-- Key files: `GooseWorkoutLiveActivityWidget.swift`
+### App Entry & Navigation (5 files)
+- `GooseSwiftApp.swift` — `@main` entry point; injects `GooseAppModel` and `AppRouter` as `@StateObject`
+- `RootView.swift` — Onboarding gate; renders `OnboardingView` or `AppShellView`
+- `AppShellView.swift` — Tab bar; creates `HealthDataStore`
+- `AppRouter.swift` — Tab selection and deep-link routing
+- `GooseTheme.swift` — Global appearance configuration
 
-**`Rust/core/src/`:**
-- Purpose: The Rust library that does all computation and storage
-- Contains: FFI bridge dispatcher (`bridge.rs`), SQLite layer (`store.rs`), protocol parser (`protocol.rs`), metric algorithms, and domain modules
-- Key files: `bridge.rs`, `store.rs`, `lib.rs`, `protocol.rs`, `metrics.rs`
+### Central Coordinator (10 files)
+- `GooseAppModel.swift` — `@MainActor final class`; 430+ lines of `@Published` state and named `DispatchQueue` declarations
+- `GooseAppModel+ActivityRecording.swift`
+- `GooseAppModel+ActivityTimeline.swift`
+- `GooseAppModel+HealthCapture.swift`
+- `GooseAppModel+Lifecycle.swift`
+- `GooseAppModel+NotificationPipeline.swift` — BLE notification ingest pipeline (898 lines)
+- `GooseAppModel+OvernightRecovery.swift`
+- `GooseAppModel+OvernightRun.swift` — Overnight guard orchestration (815 lines)
+- `GooseAppModel+OvernightState.swift`
+- `GooseAppModel+PacketPublishing.swift` — Packet pipeline state publishing (816 lines)
+- `GooseAppModel+Upload.swift` — Upload trigger logic and server health check
 
-**`Rust/core/include/`:**
-- Purpose: C header that Swift imports via bridging header
-- Key files: `goose_core_bridge.h` — declares `goose_bridge_handle_json` and `goose_bridge_free_string`
+### BLE Client (10 files)
+- `GooseBLEClient.swift` — `CBCentralManagerDelegate` + `CBPeripheralDelegate`; 974 lines of `@Published` state
+- `GooseBLEClient+CentralDelegate.swift`
+- `GooseBLEClient+Commands.swift` — WHOOP command framing (974 lines)
+- `GooseBLEClient+DebugAndSync.swift`
+- `GooseBLEClient+HistoricalCommands.swift`
+- `GooseBLEClient+HistoricalHandlers.swift` — Historical sync response handling (733 lines)
+- `GooseBLEClient+HRMonitor.swift`
+- `GooseBLEClient+Parsing.swift` — Packet parsing dispatch (974 lines)
+- `GooseBLEClient+PeripheralDelegate.swift`
+- `GooseBLEClient+UserActions.swift`
+- `GooseBLEClient+VitalsAndLogging.swift`
 
-**`Rust/core/target/`:**
-- Purpose: Rust build artifacts (not committed)
-- Generated: Yes
-- Committed: No
+### Rust Bridge (2 files)
+- `GooseRustBridge.swift` — JSON-over-FFI wrapper; calls `goose_bridge_handle_json` / `goose_bridge_free_string`
+- `GooseSwift-Bridging-Header.h` — Imports `goose_core_bridge.h` into Swift
 
-**`Packages/`:**
-- Purpose: Local Swift packages (`WhoopProtocol`, `WhoopStore`) — appear to be embedded without their own `Package.swift` at the scanned location
-- Generated: No
-- Committed: Yes
+### Health Data Store (12 files)
+- `HealthDataStore.swift` — `@MainActor final class`; 288-line base with bridge instance and queue declarations
+- `HealthDataStore+ActivitySnapshots.swift`
+- `HealthDataStore+Cardio.swift`
+- `HealthDataStore+CoachSummaries.swift` — 864 lines; builds rich context for AI coach
+- `HealthDataStore+PacketInputs.swift`
+- `HealthDataStore+Sleep.swift`
+- `HealthDataStore+Snapshots.swift` — 1058 lines; primary scored-metrics query layer
+- `HealthDataStore+StaticSnapshots.swift`
+- `HealthDataStore+StressEnergy.swift`
+- `HealthDataStore+Trends.swift`
+- `HealthDataStore+Utilities.swift` — 1038 lines; shared helpers and date arithmetic
+- `HealthDataStore+Vitals.swift`
 
-**`build/`:**
-- Purpose: Build outputs
-- Generated: Yes
-- Committed: No
+### Remote Server Upload (2 files)
+- `GooseUploadService.swift` — Bearer-token POST to `/v1/ingest-decoded`; reads server URL and token from persisted config
+- `RemoteServerPersistence.swift` — `UserDefaults` keys, URL validator, Keychain wrapper for API token
 
-**`.planning/codebase/`:**
-- Purpose: GSD codebase map documents consumed by `/gsd-plan-phase` and `/gsd-execute-phase`
-- Generated: By GSD tooling
-- Committed: Yes
+### Overnight & Capture Pipeline (5 files)
+- `CaptureFrameWriteQueue.swift` — Batched SQLite frame insert via Rust bridge
+- `OvernightRawNotificationSpool.swift` — File-backed spool for overnight raw notifications (1157 lines)
+- `OvernightSQLiteMirrorQueue.swift` — Queued SQLite mirror writes during overnight guard
+- `NotificationFrameParsing.swift` — BLE frame reassembly and compact summary extraction
+- `WhoopDataSignalPipeline.swift` — Signal sample ingestion and aggregation
 
-## Key File Locations
+### Activity & Workouts (7 files)
+- `ActivityModels.swift`, `ActivityPersistenceTypes.swift`, `ActivitySessionModel.swift`
+- `ActivityLocationTracker.swift`
+- `PassiveActivityDetector.swift`
+- `WorkoutLiveActivityController.swift`
+- `WorkoutLiveActivityAttributes.swift` — Shared with widget extension target
 
-**Entry Points:**
-- `GooseSwift/GooseSwiftApp.swift`: iOS app `@main`
-- `GooseWorkoutLiveActivityExtension/GooseWorkoutLiveActivityWidget.swift`: WidgetKit extension `@main`
+### Health Views (40+ files)
+All `*Views.swift`, `*Screen.swift`, `*View.swift` files — SwiftUI `View` structs; no business logic.
+Key view files by section:
+- Home tab: `HomeDashboardView.swift`, `HomeScoreViews.swift`, `HomeTimelineViews.swift`, `HomeHealthMonitorViews.swift`
+- Health tab: `HealthView.swift`, `HealthDashboardViews.swift`, `HealthCardioViews.swift`, `HealthRecoveryStressViews.swift`, `HealthSleepOverviewViews.swift`, `HealthSleepSheetsViews.swift`, `HealthMetricFamilyStrainViews.swift` (931 lines)
+- Coach tab: `CoachView.swift`, `CoachChatScreen.swift`, `OpenAICoachChat.swift`
+- More tab: `MoreView.swift`, `MoreRemoteServerViews.swift`, `MoreCaptureViews.swift`, `MoreDebugViews.swift`, `MoreRawExportViews.swift`
+- Device: `DeviceView.swift` (703 lines), `ConnectionView.swift`
+- Sleep: `SleepDetailViews.swift`, `SleepV2BevelTrendViews.swift` (731 lines), `SleepV2InsightViews.swift`, `SleepV2TimelineViews.swift`
 
-**Rust FFI Boundary:**
-- `Rust/core/include/goose_core_bridge.h`: C header (2 symbols)
-- `GooseSwift/GooseSwift-Bridging-Header.h`: Swift bridging header (imports above)
-- `GooseSwift/GooseRustBridge.swift`: Swift wrapper class
+### Types, Models & Support (15 files)
+- `GooseBLETypes.swift`, `HealthDataTypes.swift`, `HealthModels.swift`
+- `ActivityModels.swift`, `CoachChatTypes.swift`, `HealthPacketCaptureTypes.swift`
+- `GooseLocalDataExporter.swift` + `GooseLocalDataExporter+*.swift` (4 files)
+- `HealthKitFullImporter.swift`, `HealthKitSleepImporter.swift`
+- `OnboardingModels.swift`, `OnboardingView.swift`, `OnboardingStepViews.swift`
+- `GooseMessageStore.swift`, `GooseHello.swift`
 
-**Rust Core:**
-- `Rust/core/src/bridge.rs`: JSON dispatch router (all bridge methods defined here)
-- `Rust/core/src/store.rs`: SQLite schema and persistence (schema v14)
-- `Rust/core/src/lib.rs`: Crate root and module declarations
+### Assets
+- `GooseSwift/Assets.xcassets/` — App icon, accent colour, onboarding images
 
-**App Coordinator:**
-- `GooseSwift/GooseAppModel.swift`: Base class declaration + constants
-- `GooseSwift/GooseAppModel+NotificationPipeline.swift`: BLE notification ingest pipeline
-- `GooseSwift/GooseAppModel+ActivityRecording.swift`: Activity session begin/finish
-- `GooseSwift/GooseAppModel+OvernightRun.swift`: Overnight guard start/stop
-- `GooseSwift/GooseAppModel+Lifecycle.swift`: `scenePhase` and deep-link handlers
+## Rust Core (Rust/core/)
 
-**BLE Client:**
-- `GooseSwift/GooseBLEClient.swift`: Class declaration, UUIDs, command kinds, constants
-- `GooseSwift/GooseBLEClient+PeripheralDelegate.swift`: GATT service/characteristic discovery, notification handling
-- `GooseSwift/GooseBLEClient+Commands.swift`: Command write helpers
-- `GooseSwift/GooseBLEClient+HistoricalCommands.swift`: GET_DATA_RANGE, SEND_HISTORICAL_DATA
+### Library Source (Rust/core/src/ — 66 .rs files)
 
-**Data Stores:**
-- `GooseSwift/HealthDataStore.swift`: Metric catalog load, packet input orchestration
-- `GooseSwift/HealthDataStore+PacketInputs.swift`: All `metrics.*` bridge calls (20+ methods)
-- `GooseSwift/HealthDataStore+Snapshots.swift`: Score runs (strain, recovery, stress)
-- `GooseSwift/MoreDataStore+Validation.swift`: Validation and audit bridge calls
+**Bridge & Store (heaviest files):**
+- `bridge.rs` — 8804 lines; dispatches 58+ JSON-RPC methods to all internal modules; defines `BRIDGE_METHODS` constant array
+- `store.rs` — 7594 lines; `GooseStore` struct; SQLite schema v14 with `CURRENT_SCHEMA_VERSION = 14`
 
-**Shared ActivityKit Type:**
-- `GooseSwift/WorkoutLiveActivityAttributes.swift`: `ActivityAttributes` struct shared between main target and extension
+**Protocol & Algorithms:**
+- `protocol.rs` — 834 lines; BLE frame hex parser; `ParsedFrame`, `ParsedPayload`, `DataPacketBodySummary`
+- `metrics.rs` — 3390 lines; all algorithm implementations: HRV v0, Recovery v0, Sleep v0/v1, Strain v0, Stress v0
+- `metric_features.rs` — Feature extraction for all sensor types
+- `metric_readiness.rs` — Readiness scoring and next-action recommendations
 
-**Database Path:**
-- Resolved at runtime: `ApplicationSupport/GooseSwift/goose.sqlite`
-- Canonical resolver: `HealthDataStore.defaultDatabasePath()` (`GooseSwift/HealthDataStore.swift:74`)
+**Domain Modules:**
+- `activity_sessions.rs`, `activity_candidates.rs`, `activity_identity.rs` — Activity detection and session management
+- `energy_rollup.rs`, `recovery_rollup.rs` — Daily/hourly rollup pipelines
+- `sleep_validation.rs` — Sleep stage label validation and release gates
+- `step_counter.rs`, `step_discovery.rs`, `step_motion_estimator.rs` — Pedometry pipeline
+- `capture_import.rs`, `capture_sanitize.rs`, `capture_correlation.rs` — BLE capture batch processing
+- `historical_sync.rs`, `health_sync.rs` — Historical data sync dry-run and validation
+- `calibration.rs` — Calibration dataset and linear calibration evaluation
+- `export.rs` — Raw data export bundling with SHA-256 checksums
+- `debug_ws.rs`, `debug_ws_server.rs` — WebSocket debug server (`ws://127.0.0.1:8765`)
+- `timeline.rs` — Packet timeline construction from decoded frames
+- `commands.rs` — WHOOP command definitions and validation
+- `algorithm_compare.rs` — Algorithm output comparison to reference implementations
+- `openwhoop_reference.rs` — OpenWHOOP attribution constants
 
-## Naming Conventions
+**Tooling Support:**
+- `fixtures.rs`, `validation_labels.rs`, `property_tests.rs`, `perf_budget.rs`
+- `privacy_lint.rs`, `ui_coverage.rs`, `local_health_validation.rs`, `report.rs`
+- `reference.rs`, `tool_args.rs`, `error.rs`, `lib.rs`
 
-**Files:**
-- `TypeName.swift` — primary type definition
-- `TypeName+Concern.swift` — extension file adding a cohesive slice of behaviour (e.g., `GooseAppModel+OvernightRun.swift`)
-- `*Views.swift` — SwiftUI view collections (multiple views in one file)
-- `*Types.swift` — type declarations without behaviour
-- `*Models.swift` — model structs/classes
-- `*Store.swift` — data store classes
-- `*Pipeline.swift` — background processing pipelines
+### CLI Binaries (Rust/core/src/bin/ — 35 binaries)
+All named `goose-*`. Used for development tooling, validation, benchmarking. Not included in the iOS static library. Examples:
+- `goose-capture-import` — Import captured frames to SQLite
+- `goose-algo-benchmark` — Algorithm performance benchmark
+- `goose-sleep-v1-release-gate` — Sleep v1 release gate validator
+- `goose-debug-ws-serve` — Start local WebSocket debug server
+- `goose-metric-input-readiness` — Check metric input readiness
 
-**Directories:**
-- `GooseSwift/` — flat; no subdirectory grouping by feature
+### Integration Tests (Rust/core/tests/ — 42 .rs files)
+- `bridge_tests.rs` — Bridge method dispatch tests
+- `protocol_tests.rs` — Frame parser tests
+- `algorithm_compare_tests.rs` — Algorithm regression tests
+- `export_tests.rs`, `sleep_validation_tests.rs`, `energy_rollup_tests.rs`
+- Plus 36 additional domain-specific test files
 
-**Types:**
-- Classes: PascalCase, descriptive noun (`GooseBLEClient`, `HealthDataStore`)
-- Extensions: `extension TypeName { }` in `TypeName+Concern.swift`
-- Enums: PascalCase; cases camelCase
-- Protocols: Not widely used; `CBCentralManagerDelegate` / `CBPeripheralDelegate` via extension on `GooseBLEClient`
+### Fixtures (Rust/core/fixtures/)
+- `owned/` — Real-device BLE capture fixtures
+- `synthetic/` — Synthetically generated test fixtures
 
-**Rust modules:**
-- `snake_case.rs` files; module names match the domain (e.g., `metric_features`, `capture_import`)
+### C Header (Rust/core/include/)
+- `goose_core_bridge.h` — Declares three C symbols: `goose_core_version_json`, `goose_bridge_handle_json`, `goose_bridge_free_string`
+
+### Pre-built Libraries (build/)
+- `Rust/iphoneos/libgoose_core.a` — ARM64 device static library
+- `Rust/iphonesimulator/libgoose_core.a` — ARM64 + x86_64 simulator static library
+Both are committed to git (skip rebuild if inputs unchanged).
+
+## Extensions
+
+### GooseWorkoutLiveActivityExtension/
+- `GooseWorkoutLiveActivityWidget.swift` — Single file; declares `GooseWorkoutLiveActivityWidget` (`ActivityWidget` conformance); renders Dynamic Island compact/expanded + lock-screen UI
+- `Info.plist` — Extension bundle config
+- Bundle ID: `com.goose.swift.WorkoutLiveActivityExtension`
+
+### GooseSwiftTests/ (3 files)
+- `GooseBLETypesTests.swift` — BLE type unit tests
+- `GooseUploadServiceTests.swift` — Upload service unit tests
+- `WearableDescriptorTests.swift` — Wearable descriptor unit tests
+- `Info.plist`
+
+## Build & Scripts
+
+### Scripts/
+- `build_ios_rust.sh` — Cross-compiles Rust core for iOS targets; reads `PLATFORM_NAME`, `CONFIGURATION`, `CURRENT_ARCH`, `IPHONEOS_DEPLOYMENT_TARGET` from Xcode environment; produces device and simulator static libraries; skips rebuild if inputs unchanged
+
+### GooseSwift.xcodeproj/
+- `project.pbxproj` — Main Xcode project; two targets: `GooseSwift` (app), `GooseWorkoutLiveActivityExtension`; `IPHONEOS_DEPLOYMENT_TARGET = 26.0`; Rust build phase invokes `Scripts/build_ios_rust.sh`
+
+### Rust/core/
+- `Cargo.toml` — Crate config; edition 2024; MSRV 1.94
+- `Cargo.lock` — Committed lockfile
+
+## Server (server/)
+
+### server/ingest/
+FastAPI service; Python 3.x; `requirements.txt` lists `fastapi`, `psycopg`, `pydantic`, `uvicorn`
+
+- `app/main.py` — FastAPI app; 14499 lines total; `POST /v1/ingest-decoded` (Bearer-auth), `GET /healthz`, `GET /`, dashboard static SPA mount; per-device recompute throttle (120s cooldown)
+- `app/store.py` — TimescaleDB write layer (13047 lines)
+- `app/read.py` — TimescaleDB read/query layer (14029 lines)
+- `app/ingest.py` — Ingest validation logic (2753 lines)
+- `app/config.py` — `load_config()` reads env vars
+- `app/db.py` — Connection management and schema bootstrap
+- `app/analysis/` — Daily computation pipeline (neurokit2 sleep staging)
+- `app/whoop_api/` — WHOOP API client helpers
+- `Dockerfile` — Python service container
+- `tests/` — 29 pytest test files
+
+### server/client/
+- `uploader.py` — CLI for manual upload from desktop (4644 lines)
+- `test_uploader.py` — Upload CLI tests
+
+### server/dashboard/
+- `server.py` — Legacy dashboard server (7729 lines)
+
+### server/docker-compose.yml
+- Defines `ingest` and `db` (TimescaleDB) services
+
+## Planning & Docs
+
+### .planning/
+All planning artifacts are committed to git.
+
+- `codebase/` — Codebase map documents (ARCHITECTURE.md, STACK.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, INTEGRATIONS.md, CONCERNS.md)
+- `milestones/` — Archived milestone phase directories (`v2.0-phases/`, `v1.0-phases/`)
+- `phases/` — Active phase plans (one subdirectory per phase, e.g., `06-whoop-gen4-ios-support/`)
+- `quick/` — Quick task logs (timestamped subdirectories)
+- `research/` — Architecture and protocol research notes
+- `todos/pending/` — Pending todo items
+- `PROJECT.md`, `ROADMAP.md`, `STATE.md`, `MILESTONES.md` — Project-level status
+
+### docs/
+- `architecture/` — Architecture decision records
+- `api/` — API documentation
+- `guides/` — Developer guides
+- `goose-swift-mvp/` — MVP evidence and health data screenshots
+- `ADR-android-jni.md` — Android/JNI architecture decision record
 
 ## Where to Add New Code
 
-**New SwiftUI view:**
-- Implementation: `GooseSwift/FeatureNameView.swift` (or `FeatureNameViews.swift` if multiple)
-- Follow existing views: use `@EnvironmentObject private var model: GooseAppModel` and `@EnvironmentObject private var router: AppRouter`
+**New SwiftUI View:**
+- Add `*View.swift` or `*Views.swift` to `GooseSwift/` (flat directory)
+- No subdirectory structure exists; all 137 Swift files are in the same directory
 
-**New GooseAppModel behaviour:**
-- Create `GooseSwift/GooseAppModel+NewConcern.swift` as an extension on `GooseAppModel`
-- Keep `@MainActor` constraint; dispatch heavy work to named `DispatchQueue` and callback via `Task { @MainActor in ... }`
+**New GooseAppModel concern:**
+- Add `GooseSwift/GooseAppModel+<Concern>.swift` as a new extension file
+- Declare stored properties needed in `GooseSwift/GooseAppModel.swift` (extensions cannot declare stored properties)
 
-**New Rust bridge method (Swift side):**
-- Add call site in the appropriate extension file (`HealthDataStore+*.swift` for metric queries, `GooseAppModel+*.swift` for pipeline operations)
-- Always pass `database_path` from `HealthDataStore.defaultDatabasePath()` for storage-backed methods
-- Dispatch on a background queue; never call from `@MainActor` directly
+**New HealthDataStore metric query:**
+- Add to the appropriate existing extension (e.g., `GooseSwift/HealthDataStore+Cardio.swift`) or create `GooseSwift/HealthDataStore+<Domain>.swift`
 
-**New Rust bridge method (Rust side):**
-- Add match arm in `Rust/core/src/bridge.rs` dispatch block
-- Implement logic in the appropriate domain module under `Rust/core/src/`
-- Export type in `Rust/core/src/lib.rs` if needed
+**New Rust bridge method:**
+- Add the implementation module to `Rust/core/src/<module>.rs`
+- Register the module in `Rust/core/src/lib.rs`
+- Add dispatch arm to `Rust/core/src/bridge.rs` `handle_bridge_request()` match block
+- Add method name string to `BRIDGE_METHODS` constant in `bridge.rs`
+- Add integration test to `Rust/core/tests/<module>_tests.rs`
 
-**New BLE command:**
-- Add command kind to `GooseBLEClient.SensorStreamCommandKind` or create a new enum in `GooseBLEClient.swift`
-- Implement send logic in `GooseSwift/GooseBLEClient+Commands.swift`
-- Add response handler in `GooseSwift/GooseBLEClient+Parsing.swift` or `GooseBLEClient+PeripheralDelegate.swift`
+**New server endpoint:**
+- Add route handler to `server/ingest/app/main.py`
+- Add DB write logic to `server/ingest/app/store.py`
+- Add test to `server/ingest/tests/`
 
-**New tab:**
-- Add case to `GooseAppTab` enum in `GooseSwift/AppShellView.swift`
-- Add `tabContent(for:)` case in `AppShellView`
-- Add routing in `AppRouter` if deep-link navigation is needed
-
-**New data store:**
-- Create `GooseSwift/FeatureDataStore.swift` as `@MainActor final class FeatureDataStore: ObservableObject`
-- Follow `HealthDataStore` pattern: own a `GooseRustBridge` instance; dispatch bridge calls on a background queue; publish results via `@Published`
-
-**Utilities / helpers:**
-- Shared formatting helpers: `GooseSwift/FitnessFormatting.swift`, `GooseSwift/HomeFormatting.swift` (extend or create analogous file)
-- Theme: `GooseSwift/GooseTheme.swift`
-
-## Special Directories
-
-**`Rust/core/fixtures/`:**
-- Purpose: Test fixture data (owned captures and synthetic data for Rust unit tests)
-- Generated: Partially (synthetic); owned data is captured from real devices
-- Committed: Yes
-
-**`GooseSwift/Assets.xcassets/`:**
-- Purpose: App icons and image assets
-- Generated: No
-- Committed: Yes
-
-**`build/`:**
-- Purpose: Rust and Xcode build artefacts
-- Generated: Yes
-- Committed: No (in `.gitignore`)
+**New Swift type/model:**
+- Add `*Types.swift` or `*Models.swift` to `GooseSwift/` following the existing naming conventions
 
 ---
 
-*Structure analysis: 2026-06-03*
+*Structure analysis: 2026-06-04*

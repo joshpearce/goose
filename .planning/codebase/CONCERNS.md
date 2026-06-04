@@ -1,203 +1,223 @@
-# Codebase Concerns
+# Technical Concerns
 
-**Analysis Date:** 2026-06-03
-
----
-
-## Tech Debt
-
-### Rust FFI Bridge is a Single Monolithic Dispatch Table
-
-- Issue: `bridge.rs` is 8,153 lines with a single `handle_bridge_request_inner` function containing 143+ match arms mapping string method names to handler calls. Every new Rust capability requires extending this one file. There is no middleware, no versioning at the method level, and no type-safe call boundary — all args cross as `serde_json::Value` / `[String: Any]` dictionaries.
-- Files: `Rust/core/src/bridge.rs`, `GooseSwift/GooseRustBridge.swift`
-- Impact: Merges and rebases become painful as the file grows. Method contract breakage is invisible at compile time; a renamed method key silently causes a runtime `unknown_method` error on the Swift side.
-- Fix approach: Group methods into sub-dispatchers by namespace (e.g., `metrics.*`, `overnight.*`, `export.*`) so each namespace lives in its own file. Introduce a typed method registry or macro to enforce that every Swift call site matches a registered Rust method key.
-
-### Multiple Uncoordinated `GooseRustBridge` Instances
-
-- Issue: Thirteen separate `GooseRustBridge()` instantiation sites across the app create independent objects, each with their own `counter` state. The bridge itself is stateless on the Rust side, so counter collisions do not corrupt data, but `lastTiming` is per-instance and there is no shared timing budget or call-rate limiting.
-- Files: `GooseSwift/HealthDataStore.swift:25`, `GooseSwift/MoreDataStore.swift:93`, `GooseSwift/OvernightSQLiteMirrorQueue.swift:33`, `GooseSwift/CaptureFrameWriteQueue.swift:183`, `GooseSwift/NotificationFrameParsing.swift:215`, `GooseSwift/GooseAppModel+ActivityTimeline.swift:110`, `GooseSwift/GooseLocalDataExporter+FileSystem.swift:29`, `GooseSwift/GooseLocalDataExporter+Metrics.swift:250`, `GooseSwift/GooseAppModel+HealthCapture.swift:21`, `GooseSwift/MoreDataStore.swift:481`, `GooseSwift/HealthDataStore+PacketInputs.swift:8`
-- Impact: Makes it impossible to reason about total bridge call frequency or aggregate timing in production. When adding perf budgets or call throttling, each site must be updated individually.
-- Fix approach: Centralise behind a shared singleton or injected service, inject via dependency injection at app startup.
-
-### `runPacketScores()` Blocks `@MainActor`
-
-- Issue: `HealthDataStore.runPacketScores()` (called directly from a SwiftUI `Button` action in `HealthDashboardViews.swift:613`) makes five sequential synchronous Rust FFI calls (sleep, strain, recovery, stress) on the main actor thread without offloading to a background queue. `runPacketInputs()` was correctly offloaded to `packetInputQueue`, but `runPacketScores` was not.
-- Files: `GooseSwift/HealthDataStore+Snapshots.swift:7-42`, `GooseSwift/HealthDashboardViews.swift:613`
-- Impact: Each call serialises JSON, crosses the FFI boundary, runs Rust computation, and deserialises back. On a real dataset this can block the UI for hundreds of milliseconds.
-- Fix approach: Mirror the `runPacketInputs` pattern — add a `packetScoreQueue`, run scores there, dispatch results back to `@MainActor`.
-
-### `refreshBridgeCatalogs()` Blocks During App Launch on `@MainActor`
-
-- Issue: `HealthDataStore.loadBridgeCatalogsIfNeeded()` → `refreshBridgeCatalogs()` is called from `HealthDataStore.init()` (via line 111) and from `HealthView.swift:110`. The three `bridge.requestValue` calls inside it are synchronous on the main actor. This runs every time the health view appears before the catalog has loaded.
-- Files: `GooseSwift/HealthDataStore.swift:106-198`, `GooseSwift/HealthView.swift:110`
-- Impact: Blocks the main thread during launch, potentially causing frame drops or a perceived freeze if the Rust library takes time to warm up.
-- Fix approach: Move catalog loading to `Task.detached` or a background actor, returning results to `@MainActor` via `MainActor.run`.
-
-### Additive-Only SQLite Migration Strategy Has No Rollback Path
-
-- Issue: Schema migrations in `GooseStore::migrate()` use `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN` guards. Version numbers 1–14 are bulk-inserted into `goose_schema_migrations` in a single `execute_batch`. There is no downgrade path — if a user rolls back to an older app binary, the schema version check in `storage_check.rs:96` will fail and the database will be reported as unusable.
-- Files: `Rust/core/src/store.rs:928-1431`, `Rust/core/src/storage_check.rs:91-98`
-- Impact: A user who installs a beta then reverts to a stable release will see a schema-mismatch error and lose access to their data until they either re-upgrade or delete the database.
-- Fix approach: Document the no-rollback constraint explicitly in the schema version comment. Consider writing a `downgrade_schema` path for at least one version back, or surface a user-visible migration warning before writing schema version bumps.
-
-### `@unchecked Sendable` Bypasses Swift Concurrency Checks in Four Critical Classes
-
-- Issue: `OvernightSQLiteMirrorQueue`, `OvernightRawNotificationSpool`, `CaptureFrameWriteQueue`, and `NotificationFrameParser` all suppress the Swift concurrency checker with `@unchecked Sendable`. These classes manage internal `DispatchQueue`-guarded mutable state, which is correct in principle, but the suppression disables all compiler-enforced safety guarantees, meaning new properties added in the future won't be automatically checked.
-- Files: `GooseSwift/OvernightSQLiteMirrorQueue.swift:25`, `GooseSwift/OvernightRawNotificationSpool.swift:65`, `GooseSwift/CaptureFrameWriteQueue.swift:180`, `GooseSwift/NotificationFrameParsing.swift:214`
-- Impact: Developer discipline is the only guard. A future contributor adding a non-queue-protected property won't get a compiler error.
-- Fix approach: Replace with `actor` types wherever the internal dispatch queue pattern can be expressed as an actor, eliminating the need for `@unchecked Sendable`.
+**Analysis Date:** 2026-06-04
 
 ---
 
-## Security Considerations
+## Critical Issues
 
-### OpenAI Client ID Hardcoded in Source
+### C1: `panic = "abort"` applies uniformly to Android release builds — no per-target override
 
-- Risk: `CodexSelfContainedAuthClient` has `private let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"` embedded directly in Swift source. This is a public OAuth client credential (device-flow clients are inherently public), but publishing it in an open-source fork means the ID is trivially discoverable. If OpenAI rate-limits or revokes this specific app's client ID, the coach feature will silently fail for all fork users without a code update.
-- Files: `GooseSwift/CodexEmbeddedAuth.swift:139`
-- Current mitigation: Device-flow OAuth client IDs are low-risk by design (no secret is embedded), and access tokens are stored in the Keychain.
-- Recommendations: Consider moving the client ID to an xcconfig/Info.plist build variable so it can be overridden per fork without touching source code.
+- **File:** `Rust/core/Cargo.toml` line 161 (`[profile.release]`)
+- **Severity:** HIGH — any Rust panic on Android kills the JVM process with SIGABRT; no exception is surfaced, no crash report, no recovery possible
+- **Detail:** The `[profile.release]` section has `panic = "abort"` with no `[profile.release-android]` override. The Android JNI entry point (`bridge.rs:8784`) does not use `std::panic::catch_unwind`. Any unhandled `.unwrap()` or `.expect()` in a Rust method reached via JNI will abort the Android process.
+- **Fix approach:** Add a custom profile `[profile.release-android]` with `panic = "unwind"` and build Android with `--profile release-android`. Alternatively, add `std::panic::catch_unwind` inside `Java_com_goose_core_GooseBridge_handle` at `bridge.rs:8789`.
 
-### Coach Conversation History Stored in UserDefaults (Unencrypted)
+### C2: JNI response string not validated for MUTF-8 null bytes — potential JVM crash
 
-- Risk: `CoachChatTypes` persists the full conversation history (user health questions and assistant answers) to `UserDefaults.standard` under key `goose.coach.conversation.v1`. UserDefaults are backed by a plist in the app container — not encrypted, not in the Keychain.
-- Files: `GooseSwift/CoachChatTypes.swift:94-117`
-- Current mitigation: Data is in the app sandbox (inaccessible to other apps without jailbreak). The app does not appear to send this data off-device.
-- Recommendations: Conversations may contain health-sensitive text typed by the user. Store them in an encrypted Core Data store or under a ProtectedData file protection class, or clear on device lock. At minimum, add a clear-on-upgrade migration.
+- **File:** `Rust/core/src/bridge.rs` lines 8800–8802
+- **Severity:** HIGH — specific BLE payloads containing `\0` bytes in hex strings could crash the JVM on Android
+- **Detail:** `env.new_string(response)` at line 8800 passes the raw JSON bridge response directly. The JSON may contain hex-encoded BLE frame data (`payload_hex`) with null bytes encoded as `\0` in the string. JNI's MUTF-8 encoding cannot represent a literal `\0`, causing a JNI abort.
+- **Fix approach:** Before `env.new_string(response)`, replace any null characters with a safe placeholder, or pass the response as `jbyteArray` instead of `jstring` and decode as UTF-8 on the Kotlin side.
 
-### `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace` Expose SQLite Database via Files App
+### C3: No Android `.cargo/config.toml` — Android build infrastructure missing
 
-- Risk: Both keys are set to `true` in `Info.plist`. This means the entire app container (including `GooseSwift/goose.sqlite` and its WAL/SHM files) is visible and copyable via the iOS Files app and iTunes file sharing without any additional authentication.
-- Files: `GooseSwift/Info.plist:34,59`
-- Current mitigation: Intended to support the raw-data export workflow.
-- Recommendations: Restrict file sharing to a dedicated `Exports/` subdirectory rather than exposing the entire app container. The SQLite database contains raw BLE biometric data.
+- **Files:** `Rust/core/` (no `.cargo/config.toml` present)
+- **Severity:** HIGH — `cargo build --target aarch64-linux-android` will fail with a cryptic linker error on any clean checkout; there is no `Scripts/build_android_rust.sh` equivalent
+- **Detail:** The iOS build is driven by `Scripts/build_ios_rust.sh` which sets `CARGO_TARGET_AARCH64_APPLE_IOS_LINKER`. No equivalent exists for Android. `rusqlite = { features = ["bundled"] }` compiles SQLite via the `cc` crate and requires the NDK clang toolchain to be explicitly configured.
+- **Fix approach:** Create `Rust/core/.cargo/config.toml` with `[target.aarch64-linux-android]` linker/ar settings derived from `ANDROID_NDK_HOME`. Add a `Scripts/build_android_rust.sh` analogous to the iOS script.
 
-### WHOOP BLE UUIDs Are Hardcoded Without Constants from the Reference Module
+### C4: Pending unimplemented quick task — `upload.ingest_fetched_streams` bridge method and UI actions
 
-- Risk: The twelve WHOOP service/characteristic UUIDs in `GooseBLEClient.swift:367-397` are raw `CBUUID(string:)` literals that duplicate the constants defined in `Rust/core/src/openwhoop_reference.rs:70-75`. If WHOOP changes UUIDs in a future firmware update, two independent locations must be updated and the Rust-side reference becomes inconsistent with the Swift-side scanning filter.
-- Files: `GooseSwift/GooseBLEClient.swift:366-397`, `Rust/core/src/openwhoop_reference.rs:70-75`
-- Current mitigation: The Rust reference file is well-attributed and pinned to a specific OpenWhoop commit.
-- Recommendations: Expose UUID constants via the bridge (`openwhoop.reference_report` already returns them) and have Swift consume them from the bridge response rather than hardcoding independently.
-
-### Debug WebSocket Server Has Configurable `bind_host` with No Auth
-
-- Risk: `DebugWsServerOptions.bind_host` is a runtime parameter. If set to `0.0.0.0` (which is a valid DNS-resolvable value), the debug WebSocket server accepts connections from all network interfaces on the device. There is no authentication, token check, or TLS on the server.
-- Files: `Rust/core/src/debug_ws_server.rs:25,69-80`
-- Current mitigation: The server is only started from the Swift side as a developer tool (`MoreDataStore+Validation.swift:212` hardcodes `ws://127.0.0.1:8765`), and only runs when explicitly triggered. It is not started at app launch.
-- Recommendations: Enforce `127.0.0.1` in the Swift call site; add a compile-time gate or runtime guard in `bind_debug_ws_listener` that rejects any non-loopback host in non-debug builds.
-
-### `NSAllowsLocalNetworking` Bypasses ATS for Local Network
-
-- Risk: `Info.plist` enables `NSAllowsLocalNetworking`, which exempts all local network connections from App Transport Security. This is appropriate for the debug WebSocket server but broadens the attack surface if any other local HTTP endpoint is inadvertently called.
-- Files: `GooseSwift/Info.plist:52-56`
-- Current mitigation: Scoped to `NSAllowsLocalNetworking` only (not `NSAllowsArbitraryLoads`).
-- Recommendations: No urgent action; document the rationale in a code comment alongside the plist entry.
+- **Files:** `Rust/core/src/bridge.rs`, `GooseSwift/GooseAppModel+Upload.swift`, `GooseSwift/MoreRemoteServerViews.swift`
+- **Severity:** HIGH — planned feature (Test Connection, Import from Server) is fully specified in `.planning/quick/260603-tqd-add-test-and-import-actions-to-remote-se/260603-tqd-PLAN.md` but not implemented; `upload.ingest_fetched_streams` bridge method does not exist; `testServerConnection()` and `importFromServer()` methods do not exist
+- **Fix approach:** Execute quick task `260603-tqd` per its PLAN.md.
 
 ---
 
-## Performance Bottlenecks
+## Security Concerns
 
-### JSON Serialisation Round-Trip on Every FFI Call
+### S1: `GooseUploadService` is `@unchecked Sendable` with mutable state accessed from concurrent tasks
 
-- Problem: Every Rust bridge call — including high-frequency overnight mirror flushes — serialises a Swift `[String: Any]` dictionary to JSON, converts to a C string, crosses the FFI boundary, parses JSON in Rust, and reverses the process on the response. This happens synchronously and involves heap allocations on both sides.
-- Files: `GooseSwift/GooseRustBridge.swift:40-68`, `Rust/core/src/bridge.rs:1908-1923`
-- Cause: The JSON-over-C-string protocol was chosen for safety and simplicity. It avoids manual struct layout across FFI but pays a serialisation cost on every call.
-- Improvement path: For the most frequent call (`overnight.mirror_batch`), consider a direct C struct ABI or binary encoding for the hot path. For lower-frequency calls, the current approach is acceptable.
+- **File:** `GooseSwift/GooseUploadService.swift` line 12
+- **Severity:** MEDIUM — `pendingBatchCount`, `lastUploadTimestamp`, and `lastSyncedCount` are mutated from `Task.detached` closures without a lock or actor
+- **Detail:** The comment at line 17 claims "Protected by Swift's cooperative thread pool — only mutated from upload tasks" but multiple concurrent `Task.detached` tasks (one per `upload()` call) can race on `pendingBatchCount`. The increment at line 32 and decrements at lines 40/45/49/66/82/93/124 are not atomic.
+- **Fix approach:** Make `GooseUploadService` an `actor` or protect mutable state with an `NSLock`.
 
-### `OvernightSQLiteMirrorQueue` Retries the Entire Batch on Any Error
+### S2: Bearer token transmitted over HTTP to non-private IPs is blocked by validator, but `localhost`/`.local` always allowed without HTTPS
 
-- Problem: In `flushPendingLocked()`, if the `overnight.mirror_batch` bridge call throws, all three pending arrays (`sessions`, `rawNotifications`, `historicalRangePolls`) are re-inserted at the front of their respective queues and retried on the next flush. A persistent Rust-side error (e.g., corrupt database) will fill the queue to `maxQueuedRows = 4096` entries and begin silently dropping new data.
-- Files: `GooseSwift/OvernightSQLiteMirrorQueue.swift:238-245`
-- Cause: The retry-all strategy is simple but does not distinguish recoverable errors (transient I/O) from fatal ones (schema mismatch, corrupt file).
-- Improvement path: Add a retry counter per-batch; after N consecutive failures, clear the queue and surface a persistent error rather than continuing to accumulate dropped rows silently.
+- **File:** `GooseSwift/RemoteServerPersistence.swift` lines 23–27
+- **Severity:** LOW — by design for local network use; documented in CLAUDE.md; `NSAllowsLocalNetworking = true` in `Info.plist` is consistent
+- **Detail:** URLs ending in `.local` or `localhost` bypass the HTTPS requirement. The API token is sent as `Bearer` in plain HTTP. Acceptable for a personal server on a trusted LAN, but a risk if a `.local` hostname resolves outside the LAN (mDNS spoofing).
+- **Mitigation in place:** `RemoteServerURLValidator` blocks public numeric IPs not in RFC 1918 ranges; blocks public hostnames without HTTPS.
+
+### S3: Remote server API token Keychain item uses `.afterFirstUnlockThisDeviceOnly` — accessible before user authentication after reboot
+
+- **File:** `GooseSwift/RemoteServerPersistence.swift` line 68
+- **Severity:** LOW — consistent with use case (background BLE capture needs token after reboot before first unlock); token is for a personal self-hosted server
+
+### S4: `tungstenite` WebSocket server binds only to `127.0.0.1` — host validation enforced in Rust
+
+- **File:** `Rust/core/src/debug_ws.rs` lines 720, 787
+- **Severity:** LOW — confirmed safe; `is_local_bind_host` at line 787 rejects any non-loopback bind address
 
 ---
 
-## Fragile Areas
+## Performance Concerns
 
-### Bridge Method String Keys Are the Only Contract Between Swift and Rust
+### P1: Rust bridge is synchronous — no runtime guard prevents `@MainActor` callers
 
-- Files: `Rust/core/src/bridge.rs:1952-2496`, all `GooseSwift/*.swift` call sites using `bridge.request(method: "...")`
-- Why fragile: Method names like `"overnight.mirror_batch"`, `"metrics.sleep_score_from_features"`, and `"export.raw_timeframe"` are free-form strings. A typo on either side produces a silent `methodFailed` error at runtime. There are no generated Swift stubs, no shared schema file, and no compile-time check.
-- Safe modification: When adding or renaming a method, grep both `bridge.rs` match arms and all Swift `bridge.request(method:)` call sites simultaneously. The bridge tests in `Rust/core/tests/bridge_tests.rs` do exercise all named methods — run them before any rename.
-- Test coverage: Rust integration tests cover all 143+ bridge methods. Swift side has zero unit tests; coverage depends entirely on manual UI exercise.
+- **Files:** `GooseSwift/GooseRustBridge.swift`, `Rust/core/src/bridge.rs`
+- **Severity:** MEDIUM — if called from `@MainActor` inline (the documented anti-pattern), blocks the UI thread; metric computations (e.g., `sleep_validation.rs` at 6334 lines) can be multi-second
+- **Current mitigation:** Architectural rule documented in CLAUDE.md: "Never call from `@MainActor` with expensive methods; always dispatch to a background queue first"
+- **Residual risk:** No runtime assertion enforces this rule; a future developer can violate it silently
 
-### `store.migrate()` Runs Inside a Single `execute_batch` with No Transaction Savepoints
+### P2: `GooseUploadService` uses `URLSessionConfiguration.ephemeral` — no background URL session
 
-- Files: `Rust/core/src/store.rs:928-1431`
-- Why fragile: All `CREATE TABLE IF NOT EXISTS` statements and the `PRAGMA user_version = 14` are in one `execute_batch`. If the batch partially executes and the app is killed mid-migration (e.g., by iOS), the schema may be left in an inconsistent intermediate state. SQLite's `execute_batch` does not wrap the entire batch in a single transaction by default.
-- Safe modification: Wrap schema changes in `BEGIN; ... COMMIT;` inside the batch, or use `conn.execute_batch("BEGIN; ...schema...; COMMIT;")` so the migration is atomic.
-- Test coverage: `store_tests.rs` and `storage_check_tests.rs` test the happy path but do not simulate partial migration failures.
+- **File:** `GooseSwift/GooseUploadService.swift` line 26
+- **Severity:** MEDIUM — if iOS suspends the app mid-upload, the in-flight task is cancelled and the batch is silently discarded (line 122: "discarding batch silently")
+- **Detail:** Uploads are retried 3x with 1/2/4s backoff within the same foreground session but are never persisted. A backgrounded upload is lost. Deferred to v3 as `UPLD-V2-02`.
+- **Fix approach:** Use `URLSessionConfiguration.background(withIdentifier:)` for uploads.
 
-### `GooseBLEClient` Has 972 Lines on a Single Class with 70+ `@Published` Properties
+### P3: No upload sync cursor/watermark — in-memory `lastUploadAt` resets to nil on restart
 
-- Files: `GooseSwift/GooseBLEClient.swift`
-- Why fragile: The class owns BLE scanning, connection, GATT characteristic subscriptions, alarm scheduling, historical sync, high-frequency history sync, clock synchronisation, and battery state — all as `@Published` properties on a single `ObservableObject`. Any change to one responsibility risks unintended side effects on the others.
-- Safe modification: Test in isolation using a real device before merging any change to this file. Changes to the reconnection logic or characteristic subscriptions should be validated across all iOS background states.
-- Test coverage: No Swift unit tests exist for this class.
+- **File:** `GooseSwift/GooseAppModel+Upload.swift` lines 21, 50–51
+- **Severity:** LOW — after restart `lastUploadAt` is nil; manual upload defaults to re-uploading last 24h; the server uses `INSERT OR IGNORE` so data is not duplicated, but repeated large fetches are wasteful. Deferred to v3 as `UPLD-V2-03`.
+
+### P4: Large Rust files — `bridge.rs` at 8804 lines, `export.rs` at 8226 lines, `store.rs` at 7594 lines
+
+- **Files:** `Rust/core/src/bridge.rs` (8804 lines), `Rust/core/src/export.rs` (8226 lines), `Rust/core/src/store.rs` (7594 lines), `Rust/core/src/metric_features.rs` (6436 lines), `Rust/core/src/sleep_validation.rs` (6334 lines)
+- **Severity:** LOW — incremental compilation is slow for files this large; 80+ bridge methods in a single `match` arm make navigation difficult
+- **Fix approach:** Split `bridge.rs` into per-domain submodules (e.g., `bridge/upload.rs`, `bridge/metrics.rs`)
+
+---
+
+## Maintainability
+
+### M1: 12 suppressed `clippy` lints declared globally in `lib.rs`
+
+- **File:** `Rust/core/src/lib.rs` lines 3–14
+- **Severity:** MEDIUM — suppressed lints include `clippy::too_many_arguments`, `clippy::unnecessary_unwrap`, `clippy::result_large_err`; these mask real code-quality issues
+- **Key suppressions of concern:** `clippy::unnecessary_unwrap` (could hide eliminable `.unwrap()` calls), `clippy::too_many_arguments` (functions with 8+ parameters are harder to test)
+- **Fix approach:** Address each lint class incrementally; remove from `#![allow(...)]` as fixed
+
+### M2: Device type classification uses characteristic UUID prefix heuristic at notification time — not resolved at connect time
+
+- **Files:** `GooseSwift/GooseBLETypes.swift` (computed `rustDeviceType`), `GooseSwift/GooseBLEClient+Commands.swift` lines 147–165
+- **Severity:** MEDIUM — adding a third wearable requires updating the heuristic in `GooseBLETypes.swift` AND the guards in `GooseBLEClient+Commands.swift`; the "V5" naming on `supportsV5HistoricalSync` etc. is a misnomer after Gen4 support was added
+- **Fix approach (v3):** Introduce a `WearableKind` enum resolved at `processDiscoveredCharacteristics` time; propagate through `GooseNotificationEvent`. Rename `supportsV5*` to `supportsHistorical*`.
+
+### M3: `decoded_frames.device_type TEXT NOT NULL` has no `CHECK` constraint — arbitrary strings accepted by SQL schema
+
+- **File:** `Rust/core/src/store.rs` line 954 (DDL)
+- **Severity:** MEDIUM — `parse_device_type` enforces valid values for BLE-sourced frames but a future bridge method (e.g., `upload.ingest_fetched_streams` using `device_type: "IMPORT"`) can insert new strings that bypass Rust-level validation
+- **Fix approach:** Add `CHECK (device_type IN ('GEN4','MAVERICK','PUFFIN','GOOSE','HrMonitor','IMPORT'))` in the next schema migration
+
+### M4: `GooseBLEClient` is architecturally single-peripheral — no multi-wearable simultaneous connection support
+
+- **Files:** `GooseSwift/GooseBLEClient.swift` (`activePeripheral`, `commandCharacteristic`, `connectionState` are single-valued)
+- **Severity:** LOW for v2.0 (constraint documented), MEDIUM for v3.0 — a third wearable with simultaneous connection will require significant refactoring
+
+### M5: Unstaged formatting change in `protocol.rs` not committed
+
+- **File:** `Rust/core/src/protocol.rs` (git status: `M`)
+- **Severity:** LOW — the diff is a `cargo fmt` reformatting of a `match` arm with no logic change; should be committed to keep the working tree clean
+
+### M6: Placeholder Swift packages with no source or documented purpose
+
+- **Files:** `Packages/WhoopProtocol/Package.swift`, `Packages/WhoopStore/Package.swift`
+- **Severity:** LOW — contain only `.swiftpm` metadata; no source files; may confuse future contributors
 
 ---
 
 ## Dependencies at Risk
 
-### `rusqlite` with `bundled` Feature Compiles SQLite into the Static Library
+### D1: `tungstenite = "0.28"` — gated correctly for Android but verify no transitive leak
 
-- Risk: `rusqlite = { version = "0.37", features = ["bundled"] }` compiles a specific SQLite version into `libgoose_core.a`. The app therefore ships two copies of SQLite: the system SQLite (used by iOS APIs) and the bundled one (used by the Rust core). Security patches to the system SQLite do not automatically apply to the bundled copy.
-- Impact: If a CVE is discovered in SQLite, Goose requires a Cargo dependency update + full Rust rebuild + app release to ship the fix.
-- Migration plan: Evaluate `rusqlite` without `bundled` on iOS to link against the system-provided SQLite (`/usr/lib/libsqlite3.dylib`). This is supported on iOS via a linker flag and would keep the SQLite version in sync with OS updates.
+- **File:** `Rust/core/Cargo.toml` lines 148–150
+- **Status:** RESOLVED — under `[target.'cfg(not(target_os = "android"))'.dependencies]`; `debug_ws_server` module is `#[cfg(not(target_os = "android"))]` in `lib.rs` line 29
+- **Residual concern:** `debug_ws` module (not `debug_ws_server`) is still compiled for Android; verify it does not transitively pull in `tungstenite` types on Android
 
-### `tungstenite = "0.28"` Is Compiled into the Static Library for Debug-Only Use
+### D2: `jni = "0.21"` — pre-1.0 crate; API may change on minor version bump
 
-- Risk: The `tungstenite` WebSocket library is a full production dependency (not `dev-dependencies`), meaning it is compiled into `libgoose_core.a` and shipped in every release build, even though it is only used by the debug WebSocket server and the `goose-debug-ws-serve` binary tool.
-- Impact: Increases binary size and attack surface unnecessarily in production builds.
-- Migration plan: Move `debug_ws_server.rs` functionality behind a Cargo feature flag (e.g., `debug-ws-server`) and make `tungstenite` an optional dependency gated on that feature.
+- **File:** `Rust/core/Cargo.toml` line 152
+- **Severity:** LOW — crate is stable in practice; `default-features = false` is correct; Android bridge is new code so migration is cheap now vs. later
 
-### Rust 2024 Edition + `rust-version = "1.94"` Requires Very Recent Toolchain
+### D3: `rusqlite = "0.37"` with `bundled` — SQLite version determined by `libsqlite3-sys`; security patches may lag
 
-- Risk: `Cargo.toml` pins `edition = "2024"` and `rust-version = "1.94"`. As of this analysis date, Rust 1.94 is a release-candidate or very recent stable version. Any CI environment or developer machine running an older toolchain will fail to compile.
-- Impact: New contributors without the exact toolchain will hit cryptic build errors.
-- Migration plan: Document the required Rust version prominently in the README and add a `rust-toolchain.toml` file to the `Rust/core/` directory so `rustup` automatically selects the correct version.
+- **File:** `Rust/core/Cargo.toml` line 141
+- **Severity:** LOW — `bundled` is the right choice for portability; SQLite is very stable; update policy should be tracked
 
 ---
 
-## Test Coverage Gaps
+## Scalability
 
-### Zero Swift Unit or UI Tests
+### SC1: No per-device-type TTL or row-count limit on `decoded_frames` — unbounded SQLite growth
 
-- What's not tested: All Swift-side logic — BLE packet parsing (`GooseBLEClient+Parsing.swift`), the overnight mirror queue flush/retry logic, the coach conversation state machine, onboarding persistence, and all data stores.
-- Files: `GooseSwift/GooseBLEClient+Parsing.swift`, `GooseSwift/OvernightSQLiteMirrorQueue.swift`, `GooseSwift/OpenAICoachChat.swift`, `GooseSwift/OnboardingPersistence.swift`, `GooseSwift/HealthDataStore.swift`
-- Risk: Regressions in BLE parsing or data store logic are only caught during live device testing.
-- Priority: High — `GooseBLEClient+Parsing.swift` (961 lines) is the most critical untested path.
+- **Files:** `Rust/core/src/store.rs`, `Rust/core/src/export.rs`
+- **Severity:** LOW currently (single device), MEDIUM at dual-wearable scale
+- **Detail:** `decoded_frames`, `ble_raw_notifications`, and `raw_evidence` tables grow indefinitely. With two wearables, `decoded_frames` may accumulate millions of rows over months. No archive or purge policy exists.
+- **Fix approach (v3):** Add a bridge method `storage.prune_decoded_frames(older_than_days, device_type)` and call it periodically
 
-### `runReferenceComparisons()` Is a Stub
+### SC2: Upload fires on every captured BLE batch — high-frequency small HTTP requests to personal server
 
-- What's not tested: `HealthDataStore.runReferenceComparisons()` sets all reference comparison statuses to `"blocked | real comparison inputs not wired"` and returns immediately. The HRV, sleep, strain, and stress reference comparison pipelines are not connected to actual data.
-- Files: `GooseSwift/HealthDataStore+Snapshots.swift:54-58`
-- Risk: Any refactor of the metric feature pipeline could break the intended reference comparison path with no failing test to signal it.
-- Priority: Medium.
-
-### No Integration Test for Schema Version Mismatch Recovery
-
-- What's not tested: The behaviour when an app with `CURRENT_SCHEMA_VERSION = 14` opens a database written by a future version (e.g., 15). The `storage_check` reports this as an error, but there is no test confirming the app presents an actionable recovery path to the user rather than silently failing all bridge calls.
-- Files: `Rust/core/src/storage_check.rs:91-98`, `GooseSwift/MoreDataStore.swift`
-- Risk: A database schema mismatch silently breaks capture and scoring flows.
-- Priority: High.
+- **Files:** `GooseSwift/GooseAppModel+Upload.swift` lines 48–56, `GooseSwift/GooseUploadService.swift`
+- **Severity:** LOW — server uses `INSERT OR IGNORE` so duplicates are harmless, but request frequency at high sampling rates may stress a low-powered personal server
+- **Fix approach:** Debounce uploads with a minimum interval (e.g., 60s) or batch by time window
 
 ---
 
-## Missing Critical Features
+## Observability Gaps
 
-### No Offline Fallback for OpenAI Coach
+### O1: Upload failures are silent — 3-retry exhaustion produces only a `logger.debug` message
 
-- Problem: The coach feature (`OpenAICoachChat`, `CodexEmbeddedAuth`) requires live network access to `auth.openai.com` and `api.openai.com`. If the network is unavailable or the token has expired and cannot be refreshed, the coach shows an error with no cached or degraded mode.
-- Blocks: Any offline or low-connectivity use of the coach.
+- **File:** `GooseSwift/GooseUploadService.swift` line 122
+- **Severity:** MEDIUM — no user-visible indicator when uploads fail persistently; no retry queue; data loss is silent
 
-### No App-Level Error Recovery UI for Bridge Failures
+### O2: No production error tracking — crashes go unmonitored
 
-- Problem: When `GooseRustBridge` throws (e.g., `methodFailed`, `malformedResponse`), each call site individually updates a status string (e.g., `packetScoreStatus = "Bridge score run blocked: ..."`). There is no centralised error reporting, no retry mechanism, and no user-visible prompt to diagnose or recover from a persistent bridge failure.
-- Files: `GooseSwift/HealthDataStore+Snapshots.swift:40`, `GooseSwift/MoreDataStore.swift`, `GooseSwift/OvernightSQLiteMirrorQueue.swift:243`
+- **Severity:** MEDIUM — no Sentry, Crashlytics, or equivalent; errors surface only through OSLog (device-local) or the UI status strings in `GooseAppModel`/`HealthDataStore`
+
+### O3: Rust bridge errors surface only as free-form UI status strings
+
+- **Files:** `GooseSwift/HealthDataStore.swift`, `GooseSwift/GooseAppModel.swift`
+- **Detail:** Bridge errors set `catalogStatus`, `overnightGuardWarning`, etc. as human-readable strings. No machine-readable error log exists. Debugging requires reading UI labels.
+
+### O4: Swift test coverage severely limited — BLE pipeline, overnight guard, and metric scoring have zero test coverage
+
+- **Files:** `GooseSwiftTests/` (3 test files, 336 lines total)
+- **Severity:** HIGH gap — `GooseBLEClient`, `GooseAppModel`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`, and `HealthDataStore` have no unit tests; only `GooseUploadService.buildUploadPayload` (pure function) and BLE type helpers are covered
+- **Impact:** Regressions in the BLE → SQLite pipeline are caught only by physical-device UAT; CI cannot validate data capture correctness
 
 ---
 
-*Concerns audit: 2026-06-03*
+## Unresolved TODOs / Deferred Items
+
+### T1: Quick task `260603-tqd` not yet executed — "Test Connection" and "Import from Server" UI unimplemented
+
+- **Plan:** `.planning/quick/260603-tqd-add-test-and-import-actions-to-remote-se/260603-tqd-PLAN.md`
+- **Missing artifacts:** `upload.ingest_fetched_streams` in `Rust/core/src/bridge.rs`; `testServerConnection()` and `importFromServer()` in `GooseSwift/GooseAppModel+Upload.swift`; UI rows in `GooseSwift/MoreRemoteServerViews.swift`
+
+### T2: Upload reliability deferred to v3 (from `STATE.md` Deferred Items)
+
+- `UPLD-V2-01`: Upload queue not persisted in SQLite — batches lost on crash/kill
+- `UPLD-V2-02`: No background `URLSession` — uploads cancelled when app is backgrounded
+- `UPLD-V2-03`: No sync cursor/watermark — re-uploads last 24h after restart
+
+### T3: iOS dashboard deferred to v3
+
+- `DASH-V2-01`: No HR/RR/SpO2 time-series charts — only scored metric cards exist; raw biometric data not visualised on-device
+
+### T4: `supportsV5*` naming misnomer in `GooseBLEClient+Commands.swift`
+
+- **File:** `GooseSwift/GooseBLEClient+Commands.swift` lines 147–165
+- **Detail:** After Gen4 support (v2.0 Phase 6), `supportsV5HistoricalSync`, `supportsV5AlarmCommands`, `supportsV5ClockCommands` misleadingly imply Gen5-only; documented in `STATE.md` Pending Todos
+
+### T5: Force unwraps in HealthKit importers — crash risk if assumption violated
+
+- **Files:** `GooseSwift/HealthKitFullImporter.swift` line 146, `GooseSwift/HealthKitSleepImporter.swift` line 178
+- **Detail:** `current.last!` is used inside a loop guarded by `current = [asleep[0]]` initialization; if `current` is somehow empty (e.g., concurrent modification), this crashes. Risk is low due to the loop structure but should use safe unwrap.
+
+---
+
+*Concerns audit: 2026-06-04*

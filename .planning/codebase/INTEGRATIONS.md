@@ -1,152 +1,134 @@
 # External Integrations
 
-**Analysis Date:** 2026-06-03
+**Analysis Date:** 2026-06-04
 
 ## APIs & External Services
 
-**OpenAI / ChatGPT Coach:**
-- Service: OpenAI Responses API (streaming SSE)
-  - Endpoint: `https://chatgpt.com/backend-api/codex/responses`
-  - Client: `GooseSwift/OpenAICoachResponsesClient.swift` — `OpenAIResponsesClient`
-  - Auth: Bearer token from stored `CodexStoredChatGPTAuth.accessToken`; account ID passed as `ChatGPT-Account-Id` header
-  - Protocol: HTTP POST, `text/event-stream` accept, SSE response parsing
-  - Models used: Configurable via `CoachModelPreset` (model ID and reasoning effort)
-  - Tools exposed to model: `load_stats`, `get_activities`, `get_capture_sessions`, `get_data_gaps` — all local Goose Rust bridge calls, no outbound data
-  - Request factory: `GooseSwift/OpenAICoachResponsesClient.swift` — `OpenAICoachRequestFactory`
+**OpenAI Codex / ChatGPT (iOS Coach feature):**
+- Used for: AI coach chat inside the app
+- Auth flow: OAuth2 device-code flow against `https://auth.openai.com`; endpoints:
+  - `POST https://auth.openai.com/api/accounts/deviceauth/usercode` — request device code
+  - `POST https://auth.openai.com/api/accounts/deviceauth/token` — poll for auth code
+  - `POST https://auth.openai.com/oauth/token` — exchange code for tokens / refresh
+- Chat endpoint: `POST https://chatgpt.com/backend-api/codex/responses` (SSE streaming)
+- Client: `URLSession` (no SDK); implemented in `GooseSwift/CodexEmbeddedAuth.swift` and `GooseSwift/OpenAICoachResponsesClient.swift`
+- Credentials: stored in iOS Keychain, service `com.goose.swift.codex`, account `chatgpt-auth` (access token + refresh token + id token)
 
-**OpenAI Auth (OAuth / Device Code):**
-- Service: `https://auth.openai.com` OAuth 2.0 with PKCE device-code flow
-  - Client: `GooseSwift/CodexEmbeddedAuth.swift` — `CodexSelfContainedAuthClient`
-  - Client ID: `app_EMoamEEZ73f0CkXaXp7hrann` (hardcoded)
-  - Device code endpoint: `POST /api/accounts/deviceauth/usercode`
-  - Poll endpoint: `POST /api/accounts/deviceauth/token`
-  - Token exchange: `POST /oauth/token` (grant_type: authorization_code)
-  - Token refresh: `POST /oauth/token` (grant_type: refresh_token)
-  - Verification URL: `https://auth.openai.com/codex/device`
-  - Session config: ephemeral `URLSession` (no cookies, no shared cookie store)
+**WHOOP Developer API v2 (server-side calibration, optional):**
+- Used for: fetching ground-truth recovery/sleep/workout data to calibrate the server-side metric algorithms
+- Base URL: `https://api.prod.whoop.com/developer`
+- Auth: OAuth2 authorization-code flow; auth URL `https://api.prod.whoop.com/oauth/oauth2/auth`, token URL `https://api.prod.whoop.com/oauth/oauth2/token`
+- Scopes: `read:recovery read:sleep read:cycles read:workout read:body_measurement read:profile offline`
+- Client: `httpx` (async); implemented in `server/ingest/app/whoop_api/client.py`
+- Credentials: env vars `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET`, `WHOOP_REFRESH_TOKEN`
+
+**Goose Self-hosted Ingest Server (iOS → server upload):**
+- Used for: persisting decoded WHOOP biometric streams from the iPhone to the self-hosted server
+- Endpoint: `POST {serverURL}/v1/ingest-decoded` (user-configured base URL)
+- Auth: `Authorization: Bearer {token}` (token stored in iOS Keychain via `RemoteServerKeychain`)
+- Health check: `GET {serverURL}/healthz`
+- Client: `URLSession.ephemeral` with 15 s timeout; retry with 1/2/4 s exponential backoff; implemented in `GooseSwift/GooseUploadService.swift`
+- Upload trigger: called from `GooseSwift/GooseAppModel+Upload.swift` on BLE data arrival
+
+## Hardware / Protocols
+
+**WHOOP Gen 5 (primary device):**
+- Protocol: Bluetooth Low Energy (BLE) GATT
+- Service UUID prefix: `fd4b0001-`
+- Command characteristic prefix: `fd4b0002-`
+- Notification characteristic: proprietary; raw frames captured and CRC-checked before parsing
+- Apple framework: CoreBluetooth (`GooseSwift/GooseBLEClient.swift` and `GooseBLEClient+*.swift`)
+
+**WHOOP Gen 4:**
+- Protocol: BLE GATT
+- Service UUID prefix: `61080001-`
+- Command characteristic prefix: `61080002-`
+- Parsing: same Rust parser as Gen 5 (`Rust/core/src/`); upload tagged `device_generation: "4.0"` in `GooseUploadService.buildUploadPayload`
+
+**Generic Bluetooth Heart Rate Monitors:**
+- Protocol: BLE GATT; standard Bluetooth Heart Rate Service `0x180D` / HR Measurement `0x2A37`
+- Read-only notify devices; no command characteristic
+- Upload tagged with `device_class: "HR_MONITOR"` in `GooseUploadService.buildUploadPayload`
+
+**Local Debug WebSocket:**
+- Used for: streaming debug data from the iOS app to desktop tooling during development
+- Endpoint: `ws://127.0.0.1:8765` (server runs inside the Rust library)
+- Implementation: `Rust/core/src/debug_ws_server.rs` using `tungstenite 0.28`
 
 ## Data Storage
 
-**Databases:**
-- SQLite via Rust core (`rusqlite 0.37`, bundled)
-  - Database file: `goose.sqlite` (+ WAL files `goose.sqlite-wal`, `goose.sqlite-shm`)
-  - Location: iOS app Application Support directory, path resolved in `GooseSwift/HealthDataStore.swift` via `HealthDataStore.defaultDatabasePath()`
-  - Access: All reads/writes go through the Rust FFI bridge (`GooseSwift/GooseRustBridge.swift`); Swift never opens SQLite directly
-  - Schema managed by Rust core (`CURRENT_SCHEMA_VERSION` constant in `Rust/core/src/bridge.rs`)
-  - Tables cover: BLE capture frames, overnight sessions, historical sync ranges, activity sessions, activity metrics, activity intervals, sleep correction labels, calibration labels, step counter data, energy rollups, recovery rollups, HRV features, resting HR features, debug WebSocket session events
+**iOS — SQLite (on-device):**
+- Engine: `rusqlite 0.37` (bundled SQLite) inside `libgoose_core.a`
+- Path: `ApplicationSupport/GooseSwift/goose.sqlite` (resolved via `HealthDataStore.defaultDatabasePath()`)
+- Managed entirely by the Rust core; Swift side passes the path in every bridge call
+- Exports: ZIP bundles written to `Documents/GooseSwift/` for user-accessible exports; SHA-256 checksums computed via CryptoKit (`GooseSwift/GooseLocalDataExporter+FileSystem.swift`)
 
-**File Storage:**
-- Local filesystem (iOS sandboxed app container)
-  - Application Support (`GooseSwift/` subdirectory): `goose.sqlite`, BLE diagnostic log `goose-ble.log`
-  - Documents (user-accessible via iTunes file sharing, `UIFileSharingEnabled: true`, `LSSupportsOpeningDocumentsInPlace: true`): raw capture exports (ZIP bundles), overnight spool files, optional AFC diagnostic mirror `goose-ble-live.log`
-  - Export bundles: ZIP archives produced by `GooseSwift/GooseLocalDataExporter+FileSystem.swift` with SHA-256 manifest; Rust `zip 0.6` crate used for bundle creation
+**iOS — UserDefaults:**
+- Keys namespaced under `goose.*` prefix (e.g. `goose.remote.serverURL`, `goose.remote.uploadEnabled`, `goose.swift.liveHRVRMSSD`)
+- Used for onboarding state, device identity, and HR estimates; not biometric time-series
 
-**Caching:**
-- `UserDefaults.standard` — lightweight ephemeral state: remembered BLE device ID/name, battery level, resting HR estimate, live HRV, onboarding flags, Coach model preset preference
-- In-memory `HeartRateSeriesStore.shared` singleton for live HR time series
+**Server — TimescaleDB (PostgreSQL 16):**
+- Container: `timescale/timescaledb:2.17.2-pg16` named `goose-db`
+- Schema bootstrapped by `server/db/init.sql` on first init; re-applied idempotently on every container start
+- Hypertables (partitioned by `ts`): `hr_samples`, `rr_intervals`, `events`, `battery`, `spo2_samples`, `skin_temp_samples`, `resp_samples`, `gravity_samples`
+- Plain tables (low-volume derived data): `sleep_sessions`, `exercise_sessions`, `daily_metrics`, `profile`, `raw_batches`, `devices`
+- Named Docker volume: `goose-db-data`
 
-## Authentication & Identity
+**Server — Raw frame archive (filesystem):**
+- Format: newline-delimited hex frames, zstd-compressed (level 10), content-addressed
+- Location: Docker volume `goose-raw-data` mounted at `GOOSE_RAW_ROOT` (default `/data/raw`)
+- Implementation: `server/ingest/app/archive.py` using `zstandard 0.23.0`
+- Index: `raw_batches` table in TimescaleDB stores `file_path`, `sha256`, and `byte_size` per batch
 
-**Auth Provider: OpenAI (ChatGPT account)**
-- Flow: OAuth 2.0 device code — user visits `https://auth.openai.com/codex/device` and enters a code
-- Implementation: `GooseSwift/CodexEmbeddedAuth.swift` — full device-code + PKCE token exchange + refresh
-- Token storage: iOS Keychain (`kSecClassGenericPassword`, service `com.goose.swift.codex`, account `chatgpt-auth`), protection `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`
-- Token refresh: automatic when token age exceeds 50 minutes or explicit `expiresAt` is within 60 seconds
-- No user account system of its own — Goose is fully local except for the Coach AI feature
+## Auth & Security
 
-## Monitoring & Observability
+**iOS Keychain items:**
 
-**Error Tracking:**
-- None (no Sentry, Crashlytics, Firebase, or similar)
+| Service | Account | Contents | File |
+|---------|---------|----------|------|
+| `goose.remote` | `apiKey` | Bearer token for self-hosted server | `GooseSwift/RemoteServerPersistence.swift` |
+| `com.goose.swift.codex` | `chatgpt-auth` | OpenAI/Codex OAuth tokens (JSON-encoded `CodexStoredChatGPTAuth`) | `GooseSwift/CodexEmbeddedAuth.swift` |
 
-**Logs:**
-- OSLog (`Logger(subsystem: "com.goose.swift", category: "ble")`) for BLE events; `GooseSwift/GooseBLEClient.swift`
-- Optional file-based BLE diagnostic log: `goose-ble.log` in Application Support — enabled via launch argument `--goose-enable-diagnostics` or env `GOOSE_DIAGNOSTIC_LOGGING=1`
-- Optional AFC mirror log: `goose-ble-live.log` in Documents — enabled via `--goose-afc-diagnostic-mirror` or `GOOSE_AFC_DIAGNOSTIC_MIRROR=1`
-- Overnight spool: raw BLE notification log written to Documents during overnight session; `GooseSwift/OvernightRawNotificationSpool.swift`
+- Keychain accessibility: `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` for both items
+- Token freshness: Codex tokens auto-refreshed if `expiresAt` is within 60 seconds (`CodexEmbeddedAuth.swift:storedAuth`)
 
-## CI/CD & Deployment
+**Server Bearer auth:**
+- All `/v1/` endpoints require `Authorization: Bearer {GOOSE_API_KEY}`
+- Checked via `secrets.compare_digest` to prevent timing attacks (`server/ingest/app/main.py:require_auth`)
+- OpenAPI docs disabled (`docs_url=None`, `redoc_url=None`, `openapi_url=None`) to avoid advertising the API surface
 
-**Hosting:**
-- iOS app, distributed via Xcode direct install or TestFlight (no App Store listing detected)
+**App Transport Security:**
+- `NSAllowsLocalNetworking: true` allows HTTP to `.local` hostnames and `localhost`
+- RFC 1918 private IP ranges allowed over HTTP; public hostnames require HTTPS (enforced in `RemoteServerURLValidator.validate` in `GooseSwift/RemoteServerPersistence.swift`)
 
-**CI Pipeline:**
-- None detected (no GitHub Actions, Fastlane, Bitrise, or CI config files found)
-
-## Bluetooth (WHOOP Device Protocol)
-
-**Device:** WHOOP strap (Gen 4 / Gen 5 / Puffin variants)
-- Framework: CoreBluetooth (`GooseSwift/GooseBLEClient.swift`)
-- Background mode: `bluetooth-central` (persistent connection while app is backgrounded)
-- State restoration identifier: `com.goose.swift.central`
-
-**GATT Services (proprietary WHOOP):**
-- Primary service UUID: `fd4b0001-cce1-4033-93ce-002d5875f58a`
-- Secondary service UUID: `61080001-8d6d-82b8-614a-1c8cb0f8dcc6`
-
-**GATT Characteristics:**
-- Command write: `fd4b0002` / `61080002`
-- Notification: `fd4b0003`–`fd4b0005`, `fd4b0007` / `61080003`–`61080005`, `61080007`
-- Debug menu: `fd4b0007` / `61080007`
-
-**Standard GATT Services:**
-- Heart Rate Service `180D`, measurement characteristic `2A37`
-- Battery Service `180F`, level `2A19`, level status `2BED`
-- Device Information `180A` — model `2A24`, firmware `2A26`, hardware `2A27`, software `2A28`, manufacturer `2A29`
-
-**Protocol:** Proprietary binary v5 packet framing. Parsed by Rust core via `protocol.parse_frame_hex` / `protocol.parse_frame_hex_batch` bridge methods. Frame parsing logic in `Rust/core/src/protocol.rs`.
-
-## Apple Platform Integrations
+## Platform Integrations
 
 **HealthKit:**
-- Permission: `com.apple.developer.healthkit` entitlement + `NSHealthShareUsageDescription`
-- Read: body mass only (`HKObjectType.quantityType(forIdentifier: .bodyMass)`) for profile weight autofill
-- Implementation: `GooseSwift/HealthKitSleepImporter.swift` — `HealthKitProfileImporter`
-- No HealthKit write access
+- Entitlement: `com.apple.developer.healthkit` in `GooseSwift/GooseSwift.entitlements`
+- Used for: body mass autofill; full health data import (HR, HRV, SpO2, respiratory rate, skin temperature, steps, active calories, sleep, workouts)
+- Read types requested at runtime; no write access
+- Implementation: `GooseSwift/HealthKitFullImporter.swift` (7-day + 90-day lookback); `GooseSwift/HealthDataStore.swift`
 
-**Location Services:**
-- Framework: CoreLocation + MapKit
-- Permission: always + when-in-use (`NSLocationAlwaysAndWhenInUseUsageDescription`)
-- Background mode: `location`
-- Used for: outdoor workout route, pace, distance, elevation in `GooseSwift/ActivityLocationTracker.swift`
-- Accuracy: `kCLLocationAccuracyBest`, distance filter 5 m, fitness activity type
+**CoreLocation / MapKit:**
+- Used for: GPS route recording during outdoor workouts
+- Background mode: `location` declared in `Info.plist`
+- Implementation: `GooseSwift/ActivityLocationTracker.swift`
 
-**Live Activities / Dynamic Island:**
-- Framework: ActivityKit + WidgetKit
-- Main app controller: `GooseSwift/WorkoutLiveActivityController.swift`
-- Widget extension: `GooseWorkoutLiveActivityExtension/GooseWorkoutLiveActivityWidget.swift`
-- Attributes type: `GooseSwift/WorkoutLiveActivityAttributes.swift`
-- Entitlement: `NSSupportsLiveActivities: true`, `NSSupportsLiveActivitiesFrequentUpdates: true`
+**ActivityKit / WidgetKit (Live Activity):**
+- Used for: Dynamic Island and lock-screen widget displaying real-time workout metrics
+- Contract type: `WorkoutLiveActivityAttributes` (shared between main target and extension) in `GooseSwift/WorkoutLiveActivityAttributes.swift`
+- Extension entry point: `GooseWorkoutLiveActivityExtension/GooseWorkoutLiveActivityWidget.swift`
+- Controller: `GooseSwift/WorkoutLiveActivityController.swift`
 
-**Deep Links:**
-- URL scheme: `gooseswift://`
-- Handled in: `GooseSwift/GooseSwiftApp.swift` via `.onOpenURL`; debug command deep links routed to `GooseAppModel.handleDebugCommandDeepLink(_:)`
+**CoreBluetooth (BLE):**
+- Background mode: `bluetooth-central` declared in `Info.plist`
+- State restoration: used to reconnect to WHOOP device after backgrounding
+- Queue: dedicated `DispatchQueue("com.goose.swift.corebluetooth")` for all CB delegate callbacks
 
-## Debug / Development Integrations
-
-**Local WebSocket Debug Server:**
-- Rust crate: `tungstenite 0.28`
-- Binaries: `goose-debug-ws-serve`, `goose-debug-ws-contract`
-- iOS client connects to `ws://127.0.0.1:8765` during debug sessions
-- Allows real-time bridging of BLE command/event data to desktop tools
-- Implementation: `Rust/core/src/debug_ws_server.rs`, `Rust/core/src/debug_ws.rs`
-- Bridge methods: `debug.start_session`, `debug.start_command`, `debug.finish_command`, `debug.record_event`, `debug.session_snapshot`
-
-**Python Reference Tools (dev-only, offline):**
-- `Rust/core/tools/reference/neurokit_hrv.py` — HRV reference (neurokit2)
-- `Rust/core/tools/reference/pyhrv_time_domain.py` — HRV time-domain reference (pyhrv)
-- `Rust/core/tools/reference/pyactigraphy_sadeh.py` — sleep actigraphy (pyactigraphy)
-- `Rust/core/tools/reference/ggir_sleep_summary.py` — sleep GGIR summary reference
-- Used only to generate ground-truth fixtures for Rust algorithm regression tests; not called at runtime
-
-## Webhooks & Callbacks
-
-**Incoming:**
-- None
-
-**Outgoing:**
-- None (all Coach tool calls return local Rust bridge data, no outbound telemetry)
+**UserNotifications:**
+- Used for: onboarding permission request only
+- Implementation: `GooseSwift/OnboardingPermissions.swift`
 
 ---
 
-*Integration audit: 2026-06-03*
+*Integration audit: 2026-06-04*

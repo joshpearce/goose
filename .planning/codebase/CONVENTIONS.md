@@ -1,209 +1,165 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-06-03
+**Analysis Date:** 2026-06-04
 
 ## Naming Patterns
 
 **Files:**
-- Swift source files use PascalCase matching the primary type they contain: `GooseBLEClient.swift`, `ActivityModels.swift`, `HealthDataStore.swift`
-- Extensions that add a functional area to a class use `+` suffix notation: `GooseBLEClient+Commands.swift`, `GooseAppModel+OvernightRun.swift`, `HealthDataStore+Utilities.swift`
-- Views use a `Views` suffix for files containing multiple related views: `HealthDashboardViews.swift`, `SleepV2BevelTrendViews.swift`
-- Type definition files use a `Types` suffix: `GooseBLETypes.swift`, `CoachChatTypes.swift`, `HealthPacketCaptureTypes.swift`
-- Models use a `Models` suffix: `ActivityModels.swift`, `HealthModels.swift`, `OnboardingModels.swift`
+- Swift: PascalCase matching the primary type — `GooseBLEClient.swift`, `ActivityModels.swift`
+- Extensions that add a concern use `+` notation — `GooseBLEClient+Commands.swift`, `GooseAppModel+OvernightRun.swift`
+- Multiple related views in one file use `Views` suffix — `HealthDashboardViews.swift`
+- Type bundles use `Types` suffix — `GooseBLETypes.swift`, `CoachChatTypes.swift`
+- Model bundles use `Models` suffix — `ActivityModels.swift`, `HealthModels.swift`
+- Rust: `snake_case` modules in flat `Rust/core/src/` — `bridge.rs`, `protocol.rs`, `step_motion_estimator.rs`
+- Rust test files mirror the module under test with `_tests` suffix — `protocol_tests.rs`, `metrics_tests.rs`
 
-**Types (classes, structs, enums):**
-- PascalCase throughout: `GooseAppModel`, `GooseBLEClient`, `OvernightSQLiteMirrorQueue`
-- Prefix with the subsystem or domain name for disambiguation: `GooseMessage`, `GooseSyncToast`, `GooseHistoricalSyncProgress`
-- Enum cases use camelCase: `case debug`, `case poweredOn`, `case healthMonitor`
-- Error types use PascalCase with an `Error` suffix: `GooseRustBridgeError`, `OpenAIResponsesError`
+**Types:**
+- Swift: PascalCase throughout — `GooseAppModel`, `GooseBLEClient`, `OvernightSQLiteMirrorQueue`
+- Prefix with subsystem/domain for disambiguation — `GooseMessage`, `GooseSyncToast`, `GooseHistoricalSyncProgress`
+- Error types use PascalCase with `Error` suffix — `GooseRustBridgeError`, `OpenAIResponsesError`
+- Enum cases use camelCase — `case debug`, `case poweredOn`, `case healthMonitor`
+- Rust: PascalCase structs and enums — `GooseStore`, `BridgeResponse`, `GooseError`
+- Rust type alias: `pub type GooseResult<T> = Result<T, GooseError>` (defined in `Rust/core/src/error.rs`)
 
-**Functions and methods:**
-- camelCase: `handleNotification`, `startOvernightGuard`, `refreshActivityTimeline`
-- Verbs for actions: `begin`, `start`, `stop`, `handle`, `refresh`, `resume`, `persist`, `publish`
-- Booleans prefixed with `is`, `can`, `has`, `should`: `isScanning`, `canSend`, `isStreaming`
-- Factory static methods prefixed with `make` or descriptive verbs: `makeRequest`, `build`
+**Functions/Methods:**
+- Swift: camelCase verbs — `handleNotification`, `startOvernightGuard`, `refreshActivityTimeline`
+- Action prefix verbs: `begin`, `start`, `stop`, `handle`, `refresh`, `resume`, `persist`, `publish`
+- Factory statics prefixed with `make` or descriptive verb — `makeRequest`, `buildUploadPayload`
+- Rust: `snake_case` — `run_perf_budget`, `parse_frame_hex`, `evaluate_linear_calibration`
+- Rust bridge handler functions use `_bridge` suffix — `parse_frame_hex_bridge`, `storage_check_bridge`
 
 **Properties:**
-- camelCase for all stored and computed properties: `bluetoothState`, `connectionState`, `liveHeartRateBPM`
-- UserDefaults keys use dot-namespaced reverse-DNS strings stored as `static let` on the relevant type: `"goose.swift.liveHRVRMSSD"`, `"goose.coach.modelPreset"`
-- DispatchQueue labels use reverse-DNS format: `"com.goose.swift.corebluetooth"`, `"com.goose.swift.notification-ingest"`
+- Swift: camelCase — `bluetoothState`, `connectionState`, `liveHeartRateBPM`
+- Booleans prefixed with `is`, `can`, `has`, `should` — `isScanning`, `canSend`, `isStreaming`
+- `UserDefaults` keys: dot-namespaced reverse-DNS strings as `static let` — `"goose.swift.liveHRVRMSSD"`, `"goose.coach.modelPreset"`
 
 **Constants:**
-- `static let` on the enclosing type; naming is camelCase: `static let bleUIStatePublishInterval: TimeInterval = 0.2`, `static let maximumDisplayedMessages = 300`
-- Enum cases used as namespaced constants: `OnboardingStorage.onboardingComplete`, `FitnessColor.workoutYellow`
+- Swift: `static let` on the enclosing type, camelCase — `static let bleUIStatePublishInterval: TimeInterval = 0.2`, `static let maximumDisplayedMessages = 300`
+- `DispatchQueue` labels use reverse-DNS — `"com.goose.swift.corebluetooth"`, `"com.goose.swift.notification-ingest"`
+- Enum cases as namespaced constants: `OnboardingStorage.onboardingComplete`, `FitnessColor.workoutYellow`
+- Rust: `SCREAMING_SNAKE_CASE` for public constants — `GOOSE_HRV_V0_ID`, `BRIDGE_RESPONSE_SCHEMA`, `CURRENT_SCHEMA_VERSION`, `PACKET_TYPE_EVENT`
 
 ## Code Style
 
-**Formatting:**
-- No formatter config file detected (no `.swiftformat`, `.swiftlint.yml`, or similar)
-- 2-space indentation used consistently throughout all Swift files
-- Opening braces on the same line as the declaration (Allman-adjacent, K&R style)
-- Trailing commas in multi-line array/dict literals
+**Indentation:**
+- Swift: 2-space indentation consistently throughout all Swift files
+- Rust: 4-space (enforced by `rustfmt` in CI)
 
-**Blank lines:**
-- One blank line between methods within a type
-- Two blank lines between top-level declarations in an extension file (import block + two blank lines + extension body)
+**Brace style:**
+- Swift: opening brace on same line (K&R style); no Allman braces
+
+**Multi-line signatures:**
+- Long method signatures split with each parameter on its own indented line; closing `)` on its own line
+
+**Spacing:**
+- One blank line between methods within a Swift type
+- Two blank lines between top-level declarations in extension files (import block + two blank lines + extension body)
 - No blank lines between `import` statements
 
-**Line length:**
-- Long method signatures split with each parameter on its own indented line, closing `)` on its own line:
-  ```swift
-  func beginActivityRecording(
-    activity: ActivityKind,
-    startedAt: Date,
-    source: String = "ios.live_activity",
-    detectionMethod: String = "user_assigned"
-  ) {
-  ```
+**Literals:**
+- Trailing commas in multi-line Swift array/dict literals
+
+**Formatters:**
+- Swift: no `.swiftformat` or `.swiftlint.yml` detected — style is enforced by convention only
+- Rust: `rustfmt` enforced in CI — `cargo fmt --all -- --check` (`.github/workflows/rust-core.yml`)
+- Rust `clippy`: runs advisory-only in CI (`continue-on-error: true`); does not gate merges
+
+## Swift-Specific Patterns
+
+**Actor model:**
+- `@MainActor` applied to `GooseAppModel` and `HealthDataStore` — all `@Published` state mutations happen on main
+- Dedicated `DispatchQueue` instances for BLE events, notification parsing, frame writes, packet input computation, and overnight mirror writes
+- Background work dispatches back to main with `Task { @MainActor in ... }`
+- `nonisolated` on static utility methods that can safely run off main — e.g., `nonisolated static func shouldPublishOvernightRawSpoolSnapshot(...)` in `GooseAppModel+OvernightRun.swift`
+- `NSLock` guards for counters shared between queues
+
+**Published and state:**
+- `@Published private(set) var` for read-only public state on `ObservableObject` — prevents external mutation while keeping reactivity
+- `@Published var` for fully mutable state
+- `@EnvironmentObject` for app-wide injection of `GooseAppModel` and `AppRouter`
+- `@StateObject` at the root (`GooseSwiftApp`) for owned instances
+- `@State` for view-local ephemeral state only
 
 **Access control:**
-- `private` used heavily for internal state in `final class` types (~1281 occurrences)
-- `private(set)` used for read-only public properties in `ObservableObject`: `@Published private(set) var messages`
-- `nonisolated` used on static utility methods that can safely run off the main actor: `nonisolated static func writeRawValidationSidecars(...)`
-- `@unchecked Sendable` on queue-protected types: `final class CaptureFrameWriteQueue: @unchecked Sendable`
+- `private` used heavily for internal state in `final class` types (~1281 occurrences in `GooseSwift/`)
+- `private(set)` for `@Published` properties that views may read but not write
+- `@unchecked Sendable` on queue-protected types — `final class CaptureFrameWriteQueue: @unchecked Sendable`, `final class GooseUploadService: @unchecked Sendable`
+- All major behavioral types are `final class` (not `struct`) when they hold identity or manage lifecycle
 
-## Import Organization
+**Extension files:**
+- Large classes split into focused extension files per concern area
+  - `GooseBLEClient+Commands.swift`, `GooseBLEClient+HistoricalCommands.swift`, `GooseBLEClient+Parsing.swift`, `GooseBLEClient+PeripheralDelegate.swift`
+  - `GooseAppModel+NotificationPipeline.swift`, `GooseAppModel+ActivityRecording.swift`, `GooseAppModel+OvernightRun.swift`
+  - `HealthDataStore+PacketInputs.swift`, `HealthDataStore+Snapshots.swift`, `HealthDataStore+Sleep.swift`, `HealthDataStore+Cardio.swift`
+- Each extension owns a coherent slice of behavior; all share mutable state on the parent class
+- `// MARK: -` section dividers used within longer files to separate logical groups
 
-**Order (observed pattern):**
-1. Apple system frameworks (Foundation, UIKit, SwiftUI, CoreBluetooth, OSLog, etc.)
-2. No third-party imports (no external SPM dependencies in `GooseSwift/`)
+## Rust-Specific Patterns
 
-**Style:**
-- Each framework on its own `import` line
-- No blank lines between imports
-- Alphabetical ordering within each import group is not strictly enforced
+**Error handling:**
+- Central `GooseError` enum in `Rust/core/src/error.rs` using `thiserror`
+- Variants: `Message(String)`, `Io { path: PathBuf, source: io::Error }`, `Json { path, source }`, `Hex(#[from] hex::FromHexError)`, `Sqlite(#[from] rusqlite::Error)`
+- Constructor helpers: `GooseError::message(...)`, `GooseError::io(path, source)`, `GooseError::json(path, source)`
+- `GooseResult<T>` type alias used as the return type for all fallible public functions
+- `?` operator propagated throughout; `.map_err(|e| GooseError::message(format!("...")))` for context wrapping
+- Bridge layer converts `Err(GooseError)` into `{ ok: false, error: { code, message } }` JSON before returning to Swift
+
+**Module organization:**
+- Flat `Rust/core/src/` directory — 42 modules, no subdirectories
+- `mod error` is private (`mod error;`); re-exports `GooseError` and `GooseResult` at crate root
+- All domain modules are `pub mod` (see `Rust/core/src/lib.rs`)
+- CLI binaries in `Rust/core/src/bin/` — one binary per tool; each calls a domain function and exits, printing errors with `eprintln!("{error}")`
+- Integration tests in `Rust/core/tests/` (one file per domain area tested)
+- Inline `#[cfg(test)]` modules are minimal — 19 inline unit tests vs 697 functions in integration test files
+
+**FFI patterns:**
+- Two C symbols exported: `goose_bridge_handle_json(request: *const c_char) -> *mut c_char` and `goose_bridge_free_string(ptr: *mut c_char)`
+- Bridge input: JSON string with schema `goose.bridge.request.v1`, fields `schema`, `request_id`, `method`, `args`
+- Bridge output: heap-allocated JSON string; caller must free with `goose_bridge_free_string`
+- All bridge response: `{ ok: bool, request_id: String, result?: Value, error?: { code, message }, timing_ms: f64 }`
+- All storage-backed bridge methods require `database_path` in `args` — Rust side is stateless
+- Platform conditional: `tungstenite` excluded on Android — `#[cfg(not(target_os = "android"))]`
+
+**Serialization:**
+- `serde::Serialize` and `serde::Deserialize` derived on all data structs
+- JSON is the single wire format through the FFI boundary
+- `include_str!()` used in integration tests to embed fixture JSON at compile time
+
+## Comments & Documentation
+
+- No `///` doc comments on any public API — neither Swift nor Rust use documentation comments
+- Inline `//` comments explain non-obvious logic and configuration constants
+- No TODO, FIXME, HACK, or XXX markers anywhere in the codebase
+- Swift: `// MARK: -` section dividers used within longer files
+- Rust test function names serve as documentation — named after the precise invariant being checked, e.g., `goose_hrv_v0_pnn50_uses_strictly_greater_than_50_ms`
+- Comments use natural sentence case; parameter names and types are considered self-documenting from the code
 
 ## Error Handling
 
-**Primary pattern — `Result<T, Error>` with background queue and main-thread dispatch:**
-```swift
-let result: Result<OutputType, Error>
-do {
-  let value = try someThrowingCall()
-  result = .success(value)
-} catch {
-  result = .failure(error)
-}
+**Swift:**
+- `do { try ... } catch { }` for throwing FileManager, JSON serialization, and export operations
+- Bridge failures set human-readable `@Published` status strings — e.g., `catalogStatus = "Metric catalog unavailable: \(error)"` — rather than propagating thrown errors to the UI
+- BLE errors logged via `ble.record(level: .error, source:, title:, body:)` and surfaced in `connectionState`
+- Overnight guard errors accumulate as `@Published` warning strings in `overnightGuardWarning` / `overnightGuardStatus`
+- `throw` propagated in static I/O utilities (`GooseSwift/GooseLocalDataExporter+FileSystem.swift`), caught at the call site in the exporter
 
-DispatchQueue.main.async { [weak self] in
-  guard let self else { return }
-  switch result {
-  case .success(let output):
-    // update @Published properties
-  case .failure(let error):
-    // update status string, record error log
-  }
-}
-```
-Files: `GooseAppModel+ActivityRecording.swift`, `GooseAppModel+HealthCapture.swift`, `GooseAppModel+ActivityTimeline.swift`
-
-**Typed error enums:** Custom `Error` enums list specific failure cases with associated values where needed:
-```swift
-enum GooseRustBridgeError: Error {
-  case encodingFailed
-  case nullResponse
-  case malformedResponse
-  case methodFailed(String)
-}
-```
-Files: `GooseRustBridge.swift`, `OpenAICoachResponsesClient.swift`
-
-**`LocalizedError` conformance:** Error types exposed to the UI also conform to `LocalizedError` with `var errorDescription: String?`:
-```swift
-enum OpenAIResponsesError: Error, LocalizedError {
-  case httpStatus(Int, String)
-  var errorDescription: String? { ... }
-}
-```
-File: `OpenAICoachResponsesClient.swift`
-
-**`do/try` without `Result` wrapping:** Used for short synchronous operations where the error is caught inline:
-```swift
-do {
-  try fileManager.createDirectory(at: sidecarDirectory, withIntermediateDirectories: true)
-} catch { ... }
-```
-
-**`guard` for early exit:** Preconditions and nil checks at function entry:
-```swift
-guard !overnightGuardActive else { return }
-guard ble.connectionState == "ready" else { ... return }
-```
-
-**`@discardableResult`:** Annotated on methods whose `Bool` return indicates success but callers may not need it: `AppRouter.swift`, `GooseBLEClient+UserActions.swift`, `OnboardingPersistence.swift`
+**Rust:**
+- `GooseResult<T>` as the universal return type for all fallible functions
+- `?` propagation within domain functions; the bridge layer converts errors to JSON before returning
+- No `unwrap()` or `expect()` in production source files — integration tests use `.unwrap()` freely for brevity
 
 ## Logging
 
-**Framework:** OSLog `Logger` (subsystem `com.goose.swift`) used in BLE layer:
-```swift
-let logger = Logger(subsystem: "com.goose.swift", category: "ble")
-```
-File: `GooseBLEClient.swift`
+**Swift:**
+- Framework: `OSLog` — 11 files import `OSLog`
+- Logger instances declared as `let logger = Logger(subsystem: "com.goose.swift", category: "<area>")`
+  - `"ble"` category — `GooseBLEClient.swift` line 83, `GooseBLEClient+VitalsAndLogging.swift` line 337
+  - `"upload"` category — `GooseUploadService.swift` line 4 (module-level `private let`)
+- Log levels in use: `.debug`, `.info`, `.warning`, `.error`
+- Privacy annotation: `"\(value, privacy: .public)"` used consistently when logging dynamic string values
+- BLE subsystem uses a custom `ble.record(level:source:title:body:)` abstraction (`GooseBLEClient+VitalsAndLogging.swift`) that gates OSLog writes via `shouldWriteOSLog(_:)` and also captures events to SQLite
 
-**Primary logging API:** `ble.record(level:source:title:body:)` — an in-app message log displayed in the device view. Structured key-value style used in `body`:
-```swift
-ble.record(level: .warn, source: "overnight.guard", title: "start.blocked", body: overnightGuardStatus)
-ble.record(source: "rust", title: "core.version", body: output.coreVersion)
-```
-
-**Log levels:** `GooseLogLevel` enum with `.debug`, `.info`, `.warn`, `.error`. Default level (omitted parameter) is `.info`.
-
-**Source naming:** dot-separated domain identifiers: `"overnight.guard"`, `"ble"`, `"rust"`, `"activity.timeline"`, `"ui"`, `"whoop.data"`
-
-**Title naming:** dot-separated event names: `"start.requested"`, `"start.ok"`, `"start.failed"`, `"notification.frame.reassembled"`
-
-## Comments
-
-**When to comment:**
-- Inline documentation comments (`///`) are not used on public API — this codebase has no `///` doc comments
-- Inline `//` comments explain non-obvious logic or configuration constants
-- No TODO, FIXME, HACK, or XXX markers found in the codebase
-
-**Comment style:**
-- Explanatory comments use natural sentence case
-- Parameter names and type context are omitted in comments; they are considered self-documenting from the code
-
-## Function Design
-
-**Size:** Functions are medium-to-large; major `GooseAppModel` extension methods run 50–150 lines, reflecting the complexity of the data pipeline. No arbitrary line-limit enforced.
-
-**Parameters:** Named parameters are always used (Swift label convention). Default parameter values are used extensively to provide common-case shortcuts:
-```swift
-func startHealthPacketCapture(duration: TimeInterval = 30 * 60, source: String = "ui.debug")
-func beginActivityRecording(activity: ..., source: String = "ios.live_activity", detectionMethod: String = "user_assigned")
-```
-
-**Return values:** Methods that return `Bool` indicating success are annotated `@discardableResult` when callers may legitimately ignore the result.
-
-**Closures:** `@escaping` closure parameters used for callbacks. `@MainActor @escaping` is used when the closure must run on the main actor:
-```swift
-completion: @escaping @MainActor (CaptureFrameWriteResult) -> Void
-onEvent: @MainActor @escaping (OpenAIResponseStreamEvent) throws -> Void
-```
-
-## Module / Type Design
-
-**ObservableObject pattern:** Classes that own app state conform to `ObservableObject` with `@Published` properties. All such classes are `@MainActor final class`: `GooseAppModel`, `GooseBLEClient`, `HealthDataStore`, `AppRouter`, `OpenAICoachChatModel`.
-
-**Extensions for subsystem grouping:** Large classes are split across multiple files using extensions with the `+SubsystemName` naming pattern. Each extension file begins with a new `extension ClassName {` block. All logic for a subsystem lives in its extension file: `GooseAppModel+OvernightRun.swift`, `GooseAppModel+PacketPublishing.swift`.
-
-**Structs for data types:** Value types (`struct`) are used for all data-carrying types: `GooseMessage`, `GooseNotificationEvent`, `GooseHistoricalSyncProgress`, `OvernightSQLiteMirrorSnapshot`.
-
-**Enums for namespacing constants:** Caseless enums used as namespaces for `static let` constants and `static func` factory methods: `GooseTheme`, `FitnessColor`, `OnboardingStorage`, `CoachLocalToolContext`.
-
-**Callback properties for loose coupling:** Classes expose optional closure properties for event callbacks rather than delegate protocols:
-```swift
-var onNotification: ((GooseNotificationEvent) -> Void)?
-var onLiveHeartRate: ((Int, String, Date) -> Void)?
-```
-File: `GooseBLEClient.swift`
-
-**Memory management:** `[weak self]` is used in all closures that capture `self` across async boundaries. `guard let self else { return }` is the canonical guard pattern (Swift 5.7+ shorthand used throughout).
-
-**`@unknown default`:** All `switch` statements on Apple SDK enums include `@unknown default` to handle future cases safely: `CBManager.authorization`, `UIUserInterfaceStyle`, `ScenePhase`.
-
-**SwiftUI `View` structs:** All SwiftUI views are `struct` with a `var body: some View`. Private sub-views within a file are defined as `private struct`. `PreferenceKey` types for geometry tracking are `private struct` defined at the bottom of the relevant file.
-
----
-
-*Convention analysis: 2026-06-03*
+**Rust:**
+- No logging framework — CLIs print structured JSON reports to stdout via `println!`
+- Errors reported to stderr via `eprintln!("{error}")`
+- No runtime logging in the library itself; all observability surfaces through the JSON bridge protocol
