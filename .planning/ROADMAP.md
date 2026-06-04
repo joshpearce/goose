@@ -90,8 +90,14 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
   3. User can tap a device in the list to initiate a connection to that HR monitor
   4. The UI shows connection progress and confirms when the HR monitor is connected
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+
+- [ ] 10-01-PLAN.md — Promote HR monitor BLE state to @Published, add connecting/disconnect/fail handling, test scaffold
+- [ ] 10-02-PLAN.md — Build HRMonitorView (scan list, connect sheet, connected panel) + on-device verification
+- [ ] 10-03-PLAN.md — Wire HRMonitorView into the More tab Device section (MoreRoute.hrMonitor)
 
 ### Phase 11: HR Monitor Independent Capture
 
@@ -161,7 +167,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 | 8. Additional Wearables E2E | v2.0 | 4/4 | Complete | 2026-06-03 |
 | 8.1. Gap closure WEAR-01/WEAR-03 | v2.0 | 2/2 | Complete | 2026-06-04 |
 | 9. BLE Stability & Data Integrity | v3.0 | 4/4 | Complete    | 2026-06-04 |
-| 10. HR Monitor Scan/Connect UI | v3.0 | 0/? | Not started | - |
+| 10. HR Monitor Scan/Connect UI | v3.0 | 0/3 | Planned | - |
 | 11. HR Monitor Independent Capture | v3.0 | 0/? | Not started | - |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
 | 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
@@ -232,5 +238,17 @@ Promoted to Phase 14: pt-PT Localisation.
 
 **Requirements:** TBD
 **Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+
+### Phase 15: Recovery Formula V2 (SDNN Accuracy)
+
+**Goal:** Corrigir a fórmula `goose_recovery_v0` — renomear `hrvRmssdMs` para `hkHRVSDNNMs` para reflectir a métrica real da Apple Watch, remover a conversão `/1.2` (aproximação populacional SDNN→RMSSD), e normalizar os baselines directamente em SDNN para eliminar desvios individuais no score de recuperação
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Reference:** [OKKHALIL3 review comment — PR #5](https://github.com/b-nnett/goose/pull/5#discussion_r3359064144)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 15 to break down)
 
 ---
