@@ -99,10 +99,12 @@ extension GooseAppModel {
     if state == "ready" {
       connectedDeviceGeneration = ble.discoveredDevices
         .first(where: { $0.id == ble.activeDeviceIdentifier })?.generation
+      captureFrameWriteQueue.activeDeviceID = ble.activeDeviceIdentifier?.uuidString
     } else {
       // Clear on all non-ready states (connecting, discovering, connect timeout, disconnected, etc.)
       // to prevent a stale generation label from the previous connection showing during reconnection.
       connectedDeviceGeneration = nil
+      captureFrameWriteQueue.activeDeviceID = nil
     }
 
     if overnightGuardActive {
