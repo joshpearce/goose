@@ -99,6 +99,23 @@ Plans:
 - [ ] 10-02-PLAN.md — Build HRMonitorView (scan list, connect sheet, connected panel) + on-device verification
 - [ ] 10-03-PLAN.md — Wire HRMonitorView into the More tab Device section (MoreRoute.hrMonitor)
 
+### Phase 10.1: BLE Main-Thread Publishing Fix (INSERTED)
+
+**Goal:** All `@Published` property mutations in `GooseBLEClient+Commands.swift` and `GooseBLEClient+Parsing.swift` happen on the main thread, eliminating the runtime "Publishing changes from background threads" warnings produced by CoreBluetooth callbacks.
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+
+  1. No "Publishing changes from background threads is not allowed" runtime warnings appear when the app is connected to a WHOOP or HR monitor
+  2. `updateConnectionState`, `updateActiveDeviceName`, and all other `@Published`-mutating methods in `GooseBLEClient+Commands.swift` dispatch mutations to the main thread
+  3. `GooseBLEClient+Parsing.swift` line 430 equivalent mutation is also dispatched to main thread
+  4. No existing BLE behaviour or reconnect logic is broken
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.1 to break down)
+
 ### Phase 11: HR Monitor Independent Capture
 
 **Goal**: Users can run an HR monitor capture session without requiring an active WHOOP session
