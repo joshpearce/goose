@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Multi-Device & Platform Foundations
-status: executing
-last_updated: "2026-06-03T23:46:13.994Z"
+status: ready_to_plan
+last_updated: 2026-06-04T07:29:12.802Z
 last_activity: 2026-06-03 -- Phase 08.1 execution started
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 13
   percent: 38
+stopped_at: Phase 08.1 complete (2/2) — ready to discuss Phase 999.4
 ---
 
 # Project State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 08.1 — close-gap-wear-01-wear-03-integrate-parse-hr-measurement-int
+**Current focus:** Phase 999.4 — recovery v2 completion (backlog)
 
 ## Current Position
 
-Phase: 08.1 (close-gap-wear-01-wear-03-integrate-parse-hr-measurement-int) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 08.1
-Last activity: 2026-06-03 -- Phase 08.1 execution started
+Phase: 999.4
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-04
 
 ```
 Phase 6 [          ] 0%   WHOOP Gen4 iOS Support
@@ -39,7 +40,7 @@ Phase 8 [          ] 0%   Additional Wearables E2E
 
 **Velocity:**
 
-- Total plans completed: 8 (v2.0)
+- Total plans completed: 10 (v2.0)
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -50,6 +51,7 @@ Phase 8 [          ] 0%   Additional Wearables E2E
 | — | — | — | — |
 | 08 | 4 | - | - |
 | 07 | 4 | - | - |
+| 08.1 | 2 | - | - |
 
 **Recent Trend:**
 
