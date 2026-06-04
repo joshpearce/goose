@@ -80,6 +80,8 @@ extension GooseBLEClient: CBCentralManagerDelegate {
       if isHistoricalSyncing {
         failHistoricalSync("Bluetooth became unavailable during historical sync. State: \(bluetoothState).")
       }
+      cancelReconnectCycle()
+      reconnectBackoff.reset()
       updateConnectionState("disconnected")
       updateReconnectState("waiting for bluetooth")
       connectedAt = nil
