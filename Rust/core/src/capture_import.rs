@@ -629,6 +629,68 @@ fn import_captured_frame_timed(
         .saturating_add(elapsed_us_u64(raw_insert_started));
 
     let frame_parse_started = Instant::now();
+
+    // HR monitor (0x2A37 standard GATT) frames are NOT 0xAA-framed WHOOP frames;
+    // parse_frame rejects them at FRAME_START. Bypass parsing and store raw GATT bytes
+    // directly as a decoded_frames row so the upload bridge can read them.
+    // Both CRC flags must be true: the upload bridge skips rows where either is false.
+    if frame.device_type == DeviceType::HrMonitor {
+        use crate::protocol::ParsedFrame;
+        let hr_pseudo_frame = ParsedFrame {
+            device_type: DeviceType::HrMonitor,
+            raw_len: raw_bytes.len(),
+            header_len: 0,
+            declared_len: raw_bytes.len(),
+            // Full GATT bytes as hex so the upload bridge can call parse_hr_measurement
+            payload_hex: hex::encode(&raw_bytes),
+            payload_crc_hex: String::new(),
+            // Both true so the upload bridge's CRC-skip (bridge.rs ~line 3059) does not drop the row
+            header_crc_valid: true,
+            payload_crc_valid: true,
+            packet_type: None,
+            packet_type_name: None,
+            sequence: None,
+            command_or_event: None,
+            parsed_payload: None,
+            warnings: Vec::new(),
+        };
+        timing.frame_parse_us = timing
+            .frame_parse_us
+            .saturating_add(elapsed_us_u64(frame_parse_started));
+
+        let decoded_insert_started = Instant::now();
+        let imported_frame = match store.insert_decoded_frame(DecodedFrameInput {
+            frame_id: &frame_id,
+            evidence_id: &frame.evidence_id,
+            parsed: &hr_pseudo_frame,
+            parser_version,
+        }) {
+            Ok(imported) => imported,
+            Err(error) => {
+                issues.push(error.to_string());
+                false
+            }
+        };
+        timing.decoded_insert_us = timing
+            .decoded_insert_us
+            .saturating_add(elapsed_us_u64(decoded_insert_started));
+
+        return Ok(CapturedFrameImportResult {
+            evidence_id: frame.evidence_id.clone(),
+            frame_id,
+            imported_raw,
+            imported_frame,
+            parse_ok: issues.is_empty(),
+            packet_type: None,
+            packet_type_name: None,
+            sequence: None,
+            command_or_event: None,
+            parsed_payload_kind: None,
+            next_actions: capture_import_next_actions(&frame.evidence_id, &issues),
+            issues,
+        });
+    }
+
     let parsed = match parse_frame(frame.device_type, &raw_bytes) {
         Ok(parsed) => parsed,
         Err(error) => {
