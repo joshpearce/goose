@@ -366,6 +366,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       return
     }
     pendingCompletionResult = nil
+    pendingCompletion = nil
     DispatchQueue.main.async {
       completion(result)
     }
