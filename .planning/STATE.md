@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
 status: executing
-stopped_at: Phase 10 Plan 03 complete — More tab HR Monitor navigation wired
-last_updated: "2026-06-04T23:07:49.221Z"
+stopped_at: Phase 10.1 Plan 01 complete — BLE main-thread publishing guards applied
+last_updated: "2026-06-04T23:25:00Z"
 last_activity: 2026-06-04
 progress:
   total_phases: 12
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: 10.1
-Plan: Not started
-Status: Executing Phase 10
+Plan: 01 complete
+Status: Phase 10.1 complete
 Last activity: 2026-06-04
 
 Progress: [░░░░░░░░░░] 0%
@@ -81,7 +81,7 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - RTC sync command numbers are inferred (LOW confidence) — needs device validation before Phase 12 ships
-- `discoveredHRDevices` data race (BT queue vs. main thread) — HIGH severity pitfall to address in Phase 10
+- `discoveredHRDevices` data race (BT queue vs. main thread) — RESOLVED by Phase 10.1 guards (Commands.swift + Parsing.swift)
 
 ## Deferred Items
 
@@ -96,6 +96,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-04T22:55:58Z
-Stopped at: Phase 10 Plan 03 complete — More tab HR Monitor navigation wired
-Resume file: .planning/phases/10-hr-monitor-scan-connect-ui/10-03-SUMMARY.md
+Last session: 2026-06-04T23:25:00Z
+Stopped at: Phase 10.1 Plan 01 complete — BLE main-thread publishing guards applied
+Resume file: .planning/phases/10.1-ble-main-thread-publishing-fix/10.1-01-SUMMARY.md
