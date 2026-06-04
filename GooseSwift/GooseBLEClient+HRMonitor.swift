@@ -105,7 +105,18 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
   // MARK: - CBCentralManagerDelegate
 
   func centralManagerDidUpdateState(_ central: CBCentralManager) {
-    // State changes are informational; scanning starts only when explicitly requested
+    let stateStr: String
+    switch central.state {
+    case .poweredOn: stateStr = "poweredOn"
+    case .poweredOff: stateStr = "poweredOff"
+    case .unauthorized: stateStr = "unauthorized"
+    case .unsupported: stateStr = "unsupported"
+    case .resetting: stateStr = "resetting"
+    default: stateStr = "unknown"
+    }
+    DispatchQueue.main.async { [weak self] in
+      self?.owner?.hrBluetoothState = stateStr
+    }
   }
 
   func centralManager(

@@ -77,31 +77,35 @@ private struct HRMonitorContentView: View {
         deviceDisplayName: "HR Monitor"
       )
     default:
-      if ble.bluetoothState == "poweredOn" {
-        HRMonitorHeader(
-          statusText: "SCANNING",
-          statusColor: secondaryText,
-          deviceDisplayName: "HR Monitor"
-        )
-      } else if ble.bluetoothState == "unauthorized" {
+      if ble.hrBluetoothState == "unauthorized" {
         HRMonitorHeader(
           statusText: "NOT AUTHORISED",
           statusColor: disconnectedRed,
           deviceDisplayName: "HR Monitor"
         )
-      } else {
+      } else if ble.hrBluetoothState == "poweredOff" || ble.hrBluetoothState == "unsupported" {
         HRMonitorHeader(
           statusText: "BLUETOOTH OFF",
           statusColor: disconnectedRed,
+          deviceDisplayName: "HR Monitor"
+        )
+      } else {
+        HRMonitorHeader(
+          statusText: "SCANNING",
+          statusColor: secondaryText,
           deviceDisplayName: "HR Monitor"
         )
       }
     }
   }
 
+  private var hrBluetoothUnavailable: Bool {
+    ble.hrBluetoothState == "poweredOff" || ble.hrBluetoothState == "unauthorized" || ble.hrBluetoothState == "unsupported"
+  }
+
   @ViewBuilder
   private var bodyView: some View {
-    if ble.bluetoothState != "poweredOn" {
+    if hrBluetoothUnavailable {
       bluetoothUnavailableBody
     } else if ble.hrConnectionState == "connected" {
       HRMonitorConnectedPanel(ble: ble, disconnectAction: {
@@ -122,7 +126,7 @@ private struct HRMonitorContentView: View {
 
   @ViewBuilder
   private var bluetoothUnavailableBody: some View {
-    let copy: String = ble.bluetoothState == "unauthorized"
+    let copy: String = ble.hrBluetoothState == "unauthorized"
       ? "Bluetooth access is required. Open Settings to allow access."
       : "Enable Bluetooth to scan for HR monitors."
     Text(copy)

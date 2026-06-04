@@ -24,6 +24,7 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   @Published var hrReconnectState = "idle"
   @Published var discoveredHRDevices: [GooseDiscoveredDevice] = []
   @Published var hrConnectionState: String = "disconnected"
+  @Published var hrBluetoothState: String = "unknown"
   @Published var rememberedDeviceDescription = "none"
   @Published var activeDeviceName = "WHOOP"
   @Published var activeDeviceIdentifier: UUID?
