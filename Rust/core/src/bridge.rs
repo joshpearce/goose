@@ -291,6 +291,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "sleep.validate_v1_release_gates",
     "sleep.validate_window_labels",
     "storage.check",
+    "storage.compact_raw_evidence",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",
     "upload.get_recent_decoded_streams",
@@ -1273,6 +1274,12 @@ struct StressFeatureScoreArgs {
     algorithm_id: Option<String>,
     #[serde(default)]
     algorithm_version: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct StorageCompactRawEvidenceArgs {
+    database_path: String,
+    limit_bytes: i64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2647,6 +2654,20 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
                 .map(|value| bridge_ok(&request.request_id, value))
                 .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
         }
+        "storage.compact_raw_evidence" => {
+            request_args::<StorageCompactRawEvidenceArgs>(&request)
+                .and_then(storage_compact_raw_evidence_bridge)
+                .map(|value| bridge_ok(&request.request_id, value))
+                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
+        }
+        // Test-only arm: deterministic panic trigger for FFI catch_unwind coverage.
+        // Gated on debug_assertions (true in test/dev, false in release) so it is
+        // never compiled into the release static library (satisfies T-09-04 threat model).
+        // Note: #[cfg(test)] is not used here because integration tests compile the crate
+        // in library mode without activating cfg(test) on the dependency; debug_assertions
+        // achieves the same release-exclusion guarantee for this use case.
+        #[cfg(debug_assertions)]
+        "test.panic" => panic!("test.panic: intentional panic for FFI catch_unwind coverage"),
         method => bridge_error(
             &request.request_id,
             "unknown_method",
@@ -5811,6 +5832,15 @@ fn capture_import_frame_batch_bridge(
     })
 }
 
+fn storage_compact_raw_evidence_bridge(
+    args: StorageCompactRawEvidenceArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let report = store.compact_raw_evidence_payloads_to_limit(args.limit_bytes)?;
+    serde_json::to_value(report)
+        .map_err(|error| GooseError::message(format!("cannot serialize compaction report: {error}")))
+}
+
 fn overnight_mirror_batch_bridge(args: OvernightMirrorBatchArgs) -> GooseResult<serde_json::Value> {
     let store = open_bridge_store(&args.database_path)?;
     let sessions: Vec<OvernightSyncSessionInput<'_>> = args
@@ -8259,10 +8289,20 @@ mod tests {
         let block = &src[start..start + catchall];
 
         let mut found: Vec<String> = Vec::new();
-        for line in block.lines() {
+        let lines: Vec<&str> = block.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
             let trimmed = line.trim_start();
             if !trimmed.starts_with('"') {
                 continue;
+            }
+            // Skip arms preceded by a #[cfg(...)] attribute — these are
+            // conditionally compiled (e.g. test-only) and must not appear in
+            // the public BRIDGE_METHODS list.
+            if i > 0 {
+                let prev = lines[i - 1].trim_start();
+                if prev.starts_with("#[cfg(") {
+                    continue;
+                }
             }
             // Match `"some.method" =>` at line start.
             let after_quote = &trimmed[1..];
