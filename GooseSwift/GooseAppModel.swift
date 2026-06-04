@@ -414,9 +414,11 @@ final class GooseAppModel: ObservableObject {
     }
   }
 
-  private func runStorageCompactionIfNeeded() {
-    // Runs on background queue — never call directly from @MainActor (Pitfall 6).
-    guard let report = try? rust.request(
+  private nonisolated func runStorageCompactionIfNeeded() {
+    // nonisolated: called from DispatchQueue.global background queue (Pitfall 6).
+    // Uses a local GooseRustBridge() — the Rust side is stateless across instances.
+    let localRust = GooseRustBridge()
+    guard let report = try? localRust.request(
       method: "storage.compact_raw_evidence",
       args: [
         "database_path": HealthDataStore.defaultDatabasePath(),
@@ -429,7 +431,9 @@ final class GooseAppModel: ObservableObject {
     // D-10: log only when compaction actually happened; silent otherwise.
     if compactedRows > 0 {
       let mbFreed = String(format: "%.1f", Double(freedBytes) / 1_048_576)
-      ble.record(source: "storage", title: "compact", body: "\(compactedRows) rows, \(mbFreed) MB freed")
+      DispatchQueue.main.async { [weak self] in
+        self?.ble.record(source: "storage", title: "compact", body: "\(compactedRows) rows, \(mbFreed) MB freed")
+      }
     }
   }
 
