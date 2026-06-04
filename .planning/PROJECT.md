@@ -6,14 +6,16 @@ Fork of `b-nnett/goose`: an iOS app (SwiftUI + Rust core) that reads biometric d
 v1.0 delivered: FastAPI+TimescaleDB server, automatic iOS→server upload, integration of the 9 upstream PRs.
 v2.0 expands: full WHOOP 4.0 (Gen4) support in the iOS app, foundations for an Android port via JNI, and validation of pipeline extensibility for additional wearables.
 
-## Current Milestone: v2.0 Multi-Device & Platform Foundations
+## Current Milestone: v3.0 Wearable UX & CI Hardening (Planning)
 
-**Goal:** Expand the app beyond the WHOOP 5.0 — full Gen4 support, foundations for an Android port, and validation of pipeline extensibility for new wearables.
+**Goal:** Complete the HR monitor UX (scan UI, capture session), harden CI, and address accumulated tech debt from v2.0.
 
-**Target features:**
-- WHOOP 4.0 (Gen4): onboarding recognises Gen4, BLE scan includes the Gen4 UUID, frames captured and uploaded with device_generation "4.0"
-- Android Port Foundations: Rust core compiles to aarch64-linux-android, FFI bridge documented for JNI, architecture ADR
-- Additional Wearables: second wearable type supported E2E (BLE→SQLite→upload) with a separate Rust module
+**Next features (backlog):**
+- HR monitor scan/connect UI (WEAR-02 completion — no scan UI in v2.0)
+- HR monitor independent capture session (not gated on WHOOP session)
+- CR-02 real per-row device_id filter (v2.0 reverted to no-op)
+- Recovery V2 dashboard with bridge-backed data
+- Multi-language support (pt-PT localisation)
 
 ## Core Value
 
@@ -34,11 +36,21 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - ✓ Upload status visible in the More tab (health check + last upload + pending batches) — v1.0
 - ✓ 9 upstream b-nnett/goose PRs integrated via git merge --no-ff — v1.0
 
-### Active (v2.0)
+### Validated (v2.0)
 
-- [ ] WHOOP 4.0 (Gen4): onboarding + BLE scan + capture + upload (GEN4-01 to GEN4-05)
-- [ ] Android Port Foundations: Rust core JNI-ready + FFI docs + ADR (ANDROID-01 to ANDROID-03)
-- [ ] Additional Wearables: second wearable E2E + separate Rust module (WEAR-01 to WEAR-03)
+- ✓ WHOOP 4.0 (Gen4): iOS app layer — command guards, generation field, onboarding, device view, upload device_generation "4.0" — v2.0 (GEN4-01 to GEN4-05)
+- ✓ Android Port Foundations: Rust core compiles to aarch64-linux-android via cargo-ndk; JNI shim; panic=abort; ADR — v2.0 (ANDROID-01 to ANDROID-03)
+- ✓ Server CI: pytest suite runs on GitHub Actions with real TimescaleDB container — v2.0 (CI-01)
+- ✓ Rust 0x2A37 HR parser: `heart_rate_gatt_protocol.rs` with 10 integration tests — v2.0 (WEAR-01)
+- ✓ iOS BLE HR monitor: dedicated CBCentralManager for 0x180D/0x2A37, off-@MainActor notification routing — v2.0 (WEAR-02 partial — no scan UI)
+- ✓ Upload taxonomy: device_class: "HR_MONITOR", DeviceType::HrMonitor Rust variant, decoded hr/rr stream in upload payload — v2.0 (WEAR-03)
+
+### Active (v3.0)
+
+- [ ] HR monitor scan/connect UI — `startHRMonitorScan()` has no caller, `discoveredHRDevices` not rendered (WEAR-02 completion)
+- [ ] HR monitor independent capture session — frames currently gated on WHOOP activeHealthPacketCapture
+- [ ] CR-02 real per-row device_id filter — reverted to no-op in v2.0 (namespace mismatch)
+- [ ] Recovery V2 dashboard with bridge-backed data (phase 999.4)
 
 ### Deferred (v3+)
 
@@ -80,21 +92,21 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 | mDNS .local for server hostname | Automatic discovery on the local network; zero DNS config | ✓ Good — v1.0 |
 | PR #12 FFI threading integrated last | After Phases 2+3+4 executed; no conflict with upload client | ✓ Good — v1.0 |
 
-## Current State (v1.0)
+## Current State (v2.0)
 
-**Shipped:** 2026-06-03
-- `server/` — FastAPI+TimescaleDB self-hosted, multi-stage Docker, named volumes, GOOSE_* prefix
-- `GooseSwift/RemoteServerPersistence.swift` — URL (UserDefaults), Bearer token (Keychain), upload toggle
-- `GooseSwift/MoreRemoteServerViews.swift` — configuration UI + status feedback in the More tab
-- `GooseSwift/GooseUploadService.swift` — automatic upload with 1s/2s/4s retry
-- `GooseSwift/GooseAppModel+Upload.swift` — hook into the BLE pipeline + health check on startup
-- 9 upstream PRs integrated (including PR #12 FFI threading)
+**Shipped:** 2026-06-04
+- WHOOP Gen4 iOS support: `WearableDescriptor.whoopGen4`, `GooseDiscoveredDevice.generation`, Gen4 upload path
+- Android JNI foundations: `Rust/core/src/bridge.rs` android module, `Cargo.toml` cfg-gates, CI job
+- Standard HR GATT support: `heart_rate_gatt_protocol.rs`, `GooseBLEClient+HRMonitor.swift`, upload hr/rr stream
+- Gap closure Phase 8.1: `capture_import.rs` HrMonitor branch, `unix_from_iso8601` helper
+- 89 files modified, +8011 lines, 11 plans
 
-**E2E pending:** `docker compose up --build` in `server/` + curl /healthz (requires active Docker Desktop)
-**Hardware pending:** BLE→upload→TimescaleDB flow (requires physical WHOOP + active server)
+**v1.0 baseline** (shipped 2026-06-03): FastAPI+TimescaleDB server, iOS upload client, 9 upstream PRs integrated
+
+**Known deferred (v3.0):** HR monitor scan UI, independent capture session, CR-02 per-row filter
 
 ---
-*Last updated: 2026-06-03 — v2.0 milestone started*
+*Last updated: 2026-06-04 after v2.0 milestone*
 
 ## Evolution
 

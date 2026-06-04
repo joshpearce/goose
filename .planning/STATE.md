@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Multi-Device & Platform Foundations
-status: ready_to_plan
-last_updated: 2026-06-04T07:29:12.802Z
-last_activity: 2026-06-03 -- Phase 08.1 execution started
+status: Awaiting next milestone
+last_updated: "2026-06-04T10:26:31.968Z"
+last_activity: 2026-06-04 — Milestone v2.0 completed and archived
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 13
   completed_plans: 13
-  percent: 38
-stopped_at: Phase 08.1 complete (2/2) — ready to discuss Phase 999.4
+  percent: 50
 ---
 
 # Project State
@@ -25,16 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 ## Current Position
 
-Phase: 999.4
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-06-04
-
-```
-Phase 6 [          ] 0%   WHOOP Gen4 iOS Support
-Phase 7 [          ] 0%   Android Port Foundations + CI
-Phase 8 [          ] 0%   Additional Wearables E2E
-```
+Phase: Milestone v2.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-04 — Milestone v2.0 completed and archived
 
 ## Performance Metrics
 
@@ -114,5 +107,17 @@ Resume file: .planning/phases/08.1-close-gap-wear-01-wear-03-integrate-parse-hr-
 
 ## Operator Next Steps
 
-- Run `/gsd-plan-phase 6` to plan WHOOP Gen4 iOS Support
-- Run `/gsd-plan-phase 7` to plan Android Port Foundations + CI (can run in parallel with Phase 6)
+- Start the next milestone with /gsd-new-milestone
+
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-06-04:
+
+| Category | Item | Status |
+|----------|------|--------|
+| quick_task | 260603-rls-adicionar-codeql-no-git | missing |
+| quick_task | 260603-s5w-add-healthkitfullimporter-swift-to-goose | missing |
+| quick_task | 260603-tqd-add-test-and-import-actions-to-remote-se | missing |
+| todo | 2026-06-03-remote-server-test-and-import-actions.md | ui |
+| uat_gap | Phase 08 — 08-HUMAN-UAT.md | partial (hardware BLE — no device) |
+| verification_gap | Phase 08 — 08-VERIFICATION.md | human_needed (hardware BLE — no device) |
