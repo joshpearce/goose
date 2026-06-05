@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 17 Plan 02 complete — HealthDataStore @Observable Wave 2
-last_updated: "2026-06-05T20:00:00.000Z"
+stopped_at: Phase 17 Plan 03 complete — GooseBLEClient @Observable Wave 3
+last_updated: "2026-06-05T19:28:00.000Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 13
   completed_phases: 8
   total_plans: 21
-  completed_plans: 20
-  percent: 62
+  completed_plans: 21
+  percent: 65
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: 17
-Plan: 02 complete
-Status: Phase 17 Plan 02 complete — HealthDataStore @Observable migration (Wave 2); 25 @Published removed; 16 consumer views rewired; AppShellView+HealthDashboardViews @State ownership; BUILD SUCCEEDED
+Plan: 03 complete
+Status: Phase 17 Plan 03 complete — GooseBLEClient @Observable migration (Wave 3); 68 @Published removed; 21 @ObservedObject sites cleared; NSObject+@unchecked Sendable preserved; @Bindable fix for SyncToastHost binding; MoreView 3 onChange modifiers; BUILD SUCCEEDED
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,7 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | 14 | 4 | - | - |
 | 15 | 1 | - | - |
 | 16 | 1 | - | - |
-| 17 | 2 | ~30m | ~15m |
+| 17 | 3 | ~58m | ~19m |
 
 **Recent Trend:**
 
@@ -83,6 +83,7 @@ Recent decisions affecting current work:
 - Phase 14 Plan 01: xcstrings keys use full English literal strings to match source code exactly
 - Phase 14 Plan 03: Wave 3 added 328 entries (543 total); @Published status strings deferred to Wave 4
 - Phase 17 Plan 02: @Bindable required on CalibrationHealthView when @Observable class property needs Picker binding; nonisolated(unsafe) on NSObjectProtocol observer enables deinit cleanup; lazy var incompatible with @Observable — convert to init-assigned var
+- Phase 17 Plan 03: @Bindable local var in View.body is the correct pattern when an @Observable object is passed as plain var parameter and needs $ binding; three onChange modifiers replace MoreDataStore Combine MergeMany pipeline
 
 ### Pending Todos
 
@@ -108,6 +109,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-05T20:00:00Z
-Stopped at: Phase 17 Plan 02 complete — HealthDataStore @Observable Wave 2
-Resume file: .planning/phases/17-observable-migration/17-02-SUMMARY.md
+Last session: 2026-06-05T19:28:00Z
+Stopped at: Phase 17 Plan 03 complete — GooseBLEClient @Observable Wave 3
+Resume file: .planning/phases/17-observable-migration/17-03-SUMMARY.md
