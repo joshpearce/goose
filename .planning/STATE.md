@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
-status: completed
-stopped_at: Phase 10.1 Plan 01 complete — BLE main-thread publishing guards applied
-last_updated: "2026-06-04T23:25:18.781Z"
-last_activity: 2026-06-04
+status: in_progress
+stopped_at: Phase 11 Plan 01 complete — .hrMonitor capture mode and start/stop methods added
+last_updated: "2026-06-05T01:48:51Z"
+last_activity: 2026-06-05
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 25
+  total_plans: 10
+  completed_plans: 9
+  percent: 23
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Phase 10.1 complete
-Last activity: 2026-06-04
+Phase: 11
+Plan: 01 complete
+Status: Phase 11 Plan 01 complete
+Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -97,6 +97,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-04T23:25:00Z
-Stopped at: Phase 10.1 Plan 01 complete — BLE main-thread publishing guards applied
-Resume file: .planning/phases/10.1-ble-main-thread-publishing-fix/10.1-01-SUMMARY.md
+Last session: 2026-06-05T01:48:51Z
+Stopped at: Phase 11 Plan 01 complete — .hrMonitor capture mode and start/stop methods added
+Resume file: .planning/phases/11-hr-monitor-independent-capture/11-01-SUMMARY.md
