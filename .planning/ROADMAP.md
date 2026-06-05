@@ -4,7 +4,8 @@
 
 - ✅ **v1.0 Remote Server + Upstream PRs** — Phases 1-5 (shipped 2026-06-03)
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
-- 🚧 **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-14 (in progress)
+- ✅ **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-15 (shipped 2026-06-05)
+- 🚧 **v4.0 Security, Performance & Coach Expansion** — Phases 16+ (planning)
 
 ## Phases
 
