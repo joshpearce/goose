@@ -559,7 +559,7 @@ struct HealthMonitorView: View {
 }
 
 struct PacketHealthView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: HealthDataStore
 
   var body: some View {

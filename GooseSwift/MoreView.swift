@@ -8,7 +8,7 @@ import HealthKit
 #endif
 
 struct MoreView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
   @ObservedObject private var healthStore: HealthDataStore
   @StateObject private var store: MoreDataStore
@@ -99,7 +99,13 @@ struct MoreView: View {
       model.recordUIAction("page.opened", detail: "More")
       store.refreshBridgeStatus(model: model)
       store.refreshRecentCaptureSessions()
-      store.bindRouteStatus(ble: model.ble, model: model)
+      store.refreshRouteStatus(ble: model.ble, model: model)
+    }
+    .onChange(of: model.ble.connectionState) { _, _ in
+      store.refreshRouteStatus(ble: model.ble, model: model)
+    }
+    .onChange(of: model.ble.hrConnectionState) { _, _ in
+      store.refreshRouteStatus(ble: model.ble, model: model)
     }
   }
 

@@ -54,7 +54,7 @@ struct MoreCommandGroup: Identifiable {
 }
 
 struct MoreCaptureView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var messageStore: GooseMessageStore
   @ObservedObject var store: MoreDataStore
 

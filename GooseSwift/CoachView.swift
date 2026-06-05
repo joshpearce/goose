@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CoachView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
   @ObservedObject var healthStore: HealthDataStore
   @StateObject private var chat = OpenAICoachChatModel()
@@ -669,7 +669,7 @@ private struct CoachProfileMenu: View {
 #Preview("Signed out") {
   NavigationStack {
     CoachView(healthStore: HealthDataStore())
-      .environmentObject(GooseAppModel(startBLE: false))
+      .environment(GooseAppModel(startBLE: false))
       .environmentObject(AppRouter())
   }
 }

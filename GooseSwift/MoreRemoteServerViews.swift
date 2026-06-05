@@ -31,7 +31,7 @@ final class MoreRemoteServerViewModel: ObservableObject {
 
 struct MoreRemoteServerView: View {
   @StateObject private var vm = MoreRemoteServerViewModel()
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   private static let relativeDateFormatter: RelativeDateTimeFormatter = {
     let f = RelativeDateTimeFormatter()
@@ -149,7 +149,7 @@ struct MoreRemoteServerView: View {
   NavigationStack {
     MoreRemoteServerView()
   }
-  .environmentObject({
+  .environment({
     let m = GooseAppModel()
     m.serverReachable = nil
     m.lastUploadAt = nil
@@ -162,7 +162,7 @@ struct MoreRemoteServerView: View {
   NavigationStack {
     MoreRemoteServerView()
   }
-  .environmentObject({
+  .environment({
     let m = GooseAppModel()
     m.serverReachable = true
     m.lastUploadAt = Date().addingTimeInterval(-120)
@@ -175,7 +175,7 @@ struct MoreRemoteServerView: View {
   NavigationStack {
     MoreRemoteServerView()
   }
-  .environmentObject({
+  .environment({
     let m = GooseAppModel()
     m.serverReachable = false
     m.lastUploadAt = nil

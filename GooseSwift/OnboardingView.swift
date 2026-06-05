@@ -6,7 +6,7 @@ import UIKit
 import UserNotifications
 
 struct OnboardingView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   let onComplete: () -> Void
   @StateObject private var locationPermissionRequester = OnboardingLocationPermissionRequester()
 

@@ -1,61 +1,62 @@
 import Foundation
+import Observation
 import UIKit
 
 
-@MainActor
-final class GooseAppModel: ObservableObject {
-  @Published var onboardingComplete = false
-  @Published var rustStatus = "Rust bridge not checked"
-  @Published var helloSummary = "Client hello not prepared"
-  @Published var packetImportRevision = 0
-  @Published var packetImportStatus = "No packet import"
-  @Published var activityPersistenceStatus = "No activity stored"
-  @Published var homeActivityTimelineItems: [ActivityTimelineItem] = []
-  @Published var homeActivityTimelineStatus = "Activity timeline not loaded"
-  @Published var activityDetectionStatus = "Watching for movement packets"
-  @Published var movementPacketValidationStatus = "Not run"
-  @Published var movementPacketValidationIsRunning = false
-  @Published var heartRateHourlyRanges: [HeartRateHourlyRange] = []
-  @Published var heartRateStorageStatus = "No HR samples stored"
-  @Published var healthPacketCaptureSessionID: String?
-  @Published var healthPacketCaptureStatus = "No health packet capture"
-  @Published var healthPacketCaptureStartedAt: Date?
-  @Published var healthPacketCaptureFrameCount = 0
-  @Published var healthPacketCaptureTargetSummary = "No health packet capture"
-  @Published var healthPacketCaptureLastPacketSummary = "No packets captured"
-  @Published var healthPacketCaptureFamilyRows: [HealthPacketCaptureFamily] = []
-  @Published var respiratoryPacketWatchActive = false
-  @Published var respiratoryPacketWatchStatus = "Not watching K18 respiratory history"
-  @Published var overnightGuardActive = false
-  @Published var overnightGuardStatus = "Not started"
-  @Published var overnightGuardReadinessStatus = "pending"
-  @Published var overnightGuardReadinessSummary = "Not sleep-ready | connect WHOOP and start Overnight Guard"
-  @Published var overnightGuardRawNotificationCount = 0
-  @Published var overnightGuardRangePollCount = 0
-  @Published var overnightGuardRangeTelemetryCount = 0
-  @Published var overnightGuardSuccessfulRangePollCount = 0
-  @Published var overnightGuardCommandWriteCount = 0
-  @Published var overnightGuardEventLogCount = 0
-  @Published var overnightGuardTargetSummary = OvernightGuardTargetCounts().summary
-  @Published var overnightGuardHistoricalOrderSummary = OvernightGuardHistoricalOrderEvidence().summary
-  @Published var overnightGuardLastPacketSummary = "No raw notifications"
-  @Published var overnightGuardSpoolPath = "No overnight spool"
-  @Published var overnightGuardSpoolSizeSummary = "No overnight spool size"
-  @Published var overnightGuardSQLiteMirrorSummary = "SQLite mirror not started"
-  @Published var overnightGuardPowerSummary = "Power not checked"
-  @Published var overnightGuardWatchdogSummary = "Watchdog not checked"
-  @Published var overnightGuardWarning = "Keep the official WHOOP app closed until Goose final sync/export finishes."
-  @Published var overnightGuardExportStatus = "No overnight export"
-  @Published var overnightGuardExportInProgress = false
-  @Published var overnightGuardExportURL: URL?
-  @Published var overnightGuardExportManifestURL: URL?
-  @Published var overnightGuardExportManifestError: String?
-  @Published var overnightGuardCanExportLastSession = false
-  @Published var serverReachable: Bool? = nil
-  @Published var lastUploadAt: Date? = nil
-  @Published var pendingBatchCount: Int = 0
-  @Published var lastSyncedCount: Int? = nil
-  @Published var connectedDeviceGeneration: String? = nil
+@MainActor @Observable
+final class GooseAppModel {
+  var onboardingComplete = false
+  var rustStatus = "Rust bridge not checked"
+  var helloSummary = "Client hello not prepared"
+  var packetImportRevision = 0
+  var packetImportStatus = "No packet import"
+  var activityPersistenceStatus = "No activity stored"
+  var homeActivityTimelineItems: [ActivityTimelineItem] = []
+  var homeActivityTimelineStatus = "Activity timeline not loaded"
+  var activityDetectionStatus = "Watching for movement packets"
+  var movementPacketValidationStatus = "Not run"
+  var movementPacketValidationIsRunning = false
+  var heartRateHourlyRanges: [HeartRateHourlyRange] = []
+  var heartRateStorageStatus = "No HR samples stored"
+  var healthPacketCaptureSessionID: String?
+  var healthPacketCaptureStatus = "No health packet capture"
+  var healthPacketCaptureStartedAt: Date?
+  var healthPacketCaptureFrameCount = 0
+  var healthPacketCaptureTargetSummary = "No health packet capture"
+  var healthPacketCaptureLastPacketSummary = "No packets captured"
+  var healthPacketCaptureFamilyRows: [HealthPacketCaptureFamily] = []
+  var respiratoryPacketWatchActive = false
+  var respiratoryPacketWatchStatus = "Not watching K18 respiratory history"
+  var overnightGuardActive = false
+  var overnightGuardStatus = "Not started"
+  var overnightGuardReadinessStatus = "pending"
+  var overnightGuardReadinessSummary = "Not sleep-ready | connect WHOOP and start Overnight Guard"
+  var overnightGuardRawNotificationCount = 0
+  var overnightGuardRangePollCount = 0
+  var overnightGuardRangeTelemetryCount = 0
+  var overnightGuardSuccessfulRangePollCount = 0
+  var overnightGuardCommandWriteCount = 0
+  var overnightGuardEventLogCount = 0
+  var overnightGuardTargetSummary = OvernightGuardTargetCounts().summary
+  var overnightGuardHistoricalOrderSummary = OvernightGuardHistoricalOrderEvidence().summary
+  var overnightGuardLastPacketSummary = "No raw notifications"
+  var overnightGuardSpoolPath = "No overnight spool"
+  var overnightGuardSpoolSizeSummary = "No overnight spool size"
+  var overnightGuardSQLiteMirrorSummary = "SQLite mirror not started"
+  var overnightGuardPowerSummary = "Power not checked"
+  var overnightGuardWatchdogSummary = "Watchdog not checked"
+  var overnightGuardWarning = "Keep the official WHOOP app closed until Goose final sync/export finishes."
+  var overnightGuardExportStatus = "No overnight export"
+  var overnightGuardExportInProgress = false
+  var overnightGuardExportURL: URL?
+  var overnightGuardExportManifestURL: URL?
+  var overnightGuardExportManifestError: String?
+  var overnightGuardCanExportLastSession = false
+  var serverReachable: Bool? = nil
+  var lastUploadAt: Date? = nil
+  var pendingBatchCount: Int = 0
+  var lastSyncedCount: Int? = nil
+  var connectedDeviceGeneration: String? = nil
 
   let ble: GooseBLEClient
   let packetMonitor = PacketMonitorModel()
@@ -391,7 +392,7 @@ final class GooseAppModel: ObservableObject {
     }
   }
 
-  deinit {
+  @MainActor deinit {
     activityDetectionIdleWorkItem?.cancel()
     movementPacketValidationTimeoutWorkItem?.cancel()
     packetImportRevisionWorkItem?.cancel()

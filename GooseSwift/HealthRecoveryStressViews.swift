@@ -5,7 +5,7 @@ import UIKit
 
 struct RecoveryV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: HealthDataStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
@@ -218,7 +218,7 @@ struct RecoveryV2OverviewPage: View {
 
 struct StressV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: HealthDataStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme

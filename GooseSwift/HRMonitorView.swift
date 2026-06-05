@@ -2,16 +2,16 @@ import SwiftUI
 import UIKit
 
 struct HRMonitorView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     HRMonitorContentView(ble: model.ble)
-      .environmentObject(model)
+      .environment(model)
   }
 }
 
 private struct HRMonitorContentView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var ble: GooseBLEClient
   @State private var selectedDevice: GooseDiscoveredDevice?
   @State private var connectingDeviceID: UUID?

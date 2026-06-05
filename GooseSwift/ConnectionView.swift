@@ -1,16 +1,16 @@
 import SwiftUI
 
 struct ConnectionView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     ConnectionContentView(ble: model.ble)
-      .environmentObject(model)
+      .environment(model)
   }
 }
 
 private struct ConnectionContentView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var messageStore: GooseMessageStore
   @ObservedObject var ble: GooseBLEClient
 

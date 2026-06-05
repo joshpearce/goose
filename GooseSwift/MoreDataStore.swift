@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import CryptoKit
 import SwiftUI
@@ -112,8 +111,6 @@ final class MoreDataStore: ObservableObject {
   let bridge = GooseRustBridge()
   let outputDirectory: String
 
-  private var bleStatusCancellables = Set<AnyCancellable>()
-
   struct RawExportArtifactValidationResult {
     let bundleValidation: String
     let zipValidation: String
@@ -145,26 +142,6 @@ final class MoreDataStore: ObservableObject {
     healthBackfillEnd = end
     rawExportStart = start
     rawExportEnd = end
-  }
-
-  // Subscribe to BLE state changes that affect route status. Merges all relevant
-  // publishers into a single debounced stream so concurrent state transitions
-  // (e.g. connectionState + hrConnectionState both changing on connect) produce
-  // exactly one refreshRouteStatus call per runloop tick.
-  func bindRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
-    bleStatusCancellables.removeAll()
-    Publishers.MergeMany(
-      ble.$connectionState.removeDuplicates().map { _ in () },
-      ble.$hrConnectionState.removeDuplicates().map { _ in () },
-      model.$helloSummary.removeDuplicates().map { _ in () }
-    )
-    .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
-    .sink { [weak self, weak ble, weak model] in
-      guard let self, let ble, let model else { return }
-      self.refreshRouteStatus(ble: ble, model: model)
-    }
-    .store(in: &bleStatusCancellables)
-    refreshRouteStatus(ble: ble, model: model)
   }
 
   func refreshRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {

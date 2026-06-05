@@ -2,11 +2,11 @@ import SwiftUI
 import UIKit
 
 struct DeviceView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     DeviceContentView(ble: model.ble)
-      .environmentObject(model)
+      .environment(model)
   }
 }
 
@@ -16,7 +16,7 @@ private enum DevicePanel {
 }
 
 private struct DeviceContentView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var packetMonitor: PacketMonitorModel
   @ObservedObject var ble: GooseBLEClient
   @State private var selectedPanel: DevicePanel = .status
@@ -302,7 +302,7 @@ private struct BatteryRail: View {
 
 private struct DeviceAdvancedPanel: View {
   @EnvironmentObject private var messageStore: GooseMessageStore
-  @ObservedObject var model: GooseAppModel
+  var model: GooseAppModel
   @ObservedObject var packetMonitor: PacketMonitorModel
   @ObservedObject var ble: GooseBLEClient
 
@@ -452,7 +452,7 @@ private struct DeviceFactRow: View {
 }
 
 private struct DeviceActionGrid: View {
-  @ObservedObject var model: GooseAppModel
+  var model: GooseAppModel
   @ObservedObject var ble: GooseBLEClient
 
   private let columns = [

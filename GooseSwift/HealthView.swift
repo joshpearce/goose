@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 struct HealthView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: HealthDataStore
   @State private var cachedLandingSnapshots: [HealthMetricSnapshot] = []
   @State private var cachedVitalSnapshots: [HealthMetricSnapshot] = []
