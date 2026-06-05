@@ -127,7 +127,15 @@ Plans:
   2. HR monitor capture starts and stops independently of the WHOOP session lifecycle
   3. Captured HR monitor data (BPM and RR intervals) appears in the upload payload regardless of WHOOP session state
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Wave 1**
+
+  - [ ] 11-01-PLAN.md — Add .hrMonitor capture mode + startHRMonitorCapture/stopHRMonitorCapture without WHOOP gate (D-01, D-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+  - [ ] 11-02-PLAN.md — Auto-start/stop on hrConnectionState via onHRConnectionStateChange callback + D-04 upload verification + cargo test gate (D-02, D-04)
 
 ### Phase 12: WHOOP 4.0 RTC Clock Sync
 
@@ -186,7 +194,7 @@ Plans:
 | 9. BLE Stability & Data Integrity | v3.0 | 4/4 | Complete    | 2026-06-04 |
 | 10. HR Monitor Scan/Connect UI | v3.0 | 3/3 | Complete    | 2026-06-04 |
 | 10.1. BLE Main-Thread Publishing Fix | v3.0 | 1/1 | Complete    | 2026-06-04 |
-| 11. HR Monitor Independent Capture | v3.0 | 0/? | Not started | - |
+| 11. HR Monitor Independent Capture | v3.0 | 0/2 | Not started | - |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
 | 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
 | 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
