@@ -193,6 +193,26 @@ Plans:
 
 ## Backlog
 
+### Phase 999.5: GooseAppModel @Observable Migration (BACKLOG)
+
+**Goal:** Migrate `GooseAppModel` (and `HealthDataStore`) from `ObservableObject` + `@Published` to Swift's `@Observable` macro (iOS 17+), eliminating the global `objectWillChange` signal that causes all `@EnvironmentObject` observers to re-render on every property change regardless of which property was accessed.
+
+**Why:** The residual `Update NavigationRequestObserver tried to update multiple times per frame` warning (3× at capture startup) is caused by `applyHealthPacketCaptureFamilySnapshot` making 3+ `@Published` writes in sequence, each firing `objectWillChange`. With `@Observable`, only views that access the specific changed property re-render — eliminating the spurious navigation observer updates entirely.
+
+**What's needed:**
+1. Replace `class GooseAppModel: ObservableObject` → `@Observable class GooseAppModel`
+2. Remove all `@Published` annotations from `GooseAppModel` properties
+3. Replace `@EnvironmentObject var model: GooseAppModel` → `@Environment(GooseAppModel.self) var model` in all views
+4. Same migration for `HealthDataStore`
+5. Remove `ObservedObject` wrappers for `ble: GooseBLEClient` where applicable
+
+**Scope:** Large refactor (~150 files). Safe to defer — existing behaviour is correct, only performance of re-renders is affected.
+
+**Requirements:** TBD
+**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready for v4.0
+
+---
+
 ### Phase 999.4: Recovery V2 Completion (promoted to Phase 13 — v3.0)
 
 Promoted to Phase 13: Recovery V2 Dashboard.
