@@ -42,7 +42,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 - [x] **Phase 9: BLE Stability & Data Integrity** — Fix CR-02 device_id, BLE reconnect backoff, FFI panic safety, storage retention limit (completed 2026-06-04)
 - [x] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status (completed 2026-06-04)
 - [x] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate (completed 2026-06-05)
-- [ ] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect
+- [x] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect (completed 2026-06-05)
 - [ ] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data
 - [ ] **Phase 14: pt-PT Localisation** — Static catalog + dynamic status strings in European Portuguese
 
@@ -195,7 +195,7 @@ Plans:
 | 10. HR Monitor Scan/Connect UI | v3.0 | 3/3 | Complete    | 2026-06-04 |
 | 10.1. BLE Main-Thread Publishing Fix | v3.0 | 1/1 | Complete    | 2026-06-04 |
 | 11. HR Monitor Independent Capture | v3.0 | 2/2 | Complete    | 2026-06-05 |
-| 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
+| 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 1/1 | Complete    | 2026-06-05 |
 | 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
 | 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
 
@@ -218,7 +218,7 @@ Plans:
 **Scope:** Large refactor (~150 files). Safe to defer — existing behaviour is correct, only performance of re-renders is affected.
 
 **Requirements:** TBD
-**Plans:** 2/2 plans complete
+**Plans:** 1/1 plans complete
 
 ---
 
