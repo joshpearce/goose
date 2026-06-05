@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
 status: completed
-stopped_at: Phase 14 Plan 03 complete — More/Connection/Onboarding/Debug pt-PT translations (Wave 3); 543 xcstrings entries
-last_updated: "2026-06-05T12:35:00Z"
+stopped_at: Phase 14 Plan 04 complete — dynamic @Published status localisation (Wave 4); 597 xcstrings entries; BUILD SUCCEEDED
+last_updated: "2026-06-05T18:30:21Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 13
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: 14
-Plan: 03 complete
-Status: Phase 14 Plan 03 complete — More/Connection/Onboarding/Debug pt-PT translations (Wave 3)
+Plan: 04 complete
+Status: Phase 14 Plan 04 complete — dynamic @Published status localisation (Wave 4); 597 xcstrings entries; BUILD SUCCEEDED
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
