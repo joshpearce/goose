@@ -360,6 +360,11 @@ final class GooseAppModel: ObservableObject {
         self?.handleBLEConnectionStateChange(state)
       }
     }
+    ble.onHRConnectionStateChange = { [weak self] state in
+      Task { @MainActor in
+        self?.handleHRConnectionStateChange(state)
+      }
+    }
     ble.onHistoricalSyncProgress = { [weak self] progress in
       Task { @MainActor in
         self?.handleHistoricalSyncProgress(progress)

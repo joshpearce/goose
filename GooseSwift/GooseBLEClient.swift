@@ -80,6 +80,7 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   var onLiveHeartRate: ((Int, String, Date) -> Void)?
   var onHRVSample: ((Double, Int, String, Date) -> Void)?
   var onConnectionStateChange: ((String) -> Void)?
+  var onHRConnectionStateChange: ((String) -> Void)?
   var onHistoricalSyncProgress: ((GooseHistoricalSyncProgress) -> Void)?
   var onHistoricalRangeTelemetry: ((GooseHistoricalRangeTelemetry) -> Void)?
   var onMessage: ((GooseMessage) -> Void)?

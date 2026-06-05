@@ -95,6 +95,19 @@ extension GooseAppModel {
     heartRateStorageStatus = snapshot.status
   }
 
+  func handleHRConnectionStateChange(_ state: String) {
+    switch state {
+    case "connected":
+      ble.record(source: "health.packet_capture", title: "hr_monitor.auto_start", body: state)
+      startHRMonitorCapture(source: "auto.hr_monitor_connected")
+    case "disconnected":
+      ble.record(source: "health.packet_capture", title: "hr_monitor.auto_stop", body: state)
+      stopHRMonitorCapture(reason: "hr_monitor_disconnected")
+    default:
+      break
+    }
+  }
+
   func handleBLEConnectionStateChange(_ state: String) {
     if state == "ready" {
       connectedDeviceGeneration = ble.discoveredDevices

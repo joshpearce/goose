@@ -168,7 +168,11 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     pendingHRPeripheral = nil
     owner?.updateHRReconnectState("idle")
     DispatchQueue.main.async { [weak self] in
+      let previous = self?.owner?.hrConnectionState
       self?.owner?.hrConnectionState = "connected"
+      if previous != "connected" {
+        self?.owner?.onHRConnectionStateChange?("connected")
+      }
     }
   }
 
@@ -183,7 +187,11 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     pendingHRPeripheral = disconnectedPeripheral
     scheduleNextHRReconnect()
     DispatchQueue.main.async { [weak self] in
+      let previous = self?.owner?.hrConnectionState
       self?.owner?.hrConnectionState = "disconnected"
+      if previous != "disconnected" {
+        self?.owner?.onHRConnectionStateChange?("disconnected")
+      }
     }
   }
 
@@ -195,7 +203,11 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
     hrConnectionState = "disconnected"
     hrPeripheral = nil
     DispatchQueue.main.async { [weak self] in
+      let previous = self?.owner?.hrConnectionState
       self?.owner?.hrConnectionState = "disconnected"
+      if previous != "disconnected" {
+        self?.owner?.onHRConnectionStateChange?("disconnected")
+      }
     }
   }
 
