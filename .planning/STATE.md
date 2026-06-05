@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
 status: completed
-stopped_at: Phase 14 Plan 01 complete — Localizable.xcstrings infrastructure + pt-PT locale + tab/route title localisation (Wave 1)
-last_updated: "2026-06-05T11:42:48Z"
+stopped_at: Phase 14 Plan 03 complete — More/Connection/Onboarding/Debug pt-PT translations (Wave 3); 543 xcstrings entries
+last_updated: "2026-06-05T12:35:00Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 13
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: 14
-Plan: 01 complete
-Status: Phase 14 Plan 01 complete — Localizable.xcstrings + pt-PT locale + String(localized:) migration
+Plan: 03 complete
+Status: Phase 14 Plan 03 complete — More/Connection/Onboarding/Debug pt-PT translations (Wave 3)
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -77,6 +77,7 @@ Recent decisions affecting current work:
 - v3.0 Phase 14 (pt-PT) last: all v3.0 UI strings must be stable before localisation extraction
 - Phase 14 Plan 01: Use String(localized:) instead of LocalizedStringKey for String-returning properties — preserves compatibility with String consumers (CoachTips, HealthScoreDateViews, HomeDashboardView)
 - Phase 14 Plan 01: xcstrings keys use full English literal strings to match source code exactly
+- Phase 14 Plan 03: Wave 3 added 328 entries (543 total); @Published status strings deferred to Wave 4
 
 ### Pending Todos
 
