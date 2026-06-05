@@ -41,7 +41,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 
 - [x] **Phase 9: BLE Stability & Data Integrity** — Fix CR-02 device_id, BLE reconnect backoff, FFI panic safety, storage retention limit (completed 2026-06-04)
 - [x] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status (completed 2026-06-04)
-- [ ] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate
+- [x] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate (completed 2026-06-05)
 - [ ] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect
 - [ ] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data
 - [ ] **Phase 14: pt-PT Localisation** — Static catalog + dynamic status strings in European Portuguese
@@ -131,11 +131,11 @@ Plans:
 
 **Wave 1**
 
-  - [ ] 11-01-PLAN.md — Add .hrMonitor capture mode + startHRMonitorCapture/stopHRMonitorCapture without WHOOP gate (D-01, D-03)
+  - [x] 11-01-PLAN.md — Add .hrMonitor capture mode + startHRMonitorCapture/stopHRMonitorCapture without WHOOP gate (D-01, D-03)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-  - [ ] 11-02-PLAN.md — Auto-start/stop on hrConnectionState via onHRConnectionStateChange callback + D-04 upload verification + cargo test gate (D-02, D-04)
+  - [x] 11-02-PLAN.md — Auto-start/stop on hrConnectionState via onHRConnectionStateChange callback + D-04 upload verification + cargo test gate (D-02, D-04)
 
 ### Phase 12: WHOOP 4.0 RTC Clock Sync
 
@@ -194,7 +194,7 @@ Plans:
 | 9. BLE Stability & Data Integrity | v3.0 | 4/4 | Complete    | 2026-06-04 |
 | 10. HR Monitor Scan/Connect UI | v3.0 | 3/3 | Complete    | 2026-06-04 |
 | 10.1. BLE Main-Thread Publishing Fix | v3.0 | 1/1 | Complete    | 2026-06-04 |
-| 11. HR Monitor Independent Capture | v3.0 | 0/2 | Not started | - |
+| 11. HR Monitor Independent Capture | v3.0 | 2/2 | Complete    | 2026-06-05 |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 0/? | Not started | - |
 | 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
 | 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
@@ -208,6 +208,7 @@ Plans:
 **Why:** The residual `Update NavigationRequestObserver tried to update multiple times per frame` warning (3× at capture startup) is caused by `applyHealthPacketCaptureFamilySnapshot` making 3+ `@Published` writes in sequence, each firing `objectWillChange`. With `@Observable`, only views that access the specific changed property re-render — eliminating the spurious navigation observer updates entirely.
 
 **What's needed:**
+
 1. Replace `class GooseAppModel: ObservableObject` → `@Observable class GooseAppModel`
 2. Remove all `@Published` annotations from `GooseAppModel` properties
 3. Replace `@EnvironmentObject var model: GooseAppModel` → `@Environment(GooseAppModel.self) var model` in all views
@@ -217,7 +218,7 @@ Plans:
 **Scope:** Large refactor (~150 files). Safe to defer — existing behaviour is correct, only performance of re-renders is affected.
 
 **Requirements:** TBD
-**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready for v4.0
+**Plans:** 2/2 plans complete
 
 ---
 
