@@ -1,87 +1,44 @@
-# Requirements: Goose v3.0
+# Requirements: Goose v4.0 — Security, Performance & Coach Expansion
 
-**Defined:** 2026-06-04
-**Core Value:** The user must be able to capture WHOOP data on iPhone and have it persisted automatically on their personal server — without depending on external infrastructure.
+**Defined:** 2026-06-05
+**Core Value:** Secure, performant, multi-provider AI coaching on top of the WHOOP data capture platform.
 
-## v3.0 Requirements
+## Milestone Goal
 
-### WEAR — HR Monitor UX
+Harden the URL scheme security, eliminate SwiftUI re-render overhead via @Observable migration, and expand the Coach tab to support multiple AI providers and user-configured endpoints.
 
-- [ ] **WEAR-04**: User can view a scan list of nearby HR monitors (device name + RSSI) and initiate a scan from the app
-- [ ] **WEAR-05**: User can tap a device in the scan list to connect the HR monitor
-- [ ] **WEAR-06**: User can run an HR monitor capture session independently, without requiring an active WHOOP session
+## Requirements
 
-### FIX — Bug Fixes & Tech Debt
+### Security
 
-- [x] **FIX-01**: HR monitor frames are stored with the correct non-NULL `device_id` per row (CR-02 fix in `capture_import.rs`)
-- [x] **FIX-02**: WHOOP BLE reconnection uses exponential backoff (1 s base, doubles, 60 s cap, 10-attempt circuit breaker) with manual retry and stop buttons in the UI
-- [x] **FIX-03**: HR monitor BLE reconnection uses the same exponential backoff parameters as WHOOP (applied to `GooseBLEHRMonitorManager`)
-- [x] **FIX-04**: Rust FFI dispatch wraps in `catch_unwind` and release profile uses `panic = "unwind"` so any Rust panic returns a JSON error instead of crashing the app (upstream PR #19)
-- [x] **FIX-05**: Raw evidence payload retention limit reduced from 512 MB to 24 MB to prevent unbounded SQLite growth during large WHOOP history syncs (upstream PR #19)
+- [ ] **SEC-01**: Deep links via `gooseswift://` URL scheme can only invoke **read-only** debug commands; state-changing commands (Bluetooth writes) are blocked from external callers (upstream PR #15 by kobemartin)
 
-### RTC — WHOOP 4.0 Clock Sync
+### Performance
 
-- [ ] **RTC-01**: WHOOP 4.0 clock is automatically synced to iPhone time after BLE connection when clock drift exceeds the configured threshold (resolves upstream issue #17)
+- [ ] **PERF-01**: `GooseAppModel` uses Swift `@Observable` macro — views that do not access a changed property do not re-render (eliminates `objectWillChange` broadcast)
+- [ ] **PERF-02**: `HealthDataStore` uses Swift `@Observable` macro — same per-property tracking benefit
+- [ ] **PERF-03**: `Update NavigationRequestObserver tried to update multiple times per frame` warning eliminated at capture startup
 
-### DASH — Recovery V2 Dashboard
+### Coach Expansion
 
-- [ ] **DASH-01**: User can view Recovery V2 dashboard with HRV, RHR, hero score, and 7-day trend, backed by live bridge data from Rust
-
-### L10N — pt-PT Localisation
-
-- [ ] **L10N-01**: All static UI text literals are translated to European Portuguese (pt-PT) via Xcode String Catalog (`.xcstrings`)
-- [ ] **L10N-02**: All dynamic status strings (`@Published` BLE state, connection state, sync state) are displayed in pt-PT at the view layer
-
-## v4.0 Requirements (Deferred)
-
-### Upload Reliability
-
-- **UPLD-01**: Upload queue persisted in SQLite to survive app restarts
-- **UPLD-02**: Background URLSession for upload when app is suspended
-- **UPLD-03**: Sync cursor/watermark to resume partial uploads
-
-### Platform
-
-- **ANDROID-01**: Full Android app UI (architecture foundations only in v2.0)
-- **UPSTREAM-01**: PRs back to upstream b-nnett/goose with fork fixes
-
-### Wearables
-
-- **WEAR-EXT-01**: Third wearable + generic `Wearable` protocol
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| Server-side dashboard / alerts | Not core to data capture value |
-| Advanced authentication (OAuth, 2FA) | Simple Bearer token is sufficient for personal server |
-| Auto-pairing HR monitor on first scan | User must confirm connection explicitly |
-| Full Android app | Architecture foundations only in v2.0 |
-| pt-PT for diagnostic/log strings (in `record(...)` calls) | Logs are developer-facing; translating them adds noise without benefit |
+- [ ] **COACH-01**: `CoachProvider` protocol abstracts the AI provider — `send(messages:systemPrompt:) async throws -> AsyncStream<String>`
+- [ ] **COACH-02**: Multiple named accounts per provider stored in Keychain with provider prefix
+- [ ] **COACH-03**: At least one additional provider supported (Claude API by Anthropic)
+- [ ] **COACH-04**: User-configured custom endpoint (OpenAI Chat Completions-compatible `POST /v1/chat/completions` with SSE streaming)
+- [ ] **COACH-05**: Provider picker UI in More/Coach settings — shows configured accounts, lets user add/remove/select active account
+- [ ] **COACH-06**: Existing single OpenAI key migrated to named account on first launch after upgrade
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 9 | Complete |
-| FIX-02 | Phase 9 | Complete |
-| FIX-03 | Phase 9 | Complete |
-| FIX-04 | Phase 9 | Complete |
-| FIX-05 | Phase 9 | Complete |
-| WEAR-04 | Phase 10 | Pending |
-| WEAR-05 | Phase 10 | Pending |
-| WEAR-06 | Phase 11 | Pending |
-| RTC-01 | Phase 12 | Pending |
-| DASH-01 | Phase 13 | Pending |
-| L10N-01 | Phase 14 | Pending |
-| L10N-02 | Phase 14 | Pending |
-
-**Coverage:**
-
-- v3.0 requirements: 12 total
-- Mapped to phases: 12 (Phases 9-14)
-- Unmapped: 0 ✓
-
----
-*Requirements defined: 2026-06-04*
-*Last updated: 2026-06-04 — added FIX-04 and FIX-05 from upstream PR #19 review*
+| SEC-01 | Phase 16 | Planned |
+| PERF-01 | Phase 17 | Planned |
+| PERF-02 | Phase 17 | Planned |
+| PERF-03 | Phase 17 | Planned |
+| COACH-01 | Phase 18 | Planned |
+| COACH-02 | Phase 18 | Planned |
+| COACH-03 | Phase 18 | Planned |
+| COACH-04 | Phase 18 | Planned |
+| COACH-05 | Phase 18 | Planned |
+| COACH-06 | Phase 18 | Planned |

@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.0
-milestone_name: Wearable UX, CI Hardening & RTC Sync
+milestone_name: milestone
 status: completed
 stopped_at: "Phase 14 Plan 01 complete — Localizable.xcstrings + pt-PT locale + String(localized:) migration"
-last_updated: "2026-06-05T18:46:41.156Z"
+last_updated: "2026-06-05T18:52:39.736Z"
 last_activity: 2026-06-05
 progress:
-  total_phases: 14
+  total_phases: 11
   completed_phases: 8
   total_plans: 17
   completed_plans: 17
-  percent: 57
+  percent: 73
 ---
 
 # Project State

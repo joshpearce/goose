@@ -36,16 +36,29 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 
 </details>
 
-### 🚧 v3.0 Wearable UX, CI Hardening & RTC Sync (In Progress)
+<details>
+<summary>✅ v3.0 Wearable UX, CI Hardening & RTC Sync (Phases 9-15) — SHIPPED 2026-06-05</summary>
 
-**Milestone Goal:** Complete the HR monitor UX, fix foundational BLE and data integrity bugs, deliver Recovery V2 dashboard, sync WHOOP 4.0 clock, and add pt-PT localisation.
+- [x] Phase 9: BLE Stability & Data Integrity (4/4 plans) — completed 2026-06-04
+- [x] Phase 10: HR Monitor Scan/Connect UI (3/3 plans) — completed 2026-06-05
+- [x] Phase 10.1: BLE Main-Thread Publishing Fix (1/1 plans) — completed 2026-06-05
+- [x] Phase 11: HR Monitor Independent Capture (2/2 plans) — completed 2026-06-05
+- [x] Phase 12: WHOOP 4.0 RTC Clock Sync (1/1 plans) — completed 2026-06-05
+- [x] Phase 13: Recovery V2 Dashboard (1/1 plans) — completed 2026-06-05
+- [x] Phase 14: pt-PT Localisation (4/4 plans) — completed 2026-06-05
+- [x] Phase 15: Recovery Formula V2 SDNN (1/1 plans) — completed 2026-06-05
 
-- [x] **Phase 9: BLE Stability & Data Integrity** — Fix CR-02 device_id, BLE reconnect backoff, FFI panic safety, storage retention limit (completed 2026-06-04)
-- [x] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status (completed 2026-06-04)
-- [x] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate (completed 2026-06-05)
-- [x] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect (completed 2026-06-05)
-- [x] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data (completed 2026-06-05)
-- [x] **Phase 14: pt-PT Localisation** — Static catalog + dynamic status strings in European Portuguese (completed 2026-06-05)
+Full details: `.planning/milestones/v3.0-ROADMAP.md`
+
+</details>
+
+### 🚧 v4.0 Security, Performance & Coach Expansion (In Progress)
+
+**Milestone Goal:** Block state-changing debug deep links (security), eliminate ObservableObject re-render overhead via @Observable migration (performance), and expand Coach to support multiple AI providers.
+
+- [ ] **Phase 16: Deep Link Security** — Block state-changing `gooseswift://` commands from external callers (PR #15)
+- [ ] **Phase 17: @Observable Migration** — Migrate GooseAppModel + HealthDataStore to @Observable, eliminate NavigationRequestObserver warnings
+- [ ] **Phase 18: Coach Multi-Provider** — CoachProvider protocol, Claude + custom endpoint support, provider picker UI
 
 ## Phase Details
 
@@ -341,3 +354,63 @@ Plans:
 **Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
 
 ---
+
+### Phase 16: Deep Link Security
+
+**Goal**: External apps and webpages cannot trigger state-changing WHOOP commands via the `gooseswift://` URL scheme
+**Depends on**: Phase 15 (v3.0 complete)
+**Requirements**: SEC-01
+**Reference**: Upstream PR #15 (kobemartin — codex/block-state-change-debug-deep-links)
+**Success Criteria** (what must be TRUE):
+
+  1. Read-only debug commands (inspect, read) continue to work via deep link
+  2. State-changing commands (Bluetooth writes, alarm set, sensor capture) are blocked when invoked from external URL scheme
+  3. Remote URL examples hidden in UI for commands that cannot be safely invoked remotely
+
+**Plans**: TBD
+
+### Phase 17: @Observable Migration
+
+**Goal**: GooseAppModel and HealthDataStore use Swift @Observable macro — only views that access a changed property re-render
+**Depends on**: Phase 16
+**Requirements**: PERF-01, PERF-02, PERF-03
+**Success Criteria** (what must be TRUE):
+
+  1. `class GooseAppModel: ObservableObject` → `@Observable class GooseAppModel` (all ~80 @Published removed)
+  2. `class HealthDataStore: ObservableObject` → `@Observable class HealthDataStore`
+  3. All views updated from `@EnvironmentObject var model` → `@Environment(GooseAppModel.self) var model`
+  4. `Update NavigationRequestObserver tried to update multiple times per frame` no longer appears in logs during BLE capture
+
+**Plans**: TBD
+
+### Phase 18: Coach Multi-Provider
+
+**Goal**: Coach tab supports multiple AI providers and user-configured custom endpoints
+**Depends on**: Phase 16
+**Requirements**: COACH-01, COACH-02, COACH-03, COACH-04, COACH-05, COACH-06
+**Success Criteria** (what must be TRUE):
+
+  1. `CoachProvider` protocol exists — any conforming type can serve as the AI backend
+  2. User can configure at least two providers (OpenAI + Claude) with named accounts in Keychain
+  3. User can enter a custom OpenAI-compatible endpoint (base URL + API key + model) and use it for chat
+  4. Provider picker UI in More/Coach settings shows configured accounts with add/remove/select
+  5. Existing single OpenAI key is automatically migrated to a named account on first launch
+  6. Streaming responses work for all supported providers
+
+**Plans**: TBD
+
+## Progress
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 9. BLE Stability & Data Integrity | v3.0 | 4/4 | Complete | 2026-06-04 |
+| 10. HR Monitor Scan/Connect UI | v3.0 | 3/3 | Complete | 2026-06-05 |
+| 10.1. BLE Main-Thread Publishing Fix | v3.0 | 1/1 | Complete | 2026-06-05 |
+| 11. HR Monitor Independent Capture | v3.0 | 2/2 | Complete | 2026-06-05 |
+| 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 1/1 | Complete | 2026-06-05 |
+| 13. Recovery V2 Dashboard | v3.0 | 1/1 | Complete | 2026-06-05 |
+| 14. pt-PT Localisation | v3.0 | 4/4 | Complete | 2026-06-05 |
+| 15. Recovery Formula V2 SDNN | v3.0 | 1/1 | Complete | 2026-06-05 |
+| 16. Deep Link Security | v4.0 | 0/? | Not started | - |
+| 17. @Observable Migration | v4.0 | 0/? | Not started | - |
+| 18. Coach Multi-Provider | v4.0 | 0/? | Not started | - |
