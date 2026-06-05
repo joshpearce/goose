@@ -62,11 +62,20 @@ jobs:
         if: matrix.language == 'swift'
         run: |
           mkdir -p Rust/iphonesimulator Rust/iphoneos
-          # Compile a no-op C translation unit and archive it as the stub static lib.
-          # The linker finds the file; no real Rust symbols are needed for CodeQL analysis.
-          echo 'void goose_stub(void){}' > /tmp/goose_stub.c
+          # The stub must export the exact C symbols that GooseRustBridge.swift
+          # references via the bridging header: goose_bridge_handle_json and
+          # goose_bridge_free_string. A missing symbol causes an "Undefined
+          # symbols for architecture" linker error even in CodeQL builds.
+          cat > /tmp/goose_stub.c << 'EOF'
+          #include <stddef.h>
+          /* Stub FFI symbols — no-ops; CodeQL only needs Swift source compiled. */
+          const char *goose_bridge_handle_json(const char *request_json) { return NULL; }
+          void goose_bridge_free_string(char *value) { (void)value; }
+          const char *goose_core_version_json(void) { return NULL; }
+          EOF
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
           clang -target arm64-apple-ios-simulator \
-            -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) \
+            -isysroot "$SDK" \
             -c /tmp/goose_stub.c -o /tmp/goose_stub.o
           ar rcs Rust/iphonesimulator/libgoose_core.a /tmp/goose_stub.o
           ar rcs Rust/iphoneos/libgoose_core.a /tmp/goose_stub.o
