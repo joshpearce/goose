@@ -239,6 +239,7 @@ final class GooseBLEClient: NSObject, ObservableObject, @unchecked Sendable {
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
   var batteryLevelStatusCharacteristic: CBCharacteristic?
+  var batteryCharacteristicDiscoveryPending = false
   var lastBatteryLevelSample: (percent: Int, capturedAt: Date)?
   var inferredBatteryChargingUntil: Date?
   var rememberedDeviceID: UUID?

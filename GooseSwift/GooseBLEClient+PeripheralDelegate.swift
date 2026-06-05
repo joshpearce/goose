@@ -50,6 +50,10 @@ extension GooseBLEClient: CBPeripheralDelegate {
       return
     }
 
+    if service.uuid == batteryServiceID {
+      batteryCharacteristicDiscoveryPending = false
+    }
+
     let characteristics = service.characteristics ?? []
     let characteristicSummary = characteristics
       .map { "\($0.uuid.uuidString)[\(propertyNames($0.properties))]" }

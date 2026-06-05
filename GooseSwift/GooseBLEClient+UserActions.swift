@@ -467,6 +467,11 @@ extension GooseBLEClient {
         missingCharacteristicIDs.append(batteryLevelStatusCharacteristicID)
       }
       if !missingCharacteristicIDs.isEmpty {
+        guard !batteryCharacteristicDiscoveryPending else {
+          record(source: "ble.metadata", title: "battery.discover_characteristic.skipped", body: "discovery_in_progress")
+          return
+        }
+        batteryCharacteristicDiscoveryPending = true
         record(source: "ble.metadata", title: "battery.discover_characteristic.requested", body: uuidList(missingCharacteristicIDs))
         activePeripheral.discoverCharacteristics(missingCharacteristicIDs, for: batteryService)
       }
