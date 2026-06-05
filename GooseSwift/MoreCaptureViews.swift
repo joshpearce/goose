@@ -78,7 +78,7 @@ struct MoreCaptureView: View {
       Section("Overnight Guard") {
         MoreInfoRow(
           title: "Status",
-          value: model.overnightGuardStatus,
+          value: model.overnightGuardStatus.localizedOvernightGuardStatus,
           systemImage: "moon",
           status: overnightGuardStatus
         )

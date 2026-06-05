@@ -248,7 +248,7 @@ private struct HRMonitorConnectedPanel: View {
       }
 
       if ble.hrReconnectState != "idle" {
-        Text(ble.hrReconnectState)
+        Text(ble.hrReconnectState.localizedHRReconnectState)
           .font(deviceLabelFont)
           .foregroundStyle(disconnectedRed)
       }

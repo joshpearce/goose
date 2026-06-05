@@ -113,7 +113,7 @@ struct SleepV2BandSyncCard: View {
         SleepV2BandSyncRow(
           palette: palette,
           title: "History",
-          value: ble.historicalSyncStatus,
+          value: ble.historicalSyncStatus.localizedHistoricalSyncStatus,
           systemImage: "arrow.triangle.2.circlepath"
         )
         Divider().overlay(palette.separator).padding(.leading, 42)

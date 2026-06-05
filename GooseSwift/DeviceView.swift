@@ -320,8 +320,8 @@ private struct DeviceAdvancedPanel: View {
 
       DeviceDetailStack {
         DeviceFactRow(systemName: "heart", label: "Live HR", value: heartRateSummary)
-        DeviceFactRow(systemName: "dot.radiowaves.left.and.right", label: "Connection", value: ble.connectionState.capitalized)
-        DeviceFactRow(systemName: "arrow.triangle.2.circlepath", label: "Historical sync", value: ble.historicalSyncStatus.capitalized)
+        DeviceFactRow(systemName: "dot.radiowaves.left.and.right", label: "Connection", value: ble.connectionState.localizedConnectionState)
+        DeviceFactRow(systemName: "arrow.triangle.2.circlepath", label: "Historical sync", value: ble.historicalSyncStatus.localizedHistoricalSyncStatus)
         DeviceFactRow(systemName: "bolt.horizontal", label: "High freq", value: ble.highFrequencyHistorySyncDisplaySummary)
         DeviceFactRow(systemName: "lungs", label: "RR packets", value: model.respiratoryPacketWatchStatus)
         DeviceFactRow(systemName: "cpu", label: "Rust", value: model.rustStatus)
@@ -346,7 +346,7 @@ private struct DeviceAdvancedPanel: View {
     guard let battery = ble.batteryLevelPercent else {
       return "Unknown"
     }
-    let status = ble.batteryPowerStatus == "Unknown" ? "" : " | \(ble.batteryPowerStatus)"
+    let status = ble.batteryPowerStatus == "Unknown" ? "" : " | \(ble.batteryPowerStatus.localizedBatteryPowerStatus)"
     if let updatedAt = ble.batteryUpdatedAt,
        Date().timeIntervalSince(updatedAt) > 3600,
        let relative = relativeSummary(for: updatedAt) {
@@ -378,14 +378,14 @@ private struct DeviceAdvancedPanel: View {
 
   private var clockSummary: String {
     guard let offset = ble.strapClockOffsetSeconds else {
-      return ble.strapClockStatus
+      return ble.strapClockStatus.localizedStrapClockStatus
     }
     let drift = formattedClockOffset(offset)
     if let updatedAt = ble.strapClockUpdatedAt,
        let relative = relativeSummary(for: updatedAt) {
-      return "\(drift) | \(ble.strapClockStatus) | \(relative)"
+      return "\(drift) | \(ble.strapClockStatus.localizedStrapClockStatus) | \(relative)"
     }
-    return "\(drift) | \(ble.strapClockStatus)"
+    return "\(drift) | \(ble.strapClockStatus.localizedStrapClockStatus)"
   }
 
   private func refreshClockIfPossible() {

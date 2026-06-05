@@ -11,7 +11,7 @@ struct SleepDataBridgeSection: View {
     VStack(alignment: .leading, spacing: 12) {
       HealthSectionTitle("Sleep Data")
       VStack(spacing: 8) {
-        HealthInfoRow(row: HealthSummaryRow("Band history", value: "\(ble.historicalSyncStatus) | \(packetText)", source: .live("WHOOP historical sync"), systemImage: "antenna.radiowaves.left.and.right"))
+        HealthInfoRow(row: HealthSummaryRow("Band history", value: "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packetText)", source: .live("WHOOP historical sync"), systemImage: "antenna.radiowaves.left.and.right"))
         HealthInfoRow(row: HealthSummaryRow("Band sleep import", value: store.bandSleepImportStatus, source: .bridge("band historical packets"), systemImage: "square.stack.3d.up"))
         HealthInfoRow(row: HealthSummaryRow("Goose sleep score", value: store.sleepFeatureScoreSummary(), source: store.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
       }

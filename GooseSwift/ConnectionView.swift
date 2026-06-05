@@ -17,11 +17,11 @@ private struct ConnectionContentView: View {
   var body: some View {
     List {
       Section("Status") {
-        LabeledContent("Bluetooth", value: ble.bluetoothState)
-        LabeledContent("Connection", value: ble.connectionState)
+        LabeledContent("Bluetooth", value: ble.bluetoothState.localizedBluetoothState)
+        LabeledContent("Connection", value: ble.connectionState.localizedConnectionState)
         // Reconnect row shows "reconnecting (attempt N/10)" during backoff (Task 1).
-        LabeledContent("Reconnect", value: ble.reconnectState)
-        LabeledContent("HR Reconnect", value: ble.hrReconnectState)
+        LabeledContent("Reconnect", value: ble.reconnectState.localizedReconnectState)
+        LabeledContent("HR Reconnect", value: ble.hrReconnectState.localizedHRReconnectState)
         LabeledContent("Historical", value: historicalSyncValue)
         LabeledContent("Remembered", value: ble.rememberedDeviceDescription)
         LabeledContent("Live HR", value: liveHeartRateValue)
@@ -167,11 +167,11 @@ private struct ConnectionContentView: View {
     let packetCount = ble.historicalPacketCount
     let packets = "\(packetCount) \(packetCount == 1 ? "packet" : "packets")"
     if ble.isHistoricalSyncing {
-      return "syncing | \(packets)"
+      return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets)"
     }
     if let completedAt = ble.lastHistoricalSyncCompletedAt {
-      return "\(ble.historicalSyncStatus) | \(packets) @ \(completedAt.formatted(date: .omitted, time: .standard))"
+      return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets) @ \(completedAt.formatted(date: .omitted, time: .standard))"
     }
-    return "\(ble.historicalSyncStatus) | \(packets)"
+    return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets)"
   }
 }

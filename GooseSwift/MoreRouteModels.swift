@@ -133,7 +133,13 @@ enum MoreStatusKind: String, CaseIterable {
   case stale
 
   var title: String {
-    rawValue.capitalized
+    switch self {
+    case .ready:       String(localized: "Pronto")
+    case .pending:     String(localized: "Pendente")
+    case .blocked:     String(localized: "Bloqueado")
+    case .unavailable: String(localized: "Indisponível")
+    case .stale:       String(localized: "Desatualizado")
+    }
   }
 
   var tint: Color {

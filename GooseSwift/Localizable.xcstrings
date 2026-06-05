@@ -1,6 +1,126 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "A carregar (inferido)": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A carregar (inferido)"
+          }
+        }
+      }
+    },
+    "A descobrir...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A descobrir..."
+          }
+        }
+      }
+    },
+    "A gravar guarda nocturna": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A gravar guarda nocturna"
+          }
+        }
+      }
+    },
+    "A ligar...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A ligar..."
+          }
+        }
+      }
+    },
+    "A procurar WHOOP guardado...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar WHOOP guardado..."
+          }
+        }
+      }
+    },
+    "A procurar dispositivo guardado...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar dispositivo guardado..."
+          }
+        }
+      }
+    },
+    "A procurar fisiologia WHOOP...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar fisiologia WHOOP..."
+          }
+        }
+      }
+    },
+    "A recuperar dispositivo...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A recuperar dispositivo..."
+          }
+        }
+      }
+    },
+    "A reiniciar...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A reiniciar..."
+          }
+        }
+      }
+    },
+    "A sincronizar relógio...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sincronizar relógio..."
+          }
+        }
+      }
+    },
+    "A sincronizar...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sincronizar..."
+          }
+        }
+      }
+    },
+    "A tentar ligar...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tentar ligar..."
+          }
+        }
+      }
+    },
     "ADVANCED": {
       "localizations": {
         "pt-PT": {
@@ -301,6 +421,16 @@
         }
       }
     },
+    "Ativo": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ativo"
+          }
+        }
+      }
+    },
     "Authentication": {
       "localizations": {
         "pt-PT": {
@@ -417,6 +547,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lembretes de bateria e sincronização"
+          }
+        }
+      }
+    },
+    "Bloqueado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueado"
           }
         }
       }
@@ -841,6 +981,16 @@
         }
       }
     },
+    "Comando de relógio em curso": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comando de relógio em curso"
+          }
+        }
+      }
+    },
     "Command Shortcuts": {
       "localizations": {
         "pt-PT": {
@@ -1151,6 +1301,26 @@
         }
       }
     },
+    "Desatualizado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desatualizado"
+          }
+        }
+      }
+    },
+    "Desconhecido": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconhecido"
+          }
+        }
+      }
+    },
     "Destructive Commands Locked": {
       "localizations": {
         "pt-PT": {
@@ -1287,6 +1457,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dispensar"
+          }
+        }
+      }
+    },
+    "Dispositivo guardado não é WHOOP": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispositivo guardado não é WHOOP"
+          }
+        }
+      }
+    },
+    "Dispositivo recusado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispositivo recusado"
           }
         }
       }
@@ -1511,6 +1701,16 @@
         }
       }
     },
+    "Esquecido": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esquecido"
+          }
+        }
+      }
+    },
     "Event Log": {
       "localizations": {
         "pt-PT": {
@@ -1617,6 +1817,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extrair Entradas Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Falhou": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falhou"
+          }
+        }
+      }
+    },
+    "Falhou após 10 tentativas": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falhou após 10 tentativas"
           }
         }
       }
@@ -2191,6 +2411,16 @@
         }
       }
     },
+    "Importação de pacotes falhou": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importação de pacotes falhou"
+          }
+        }
+      }
+    },
     "Imported Sleep History": {
       "localizations": {
         "pt-PT": {
@@ -2207,6 +2437,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Importações e Correspondência"
+          }
+        }
+      }
+    },
+    "Inativo": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inativo"
           }
         }
       }
@@ -2231,12 +2471,52 @@
         }
       }
     },
+    "Indisponível": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indisponível"
+          }
+        }
+      }
+    },
+    "Inicie a guarda nocturna antes da sincronização final": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicie a guarda nocturna antes da sincronização final"
+          }
+        }
+      }
+    },
     "Insights": {
       "localizations": {
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
             "value": "Informações"
+          }
+        }
+      }
+    },
+    "Já a gravar guarda nocturna": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Já a gravar guarda nocturna"
+          }
+        }
+      }
+    },
+    "Já ligado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Já ligado"
           }
         }
       }
@@ -2357,6 +2637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Último Zip"
+          }
+        }
+      }
+    },
+    "Ligado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligado"
           }
         }
       }
@@ -2681,6 +2971,16 @@
         }
       }
     },
+    "Nenhum dispositivo guardado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum dispositivo guardado"
+          }
+        }
+      }
+    },
     "Never": {
       "localizations": {
         "pt-PT": {
@@ -2931,6 +3231,46 @@
         }
       }
     },
+    "Não iniciado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não iniciado"
+          }
+        }
+      }
+    },
+    "Não lido": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não lido"
+          }
+        }
+      }
+    },
+    "Não solicitado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não solicitado"
+          }
+        }
+      }
+    },
+    "Não suportado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não suportado"
+          }
+        }
+      }
+    },
     "OK": {
       "localizations": {
         "pt-PT": {
@@ -3087,6 +3427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Payload"
+          }
+        }
+      }
+    },
+    "Pendente": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pendente"
           }
         }
       }
@@ -3257,6 +3607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preenchimento automático do peso do perfil apenas"
+          }
+        }
+      }
+    },
+    "Pronto": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto"
           }
         }
       }
@@ -3567,6 +3927,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Actualizar Instantâneo"
+          }
+        }
+      }
+    },
+    "Relógio bloqueado por alarme": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relógio bloqueado por alarme"
+          }
+        }
+      }
+    },
+    "Relógio em sincronia": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relógio em sincronia"
+          }
+        }
+      }
+    },
+    "Relógio sincronizado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relógio sincronizado"
           }
         }
       }
@@ -4161,6 +4551,36 @@
         }
       }
     },
+    "Sem captura activa": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem captura activa"
+          }
+        }
+      }
+    },
+    "Sem captura de pacotes": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem captura de pacotes"
+          }
+        }
+      }
+    },
+    "Sem importação de pacotes": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem importação de pacotes"
+          }
+        }
+      }
+    },
     "Send Client Hello": {
       "localizations": {
         "pt-PT": {
@@ -4287,6 +4707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Terminar sessão"
+          }
+        }
+      }
+    },
+    "Sincronizado": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizado"
           }
         }
       }
@@ -5427,6 +5857,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Validação Zip"
+          }
+        }
+      }
+    },
+    "À escuta de pacotes de movimento": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À escuta de pacotes de movimento"
+          }
+        }
+      }
+    },
+    "À espera de Bluetooth": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À espera de Bluetooth"
+          }
+        }
+      }
+    },
+    "À espera...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À espera..."
           }
         }
       }

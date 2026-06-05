@@ -48,13 +48,13 @@ struct MoreDebugView: View {
         )
         MoreInfoRow(
           title: "Session",
-          value: model.healthPacketCaptureStatus,
+          value: model.healthPacketCaptureStatus.localizedCaptureStatus,
           systemImage: "record.circle",
           status: self.healthPacketCaptureStatus
         )
         MoreInfoRow(
           title: "Targets",
-          value: model.healthPacketCaptureTargetSummary,
+          value: model.healthPacketCaptureTargetSummary.localizedCaptureTargetSummary,
           systemImage: "scope",
           status: model.healthPacketCaptureFamilyRows.isEmpty ? .pending : .ready
         )
@@ -162,7 +162,7 @@ struct MoreDebugView: View {
         )
         MoreInfoRow(
           title: "Detector",
-          value: model.activityDetectionStatus,
+          value: model.activityDetectionStatus.localizedActivityDetectionStatus,
           systemImage: "figure.run.circle",
           status: activityDetectorStatus
         )
