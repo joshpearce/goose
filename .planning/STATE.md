@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Wearable UX, CI Hardening & RTC Sync
 status: completed
-stopped_at: Phase 11 Plan 02 complete — onHRConnectionStateChange wiring and auto-capture lifecycle
-last_updated: "2026-06-05T11:24:56.062Z"
+stopped_at: Phase 14 Plan 01 complete — Localizable.xcstrings infrastructure + pt-PT locale + tab/route title localisation (Wave 1)
+last_updated: "2026-06-05T11:42:48Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 13
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Phase 11 Plan 02 complete — phase 11 done
+Phase: 14
+Plan: 01 complete
+Status: Phase 14 Plan 01 complete — Localizable.xcstrings + pt-PT locale + String(localized:) migration
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - v3.0 Phase 9 first: FIX-01 (Rust-only, zero risk) unblocks HR capture testing; FIX-02+FIX-03 must be stable before HR scan UI ships
 - v3.0 Phase 12 (RTC sync) and Phase 13 (Recovery V2) have no mutual dependency — parallelisable
 - v3.0 Phase 14 (pt-PT) last: all v3.0 UI strings must be stable before localisation extraction
+- Phase 14 Plan 01: Use String(localized:) instead of LocalizedStringKey for String-returning properties — preserves compatibility with String consumers (CoachTips, HealthScoreDateViews, HomeDashboardView)
+- Phase 14 Plan 01: xcstrings keys use full English literal strings to match source code exactly
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-05T00:30:00Z
-Stopped at: Phase 11 Plan 02 complete — onHRConnectionStateChange wiring and auto-capture lifecycle
-Resume file: .planning/phases/11-hr-monitor-independent-capture/11-02-SUMMARY.md
+Last session: 2026-06-05T11:42:48Z
+Stopped at: Phase 14 Plan 01 complete — Localizable.xcstrings + pt-PT locale + String(localized:) migration
+Resume file: .planning/phases/14-pt-pt-localisation/14-01-SUMMARY.md
