@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 17 Plan 03 complete — GooseBLEClient @Observable Wave 3
-last_updated: "2026-06-05T19:28:00.000Z"
+stopped_at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
+last_updated: "2026-06-05T19:33:34.000Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 13
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: 17
-Plan: 03 complete
-Status: Phase 17 Plan 03 complete — GooseBLEClient @Observable migration (Wave 3); 68 @Published removed; 21 @ObservedObject sites cleared; NSObject+@unchecked Sendable preserved; @Bindable fix for SyncToastHost binding; MoreView 3 onChange modifiers; BUILD SUCCEEDED
+Plan: 04 complete
+Status: Phase 17 Plan 04 complete — @Observable migration final sweep; global sweep clean (0 legacy wrappers); cargo test 0 failed; BUILD SUCCEEDED; PERF-01 PERF-02 PERF-03 structurally confirmed; 145 @Published removed total across 3 classes
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,7 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | 14 | 4 | - | - |
 | 15 | 1 | - | - |
 | 16 | 1 | - | - |
-| 17 | 3 | ~58m | ~19m |
+| 17 | 4 | ~62m | ~15m |
 
 **Recent Trend:**
 
@@ -84,6 +84,7 @@ Recent decisions affecting current work:
 - Phase 14 Plan 03: Wave 3 added 328 entries (543 total); @Published status strings deferred to Wave 4
 - Phase 17 Plan 02: @Bindable required on CalibrationHealthView when @Observable class property needs Picker binding; nonisolated(unsafe) on NSObjectProtocol observer enables deinit cleanup; lazy var incompatible with @Observable — convert to init-assigned var
 - Phase 17 Plan 03: @Bindable local var in View.body is the correct pattern when an @Observable object is passed as plain var parameter and needs $ binding; three onChange modifiers replace MoreDataStore Combine MergeMany pipeline
+- Phase 17 Plan 04: Wave 4 verification-only — global sweep passed with zero legacy wrappers; PERF-03 is a manual runtime check (launch app, connect WHOOP, start capture, confirm no NavigationRequestObserver warning in Xcode console)
 
 ### Pending Todos
 
@@ -109,6 +110,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-05T19:28:00Z
-Stopped at: Phase 17 Plan 03 complete — GooseBLEClient @Observable Wave 3
-Resume file: .planning/phases/17-observable-migration/17-03-SUMMARY.md
+Last session: 2026-06-05T19:33:34Z
+Stopped at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
+Resume file: .planning/phases/17-observable-migration/17-04-SUMMARY.md
