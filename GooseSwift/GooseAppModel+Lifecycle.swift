@@ -123,6 +123,10 @@ extension GooseAppModel {
     if overnightGuardActive {
       if state == "ready" {
         resumeOvernightGuardStreamsIfReady(reason: "ble_ready")
+        if ble.canSyncClock {
+          ble.writeClockCommand(.get, syncIfNeeded: true)
+          ble.record(source: "ble.clock", title: "clock.auto_sync.triggered", body: "state=ready overnight_guard=true")
+        }
       } else {
         passiveActivityCaptureWorkItem?.cancel()
         overnightGuardStatus = "Recording overnight guard | connection \(state)"
