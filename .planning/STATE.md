@@ -10,7 +10,7 @@ progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 17
-  completed_plans: 18
+  completed_plans: 19
   percent: 67
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
-Status: Phase 14 Plan 04 complete — dynamic @Published status localisation (Wave 4); 597 xcstrings entries; BUILD SUCCEEDED
+Phase: 17
+Plan: 01 complete
+Status: Phase 17 Plan 01 complete — GooseAppModel @Observable migration (Wave 1); 52 @Published removed; all 27 view injection sites updated; MoreDataStore Combine removed; BUILD SUCCEEDED
 Last activity: 2026-06-05
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | 14 | 4 | - | - |
 | 15 | 1 | - | - |
 | 16 | 1 | - | - |
+| 17 | 1 | ~25m | ~25m |
 
 **Recent Trend:**
 
@@ -106,6 +107,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-05T11:42:48Z
-Stopped at: Phase 14 Plan 01 complete — Localizable.xcstrings + pt-PT locale + String(localized:) migration
-Resume file: .planning/phases/14-pt-pt-localisation/14-01-SUMMARY.md
+Last session: 2026-06-05T19:16:15Z
+Stopped at: Phase 17 Plan 01 complete — GooseAppModel @Observable Wave 1
+Resume file: .planning/phases/17-observable-migration/17-01-SUMMARY.md
