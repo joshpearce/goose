@@ -43,7 +43,7 @@ Known deferred: WEAR-02 scan UI (v3.0), CR-02 per-row filter (v3.0), hardware BL
 - [x] **Phase 10: HR Monitor Scan/Connect UI** — Scan list with RSSI, tap-to-connect, connection status (completed 2026-06-04)
 - [x] **Phase 11: HR Monitor Independent Capture** — HR session decoupled from WHOOP session gate (completed 2026-06-05)
 - [x] **Phase 12: WHOOP 4.0 RTC Clock Sync** — Auto-sync iPhone time to WHOOP 4.0 after connect (completed 2026-06-05)
-- [ ] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data
+- [x] **Phase 13: Recovery V2 Dashboard** — Hero score, HRV, RHR, 7-day trend backed by bridge data (completed 2026-06-05)
 - [ ] **Phase 14: pt-PT Localisation** — Static catalog + dynamic status strings in European Portuguese
 
 ## Phase Details
@@ -196,7 +196,7 @@ Plans:
 | 10.1. BLE Main-Thread Publishing Fix | v3.0 | 1/1 | Complete    | 2026-06-04 |
 | 11. HR Monitor Independent Capture | v3.0 | 2/2 | Complete    | 2026-06-05 |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 1/1 | Complete    | 2026-06-05 |
-| 13. Recovery V2 Dashboard | v3.0 | 0/? | Not started | - |
+| 13. Recovery V2 Dashboard | v3.0 | 1/1 | Complete    | 2026-06-05 |
 | 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
 
 ## Backlog
