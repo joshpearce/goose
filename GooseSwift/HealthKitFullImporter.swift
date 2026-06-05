@@ -4,7 +4,7 @@ import HealthKit
 struct HealthKitFullImportResult {
   var sleepDetail: PrimarySleepDetail?
   var restingHR: Double?
-  var hrvRmssdMs: Double?
+  var hkHRVSDNNMs: Double?
   var respiratoryRate: Double?
   var spO2Percent: Double?
   var skinTempDeltaC: Double?
@@ -82,7 +82,7 @@ enum HealthKitFullImporter {
     return HealthKitFullImportResult(
       sleepDetail: sleepDetail,
       restingHR: restingHR,
-      hrvRmssdMs: hrv,
+      hkHRVSDNNMs: hrv,
       respiratoryRate: resp,
       spO2Percent: spO2.map { $0 * 100 },
       skinTempDeltaC: skinTemp,

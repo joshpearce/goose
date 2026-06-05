@@ -364,7 +364,7 @@ extension HealthDataStore {
           sourceDetail: Self.recoveryUnavailableSourceDetail(unavailable)
         )
       }
-      if let ms = hkHRVRmssdMs, let valueText = Self.numberText(ms, fractionDigits: 0) {
+      if let ms = hkHRVSDNNMs, let valueText = Self.numberText(ms, fractionDigits: 0) {
         return replacingHealthMonitorSnapshot(
           snapshot, value: valueText, unit: "ms", status: "Apple Health",
           freshness: "From Health app", provenance: "apple.health.hrv_sdnn",

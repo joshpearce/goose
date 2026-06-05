@@ -19,7 +19,7 @@ final class HealthDataStore: ObservableObject {
 
   // Apple Health fallback values — used when WHOOP packet data is unavailable
   @Published var hkRestingHR: Double?
-  @Published var hkHRVRmssdMs: Double?
+  @Published var hkHRVSDNNMs: Double?
   @Published var hkRespiratoryRate: Double?
   @Published var hkSpO2Percent: Double?
   @Published var hkSkinTempDeltaC: Double?

@@ -820,18 +820,18 @@ extension HealthDataStore {
   //
   // Baselines: 60-night rolling mean of Apple Watch history, or population defaults.
   func hkRecoveryScore() -> Double? {
-    guard let sdnn = hkHRVRmssdMs, sdnn > 5 else { return nil }
-    let rmssdEquiv = sdnn / 1.2 // SDNN → approximate RMSSD
+    guard let sdnn = hkHRVSDNNMs, sdnn > 5 else { return nil }
+    let sdnnMs = sdnn
 
     // HRV baseline: 60-night rolling mean (exclude today)
     let hrvBaseline: Double
     if hkHRVHistory.count >= 7 {
-      let values = hkHRVHistory.dropLast(1).suffix(60).map { $0.sdnn / 1.2 }
+      let values = hkHRVHistory.dropLast(1).suffix(60).map { $0.sdnn }
       hrvBaseline = max(values.reduce(0, +) / Double(values.count), 1)
     } else {
-      hrvBaseline = 40.0 // population average RMSSD equiv
+      hrvBaseline = 50.0 // population average SDNN for healthy adults
     }
-    let hrv_score = min(max(70 + (rmssdEquiv / hrvBaseline - 1) * 100, 0), 100)
+    let hrv_score = min(max(70 + (sdnnMs / hrvBaseline - 1) * 100, 0), 100)
 
     // RHR component
     let rhr_score: Double

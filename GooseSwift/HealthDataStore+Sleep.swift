@@ -183,7 +183,7 @@ extension HealthDataStore {
 
     // Vitals
     if let v = result.restingHR { hkRestingHR = v }
-    if let v = result.hrvRmssdMs { hkHRVRmssdMs = v }
+    if let v = result.hkHRVSDNNMs { hkHRVSDNNMs = v }
     if !result.hrvHistory.isEmpty { hkHRVHistory = result.hrvHistory }
     if !result.rhrHistory.isEmpty { hkRHRHistory = result.rhrHistory }
     if let v = result.respiratoryRate { hkRespiratoryRate = v }
@@ -211,7 +211,7 @@ extension HealthDataStore {
     var parts: [String] = []
     if r.sleepDetail != nil { parts.append("sleep") }
     if r.restingHR != nil { parts.append("resting HR") }
-    if r.hrvRmssdMs != nil { parts.append("HRV") }
+    if r.hkHRVSDNNMs != nil { parts.append("HRV") }
     if r.respiratoryRate != nil { parts.append("resp rate") }
     if r.spO2Percent != nil { parts.append("SpO2") }
     if r.skinTempDeltaC != nil { parts.append("skin temp") }
