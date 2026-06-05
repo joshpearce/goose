@@ -620,6 +620,1536 @@
           }
         }
       }
+    },
+    "Today" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoje"
+          }
+        }
+      }
+    },
+    "Daily Scores" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuações Diárias"
+          }
+        }
+      }
+    },
+    "Health Sources" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fontes de Saúde"
+          }
+        }
+      }
+    },
+    "Preview" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pré-visualização"
+          }
+        }
+      }
+    },
+    "Live" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Em directo"
+          }
+        }
+      }
+    },
+    "Activity" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actividade"
+          }
+        }
+      }
+    },
+    "Steps" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passos"
+          }
+        }
+      }
+    },
+    "Active Calories" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calorias Activas"
+          }
+        }
+      }
+    },
+    "Heart Rate" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequência Cardíaca"
+          }
+        }
+      }
+    },
+    "Vitals" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sinais Vitais"
+          }
+        }
+      }
+    },
+    "Open Health Monitor" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Monitor de Saúde"
+          }
+        }
+      }
+    },
+    "Health Monitor" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitor de Saúde"
+          }
+        }
+      }
+    },
+    "Vitals, timeline, and primary sleep inputs" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sinais vitais, linha temporal e entradas de sono principais"
+          }
+        }
+      }
+    },
+    "Timeline" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linha Temporal"
+          }
+        }
+      }
+    },
+    "Share Local Health Snapshot" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partilhar Instantâneo de Saúde Local"
+          }
+        }
+      }
+    },
+    "Packet Inputs" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entradas de Pacotes"
+          }
+        }
+      }
+    },
+    "Packet-Derived Inputs" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entradas Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Packet-Derived Scores" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuações Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Respiratory Rate" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequência Respiratória"
+          }
+        }
+      }
+    },
+    "Oxygen Saturation" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturação de Oxigénio"
+          }
+        }
+      }
+    },
+    "Wrist Temperature" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura do Pulso"
+          }
+        }
+      }
+    },
+    "Target Strain Today" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esforço Alvo Hoje"
+          }
+        }
+      }
+    },
+    "No recovery timeline" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem linha temporal de recuperação"
+          }
+        }
+      }
+    },
+    "No recovery insights" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem informações de recuperação"
+          }
+        }
+      }
+    },
+    "Trends" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendências"
+          }
+        }
+      }
+    },
+    "Insights" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informações"
+          }
+        }
+      }
+    },
+    "Stress" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stress"
+          }
+        }
+      }
+    },
+    "Confidence" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confiança"
+          }
+        }
+      }
+    },
+    "Average HR" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC Média"
+          }
+        }
+      }
+    },
+    "No stress timeline" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem linha temporal de stress"
+          }
+        }
+      }
+    },
+    "No stress trends" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem tendências de stress"
+          }
+        }
+      }
+    },
+    "Choose Stress date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher data de stress"
+          }
+        }
+      }
+    },
+    "Stress Date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data de Stress"
+          }
+        }
+      }
+    },
+    "Breakdown" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribuição"
+          }
+        }
+      }
+    },
+    "Duration:" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duração:"
+          }
+        }
+      }
+    },
+    "High" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alto"
+          }
+        }
+      }
+    },
+    "Med" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Méd"
+          }
+        }
+      }
+    },
+    "Low" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixo"
+          }
+        }
+      }
+    },
+    "Time in Bed" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo na Cama"
+          }
+        }
+      }
+    },
+    "Time Asleep" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo a Dormir"
+          }
+        }
+      }
+    },
+    "View insights" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver informações"
+          }
+        }
+      }
+    },
+    "Sleep alarm settings" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Definições do alarme de sono"
+          }
+        }
+      }
+    },
+    "Add Sleep Unavailable" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar Sono Indisponível"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Score, stages, sleep needed, alarm, and trend surfaces" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuação, fases, sono necessário, alarme e tendências"
+          }
+        }
+      }
+    },
+    "Recovery score, HRV, resting HR, vitals, and unavailable states" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuação de recuperação, VFC, FC em repouso, sinais vitais e estados indisponíveis"
+          }
+        }
+      }
+    },
+    "Daily strain, activity, energy, and trend readiness" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esforço diário, actividade, energia e prontidão de tendências"
+          }
+        }
+      }
+    },
+    "Stress score, HRV/HR inputs, daily chart, and breakdown" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuação de stress, entradas VFC/FC, gráfico diário e distribuição"
+          }
+        }
+      }
+    },
+    "Strain" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esforço"
+          }
+        }
+      }
+    },
+    "Target Strain" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esforço Alvo"
+          }
+        }
+      }
+    },
+    "Duration" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duração"
+          }
+        }
+      }
+    },
+    "Total Energy" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energia Total"
+          }
+        }
+      }
+    },
+    "View data gaps" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver lacunas de dados"
+          }
+        }
+      }
+    },
+    "Activities" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actividades"
+          }
+        }
+      }
+    },
+    "No activities" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem actividades"
+          }
+        }
+      }
+    },
+    "No strain trends" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem tendências de esforço"
+          }
+        }
+      }
+    },
+    "Choose Strain date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher data de esforço"
+          }
+        }
+      }
+    },
+    "Daily load" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga diária"
+          }
+        }
+      }
+    },
+    "Score" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pontuação"
+          }
+        }
+      }
+    },
+    "Target" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alvo"
+          }
+        }
+      }
+    },
+    "Energy" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energia"
+          }
+        }
+      }
+    },
+    "Heart rate zones" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zonas de frequência cardíaca"
+          }
+        }
+      }
+    },
+    "No strain insights" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem informações de esforço"
+          }
+        }
+      }
+    },
+    "Strain Data" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dados de Esforço"
+          }
+        }
+      }
+    },
+    "Cardio Load" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga Cardio"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechar"
+          }
+        }
+      }
+    },
+    "Cardio Load Help" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuda de Carga Cardio"
+          }
+        }
+      }
+    },
+    "Range" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intervalo"
+          }
+        }
+      }
+    },
+    "Previous Cardio Load Point" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ponto de Carga Cardio Anterior"
+          }
+        }
+      }
+    },
+    "Pick Cardio Load Date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher Data de Carga Cardio"
+          }
+        }
+      }
+    },
+    "Next Cardio Load Point" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próximo Ponto de Carga Cardio"
+          }
+        }
+      }
+    },
+    "No Cardio Load" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem Carga Cardio"
+          }
+        }
+      }
+    },
+    "Cardio Status Breakdown" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribuição de Estado Cardio"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado"
+          }
+        }
+      }
+    },
+    "Resources" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recursos"
+          }
+        }
+      }
+    },
+    "The Basics: Cardio Load" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Essencial: Carga Cardio"
+          }
+        }
+      }
+    },
+    "Cardio Status" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado Cardio"
+          }
+        }
+      }
+    },
+    "Pick Date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher Data"
+          }
+        }
+      }
+    },
+    "Cardio Load Calibration" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibração de Carga Cardio"
+          }
+        }
+      }
+    },
+    "Energy Bank" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banco de Energia"
+          }
+        }
+      }
+    },
+    "Energy And Stress" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energia e Stress"
+          }
+        }
+      }
+    },
+    "Energy Usage" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uso de Energia"
+          }
+        }
+      }
+    },
+    "Energy charge, drain, stress, and sleep contribution" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga de energia, drenagem, stress e contribuição do sono"
+          }
+        }
+      }
+    },
+    "Primary Selection" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecção Principal"
+          }
+        }
+      }
+    },
+    "Algorithm Definitions" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Definições de Algoritmos"
+          }
+        }
+      }
+    },
+    "Reference Definitions" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Definições de Referência"
+          }
+        }
+      }
+    },
+    "Policy" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Política"
+          }
+        }
+      }
+    },
+    "Comparisons" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparações"
+          }
+        }
+      }
+    },
+    "References" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referências"
+          }
+        }
+      }
+    },
+    "Actions" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acções"
+          }
+        }
+      }
+    },
+    "Calibration" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calibração"
+          }
+        }
+      }
+    },
+    "No Trend Data" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem Dados de Tendência"
+          }
+        }
+      }
+    },
+    "Trend" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendência"
+          }
+        }
+      }
+    },
+    "Analysis" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Análise"
+          }
+        }
+      }
+    },
+    "Tonight's sleep needed" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sono necessário esta noite"
+          }
+        }
+      }
+    },
+    "Target time in bed for the next sleep window." : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo alvo na cama para a próxima janela de sono."
+          }
+        }
+      }
+    },
+    "Target amount" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantidade alvo"
+          }
+        }
+      }
+    },
+    "Your preferred sleep duration before buffers." : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tua duração de sono preferida antes dos buffers."
+          }
+        }
+      }
+    },
+    "Calculation" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cálculo"
+          }
+        }
+      }
+    },
+    "Sleep goal" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objectivo de sono"
+          }
+        }
+      }
+    },
+    "Recent strain" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esforço recente"
+          }
+        }
+      }
+    },
+    "Sleep debt" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dívida de sono"
+          }
+        }
+      }
+    },
+    "Efficiency buffer" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buffer de eficiência"
+          }
+        }
+      }
+    },
+    "Total" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total"
+          }
+        }
+      }
+    },
+    "Sleep Needed" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sono Necessário"
+          }
+        }
+      }
+    },
+    "Sleep Alarm" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alarme de Sono"
+          }
+        }
+      }
+    },
+    "Alarm config" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuração do alarme"
+          }
+        }
+      }
+    },
+    "Wake up at" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acordar às"
+          }
+        }
+      }
+    },
+    "Wake-up time" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora de acordar"
+          }
+        }
+      }
+    },
+    "Alarm mode" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de alarme"
+          }
+        }
+      }
+    },
+    "Used by Needed mode and sleep-needed planning." : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usado pelo modo Necessário e planeamento de sono necessário."
+          }
+        }
+      }
+    },
+    "Haptic" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Háptico"
+          }
+        }
+      }
+    },
+    "Band controls" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlos da banda"
+          }
+        }
+      }
+    },
+    "Test haptic" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Testar háptico"
+          }
+        }
+      }
+    },
+    "Run now" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Executar agora"
+          }
+        }
+      }
+    },
+    "Turn off" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desligar"
+          }
+        }
+      }
+    },
+    "Disable on band" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivar na banda"
+          }
+        }
+      }
+    },
+    "Band write diagnostics" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnósticos de escrita da banda"
+          }
+        }
+      }
+    },
+    "Diagnostics" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnósticos"
+          }
+        }
+      }
+    },
+    "Trends Analysis" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Análise de Tendências"
+          }
+        }
+      }
+    },
+    "No trend data" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem dados de tendência"
+          }
+        }
+      }
+    },
+    "Trend Date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data de Tendência"
+          }
+        }
+      }
+    },
+    "Trend end date" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data de fim de tendência"
+          }
+        }
+      }
+    },
+    "Sleep schedule" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horário de sono"
+          }
+        }
+      }
+    },
+    "Tonight" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta noite"
+          }
+        }
+      }
+    },
+    "Wind down" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desacelerar"
+          }
+        }
+      }
+    },
+    "Target bedtime" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora alvo de deitar"
+          }
+        }
+      }
+    },
+    "Metric Highlights" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Destaques de Métricas"
+          }
+        }
+      }
+    },
+    "Data Gaps" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lacunas de Dados"
+          }
+        }
+      }
+    },
+    "Ask About This" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perguntar Sobre Isto"
+          }
+        }
+      }
+    },
+    "Chat ready" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat pronto"
+          }
+        }
+      }
+    },
+    "Chat signed out" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat sem sessão iniciada"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir"
+          }
+        }
+      }
+    },
+    "Sign In" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessão"
+          }
+        }
+      }
+    },
+    "Coach Chat" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat do Treinador"
+          }
+        }
+      }
+    },
+    "Coach Sign In" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Início de Sessão do Treinador"
+          }
+        }
+      }
+    },
+    "Model" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modelo"
+          }
+        }
+      }
+    },
+    "New Conversation" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova Conversa"
+          }
+        }
+      }
+    },
+    "Sign Out" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar sessão"
+          }
+        }
+      }
+    },
+    "Coach account" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conta do Treinador"
+          }
+        }
+      }
+    },
+    "Start Here" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Começar Aqui"
+          }
+        }
+      }
+    },
+    "Ask Coach" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perguntar ao Treinador"
+          }
+        }
+      }
+    },
+    "Stop streaming" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar transmissão"
+          }
+        }
+      }
+    },
+    "Send message" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar mensagem"
+          }
+        }
+      }
+    },
+    "Every row below declares bridge, live, local, or unavailable provenance." : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada linha abaixo declara a proveniência: bridge, directo, local ou indisponível."
+          }
+        }
+      }
+    },
+    "Save to Band" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar na Banda"
+          }
+        }
+      }
+    },
+    "Run Now" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Executar Agora"
+          }
+        }
+      }
+    },
+    "Disable on Band" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivar na Banda"
+          }
+        }
+      }
+    },
+    "Family" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Família"
+          }
+        }
+      }
+    },
+    "Extract Packet-Derived Inputs" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extrair Entradas Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Run Packet-Derived Scores" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Executar Pontuações Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Run Reference Comparisons" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Executar Comparações de Referência"
+          }
+        }
+      }
+    },
+    "Import Labels" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar Etiquetas"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
