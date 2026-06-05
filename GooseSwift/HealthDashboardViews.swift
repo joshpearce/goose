@@ -546,7 +546,7 @@ struct HealthMonitorView: View {
       store.refreshPacketInputsIfNeeded()
     }
     .onChange(of: store.packetScoreStatus) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
-    .onChange(of: store.hkHRVRmssdMs) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: store.hkHRVSDNNMs) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
     .onChange(of: store.hkRestingHR) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
     .sheet(item: $selectedTrend) { snapshot in
       if snapshot.id == "resting-hr" || snapshot.id == "resting-hrv" {

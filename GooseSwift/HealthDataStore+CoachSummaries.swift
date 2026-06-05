@@ -448,13 +448,13 @@ extension HealthDataStore {
       return "--"
     }
     guard let report = packetInputReports["hrv"] else {
-      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+      if let v = hkHRVSDNNMs, let text = Self.numberText(v, fractionDigits: 0) {
         return "\(text) ms"
       }
       return "--"
     }
     guard Self.boolValue(report["pass"]) == true else {
-      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+      if let v = hkHRVSDNNMs, let text = Self.numberText(v, fractionDigits: 0) {
         return "\(text) ms"
       }
       return "--"
@@ -464,7 +464,7 @@ extension HealthDataStore {
       ?? Self.array(report["daily"]).last.flatMap { Self.doubleValue($0["rmssd_ms"]) }
     guard let value,
           let text = Self.numberText(value, fractionDigits: 0) else {
-      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+      if let v = hkHRVSDNNMs, let text = Self.numberText(v, fractionDigits: 0) {
         return "\(text) ms"
       }
       return "--"
