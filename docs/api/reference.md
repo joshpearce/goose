@@ -586,7 +586,7 @@ Every caller creates its own `GooseRustBridge` instance — the bridge is statel
 
 ### Method Catalogue
 
-The bridge supports 110 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
+The bridge supports 121 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
 
 #### Core / Discovery
 
@@ -607,6 +607,7 @@ The bridge supports 110 RPC methods at compile time. The full live list is avail
 | Method | Key Args | Description |
 |--------|----------|-------------|
 | `storage.check` | `database_path`, `self_test: bool` | Verify the SQLite database is healthy |
+| `storage.compact_raw_evidence` | `database_path`, `limit_bytes: i64` | Compact raw evidence storage, removing oldest frames until under the byte limit |
 
 #### Settings / Algorithm Preferences
 

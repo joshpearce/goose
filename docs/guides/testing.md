@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-Goose has three independent test surfaces: the **Rust core** (41 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (no automated test target; verified manually with a physical WHOOP device). There is no Swift/XCTest target in the project.
+Goose has three independent test surfaces: the **Rust core** (42 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (no automated test target; verified manually with a physical WHOOP device). There is no Swift/XCTest target in the project.
 
 ---
 
@@ -9,7 +9,7 @@ Goose has three independent test surfaces: the **Rust core** (41 integration tes
 
 ### Test framework
 
-Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (41 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate also ships four binaries (`goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`) that are used by some integration tests as CLI fixtures.
+Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (42 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate ships many binaries used by integration tests as CLI fixtures, including `goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`, `goose-local-health-validation-suite`, `goose-reference-algo-runner`, `goose-property-test-suite`, and others defined in `Rust/core/Cargo.toml`.
 
 A `Rust/core/fixtures/` directory provides golden hex frames and synthetic capture data consumed by tests such as `fixture_tests.rs`, `capture_import_tests.rs`, and `protocol_tests.rs`.
 
@@ -110,7 +110,9 @@ pytest tests/ # integration tests self-manage the TimescaleDB container
 | File | What it covers |
 |------|---------------|
 | `test_ingest_decoded_api.py` | `/v1/ingest-decoded` endpoint contract |
+| `test_ingest_api.py` | General ingest endpoint contract including auth and archive-only mode |
 | `test_read_api.py` | Read endpoints, pagination, filtering |
+| `test_read.py` | Lower-level read helpers: device listing, stream queries, downsampling |
 | `test_ingest_pipeline.py` | Full ingest pipeline including stream routing |
 | `test_e2e.py` | End-to-end: decode → ingest → compute → read → idempotency |
 | `test_store.py` | Database upsert and hypertable row counts |
@@ -121,6 +123,8 @@ pytest tests/ # integration tests self-manage the TimescaleDB container
 | `test_archive.py` | Raw frame archive storage and retrieval |
 | `test_units.py` | Unit-level helpers (no Docker required) |
 | `test_activity.py`, `test_exercise.py` | Activity and exercise session endpoints |
+| `test_whoop_api.py` | WHOOP OAuth client: offline mock transport, token refresh lifecycle |
+| `test_profile_calories_workouts.py` | Profile storage, `/v1/profile`, and calorie estimation for bouts |
 | `../client/test_uploader.py` | `server/client/uploader.py` frame loading and batching logic |
 
 ### Writing new tests
@@ -228,12 +232,12 @@ Steps:
 
 ### `rust-core.yml` — Format, build, test (MSRV matrix)
 
-Runs on `ubuntu-latest` and `macos-15` against Rust 1.94 (MSRV). Triggered by pushes and PRs that touch `Rust/**`.
+Runs on `ubuntu-latest` and `macos-15` against Rust 1.96 (MSRV). Triggered by pushes and PRs that touch `Rust/**`.
 
 Jobs:
 - **fmt** — `cargo fmt --all -- --check` (blocking)
 - **build-test** (matrix: ubuntu-latest, macos-15):
-  1. Install Rust 1.94 via rustup.
+  1. Install Rust 1.96 via rustup.
   2. `cargo build --lib --verbose`
   3. `cargo test --lib --verbose`
 - **clippy** — `cargo clippy --lib --no-deps -- -D warnings` (advisory, `continue-on-error: true`)
@@ -252,4 +256,15 @@ Runs on every push and PR to `main`, and weekly (Mondays, 08:00 UTC).
 - Covers Swift (`GooseSwift/`) and Python (`server/`) source.
 - Rust is excluded from CodeQL; advisories are handled by `cargo-audit`.
 
-No CI pipeline currently runs the server pytest suite or builds the iOS app — both require platform-specific infrastructure (Docker/TimescaleDB and macOS with Xcode respectively) that the current workflow matrix does not provision.
+The iOS app is not built or tested in CI — it requires macOS with Xcode and a physical device, neither of which the current workflow matrix provisions.
+
+### `server-ci.yml` — Server pytest suite
+
+Runs on `ubuntu-latest`. Triggered by pushes and PRs that touch `server/**`.
+
+Steps:
+1. Set up Python 3.12.
+2. Install `server/packages/whoop-protocol` as a local editable package.
+3. Install `server/ingest/requirements-dev.txt`.
+4. Confirm the Docker daemon is reachable (`docker info`).
+5. `pytest tests/ -v --tb=short` — all tests; the `conftest.py` fixtures self-manage the TimescaleDB container.

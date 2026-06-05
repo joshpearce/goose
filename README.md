@@ -74,6 +74,13 @@ Built Rust `.a` archives are generated locally during Xcode builds and are not c
 
 ## Build
 
+Clone the repository first:
+
+```bash
+git clone https://github.com/tigercraft4/goose.git
+cd goose
+```
+
 Open `GooseSwift.xcodeproj` in Xcode and build the `GooseSwift` scheme, or build from the command line.
 
 Simulator build:
@@ -197,7 +204,16 @@ script before compiling Swift.
 
 ## Documentation
 
-Detailed implementation plans live in `docs/goose-swift-mvp/`:
+Guides and reference docs:
+
+- `docs/guides/getting-started.md`: prerequisites, clone, first run, and common setup issues.
+- `docs/guides/development.md`: local setup, build commands, code style, and PR process.
+- `docs/guides/testing.md`: Rust test suite, coverage, and CI integration.
+- `docs/guides/configuration.md`: environment variables and server configuration.
+- `docs/architecture/overview.md`: system overview, component diagram, and data flow.
+- `docs/api/reference.md`: server API endpoints, request/response formats, and authentication.
+
+MVP implementation plans in `docs/goose-swift-mvp/`:
 
 - `Home.md`: Home tab contract and remaining work.
 - `Health.md`: Health surfaces, metric pages, packet inputs, trends, and acceptance checks.
@@ -223,9 +239,15 @@ Want to talk to other contributors? [Join the group here](https://x.com/i/chat/g
 - Update the relevant MVP doc when a change completes or changes an open task.
 - Mention any build warnings, skipped checks, or device-only assumptions in the PR notes.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines including code style, Rust bridge conventions, and the PR checklist.
+
 ## Development Notes
 
 - Prefer small, typed Swift models over displaying raw summary strings.
 - Keep Home, Health, Coach, and More routes modular enough to work independently.
 - Metric pages should still look polished when data is missing.
 - Before installing to a device, run a simulator or device build and check that the Rust library target matches the destination platform.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).

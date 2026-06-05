@@ -24,14 +24,14 @@ All iOS configuration is done at runtime through the app UI. There is no build-t
 ### Validation rules
 
 - The server URL must have an `http` or `https` scheme and a non-empty hostname.
-- Bare numeric IP addresses (e.g. `192.168.1.10`) are rejected by `RemoteServerURLValidator`. Use a hostname instead (e.g. `goose.local` via mDNS, or a domain name).
+- Private-range IP addresses (RFC 1918: `10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`, and `127.x.x.x`) are allowed over `http://`. Public IP addresses and public hostnames require `https://` to satisfy App Transport Security. Local hostnames (`localhost`, `*.local`) are allowed over `http://`.
 
 ### Status indicators
 
 When upload is enabled and a URL is configured, the **More > Remote Server** screen shows:
 
 - **Server reachable** — result of a `GET /healthz` check run once per app session.
-- **Last upload** — timestamp of the most recent successful batch upload.
+- **Last sync** — timestamp of the most recent successful batch upload, plus the count of records acknowledged by the server.
 - **Pending batches** — count of batches queued but not yet delivered.
 
 ---

@@ -14,7 +14,7 @@ This guide walks you from zero to a running Goose build with a connected WHOOP d
 | macOS with Xcode | Xcode with iOS 26 SDK | Required to build the app |
 | iOS 26 SDK | 26.0 | Must be installed inside Xcode |
 | Apple Developer account | Any (free or paid) | Required for signing; bundle ID is `com.goose.swift` |
-| Rust toolchain | MSRV 1.94 | Install via [rustup.rs](https://rustup.rs) |
+| Rust toolchain | MSRV 1.96 | Install via [rustup.rs](https://rustup.rs) |
 | Cargo | Comes with rustup | Used by the Xcode build phase |
 | iOS Rust targets | See below | Three targets required |
 | iOS device or simulator | iOS 26.0+ | WHOOP BLE pairing requires a physical device |
@@ -169,7 +169,7 @@ In Goose, go to **More > Settings > Remote Server** and fill in:
 
 | Field | Value |
 |---|---|
-| Server URL | Base URL of your server (e.g. `https://goose.example.com` or `http://goose.local:8770`). Must use a hostname — bare IP addresses are rejected. |
+| Server URL | Base URL of your server (e.g. `https://goose.example.com`, `http://goose.local:8770`, or `http://192.168.1.10:8770`). Must include a scheme (`http://` or `https://`). Public hostnames require `https://`; private IP ranges (RFC 1918) and `.local`/`localhost` hostnames allow `http://`. |
 | Bearer token | The `GOOSE_API_KEY` value from your `.env` file. |
 | Enable Upload | Toggle on. |
 
@@ -191,7 +191,7 @@ The static library is built by the Xcode build phase on every build. Do not comm
 Bluetooth permission must be granted. Go to **Settings > Privacy & Security > Bluetooth** and confirm Goose is listed and enabled.
 
 **Server URL is rejected by the iOS app**
-The URL must include a scheme (`http://` or `https://`) and a hostname. A bare IP address such as `192.168.1.10` is rejected. Use a local hostname (e.g. `goose.local` via mDNS) or a domain name.
+The URL must include a scheme (`http://` or `https://`) and a host. Private IP addresses (RFC 1918: `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`) are allowed with `http://`. Public hostnames require `https://` to satisfy App Transport Security. `.local` and `localhost` hostnames work with `http://`.
 
 **`docker compose up` fails with "GOOSE_DB_PASSWORD is not set"**
 Copy `.env.example` to `.env` in the `server/` directory and set at minimum `GOOSE_API_KEY` and `GOOSE_DB_PASSWORD`.

@@ -9,6 +9,8 @@ Want to talk to other contributors? [Join the group chat here](https://x.com/i/c
 
 ## Development Environment Setup
 
+See [Getting Started](docs/guides/getting-started.md) for prerequisites and first-run instructions, and [Development Guide](docs/guides/development.md) for the full local development workflow.
+
 ### Prerequisites
 
 - macOS with Xcode installed (iOS 26 SDK required)

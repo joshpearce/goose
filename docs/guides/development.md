@@ -12,7 +12,7 @@ GooseSwift/                    iOS app source — Swift/SwiftUI
 GooseWorkoutLiveActivityExtension/  ActivityKit Live Activity widget
 Rust/core/src/                 Rust static library source
 Rust/core/include/             C bridge header (goose_core_bridge.h)
-Rust/core/tests/               Rust integration tests (41 files)
+Rust/core/tests/               Rust integration tests (42 files)
 Rust/iphoneos/                 Staged libgoose_core.a for device builds
 Rust/iphonesimulator/          Staged libgoose_core.a for simulator builds
 Scripts/build_ios_rust.sh      Xcode build phase — cross-compiles Rust to iOS
@@ -69,22 +69,42 @@ The Rust build step runs automatically as an Xcode build phase before compiling 
 **Extension-per-concern pattern.** Large types are split across files by domain area. Each extension file owns a coherent slice of behaviour; all extensions share state on the parent class.
 
 ```
-GooseAppModel.swift                    Core @Published state + owned objects
-GooseAppModel+NotificationPipeline.swift   BLE notification handling
-GooseAppModel+ActivityRecording.swift      Activity session lifecycle
-GooseAppModel+OvernightRun.swift           Overnight guard
-GooseAppModel+Upload.swift                 Server upload trigger
+GooseAppModel.swift                         Core @Published state + owned objects
+GooseAppModel+NotificationPipeline.swift    BLE notification handling
+GooseAppModel+ActivityRecording.swift       Activity session lifecycle
+GooseAppModel+ActivityTimeline.swift        Activity timeline refresh
+GooseAppModel+HealthCapture.swift           Health packet capture sessions
+GooseAppModel+Lifecycle.swift               App lifecycle events
+GooseAppModel+OvernightRun.swift            Overnight guard
+GooseAppModel+OvernightRecovery.swift       Overnight recovery state
+GooseAppModel+OvernightState.swift          Overnight guard state transitions
+GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
+GooseAppModel+Upload.swift                  Server upload trigger
 
-GooseBLEClient.swift                   @Published BLE state + callback vars
-GooseBLEClient+CentralDelegate.swift   CBCentralManagerDelegate
-GooseBLEClient+PeripheralDelegate.swift CBPeripheralDelegate
-GooseBLEClient+Commands.swift          WHOOP command writes
-GooseBLEClient+Parsing.swift           Packet framing helpers
+GooseBLEClient.swift                        @Published BLE state + callback vars
+GooseBLEClient+CentralDelegate.swift        CBCentralManagerDelegate
+GooseBLEClient+PeripheralDelegate.swift     CBPeripheralDelegate
+GooseBLEClient+Commands.swift               WHOOP command writes
+GooseBLEClient+Parsing.swift                Packet framing helpers
+GooseBLEClient+HistoricalCommands.swift     Historical sync command dispatch
+GooseBLEClient+HistoricalHandlers.swift     Historical sync response handling
+GooseBLEClient+HRMonitor.swift              HR monitor peripheral support
+GooseBLEClient+DebugAndSync.swift           Debug session + sync utilities
+GooseBLEClient+UserActions.swift            User-facing BLE actions
+GooseBLEClient+VitalsAndLogging.swift       Vitals forwarding and BLE logging
 
-HealthDataStore.swift                  Metric query coordinator
-HealthDataStore+Sleep.swift            Sleep metric queries
-HealthDataStore+Cardio.swift           Cardio load queries
-HealthDataStore+PacketInputs.swift     Packet input readiness
+HealthDataStore.swift                       Metric query coordinator
+HealthDataStore+Sleep.swift                 Sleep metric queries
+HealthDataStore+Cardio.swift                Cardio load queries
+HealthDataStore+PacketInputs.swift          Packet input readiness
+HealthDataStore+Snapshots.swift             Summary snapshot queries
+HealthDataStore+StaticSnapshots.swift       Static/cached snapshot queries
+HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
+HealthDataStore+CoachSummaries.swift        Coach summary queries
+HealthDataStore+StressEnergy.swift          Stress and energy metric queries
+HealthDataStore+Trends.swift                Trend computation queries
+HealthDataStore+Utilities.swift             Shared query helpers
+HealthDataStore+Vitals.swift                Vitals metric queries
 ```
 
 When adding a new concern to `GooseAppModel`, `GooseBLEClient`, or `HealthDataStore`, create a new `+<Concern>.swift` extension file rather than growing the primary file.
@@ -97,9 +117,10 @@ When adding a new concern to `GooseAppModel`, `GooseBLEClient`, or `HealthDataSt
 | `com.goose.swift.notification-parse` | `GooseAppModel` | Rust frame parsing (blocking FFI) |
 | `com.goose.swift.capture-frame-row-build` | `GooseAppModel` | Building SQLite row structs |
 | `com.goose.swift.capture-frame-writes` | `CaptureFrameWriteQueue` | SQLite batch writes via Rust |
-| `com.goose.swift.upload` | `GooseUploadService` | Bridge fetch + HTTP upload |
 | `com.goose.swift.health.packet-inputs` | `HealthDataStore` | Metric score queries |
 | `com.goose.swift.health.heart-rate-timeline` | `HealthDataStore` | HR timeline refresh |
+
+`GooseUploadService` uses the Swift cooperative thread pool (async/await Tasks) rather than a named `DispatchQueue`.
 
 The Rust bridge (`GooseRustBridge.request(...)`) is a **blocking synchronous call** — it calls `goose_bridge_handle_json` via C FFI and waits for the response. Never call it from `@MainActor` inline for anything expensive. Always dispatch to a background `DispatchQueue` first.
 
@@ -121,7 +142,7 @@ The Rust bridge (`GooseRustBridge.request(...)`) is a **blocking synchronous cal
 
 ### Running tests
 
-The Rust core has 41 integration test files in `Rust/core/tests/`. Run them with Cargo from the `Rust/core` directory:
+The Rust core has 42 integration test files in `Rust/core/tests/`. Run them with Cargo from the `Rust/core` directory:
 
 ```bash
 cd Rust/core
@@ -299,7 +320,7 @@ curl -s localhost:8770/healthz
 
 The server exposes two services via Docker Compose:
 - `goose-db` — TimescaleDB 2.17.2 on PostgreSQL 16; data in Docker volume `goose-db-data`
-- `goose-ingest` — FastAPI on port 8770; raw BLE archives in Docker volume `goose-raw-data`
+- `goose-ingest` — FastAPI on port 8770 (configurable via `GOOSE_INGEST_PORT`); raw BLE archives in Docker volume `goose-raw-data`
 
 ### Adding a new API route
 
@@ -312,7 +333,7 @@ def my_new_route(device: str):
         return read.my_new_query(conn, device)
 ```
 
-The OpenAPI schema is intentionally disabled (`docs_url=None`) — do not re-enable it without reviewing whether the endpoint surface should be public.
+The OpenAPI schema is intentionally disabled (`docs_url=None, redoc_url=None, openapi_url=None`) — do not re-enable it without reviewing whether the endpoint surface should be public.
 
 **File responsibilities:**
 - `main.py` — route definitions and request/response models (Pydantic `BaseModel`)
@@ -419,7 +440,7 @@ let result = try bridge.request(
 - Build after touching Swift source, Rust bridge, project settings, or signing configuration.
 - Check both empty and populated states for metric UI.
 - Put debug tooling, packet details, and raw export behaviour under More or Debug surfaces — not in everyday health views.
-- Update the relevant doc in `docs/goose-swift-mvp/` when a change completes or changes an open task.
+- Update the relevant doc in `docs/guides/` when a change completes or changes an open task.
 - Mention any build warnings, skipped checks, or device-only assumptions in the PR description.
 
 See [GETTING-STARTED.md](getting-started.md) for prerequisites and first-run setup.

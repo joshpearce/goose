@@ -60,12 +60,12 @@ Goose is a two-tier biometric platform. An iOS app captures raw biometric data f
 
 1. **GooseBLEClient** receives raw BLE characteristic notification bytes on its `notificationIngestQueue`. The `onNotification` callback is set by `GooseAppModel`.
 2. **GooseAppModel.handleNotification** dispatches work to `notificationIngestQueue`. `NotificationFrameParser` calls the Rust bridge (`GooseRustBridge`) to reassemble multi-packet frames via `protocol.parse_frame_hex`.
-3. Parsed frames are handed to **CaptureFrameWriteQueue**, which batches rows and calls the Rust bridge method `capture.import_captured_frame_batch` on its own dedicated queue. Rust writes decoded samples to `goose.sqlite` at `ApplicationSupport/GooseSwift/goose.sqlite`.
+3. Parsed frames are handed to **CaptureFrameWriteQueue**, which batches rows and calls the Rust bridge method `capture.import_frame_batch` on its own dedicated queue. Rust writes decoded samples to `goose.sqlite` at `ApplicationSupport/GooseSwift/goose.sqlite`.
 4. When a write batch succeeds, `GooseAppModel.triggerUpload` is called, which dispatches `GooseUploadService.upload` on the upload queue.
 
 ### Upload path (iOS → server)
 
-1. **GooseUploadService** runs entirely on `com.goose.swift.upload` (a `DispatchQueue` with `.utility` QoS — never on `@MainActor`).
+1. **GooseUploadService** runs entirely on Swift concurrency detached tasks (`Task.detached(priority: .utility)`) — never on `@MainActor`.
 2. It calls the Rust bridge method `upload.get_recent_decoded_streams` to fetch the last ~30 seconds of decoded streams from SQLite.
 3. It POSTs a `DecodedBatch` JSON payload to `POST /v1/ingest-decoded` with a `Bearer` token loaded from the iOS Keychain (`RemoteServerKeychain`). The server URL is stored in `UserDefaults` under the key `goose.remote.serverURL`.
 4. Retry logic: up to 3 attempts with 1 s / 2 s / 4 s backoff. Silent failure after 3 attempts — raw data is already in local SQLite.
@@ -90,7 +90,7 @@ When `POST /v1/ingest-decoded` is received, the server calls `daily.compute_day`
 | `GooseRustBridge` | `GooseSwift/GooseRustBridge.swift` | JSON-RPC envelope over `goose_bridge_handle_json` / `goose_bridge_free_string` (C FFI). Schema: `goose.bridge.request.v1`. Stateless — multiple instances are normal. |
 | `HealthDataStore` | `GooseSwift/HealthDataStore.swift` + `HealthDataStore+*.swift` | `@MainActor` metric query layer. Holds its own `GooseRustBridge`; publishes scored health metrics to SwiftUI views. |
 | `GooseUploadService` | `GooseSwift/GooseUploadService.swift` | Fetches recent decoded streams from Rust, POSTs to `POST /v1/ingest-decoded`. Runs on a dedicated utility queue; never touches `@MainActor` inline. |
-| `CaptureFrameWriteQueue` | `GooseSwift/CaptureFrameWriteQueue.swift` | Batches parsed BLE frames and writes them to SQLite via Rust bridge `capture.import_captured_frame_batch`. |
+| `CaptureFrameWriteQueue` | `GooseSwift/CaptureFrameWriteQueue.swift` | Batches parsed BLE frames and writes them to SQLite via Rust bridge `capture.import_frame_batch`. |
 | `NotificationFrameParser` | `GooseSwift/NotificationFrameParsing.swift` | Delegates raw BLE bytes to Rust for frame reassembly and compact summary extraction. |
 | `OvernightSQLiteMirrorQueue` | `GooseSwift/OvernightSQLiteMirrorQueue.swift` | During overnight guard mode, queues raw notification rows for Rust bridge SQLite insert. |
 | Rust core (`libgoose_core.a`) | `Rust/core/src/bridge.rs` | 58+ dispatched methods: protocol parsing, SQLite persistence, metric algorithms, BLE frame import, export. Entry point: `bridge.rs`. |
@@ -141,7 +141,7 @@ goose/
 | `com.goose.swift.notification-ingest` | `GooseAppModel` | Initial BLE notification receipt and frame boundary detection |
 | `com.goose.swift.notification-parse` | `GooseAppModel` | Rust frame parsing calls (blocking FFI) |
 | `com.goose.swift.capture-frame-row-build` | `GooseAppModel` | Building SQLite row structs from parsed frames |
-| `com.goose.swift.upload` | `GooseUploadService` | Rust bridge `upload.get_recent_decoded_streams` + HTTP upload |
+| Swift concurrency detached task (`.utility`) | `GooseUploadService` | Rust bridge `upload.get_recent_decoded_streams` + HTTP upload |
 | `com.goose.swift.health.packet-inputs` | `HealthDataStore` | Metric score queries via Rust bridge |
 | `com.goose.swift.health.heart-rate-timeline` | `HealthDataStore` | Heart rate timeline refresh |
 | `CBCentralManager` queue | CoreBluetooth | BLE delegate callbacks from `GooseBLEClient` |
@@ -173,6 +173,8 @@ All `/v1` routes require `Authorization: Bearer <GOOSE_API_KEY>`. The OpenAPI sc
 | `POST` | `/v1/ingest` | Ingest a raw BLE frame batch (legacy / reference) |
 | `GET` | `/v1/devices` | List known devices |
 | `GET` | `/v1/streams/{kind}` | Query a decoded stream (hr, rr, events, battery, spo2, skin_temp, resp, gravity) |
+| `GET` | `/v1/batches` | List raw batch records for a device |
+| `GET` | `/v1/batches/{batch_id}/frames` | Retrieve raw BLE frames for a specific batch |
 | `GET` | `/v1/summary` | Stream row counts for a device/time range |
 | `GET` | `/v1/daily` | Daily metric rows for a date range |
 | `GET` | `/v1/today` | Most recent daily metric row for a device |
