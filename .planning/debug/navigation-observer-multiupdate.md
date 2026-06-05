@@ -1,5 +1,5 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "NavigationRequestObserver tried to update multiple times per frame — BLE connected, K2 frames arriving every ~1-2 seconds"
 created: 2026-06-05T00:00:00Z
 updated: 2026-06-05T01:00:00Z
