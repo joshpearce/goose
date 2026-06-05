@@ -175,8 +175,24 @@ Plans:
   2. Dynamic status strings (BLE connection state, sync state, upload state) displayed in the UI appear in pt-PT
   3. No hardcoded English text remains visible in the main user-facing UI flows
 
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+**Wave 1**
+
+- [ ] 14-01-PLAN.md — Infrastructure: create Localizable.xcstrings, register pt-PT in project.pbxproj, fix GooseAppTab.title + MoreRoute.title/subtitle to String(localized:), translate tab + More-route titles/subtitles (L10N-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 14-02-PLAN.md — Static catalog translations: Home dashboard, Health families (Recovery V2, Sleep V2, Cardio, Strain, Stress), Coach view (~150 strings) (L10N-01)
+
+**Wave 3** *(blocked on Wave 2 completion — shared Localizable.xcstrings)*
+
+- [ ] 14-03-PLAN.md — Static catalog translations: More tab, Connection/Device/HR Monitor, Capture/Debug/Raw Export, Onboarding (~150 strings) (L10N-01)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 14-04-PLAN.md — LocalizedStatusStrings.swift (14 @Published display extensions, D-04) + display-site rewiring + MoreStatusKind.title + final sweep + xcodebuild verification (L10N-02)
 
 ## Progress
 
@@ -197,7 +213,7 @@ Plans:
 | 11. HR Monitor Independent Capture | v3.0 | 2/2 | Complete    | 2026-06-05 |
 | 12. WHOOP 4.0 RTC Clock Sync | v3.0 | 1/1 | Complete    | 2026-06-05 |
 | 13. Recovery V2 Dashboard | v3.0 | 1/1 | Complete    | 2026-06-05 |
-| 14. pt-PT Localisation | v3.0 | 0/? | Not started | - |
+| 14. pt-PT Localisation | v3.0 | 0/4 | Not started | - |
 
 ## Backlog
 
