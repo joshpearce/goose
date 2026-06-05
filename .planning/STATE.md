@@ -4,8 +4,8 @@ milestone: v3.0
 milestone_name: milestone
 status: completed
 stopped_at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
-last_updated: "2026-06-05T19:33:34.000Z"
-last_activity: 2026-06-05
+last_updated: "2026-06-05T23:37:46.125Z"
+last_activity: 2026-06-05 -- Phase 18 planning complete
 progress:
   total_phases: 13
   completed_phases: 8
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 Phase: 17
 Plan: 04 complete
 Status: Phase 17 Plan 04 complete — @Observable migration final sweep; global sweep clean (0 legacy wrappers); cargo test 0 failed; BUILD SUCCEEDED; PERF-01 PERF-02 PERF-03 structurally confirmed; 145 @Published removed total across 3 classes
-Last activity: 2026-06-05
+Last activity: 2026-06-05 -- Phase 18 planning complete
 
 Progress: [░░░░░░░░░░] 0%
 

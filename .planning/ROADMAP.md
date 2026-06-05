@@ -382,6 +382,7 @@ Plans:
   4. `Update NavigationRequestObserver tried to update multiple times per frame` no longer appears in logs during BLE capture
 
 **Plans**: 4 plans (4 waves)
+
 - [ ] 17-01-PLAN.md — Wave 1: GooseAppModel @Observable migration + @Environment rewire + MoreDataStore Combine removal
 - [ ] 17-02-PLAN.md — Wave 2: HealthDataStore @Observable migration + @State ownership + @ObservedObject removal
 - [ ] 17-03-PLAN.md — Wave 3: GooseBLEClient @Observable migration (NSObject kept) + MoreView onChange route status
@@ -402,12 +403,28 @@ Plans:
   6. Streaming responses work for all supported providers
 
 **Plans**: 6 plans (6 waves)
+**Wave 1**
 
 - [ ] 18-01-PLAN.md — Wave 1: CoachProvider protocol + CoachProviderRegistry + CoachChatModel refactor + ChatGPTCoachProvider + Wave 0 test stubs (COACH-01, COACH-06)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 18-02-PLAN.md — Wave 2: ClaudeCoachProvider (Anthropic Messages API SSE + Keychain) (COACH-02, COACH-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 18-03-PLAN.md — Wave 3: CustomEndpointCoachProvider (OpenAI Chat Completions SSE + URL validation + Keychain) (COACH-02, COACH-04)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 18-04-PLAN.md — Wave 4: GeminiCoachProvider (Google OAuth PKCE via WKWebView + streamGenerateContent SSE) (COACH-02, COACH-03)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 18-05-PLAN.md — Wave 5: CoachSettingsSheet provider picker UI + gear icon + four-provider registry (COACH-05)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 18-06-PLAN.md — Wave 6: Integration, build/test verification, migration smoke test (COACH-01, COACH-05, COACH-06)
 
 ## Progress
