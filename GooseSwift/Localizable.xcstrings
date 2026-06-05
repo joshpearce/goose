@@ -1,2156 +1,5436 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Home" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Início"
+  "sourceLanguage": "en",
+  "strings": {
+    "ADVANCED": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AVANÇADO"
           }
         }
       }
     },
-    "Health" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saúde"
+    "About": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acerca"
           }
         }
       }
     },
-    "Coach" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Treinador"
+    "Actions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acções"
           }
         }
       }
     },
-    "More" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mais"
+    "Active Calories": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calorias Activas"
           }
         }
       }
     },
-    "Profile" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perfil"
+    "Active workout GPS while Goose is open": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPS de exercício activo enquanto o Goose está aberto"
           }
         }
       }
     },
-    "Device" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dispositivo"
+    "Activities": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actividades"
           }
         }
       }
     },
-    "HR Monitor" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitor FC"
+    "Activity": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actividade"
           }
         }
       }
     },
-    "Connection Lab" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Laboratório de Ligação"
+    "Adapter": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adaptador"
           }
         }
       }
     },
-    "Capture" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Captura"
+    "Add Sleep Unavailable": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar Sono Indisponível"
           }
         }
       }
     },
-    "Local Store" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Armazenamento Local"
+    "AirDrop Export Manifest": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Manifesto de Exportação"
           }
         }
       }
     },
-    "Apple Health Profile" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perfil Apple Health"
+    "AirDrop Final Bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Pacote Final"
           }
         }
       }
     },
-    "Raw Export" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exportação Bruta"
+    "AirDrop Latest Zip": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Zip Mais Recente"
           }
         }
       }
     },
-    "Algorithms" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Algoritmos"
+    "AirDrop Local Data File": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Ficheiro de Dados Local"
           }
         }
       }
     },
-    "Debug" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Depuração"
+    "AirDrop Validation Manifest": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Manifesto de Validação"
           }
         }
       }
     },
-    "Privacy" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Privacidade"
+    "AirDrop Validation Review": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Revisão de Validação"
           }
         }
       }
     },
-    "Remote Server" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Servidor Remoto"
+    "AirDrop Validation Runbook": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop Runbook de Validação"
           }
         }
       }
     },
-    "Support" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suporte"
+    "Alarm config": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuração do alarme"
           }
         }
       }
     },
-    "About" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acerca"
+    "Alarm mode": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo de alarme"
           }
         }
       }
     },
-    "Developer" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Programador"
+    "Algorithm Definitions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definições de Algoritmos"
           }
         }
       }
     },
-    "Recovery" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recuperação"
+    "Algorithm ids": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IDs de algoritmos"
           }
         }
       }
     },
-    "Sleep" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sono"
+    "Algorithm versions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versões de algoritmos"
           }
         }
       }
     },
-    "Connect" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ligar"
+    "Algorithms": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algoritmos"
           }
         }
       }
     },
-    "Disconnect" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desligar"
+    "Analysis": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Análise"
           }
         }
       }
     },
-    "Cancel" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancelar"
+    "App": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App"
           }
         }
       }
     },
-    "Done" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Concluído"
+    "App Version": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versão da App"
           }
         }
       }
     },
-    "Settings" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Definições"
+    "App, Rust core, and licenses": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App, núcleo Rust e licenças"
           }
         }
       }
     },
-    "Export" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exportar"
+    "Apple Health": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health"
           }
         }
       }
     },
-    "Import" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar"
+    "Apple Health Profile": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfil Apple Health"
           }
         }
       }
     },
-    "Sync Error" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erro de Sincronização"
+    "Ask About This": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perguntar Sobre Isto"
           }
         }
       }
     },
-    "Dismiss" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dispensar"
+    "Ask Coach": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perguntar ao Treinador"
           }
         }
       }
     },
-    "Retry" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tentar novamente"
+    "Authentication": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autenticação"
           }
         }
       }
     },
-    "Loading" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A carregar..."
+    "Authorization": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorização"
           }
         }
       }
     },
-    "Scanning" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A procurar..."
+    "Average HR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC Média"
           }
         }
       }
     },
-    "Connected" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ligado"
+    "BLUETOOTH OFF": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BLUETOOTH DESLIGADO"
           }
         }
       }
     },
-    "Connecting" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A ligar..."
+    "BPM": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BPM"
           }
         }
       }
     },
-    "Disconnected" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desligado"
+    "Back": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voltar"
           }
         }
       }
     },
-    "No devices found" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhum dispositivo encontrado"
+    "Backfill Window": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Janela de Preenchimento"
           }
         }
       }
     },
-    "DISCOVERED" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DESCOBERTOS"
+    "Background route tracking when you minimize Goose": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rastreamento de rota em segundo plano quando minimizas o Goose"
           }
         }
       }
     },
-    "CONNECTED" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LIGADO"
+    "Band controls": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlos da banda"
           }
         }
       }
     },
-    "SCANNING" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A PROCURAR"
+    "Band write diagnostics": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnósticos de escrita da banda"
           }
         }
       }
     },
-    "CONNECTING" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A LIGAR"
+    "Battery": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bateria"
           }
         }
       }
     },
-    "NOT AUTHORISED" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NÃO AUTORIZADO"
+    "Battery and sync reminders": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lembretes de bateria e sincronização"
           }
         }
       }
     },
-    "BLUETOOTH OFF" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BLUETOOTH DESLIGADO"
+    "Bluetooth": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth"
           }
         }
       }
     },
-    "HEART RATE" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FREQUÊNCIA CARDÍACA"
+    "Bluetooth access is required. Open Settings to allow access.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É necessário acesso ao Bluetooth. Abre as Definições para permitir o acesso."
           }
         }
       }
     },
-    "Resting HRV" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VFC em Repouso"
+    "Bluetooth is off. Enable Bluetooth to scan for HR monitors.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth desligado. Activa o Bluetooth para procurar monitores de FC."
           }
         }
       }
     },
-    "Resting HR" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FC em Repouso"
+    "Body weight to prefill your profile": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso corporal para pré-preencher o perfil"
           }
         }
       }
     },
-    "Refresh Device" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atualizar Dispositivo"
+    "Boundary": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fronteira"
           }
         }
       }
     },
-    "Name, birthday, height, weight, and profile basics" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nome, data de nascimento, altura, peso e informações básicas do perfil"
+    "Breakdown": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distribuição"
           }
         }
       }
     },
-    "WHOOP band, connection, battery, and pairing" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda WHOOP, ligação, bateria e emparelhamento"
+    "Bundle Path": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caminho do Pacote"
           }
         }
       }
     },
-    "Connect and view live heart rate from a Bluetooth HR monitor" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ligar e ver a frequência cardíaca em tempo real de um monitor FC Bluetooth"
+    "Bundle Validation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Validação do Pacote"
           }
         }
       }
     },
-    "Low-level Bluetooth, hello, and event diagnostics" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bluetooth de baixo nível, hello e diagnósticos de eventos"
+    "Bundle windows, data scopes, validation, and lint": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Janelas de pacotes, âmbitos de dados, validação e lint"
           }
         }
       }
     },
-    "Notification capture, imports, and command evidence" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Captura de notificações, importações e evidência de comandos"
+    "CONNECTED": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LIGADO"
           }
         }
       }
     },
-    "SQLite path, schema, and storage health" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Caminho SQLite, esquema e estado do armazenamento"
+    "CONNECTING": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A LIGAR"
           }
         }
       }
     },
-    "Profile weight autofill only" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preenchimento automático do peso do perfil apenas"
+    "CRC": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CRC"
           }
         }
       }
     },
-    "Bundle windows, data scopes, validation, and lint" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Janelas de pacotes, âmbitos de dados, validação e lint"
+    "Calculation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cálculo"
           }
         }
       }
     },
-    "Operational algorithm preferences" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preferências de algoritmos operacionais"
+    "Calibration": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibração"
           }
         }
       }
     },
-    "Rust, parser, command groups, and gated controls" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rust, parser, grupos de comandos e controlos restritos"
+    "Cancel": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
           }
         }
       }
     },
-    "Local data, export, lint, and deletion state" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dados locais, exportação, lint e estado de eliminação"
+    "Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura"
           }
         }
       }
     },
-    "Server URL, API key, and upload toggle" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL do servidor, chave API e alternância de envio"
+    "Capture Plan": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plano de Captura"
           }
         }
       }
     },
-    "Logs, support bundles, and troubleshooting" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registos, pacotes de suporte e resolução de problemas"
+    "Capture Session": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessão de Captura"
           }
         }
       }
     },
-    "App, Rust core, and licenses" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App, núcleo Rust e licenças"
+    "Capture sessions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessões de captura"
           }
         }
       }
     },
-    "Capture, exports, bridge diagnostics, and debug tools" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Captura, exportações, diagnósticos de bridge e ferramentas de depuração"
+    "Capture, exports, bridge diagnostics, and debug tools": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura, exportações, diagnósticos de bridge e ferramentas de depuração"
           }
         }
       }
     },
-    "Today" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hoje"
+    "Cardio Load": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga Cardio"
           }
         }
       }
     },
-    "Daily Scores" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuações Diárias"
+    "Cardio Load Calibration": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibração de Carga Cardio"
           }
         }
       }
     },
-    "Health Sources" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fontes de Saúde"
+    "Cardio Load Help": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajuda de Carga Cardio"
           }
         }
       }
     },
-    "Preview" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pré-visualização"
+    "Cardio Status": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado Cardio"
           }
         }
       }
     },
-    "Live" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Em directo"
+    "Cardio Status Breakdown": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distribuição de Estado Cardio"
           }
         }
       }
     },
-    "Activity" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actividade"
+    "Charging": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A carregar"
           }
         }
       }
     },
-    "Steps" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passos"
+    "Chat ready": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat pronto"
           }
         }
       }
     },
-    "Active Calories" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calorias Activas"
+    "Chat signed out": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat sem sessão iniciada"
           }
         }
       }
     },
-    "Heart Rate" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frequência Cardíaca"
+    "Check": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificar"
           }
         }
       }
     },
-    "Vitals" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sinais Vitais"
+    "Check height.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifica a altura."
           }
         }
       }
     },
-    "Open Health Monitor" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir Monitor de Saúde"
+    "Check weight.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifica o peso."
           }
         }
       }
     },
-    "Health Monitor" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitor de Saúde"
+    "Checking...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A verificar..."
           }
         }
       }
     },
-    "Vitals, timeline, and primary sleep inputs" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sinais vitais, linha temporal e entradas de sono principais"
+    "Choose Strain date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolher data de esforço"
           }
         }
       }
     },
-    "Timeline" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Linha Temporal"
+    "Choose Stress date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolher data de stress"
           }
         }
       }
     },
-    "Share Local Health Snapshot" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partilhar Instantâneo de Saúde Local"
+    "Choose your strap": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolhe a tua banda"
           }
         }
       }
     },
-    "Packet Inputs" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entradas de Pacotes"
+    "Client Hello": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client Hello"
           }
         }
       }
     },
-    "Packet-Derived Inputs" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entradas Derivadas de Pacotes"
+    "Clock": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relógio"
           }
         }
       }
     },
-    "Packet-Derived Scores" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuações Derivadas de Pacotes"
+    "Close": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fechar"
           }
         }
       }
     },
-    "Respiratory Rate" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frequência Respiratória"
+    "Coach": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treinador"
           }
         }
       }
     },
-    "Oxygen Saturation" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saturação de Oxigénio"
+    "Coach Chat": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chat do Treinador"
           }
         }
       }
     },
-    "Wrist Temperature" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Temperatura do Pulso"
+    "Coach Sign In": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Início de Sessão do Treinador"
           }
         }
       }
     },
-    "Target Strain Today" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço Alvo Hoje"
+    "Coach account": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conta do Treinador"
           }
         }
       }
     },
-    "No recovery timeline" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem linha temporal de recuperação"
+    "Command Shortcuts": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atalhos de Comandos"
           }
         }
       }
     },
-    "No recovery insights" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem informações de recuperação"
+    "Command Writes": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escritas de Comandos"
           }
         }
       }
     },
-    "Trends" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tendências"
+    "Comparisons": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparações"
           }
         }
       }
     },
-    "Insights" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Informações"
+    "Confidence": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confiança"
           }
         }
       }
     },
-    "Stress" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stress"
+    "Connect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligar"
           }
         }
       }
     },
-    "Confidence" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confiança"
+    "Connect Selected": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligar Seleccionado"
           }
         }
       }
     },
-    "Average HR" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FC Média"
+    "Connect and view live heart rate from a Bluetooth HR monitor": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligar e ver a frequência cardíaca em tempo real de um monitor FC Bluetooth"
           }
         }
       }
     },
-    "No stress timeline" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem linha temporal de stress"
+    "Connect selected strap": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligar banda seleccionada"
           }
         }
       }
     },
-    "No stress trends" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem tendências de stress"
+    "Connect to the selected strap": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligar à banda seleccionada"
           }
         }
       }
     },
-    "Choose Stress date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolher data de stress"
+    "Connected": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligado"
           }
         }
       }
     },
-    "Stress Date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Data de Stress"
+    "Connected and ready": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligado e pronto"
           }
         }
       }
     },
-    "Breakdown" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Distribuição"
+    "Connecting": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A ligar..."
           }
         }
       }
     },
-    "Duration:" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duração:"
+    "Connection": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligação"
           }
         }
       }
     },
-    "High" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alto"
+    "Connection Lab": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laboratório de Ligação"
           }
         }
       }
     },
-    "Med" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Méd"
+    "Connection and reconnect status": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado de ligação e reconexão"
           }
         }
       }
     },
-    "Low" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Baixo"
+    "Continue": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
           }
         }
       }
     },
-    "Time in Bed" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo na Cama"
+    "Create Support Bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar Pacote de Suporte"
           }
         }
       }
     },
-    "Time Asleep" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo a Dormir"
+    "DISCOVERED": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DESCOBERTOS"
           }
         }
       }
     },
-    "View insights" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver informações"
+    "Daily Scores": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuações Diárias"
           }
         }
       }
     },
-    "Sleep alarm settings" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Definições do alarme de sono"
+    "Daily load": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga diária"
           }
         }
       }
     },
-    "Add Sleep Unavailable" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adicionar Sono Indisponível"
+    "Daily strain, activity, energy, and trend readiness": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esforço diário, actividade, energia e prontidão de tendências"
           }
         }
       }
     },
-    "OK" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "OK"
+    "Data Deletion Link": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligação de Eliminação de Dados"
           }
         }
       }
     },
-    "Score, stages, sleep needed, alarm, and trend surfaces" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuação, fases, sono necessário, alarme e tendências"
+    "Data Export Link": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligação de Exportação de Dados"
           }
         }
       }
     },
-    "Recovery score, HRV, resting HR, vitals, and unavailable states" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuação de recuperação, VFC, FC em repouso, sinais vitais e estados indisponíveis"
+    "Data Families": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Famílias de Dados"
           }
         }
       }
     },
-    "Daily strain, activity, energy, and trend readiness" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço diário, actividade, energia e prontidão de tendências"
+    "Data Gaps": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lacunas de Dados"
           }
         }
       }
     },
-    "Stress score, HRV/HR inputs, daily chart, and breakdown" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuação de stress, entradas VFC/FC, gráfico diário e distribuição"
+    "Database": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base de Dados"
           }
         }
       }
     },
-    "Strain" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço"
+    "Date of birth": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data de nascimento"
           }
         }
       }
     },
-    "Target Strain" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço Alvo"
+    "Debug": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuração"
           }
         }
       }
     },
-    "Duration" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duração"
+    "Debug Session": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessão de Depuração"
           }
         }
       }
     },
-    "Total Energy" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Energia Total"
+    "Defaults": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predefinições"
           }
         }
       }
     },
-    "View data gaps" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver lacunas de dados"
+    "Deferred Surfaces": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superfícies Diferidas"
           }
         }
       }
     },
-    "Activities" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actividades"
+    "Destructive Commands Locked": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comandos Destrutivos Bloqueados"
           }
         }
       }
     },
-    "No activities" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem actividades"
+    "Destructive commands are locked": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os comandos destrutivos estão bloqueados"
           }
         }
       }
     },
-    "No strain trends" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem tendências de esforço"
+    "Detector": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detector"
           }
         }
       }
     },
-    "Choose Strain date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolher data de esforço"
+    "Developer": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programador"
           }
         }
       }
     },
-    "Daily load" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carga diária"
+    "Developer Surface": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superfície de Programador"
           }
         }
       }
     },
-    "Score" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pontuação"
+    "Device": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispositivo"
           }
         }
       }
     },
-    "Target" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alvo"
+    "Diagnostics": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnósticos"
           }
         }
       }
     },
-    "Energy" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Energia"
+    "Disable on Band": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar na Banda"
           }
         }
       }
     },
-    "Heart rate zones" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zonas de frequência cardíaca"
+    "Disable on band": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivar na banda"
           }
         }
       }
     },
-    "No strain insights" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem informações de esforço"
+    "Disconnect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desligar"
           }
         }
       }
     },
-    "Strain Data" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dados de Esforço"
+    "Disconnect HR monitor": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desligar monitor FC"
           }
         }
       }
     },
-    "Cardio Load" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carga Cardio"
+    "Disconnected": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desligado"
           }
         }
       }
     },
-    "Close" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fechar"
+    "Discovered": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descobertos"
           }
         }
       }
     },
-    "Cardio Load Help" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajuda de Carga Cardio"
+    "Dismiss": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispensar"
           }
         }
       }
     },
-    "Range" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervalo"
+    "Distance, pace, elevation, and route points": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distância, ritmo, altitude e pontos de rota"
           }
         }
       }
     },
-    "Previous Cardio Load Point" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ponto de Carga Cardio Anterior"
+    "Done": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concluído"
           }
         }
       }
     },
-    "Pick Cardio Load Date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolher Data de Carga Cardio"
+    "Dry Runs": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Execuções de Teste"
           }
         }
       }
     },
-    "Next Cardio Load Point" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Próximo Ponto de Carga Cardio"
+    "Duration": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duração"
           }
         }
       }
     },
-    "No Cardio Load" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem Carga Cardio"
+    "Duration:": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duração:"
           }
         }
       }
     },
-    "Cardio Status Breakdown" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Distribuição de Estado Cardio"
+    "EVENTS": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EVENTOS"
           }
         }
       }
     },
-    "Status" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estado"
+    "Efficiency buffer": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buffer de eficiência"
           }
         }
       }
     },
-    "Resources" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recursos"
+    "Empty State": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado Vazio"
           }
         }
       }
     },
-    "The Basics: Cardio Load" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Essencial: Carga Cardio"
+    "Enable Bluetooth": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar Bluetooth"
           }
         }
       }
     },
-    "Cardio Status" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estado Cardio"
+    "Enable Bluetooth to scan for HR monitors.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa o Bluetooth para procurar monitores de FC."
           }
         }
       }
     },
-    "Pick Date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolher Data"
+    "Enable Location": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar Localização"
           }
         }
       }
     },
-    "Cardio Load Calibration" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibração de Carga Cardio"
+    "Enable Notifications": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar Notificações"
           }
         }
       }
     },
-    "Energy Bank" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banco de Energia"
+    "Enable Upload": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar Envio"
           }
         }
       }
     },
-    "Energy And Stress" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Energia e Stress"
+    "Energy": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energia"
           }
         }
       }
     },
-    "Energy Usage" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uso de Energia"
+    "Energy And Stress": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energia e Stress"
           }
         }
       }
     },
-    "Energy charge, drain, stress, and sleep contribution" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carga de energia, drenagem, stress e contribuição do sono"
+    "Energy Bank": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banco de Energia"
           }
         }
       }
     },
-    "Primary Selection" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecção Principal"
+    "Energy Usage": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uso de Energia"
           }
         }
       }
     },
-    "Algorithm Definitions" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Definições de Algoritmos"
+    "Energy charge, drain, stress, and sleep contribution": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga de energia, drenagem, stress e contribuição do sono"
           }
         }
       }
     },
-    "Reference Definitions" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Definições de Referência"
+    "Enter High Frequency Sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrar em Sincronização de Alta Frequência"
           }
         }
       }
     },
-    "Policy" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Política"
+    "Enter height.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introduz a altura."
           }
         }
       }
     },
-    "Comparisons" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comparações"
+    "Enter weight.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introduz o peso."
           }
         }
       }
     },
-    "References" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Referências"
+    "Enter your first name.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introduz o teu primeiro nome."
           }
         }
       }
     },
-    "Actions" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acções"
+    "Event Log": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registo de Eventos"
           }
         }
       }
     },
-    "Calibration" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calibração"
+    "Events": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eventos"
           }
         }
       }
     },
-    "No Trend Data" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem Dados de Tendência"
+    "Every row below declares bridge, live, local, or unavailable provenance.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada linha abaixo declara a proveniência: bridge, directo, local ou indisponível."
           }
         }
       }
     },
-    "Trend" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tendência"
+    "Evidence Import": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importação de Evidências"
           }
         }
       }
     },
-    "Analysis" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Análise"
+    "Existing Goose Records": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registos Goose Existentes"
           }
         }
       }
     },
-    "Tonight's sleep needed" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sono necessário esta noite"
+    "Exit HF": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair HF"
           }
         }
       }
     },
-    "Target time in bed for the next sleep window." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo alvo na cama para a próxima janela de sono."
+    "Exit High Frequency Sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sair de Sincronização de Alta Frequência"
           }
         }
       }
     },
-    "Target amount" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quantidade alvo"
+    "Export": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar"
           }
         }
       }
     },
-    "Your preferred sleep duration before buffers." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A tua duração de sono preferida antes dos buffers."
+    "Export Last Guard": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar Última Guarda"
           }
         }
       }
     },
-    "Calculation" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cálculo"
+    "Export Window": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Janela de Exportação"
           }
         }
       }
     },
-    "Sleep goal" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Objectivo de sono"
+    "Extract Packet-Derived Inputs": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extrair Entradas Derivadas de Pacotes"
           }
         }
       }
     },
-    "Recent strain" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço recente"
+    "Families": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Famílias"
           }
         }
       }
     },
-    "Sleep debt" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dívida de sono"
+    "Family": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Família"
           }
         }
       }
     },
-    "Efficiency buffer" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buffer de eficiência"
+    "Female": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feminino"
           }
         }
       }
     },
-    "Total" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total"
+    "Final Export": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportação Final"
           }
         }
       }
     },
-    "Sleep Needed" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sono Necessário"
+    "Final Sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronização Final"
           }
         }
       }
     },
-    "Sleep Alarm" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alarme de Sono"
+    "Find my WHOOP": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encontrar o meu WHOOP"
           }
         }
       }
     },
-    "Alarm config" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configuração do alarme"
+    "Finish setup": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concluir configuração"
           }
         }
       }
     },
-    "Wake up at" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acordar às"
+    "Finish setup to start using Goose with this strap.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conclui a configuração para começar a usar o Goose com esta banda."
           }
         }
       }
     },
-    "Wake-up time" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hora de acordar"
+    "Firmware": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firmware"
           }
         }
       }
     },
-    "Alarm mode" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modo de alarme"
+    "First name": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primeiro nome"
           }
         }
       }
     },
-    "Used by Needed mode and sleep-needed planning." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usado pelo modo Necessário e planeamento de sono necessário."
+    "Forget": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esquecer"
           }
         }
       }
     },
-    "Haptic" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Háptico"
+    "Forget Remembered Device": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esquecer dispositivo memorizado"
           }
         }
       }
     },
-    "Band controls" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controlos da banda"
+    "Frame Parse": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Análise de Frame"
           }
         }
       }
     },
-    "Test haptic" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Testar háptico"
+    "Gate": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porta"
           }
         }
       }
     },
-    "Run now" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Executar agora"
+    "Gate Sweep": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varrimento de Porta"
           }
         }
       }
     },
-    "Turn off" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desligar"
+    "Gender": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Género"
           }
         }
       }
     },
-    "Disable on band" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desactivar na banda"
+    "Good afternoon,": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boa tarde,"
           }
         }
       }
     },
-    "Band write diagnostics" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diagnósticos de escrita da banda"
+    "Good evening,": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boa noite,"
           }
         }
       }
     },
-    "Diagnostics" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diagnósticos"
+    "Good morning,": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bom dia,"
           }
         }
       }
     },
-    "Trends Analysis" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Análise de Tendências"
+    "Goose can notify you when the strap connects, disconnects, or needs attention.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Goose pode notificar-te quando a banda liga, desliga ou precisa de atenção."
           }
         }
       }
     },
-    "No trend data" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem dados de tendência"
+    "Goose needs Bluetooth to find your owned WHOOP strap and keep the local connection live.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Goose precisa de Bluetooth para encontrar a tua banda WHOOP e manter a ligação local activa."
           }
         }
       }
     },
-    "Trend Date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Data de Tendência"
+    "Goose uses HealthKit only to prefill profile values.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Goose usa o HealthKit apenas para pré-preencher os valores do perfil."
           }
         }
       }
     },
-    "Trend end date" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Data de fim de tendência"
+    "Goose uses location to track outdoor workouts, routes, pace, and distance while an activity is running.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Goose usa a localização para registar exercícios ao ar livre, rotas, ritmo e distância durante uma actividade."
           }
         }
       }
     },
-    "Sleep schedule" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Horário de sono"
+    "HEART RATE": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FREQUÊNCIA CARDÍACA"
           }
         }
       }
     },
-    "Tonight" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta noite"
+    "HR Monitor": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitor FC"
           }
         }
       }
     },
-    "Wind down" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desacelerar"
+    "HR Reconnect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconectar Monitor FC"
           }
         }
       }
     },
-    "Target bedtime" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hora alvo de deitar"
+    "HR monitor reconnection failed after 10 attempts. Tap \"Retry HR Reconnect\" to restart.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconexão do monitor FC falhou após 10 tentativas. Toca em \"Repetir Reconexão Monitor FC\" para reiniciar."
           }
         }
       }
     },
-    "Metric Highlights" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Destaques de Métricas"
+    "Haptic": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Háptico"
           }
         }
       }
     },
-    "Data Gaps" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lacunas de Dados"
+    "Health": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saúde"
           }
         }
       }
     },
-    "Ask About This" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perguntar Sobre Isto"
+    "Health Adapter": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adaptador de Saúde"
           }
         }
       }
     },
-    "Chat ready" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chat pronto"
+    "Health Connect Dry Run": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Execução de Teste Health Connect"
           }
         }
       }
     },
-    "Chat signed out" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chat sem sessão iniciada"
+    "Health Monitor": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitor de Saúde"
           }
         }
       }
     },
-    "Open" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir"
+    "Health Packet Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura de Pacotes de Saúde"
           }
         }
       }
     },
-    "Sign In" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar sessão"
+    "Health Sources": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fontes de Saúde"
           }
         }
       }
     },
-    "Coach Chat" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chat do Treinador"
+    "HealthKit": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit"
           }
         }
       }
     },
-    "Coach Sign In" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Início de Sessão do Treinador"
+    "Heart Rate": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequência Cardíaca"
           }
         }
       }
     },
-    "Model" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modelo"
+    "Heart rate zones": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zonas de frequência cardíaca"
           }
         }
       }
     },
-    "New Conversation" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nova Conversa"
+    "Height": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altura"
           }
         }
       }
     },
-    "Sign Out" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terminar sessão"
+    "Hello": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
           }
         }
       }
     },
-    "Coach account" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conta do Treinador"
+    "Hello World Toast": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificação Hello World"
           }
         }
       }
     },
-    "Start Here" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Começar Aqui"
+    "High": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alto"
           }
         }
       }
     },
-    "Ask Coach" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perguntar ao Treinador"
+    "High Freq": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alta Freq"
           }
         }
       }
     },
-    "Stop streaming" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Parar transmissão"
+    "High Frequency Sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronização de Alta Frequência"
           }
         }
       }
     },
-    "Send message" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enviar mensagem"
+    "High freq": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alta frequência"
           }
         }
       }
     },
-    "Every row below declares bridge, live, local, or unavailable provenance." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada linha abaixo declara a proveniência: bridge, directo, local ou indisponível."
+    "Historical": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Histórico"
           }
         }
       }
     },
-    "Save to Band" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardar na Banda"
+    "Historical Order": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordem Histórica"
           }
         }
       }
     },
-    "Run Now" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Executar Agora"
+    "History RR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RR Histórico"
           }
         }
       }
     },
-    "Disable on Band" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desactivar na Banda"
+    "History Temp": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temp. Histórica"
           }
         }
       }
     },
-    "Family" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Família"
+    "Home": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Início"
           }
         }
       }
     },
-    "Extract Packet-Derived Inputs" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Extrair Entradas Derivadas de Pacotes"
+    "Imperial": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imperial"
           }
         }
       }
     },
-    "Run Packet-Derived Scores" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Executar Pontuações Derivadas de Pacotes"
+    "Import": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar"
           }
         }
       }
     },
-    "Run Reference Comparisons" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Executar Comparações de Referência"
+    "Import Capture File": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar Ficheiro de Captura"
           }
         }
       }
     },
-    "Import Labels" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar Etiquetas"
+    "Import Command Evidence": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar Evidência de Comandos"
+          }
+        }
+      }
+    },
+    "Import Emulator Log": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar Registo do Emulador"
+          }
+        }
+      }
+    },
+    "Import Labels": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar Etiquetas"
+          }
+        }
+      }
+    },
+    "Import Weight": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar Peso"
+          }
+        }
+      }
+    },
+    "Import from Apple Health": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar do Apple Health"
+          }
+        }
+      }
+    },
+    "Imported Sleep History": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Histórico de Sono Importado"
+          }
+        }
+      }
+    },
+    "Imports And Matching": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importações e Correspondência"
+          }
+        }
+      }
+    },
+    "Inches": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Polegadas"
+          }
+        }
+      }
+    },
+    "Include Raw Bytes": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incluir Bytes Brutos"
+          }
+        }
+      }
+    },
+    "Insights": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informações"
+          }
+        }
+      }
+    },
+    "Keep Bluetooth on and keep the strap close to this phone.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantém o Bluetooth ligado e a banda próxima deste telefone."
+          }
+        }
+      }
+    },
+    "Keep Locked": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manter Bloqueado"
+          }
+        }
+      }
+    },
+    "Keep the strap close while Goose confirms it can read data.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantém a banda próxima enquanto o Goose confirma que consegue ler os dados."
+          }
+        }
+      }
+    },
+    "LAST SYNC": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ÚLTIMA SINCRONIZAÇÃO"
+          }
+        }
+      }
+    },
+    "Last Packet": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último Pacote"
+          }
+        }
+      }
+    },
+    "Last Result": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último Resultado"
+          }
+        }
+      }
+    },
+    "Last frame": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último frame"
+          }
+        }
+      }
+    },
+    "Last sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última sincronização"
+          }
+        }
+      }
+    },
+    "Latest Data Packet": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último Pacote de Dados"
+          }
+        }
+      }
+    },
+    "Latest Event": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evento Mais Recente"
+          }
+        }
+      }
+    },
+    "Latest Raw Bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último Pacote Bruto"
+          }
+        }
+      }
+    },
+    "Latest Zip": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Último Zip"
+          }
+        }
+      }
+    },
+    "Links": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligações"
+          }
+        }
+      }
+    },
+    "Listening For Movement": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A escutar movimento"
+          }
+        }
+      }
+    },
+    "Live": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Em directo"
+          }
+        }
+      }
+    },
+    "Live Data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados em Directo"
+          }
+        }
+      }
+    },
+    "Live HR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC em Directo"
+          }
+        }
+      }
+    },
+    "Live Notifications": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificações em Directo"
+          }
+        }
+      }
+    },
+    "Load Command Definitions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregar Definições de Comandos"
+          }
+        }
+      }
+    },
+    "Loading": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A carregar..."
+          }
+        }
+      }
+    },
+    "Local Data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados Locais"
+          }
+        }
+      }
+    },
+    "Local File": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ficheiro Local"
+          }
+        }
+      }
+    },
+    "Local Frame Match": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correspondência de Frame Local"
+          }
+        }
+      }
+    },
+    "Local Store": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Armazenamento Local"
+          }
+        }
+      }
+    },
+    "Local alerts only": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apenas alertas locais"
+          }
+        }
+      }
+    },
+    "Local data, export, lint, and deletion state": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados locais, exportação, lint e estado de eliminação"
+          }
+        }
+      }
+    },
+    "Location": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localização"
+          }
+        }
+      }
+    },
+    "Log Export": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportação de Registos"
+          }
+        }
+      }
+    },
+    "Logs, support bundles, and troubleshooting": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registos, pacotes de suporte e resolução de problemas"
+          }
+        }
+      }
+    },
+    "Looking for your WHOOP": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À procura do teu WHOOP"
+          }
+        }
+      }
+    },
+    "Low": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baixo"
+          }
+        }
+      }
+    },
+    "Low-level Bluetooth, hello, and event diagnostics": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth de baixo nível, hello e diagnósticos de eventos"
+          }
+        }
+      }
+    },
+    "Male": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masculino"
+          }
+        }
+      }
+    },
+    "Measurements": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medidas"
+          }
+        }
+      }
+    },
+    "Med": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Méd"
+          }
+        }
+      }
+    },
+    "Metric": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Métrico"
+          }
+        }
+      }
+    },
+    "Metric Context": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contexto de Métricas"
+          }
+        }
+      }
+    },
+    "Metric Families": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Famílias de Métricas"
+          }
+        }
+      }
+    },
+    "Metric Highlights": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destaques de Métricas"
+          }
+        }
+      }
+    },
+    "Metric Sync Disabled": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronização de Métricas Desactivada"
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modelo"
+          }
+        }
+      }
+    },
+    "More": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mais"
+          }
+        }
+      }
+    },
+    "NOT AUTHORISED": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NÃO AUTORIZADO"
+          }
+        }
+      }
+    },
+    "Name, birthday, height, weight, and profile basics": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome, data de nascimento, altura, peso e informações básicas do perfil"
+          }
+        }
+      }
+    },
+    "Never": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nunca"
+          }
+        }
+      }
+    },
+    "New Conversation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova Conversa"
+          }
+        }
+      }
+    },
+    "Next Action": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próxima Acção"
+          }
+        }
+      }
+    },
+    "Next Cardio Load Point": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próximo Ponto de Carga Cardio"
+          }
+        }
+      }
+    },
+    "No Cardio Load": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem Carga Cardio"
+          }
+        }
+      }
+    },
+    "No Database Yet": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhuma Base de Dados Ainda"
+          }
+        }
+      }
+    },
+    "No HR monitors found. Make sure your device is nearby and powered on.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum monitor de FC encontrado. Certifica-te de que o dispositivo está próximo e ligado."
+          }
+        }
+      }
+    },
+    "No Trend Data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem Dados de Tendência"
+          }
+        }
+      }
+    },
+    "No activities": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem actividades"
+          }
+        }
+      }
+    },
+    "No devices found": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum dispositivo encontrado"
+          }
+        }
+      }
+    },
+    "No devices yet": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum dispositivo ainda"
+          }
+        }
+      }
+    },
+    "No events yet": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum evento ainda"
+          }
+        }
+      }
+    },
+    "No recovery insights": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem informações de recuperação"
+          }
+        }
+      }
+    },
+    "No recovery timeline": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem linha temporal de recuperação"
+          }
+        }
+      }
+    },
+    "No steps, calories, workouts, sleep, or recovery metrics imported": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem importação de passos, calorias, exercícios, sono ou métricas de recuperação"
+          }
+        }
+      }
+    },
+    "No strain insights": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem informações de esforço"
+          }
+        }
+      }
+    },
+    "No strain trends": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem tendências de esforço"
+          }
+        }
+      }
+    },
+    "No stress timeline": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem linha temporal de stress"
+          }
+        }
+      }
+    },
+    "No stress trends": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem tendências de stress"
+          }
+        }
+      }
+    },
+    "No trend data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem dados de tendência"
+          }
+        }
+      }
+    },
+    "Non-binary": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não-binário"
+          }
+        }
+      }
+    },
+    "Not synced": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não sincronizado"
+          }
+        }
+      }
+    },
+    "Notification capture, imports, and command evidence": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura de notificações, importações e evidência de comandos"
+          }
+        }
+      }
+    },
+    "Notifications": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificações"
+          }
+        }
+      }
+    },
+    "Now": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agora"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
+          }
+        }
+      }
+    },
+    "Open Health > Algorithms": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Saúde > Algoritmos"
+          }
+        }
+      }
+    },
+    "Open Health Monitor": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Monitor de Saúde"
+          }
+        }
+      }
+    },
+    "Operational algorithm preferences": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferências de algoritmos operacionais"
+          }
+        }
+      }
+    },
+    "Optical": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Óptico"
+          }
+        }
+      }
+    },
+    "Overnight Guard": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda Nocturna"
+          }
+        }
+      }
+    },
+    "Oxygen Saturation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saturação de Oxigénio"
+          }
+        }
+      }
+    },
+    "Packet Inputs": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entradas de Pacotes"
+          }
+        }
+      }
+    },
+    "Packet types": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipos de pacotes"
+          }
+        }
+      }
+    },
+    "Packet-Derived Inputs": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entradas Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Packet-Derived Scores": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuações Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Pair your WHOOP strap": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparelhar a tua banda WHOOP"
+          }
+        }
+      }
+    },
+    "Path": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caminho"
+          }
+        }
+      }
+    },
+    "Paths": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caminhos"
+          }
+        }
+      }
+    },
+    "Payload": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payload"
+          }
+        }
+      }
+    },
+    "Pending batches": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lotes pendentes"
+          }
+        }
+      }
+    },
+    "Perf Budget": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orçamento de Desempenho"
+          }
+        }
+      }
+    },
+    "Personal": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pessoal"
+          }
+        }
+      }
+    },
+    "Pick Cardio Load Date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolher Data de Carga Cardio"
+          }
+        }
+      }
+    },
+    "Pick Date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolher Data"
+          }
+        }
+      }
+    },
+    "Policy": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Política"
+          }
+        }
+      }
+    },
+    "Power": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energia"
+          }
+        }
+      }
+    },
+    "Prefer not to say": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prefiro não dizer"
+          }
+        }
+      }
+    },
+    "Preference Status": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado de Preferências"
+          }
+        }
+      }
+    },
+    "Preferences": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferências"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pré-visualização"
+          }
+        }
+      }
+    },
+    "Previous Cardio Load Point": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponto de Carga Cardio Anterior"
+          }
+        }
+      }
+    },
+    "Primary Selection": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecção Principal"
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacidade"
+          }
+        }
+      }
+    },
+    "Privacy Lint": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lint de Privacidade"
+          }
+        }
+      }
+    },
+    "Profile": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfil"
+          }
+        }
+      }
+    },
+    "Profile weight autofill only": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preenchimento automático do peso do perfil apenas"
+          }
+        }
+      }
+    },
+    "Property Suite": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suite de Propriedades"
+          }
+        }
+      }
+    },
+    "Protected Controls": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlos Protegidos"
+          }
+        }
+      }
+    },
+    "Pulse Info": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info de Pulso"
+          }
+        }
+      }
+    },
+    "RR Watch": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigiar RR"
+          }
+        }
+      }
+    },
+    "RR packets": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pacotes RR"
+          }
+        }
+      }
+    },
+    "Range": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalo"
+          }
+        }
+      }
+    },
+    "Range Polls": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sondagens de Intervalo"
+          }
+        }
+      }
+    },
+    "Raw Bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pacote Bruto"
+          }
+        }
+      }
+    },
+    "Raw Export": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportação Bruta"
+          }
+        }
+      }
+    },
+    "Raw Notifications": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificações Brutas"
+          }
+        }
+      }
+    },
+    "Raw/Research K20": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruto/Investigação K20"
+          }
+        }
+      }
+    },
+    "Re-do Onboarding": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refazer Integração"
+          }
+        }
+      }
+    },
+    "Read live battery, firmware, and strap notifications": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler bateria, firmware e notificações da banda em directo"
+          }
+        }
+      }
+    },
+    "Reading strap data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A ler dados da banda"
+          }
+        }
+      }
+    },
+    "Ready to pair": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto para emparelhar"
+          }
+        }
+      }
+    },
+    "Realtime Status K2": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado em Tempo Real K2"
+          }
+        }
+      }
+    },
+    "Recent Capture Sessions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessões de Captura Recentes"
+          }
+        }
+      }
+    },
+    "Recent Capture Shortcuts": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atalhos de Capturas Recentes"
+          }
+        }
+      }
+    },
+    "Recent Notifications And Events": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificações e Eventos Recentes"
+          }
+        }
+      }
+    },
+    "Recent strain": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esforço recente"
+          }
+        }
+      }
+    },
+    "Reconnect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconectar"
+          }
+        }
+      }
+    },
+    "Reconnect Remembered": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconectar Memorizado"
+          }
+        }
+      }
+    },
+    "Reconnection failed after 10 attempts. Tap \"Try Again\" to restart.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconexão falhou após 10 tentativas. Toca em \"Tentar de Novo\" para reiniciar."
+          }
+        }
+      }
+    },
+    "Recovery": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperação"
+          }
+        }
+      }
+    },
+    "Recovery score, HRV, resting HR, vitals, and unavailable states": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuação de recuperação, VFC, FC em repouso, sinais vitais e estados indisponíveis"
+          }
+        }
+      }
+    },
+    "Reference Benchmarks": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benchmarks de Referência"
+          }
+        }
+      }
+    },
+    "Reference Definitions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definições de Referência"
+          }
+        }
+      }
+    },
+    "References": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referências"
+          }
+        }
+      }
+    },
+    "Refresh Device": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar Dispositivo"
+          }
+        }
+      }
+    },
+    "Refresh Health Adapter": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar Adaptador de Saúde"
+          }
+        }
+      }
+    },
+    "Refresh Snapshot": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar Instantâneo"
+          }
+        }
+      }
+    },
+    "Remembered": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memorizado"
+          }
+        }
+      }
+    },
+    "Remote Calls": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chamadas Remotas"
+          }
+        }
+      }
+    },
+    "Remote Server": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servidor Remoto"
+          }
+        }
+      }
+    },
+    "Report": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relatório"
+          }
+        }
+      }
+    },
+    "Request Bluetooth": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicitar Bluetooth"
+          }
+        }
+      }
+    },
+    "Request Historical Packets": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicitar pacotes históricos"
+          }
+        }
+      }
+    },
+    "Research BT Commands": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comandos BT de Investigação"
+          }
+        }
+      }
+    },
+    "Resources": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recursos"
+          }
+        }
+      }
+    },
+    "Respiratory Rate": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequência Respiratória"
+          }
+        }
+      }
+    },
+    "Responses": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respostas"
+          }
+        }
+      }
+    },
+    "Resting HR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC em Repouso"
+          }
+        }
+      }
+    },
+    "Resting HRV": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VFC em Repouso"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar novamente"
+          }
+        }
+      }
+    },
+    "Retry HR Reconnect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repetir Reconexão Monitor FC"
+          }
+        }
+      }
+    },
+    "Row Counts": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contagem de Linhas"
+          }
+        }
+      }
+    },
+    "Run Capture Arrival Plan": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Plano de Chegada de Captura"
+          }
+        }
+      }
+    },
+    "Run Movement Packet Test": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Teste de Pacotes de Movimento"
+          }
+        }
+      }
+    },
+    "Run Now": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Agora"
+          }
+        }
+      }
+    },
+    "Run Packet-Derived Scores": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Pontuações Derivadas de Pacotes"
+          }
+        }
+      }
+    },
+    "Run Parser Probe": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Sonda do Parser"
+          }
+        }
+      }
+    },
+    "Run Perf Budget": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Orçamento de Desempenho"
+          }
+        }
+      }
+    },
+    "Run Property Suite": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Suite de Propriedades"
+          }
+        }
+      }
+    },
+    "Run Reference Comparisons": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Comparações de Referência"
+          }
+        }
+      }
+    },
+    "Run UI Coverage": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar Cobertura UI"
+          }
+        }
+      }
+    },
+    "Run now": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executar agora"
+          }
+        }
+      }
+    },
+    "Runtime": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo de Execução"
+          }
+        }
+      }
+    },
+    "Rust": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rust"
+          }
+        }
+      }
+    },
+    "Rust And Parser": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rust e Parser"
+          }
+        }
+      }
+    },
+    "Rust Bridge/Core": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bridge/Core Rust"
+          }
+        }
+      }
+    },
+    "Rust Core": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Núcleo Rust"
+          }
+        }
+      }
+    },
+    "Rust, parser, command groups, and gated controls": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rust, parser, grupos de comandos e controlos restritos"
+          }
+        }
+      }
+    },
+    "SCANNING": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A PROCURAR"
+          }
+        }
+      }
+    },
+    "SQLite": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SQLite"
+          }
+        }
+      }
+    },
+    "SQLite Mirror": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espelho SQLite"
+          }
+        }
+      }
+    },
+    "SQLite path, schema, and storage health": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caminho SQLite, esquema e estado do armazenamento"
+          }
+        }
+      }
+    },
+    "STATUS": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ESTADO"
+          }
+        }
+      }
+    },
+    "Sanitized Privacy": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacidade Sanitizada"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar"
+          }
+        }
+      }
+    },
+    "Save Local Data File": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar Ficheiro de Dados Local"
+          }
+        }
+      }
+    },
+    "Save to Band": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar na Banda"
+          }
+        }
+      }
+    },
+    "Saving export": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A guardar exportação"
+          }
+        }
+      }
+    },
+    "Saving final sync bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A guardar pacote de sincronização final"
+          }
+        }
+      }
+    },
+    "Saving local data file": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A guardar ficheiro de dados local"
+          }
+        }
+      }
+    },
+    "Scan": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Procurar"
+          }
+        }
+      }
+    },
+    "Scan for nearby WHOOP services": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Procurar serviços WHOOP próximos"
+          }
+        }
+      }
+    },
+    "Scanning": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar..."
+          }
+        }
+      }
+    },
+    "Schema": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esquema"
+          }
+        }
+      }
+    },
+    "Schema Version": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versão do Esquema"
+          }
+        }
+      }
+    },
+    "Scope": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Âmbito"
+          }
+        }
+      }
+    },
+    "Score": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuação"
+          }
+        }
+      }
+    },
+    "Score, stages, sleep needed, alarm, and trend surfaces": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuação, fases, sono necessário, alarme e tendências"
+          }
+        }
+      }
+    },
+    "Search again": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Procurar novamente"
+          }
+        }
+      }
+    },
+    "Searching": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar"
+          }
+        }
+      }
+    },
+    "Searching...": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A procurar..."
+          }
+        }
+      }
+    },
+    "Select": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleccionar"
+          }
+        }
+      }
+    },
+    "Select a gender.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona um género."
+          }
+        }
+      }
+    },
+    "Select the strap you want to use with Goose.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona a banda que queres usar com o Goose."
+          }
+        }
+      }
+    },
+    "Selected": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleccionado"
+          }
+        }
+      }
+    },
+    "Selected Device": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispositivo Seleccionado"
+          }
+        }
+      }
+    },
+    "Send Client Hello": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar Client Hello"
+          }
+        }
+      }
+    },
+    "Send message": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar mensagem"
+          }
+        }
+      }
+    },
+    "Sensor signals": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinais de sensores"
+          }
+        }
+      }
+    },
+    "Server": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servidor"
+          }
+        }
+      }
+    },
+    "Server URL, API key, and upload toggle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL do servidor, chave API e alternância de envio"
+          }
+        }
+      }
+    },
+    "Server reachable": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servidor acessível"
+          }
+        }
+      }
+    },
+    "Server unreachable": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servidor inacessível"
+          }
+        }
+      }
+    },
+    "Session": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessão"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definições"
+          }
+        }
+      }
+    },
+    "Settings saved": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definições guardadas"
+          }
+        }
+      }
+    },
+    "Share Local Health Snapshot": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partilhar Instantâneo de Saúde Local"
+          }
+        }
+      }
+    },
+    "Sign In": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar sessão"
+          }
+        }
+      }
+    },
+    "Sign Out": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminar sessão"
+          }
+        }
+      }
+    },
+    "Skin Temp Candidate": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candidato Temp. Pele"
+          }
+        }
+      }
+    },
+    "Sleep": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sono"
+          }
+        }
+      }
+    },
+    "Sleep Alarm": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarme de Sono"
+          }
+        }
+      }
+    },
+    "Sleep Needed": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sono Necessário"
+          }
+        }
+      }
+    },
+    "Sleep Readiness": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prontidão para Dormir"
+          }
+        }
+      }
+    },
+    "Sleep alarm settings": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Definições do alarme de sono"
+          }
+        }
+      }
+    },
+    "Sleep debt": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dívida de sono"
+          }
+        }
+      }
+    },
+    "Sleep goal": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objectivo de sono"
+          }
+        }
+      }
+    },
+    "Sleep schedule": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horário de sono"
+          }
+        }
+      }
+    },
+    "Sources": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fontes"
+          }
+        }
+      }
+    },
+    "Spool": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fila"
+          }
+        }
+      }
+    },
+    "Start Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Captura"
+          }
+        }
+      }
+    },
+    "Start Debug Session": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Sessão de Depuração"
+          }
+        }
+      }
+    },
+    "Start Guard": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Guarda"
+          }
+        }
+      }
+    },
+    "Start Here": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começar Aqui"
+          }
+        }
+      }
+    },
+    "Start Movement + HR Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Captura de Movimento + FC"
+          }
+        }
+      }
+    },
+    "Start Physiology Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Captura de Fisiologia"
+          }
+        }
+      }
+    },
+    "Start Temperature Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Captura de Temperatura"
+          }
+        }
+      }
+    },
+    "Start Walk Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar Captura de Caminhada"
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado"
+          }
+        }
+      }
+    },
+    "Steps": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passos"
+          }
+        }
+      }
+    },
+    "Stop Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Captura"
+          }
+        }
+      }
+    },
+    "Stop Guard": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Guarda"
+          }
+        }
+      }
+    },
+    "Stop HR Reconnect": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Reconexão Monitor FC"
+          }
+        }
+      }
+    },
+    "Stop Movement + HR Capture": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Captura de Movimento + FC"
+          }
+        }
+      }
+    },
+    "Stop RR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar RR"
+          }
+        }
+      }
+    },
+    "Stop RR Packet Watch": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Vigília de Pacotes RR"
+          }
+        }
+      }
+    },
+    "Stop Reconnecting": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Reconexão"
+          }
+        }
+      }
+    },
+    "Stop Scan": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Procura"
+          }
+        }
+      }
+    },
+    "Stop streaming": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar transmissão"
+          }
+        }
+      }
+    },
+    "Storage Check": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificação de Armazenamento"
+          }
+        }
+      }
+    },
+    "Strain": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esforço"
+          }
+        }
+      }
+    },
+    "Strain Data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dados de Esforço"
+          }
+        }
+      }
+    },
+    "Strap clock": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relógio da banda"
+          }
+        }
+      }
+    },
+    "Strap found": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda encontrada"
+          }
+        }
+      }
+    },
+    "Stress": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stress"
+          }
+        }
+      }
+    },
+    "Stress Date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data de Stress"
+          }
+        }
+      }
+    },
+    "Stress score, HRV/HR inputs, daily chart, and breakdown": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pontuação de stress, entradas VFC/FC, gráfico diário e distribuição"
+          }
+        }
+      }
+    },
+    "Support": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suporte"
+          }
+        }
+      }
+    },
+    "Support Bundle": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pacote de Suporte"
+          }
+        }
+      }
+    },
+    "Supports WHOOP 4.0 and WHOOP 5.0. Take the strap off your wrist, keep it nearby, then start pairing.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatível com WHOOP 4.0 e WHOOP 5.0. Tira a banda do pulso, mantém-na próxima e começa o emparelhamento."
+          }
+        }
+      }
+    },
+    "Sync": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizar"
+          }
+        }
+      }
+    },
+    "Sync Error": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erro de Sincronização"
+          }
+        }
+      }
+    },
+    "Syncing": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sincronizar"
+          }
+        }
+      }
+    },
+    "Syncing Historical Packets": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sincronizar pacotes históricos"
+          }
+        }
+      }
+    },
+    "Target": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alvo"
+          }
+        }
+      }
+    },
+    "Target Strain": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esforço Alvo"
+          }
+        }
+      }
+    },
+    "Target Strain Today": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esforço Alvo Hoje"
+          }
+        }
+      }
+    },
+    "Target amount": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quantidade alvo"
+          }
+        }
+      }
+    },
+    "Target bedtime": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora alvo de deitar"
+          }
+        }
+      }
+    },
+    "Target time in bed for the next sleep window.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo alvo na cama para a próxima janela de sono."
+          }
+        }
+      }
+    },
+    "Targets": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alvos"
+          }
+        }
+      }
+    },
+    "Test haptic": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testar háptico"
+          }
+        }
+      }
+    },
+    "The Basics: Cardio Load": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Essencial: Carga Cardio"
+          }
+        }
+      }
+    },
+    "These basics help Goose calculate your local metrics.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estes dados básicos ajudam o Goose a calcular as tuas métricas locais."
+          }
+        }
+      }
+    },
+    "This surface records the gate only. No haptics, firmware, config, or reboot command is sent from this tap.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta superfície regista apenas a porta. Nenhum háptico, firmware, configuração ou reinicialização é enviado a partir deste toque."
+          }
+        }
+      }
+    },
+    "Time Asleep": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo a Dormir"
+          }
+        }
+      }
+    },
+    "Time in Bed": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo na Cama"
+          }
+        }
+      }
+    },
+    "Timeline": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linha Temporal"
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoje"
+          }
+        }
+      }
+    },
+    "Tonight": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta noite"
+          }
+        }
+      }
+    },
+    "Tonight's sleep needed": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sono necessário esta noite"
+          }
+        }
+      }
+    },
+    "Tools": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferramentas"
+          }
+        }
+      }
+    },
+    "Total": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
+    "Total Energy": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energia Total"
+          }
+        }
+      }
+    },
+    "Trend": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendência"
+          }
+        }
+      }
+    },
+    "Trend Date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data de Tendência"
+          }
+        }
+      }
+    },
+    "Trend end date": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data de fim de tendência"
+          }
+        }
+      }
+    },
+    "Trends": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendências"
+          }
+        }
+      }
+    },
+    "Trends Analysis": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Análise de Tendências"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar de Novo"
+          }
+        }
+      }
+    },
+    "Turn off": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desligar"
+          }
+        }
+      }
+    },
+    "UI Coverage": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cobertura UI"
+          }
+        }
+      }
+    },
+    "Units": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unidades"
+          }
+        }
+      }
+    },
+    "Update Profile": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar Perfil"
+          }
+        }
+      }
+    },
+    "Update profile": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar perfil"
+          }
+        }
+      }
+    },
+    "Update weight": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar peso"
+          }
+        }
+      }
+    },
+    "Upload": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envio"
+          }
+        }
+      }
+    },
+    "Use 40 characters or fewer.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa 40 caracteres ou menos."
+          }
+        }
+      }
+    },
+    "Used by Needed mode and sleep-needed planning.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usado pelo modo Necessário e planeamento de sono necessário."
+          }
+        }
+      }
+    },
+    "Validate Export And Lint": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Validar Exportação e Lint"
+          }
+        }
+      }
+    },
+    "Validated Sample/Read Command": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amostra Validada/Ler Comando"
+          }
+        }
+      }
+    },
+    "Validation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Validação"
+          }
+        }
+      }
+    },
+    "Validation Manifest": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manifesto de Validação"
+          }
+        }
+      }
+    },
+    "Validation Review": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisão de Validação"
+          }
+        }
+      }
+    },
+    "Validation Runbook": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runbook de Validação"
+          }
+        }
+      }
+    },
+    "Versions": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versões"
+          }
+        }
+      }
+    },
+    "View data gaps": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver lacunas de dados"
+          }
+        }
+      }
+    },
+    "View insights": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver informações"
+          }
+        }
+      }
+    },
+    "Vitals": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinais Vitais"
+          }
+        }
+      }
+    },
+    "Vitals, timeline, and primary sleep inputs": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinais vitais, linha temporal e entradas de sono principais"
+          }
+        }
+      }
+    },
+    "WHOOP App": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App WHOOP"
+          }
+        }
+      }
+    },
+    "WHOOP Event Signals": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinais de Eventos WHOOP"
+          }
+        }
+      }
+    },
+    "WHOOP Movement Test": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teste de Movimento WHOOP"
+          }
+        }
+      }
+    },
+    "WHOOP band, connection, battery, and pairing": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda WHOOP, ligação, bateria e emparelhamento"
+          }
+        }
+      }
+    },
+    "WHOOP is connected": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHOOP ligado"
+          }
+        }
+      }
+    },
+    "WHOOP strap": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banda WHOOP"
+          }
+        }
+      }
+    },
+    "Waiting for strap data": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À espera de dados da banda"
+          }
+        }
+      }
+    },
+    "Wake up at": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acordar às"
+          }
+        }
+      }
+    },
+    "Wake-up time": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora de acordar"
+          }
+        }
+      }
+    },
+    "Warnings": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avisos"
+          }
+        }
+      }
+    },
+    "Watch K18 RR Packets": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigiar Pacotes RR K18"
+          }
+        }
+      }
+    },
+    "Watch RR": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigiar RR"
+          }
+        }
+      }
+    },
+    "Watchdog": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vigilante"
+          }
+        }
+      }
+    },
+    "We found a WHOOP nearby": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encontrámos um WHOOP próximo"
+          }
+        }
+      }
+    },
+    "WebSocket": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebSocket"
+          }
+        }
+      }
+    },
+    "Weight": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso"
+          }
+        }
+      }
+    },
+    "Wind down": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desacelerar"
+          }
+        }
+      }
+    },
+    "Window": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Janela"
+          }
+        }
+      }
+    },
+    "Window Issue": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Problema de Janela"
+          }
+        }
+      }
+    },
+    "Wrist Temperature": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura do Pulso"
+          }
+        }
+      }
+    },
+    "Your preferred sleep duration before buffers.": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua duração de sono preferida antes dos buffers."
+          }
+        }
+      }
+    },
+    "Zip Path": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caminho Zip"
+          }
+        }
+      }
+    },
+    "Zip Validation": {
+      "localizations": {
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Validação Zip"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
