@@ -83,10 +83,10 @@ Requirements known but deferred beyond v5.0:
 
 | Phase | Requirements |
 |-------|-------------|
-| TBD — Upstream Fixes & Storage | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05 |
-| TBD — IMU Data Foundation | IMU-01, IMU-02, IMU-03, IMU-04 |
-| TBD — HRV Accuracy | ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04 |
-| TBD — Strain & Calories | ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02 |
-| TBD — Sleep Metrics (Without Staging) | ALG-SLP-01, ALG-SLP-02 |
-| TBD — Recovery Score v1 | ALG-REC-01, ALG-REC-02, ALG-REC-03 |
-| TBD — Sleep Staging | ALG-SLP-03, ALG-SLP-04 |
+| Phase 20 — Upstream Fixes & Storage | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05 |
+| Phase 21 — IMU Data Foundation | IMU-01, IMU-02, IMU-03, IMU-04 |
+| Phase 22 — HRV Accuracy | ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04 |
+| Phase 23 — Strain & Calories | ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02 |
+| Phase 24 — Sleep Metrics Without Staging + Baselines | ALG-SLP-01, ALG-SLP-02 |
+| Phase 25 — Recovery Score v1 | ALG-REC-01, ALG-REC-02, ALG-REC-03 |
+| Phase 26 — Sleep Staging | ALG-SLP-03, ALG-SLP-04 |

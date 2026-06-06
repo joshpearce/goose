@@ -1,5 +1,14 @@
 # Milestones
 
+## v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-26) — PLANNED
+
+**Phases:** 7 (Phases 20–26)
+**Requirements:** 26 (SYNC-01–05, PERF-05, IMU-01–04, ALG-HRV-01–04, ALG-STR-01–03, ALG-CAL-01–02, ALG-SLP-01–02, ALG-REC-01–03, ALG-SLP-03–04)
+
+**Goal:** Port validated algorithms from `my-whoop` into the Rust core — confirmed against WHOOP 5.37.0 IPA via Ghidra and peer-reviewed literature — so each metric (HRV, Recovery, Strain, Calories, Sleep) produces values aligned with WHOOP from the same raw data.
+
+---
+
 ## v4.0 Security, Performance & Coach Expansion (Shipped: 2026-06-06)
 
 **Phases completed:** 4 phases (16-19), 12 plans
