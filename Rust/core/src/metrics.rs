@@ -404,6 +404,10 @@ pub struct StrainInput {
     pub hr_zone_minutes: Vec<f64>,
     #[serde(default)]
     pub input_ids: Vec<String>,
+    #[serde(default)]
+    pub profile_sex: Option<String>,
+    #[serde(default)]
+    pub profile_age: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1863,6 +1867,57 @@ pub fn goose_strain_v0(input: &StrainInput) -> AlgorithmRunResult<StrainScoreOut
             "expected_values_policy": "hand-derived-tests-and-versioned-goose-output"
         }),
     }
+}
+
+// ── ALG-STR-01: Tanaka HRmax formula ───────────────────────────────────────
+
+/// Returns the Tanaka HRmax estimate: 208.0 - 0.7 * age.
+/// Physiologically-grounded alternative to the 220-age heuristic.
+pub fn tanaka_hrmax(age: f64) -> f64 {
+    208.0 - 0.7 * age
+}
+
+// ── ALG-STR-01: History-based HRmax estimator ──────────────────────────────
+
+/// Returns the 99.5th-percentile heart rate from `hr_history` when at least
+/// 600 finite samples are present; returns None otherwise.
+///
+/// Non-finite values (NaN, ±infinity) are filtered out before counting. Index
+/// is clamped to `len - 1` to guard against boundary overflow (T-23-02).
+pub fn estimate_hrmax_from_history(hr_history: &[f64]) -> Option<f64> {
+    let mut finite: Vec<f64> = hr_history.iter().copied().filter(|v| v.is_finite()).collect();
+    if finite.len() < 600 {
+        return None;
+    }
+    finite.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let len = finite.len();
+    let index = ((0.995 * len as f64).ceil() as usize).min(len - 1);
+    Some(finite[index])
+}
+
+// ── ALG-STR-01: Effective HRmax resolver ───────────────────────────────────
+
+/// Resolves an effective HRmax value and its source label.
+///
+/// Resolution order (ALG-STR-01):
+/// 1. `estimate_hrmax_from_history` returns Some → `(value, "observed")`
+/// 2. `profile_age` is Some → `(max(session_max_hr, tanaka_hrmax(age)), "tanaka")`
+/// 3. No history + no age → `(session_max_hr, "fallback")`
+///
+/// Returns `(hrmax, source)` where source ∈ {"observed", "tanaka", "fallback"}.
+pub fn resolve_effective_hrmax(
+    session_max_hr: f64,
+    profile_age: Option<f64>,
+    hr_history: &[f64],
+) -> (f64, String) {
+    if let Some(history_hrmax) = estimate_hrmax_from_history(hr_history) {
+        return (history_hrmax, "observed".to_string());
+    }
+    if let Some(age) = profile_age {
+        let hrmax = session_max_hr.max(tanaka_hrmax(age));
+        return (hrmax, "tanaka".to_string());
+    }
+    (session_max_hr, "fallback".to_string())
 }
 
 pub fn goose_recovery_v0(input: &RecoveryInput) -> AlgorithmRunResult<RecoveryScoreOutput> {
