@@ -327,10 +327,12 @@ fn parses_k10_raw_motion_offsets_without_claiming_units() {
     match parsed.parsed_payload.unwrap() {
         ParsedPayload::DataPacket {
             body_summary,
+            body_hex,
             warnings,
             ..
         } => {
             assert!(warnings.is_empty());
+            assert_eq!(body_hex, hex::encode(&payload[13..]));
             let Some(DataPacketBodySummary::RawMotionK10 {
                 heart_rate,
                 axes,
@@ -376,10 +378,12 @@ fn parses_k21_grouped_motion_offsets_and_counts() {
     match parsed.parsed_payload.unwrap() {
         ParsedPayload::DataPacket {
             body_summary,
+            body_hex,
             warnings,
             ..
         } => {
             assert!(warnings.is_empty());
+            assert!(!body_hex.is_empty(), "body_hex should be populated for K21 before exclusion");
             let Some(DataPacketBodySummary::RawMotionK21 {
                 field_x,
                 group_1_count,
