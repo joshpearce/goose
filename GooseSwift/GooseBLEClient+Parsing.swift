@@ -350,9 +350,10 @@ extension GooseBLEClient {
   }
 
   // Gen4 service UUID prefix 61080001-, Gen5 prefix fd4b0001-
-  // WearableDescriptor stores prefix constants in lowercase; lowercased() is applied defensively
-  // here even though CBUUID.uuidString always returns uppercase on iOS (CoreBluetooth contract),
-  // keeping the comparison convention consistent with isCommandCharacteristic and debugMenuCandidate.
+  // SYNC-05: lowercased() is required for case-insensitive Gen4 detection (per upstream PR #26).
+  // CBUUID.uuidString returns uppercase on iOS; lowercasing before hasPrefix ensures both
+  // the 61080001 service prefix and the 61080002 command prefix (via WearableDescriptor.isCommandUUID)
+  // are matched correctly regardless of CoreBluetooth case conventions.
   static func generation(from serviceUUIDs: [CBUUID]) -> String {
     for uuid in serviceUUIDs {
       let lower = uuid.uuidString.lowercased()
@@ -944,6 +945,9 @@ extension GooseBLEClient {
   static func buildV5CommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
     var payload = [V5PacketType.command, sequence, command]
     payload.append(contentsOf: data)
+    // SYNC-03 (per upstream PR #26): the WHOOP Gen4/Gen5 command frame requires the payload
+    // length to be a multiple of 4 bytes. Trailing zero bytes satisfy that requirement and are
+    // counted in both the declared length and the payload CRC — confirmed against PacketLogger captures.
     let padding = payload.count % 4 == 0 ? 0 : 4 - payload.count % 4
     if padding > 0 {
       payload.append(contentsOf: repeatElement(UInt8(0), count: padding))
