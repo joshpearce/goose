@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
-last_updated: "2026-06-05T23:38:38.884Z"
+stopped_at: Phase 19 context gathered
+last_updated: "2026-06-06T14:29:57.396Z"
 last_activity: 2026-06-05 -- Phase 18 execution started
 progress:
-  total_phases: 14
-  completed_phases: 9
+  total_phases: 15
+  completed_phases: 10
   total_plans: 27
-  completed_plans: 22
-  percent: 64
+  completed_plans: 28
+  percent: 67
 ---
 
 # Project State
@@ -110,6 +110,6 @@ Items carried forward from v2.0 milestone close (2026-06-04):
 
 ## Session Continuity
 
-Last session: 2026-06-05T19:33:34Z
-Stopped at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
-Resume file: .planning/phases/17-observable-migration/17-04-SUMMARY.md
+Last session: 2026-06-06T14:29:57.385Z
+Stopped at: Phase 19 context gathered
+Resume file: .planning/phases/19-pt-pt-localisation-completion/19-CONTEXT.md
