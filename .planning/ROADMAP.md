@@ -416,7 +416,13 @@ Plans:
   7. Keytel and Harris-Benedict coefficients in `energy_rollup.rs` match the Ghidra-confirmed AARCH64 values exactly (Keytel men: -55.0969, 0.6309, 0.1988, 0.2017; women: -20.4022, 0.4472, -0.1263, 0.0740; H-B men: 88.362, 13.397, 479.9, -5.677; women: 447.593, 9.247, 309.8, -4.330), verified by test asserting exact coefficient values; Keytel EE clamped >= 0, HR capped at HRmax; convert kJ/min → kcal/s via ÷ (60 × 4.184)
   8. `cargo test -p goose-core` green; tests cover: Karvonen %HRR boundaries, zone assignment at cut-off edges, Banister sex ratio, Keytel coefficient exact values
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 23-01-PLAN.md — Wave 1: profile_sex/profile_age on StrainInput + Tanaka HRmax + estimate_hrmax_from_history + effective-HRmax resolver (ALG-STR-01)
+- [ ] 23-02-PLAN.md — Wave 2: Banister TRIMP (sex constants) + fit_strain_denominator + goose_strain_v1 bridge method (ALG-STR-02, ALG-STR-03)
+- [ ] 23-03-PLAN.md — Wave 3: Mifflin-St Jeor RMR + Keytel/Harris-Benedict Ghidra coefficients + profile_height_cm wiring (ALG-CAL-01, ALG-CAL-02)
 
 ---
 
