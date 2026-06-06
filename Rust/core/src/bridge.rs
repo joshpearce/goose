@@ -99,8 +99,8 @@ use crate::{
         SleepNightHistoryInput, SleepStageSegment, SleepV1Input, StrainInput, StressInput,
         algorithm_run_record, built_in_algorithm_definitions,
         built_in_default_algorithm_preferences, default_algorithm_preferences_for_scope,
-        goose_hrv_v0, goose_recovery_v0, goose_sleep_v0, goose_sleep_v1, goose_strain_v0,
-        goose_stress_v0, sleep_history_night_is_usable,
+        fit_strain_denominator, goose_hrv_v0, goose_recovery_v0, goose_sleep_v0, goose_sleep_v1,
+        goose_strain_v0, goose_strain_v1, goose_stress_v0, sleep_history_night_is_usable,
     },
     openwhoop_reference::{
         OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_COMMIT,
@@ -237,11 +237,13 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "metrics.energy_daily_rollup",
     "metrics.energy_hourly_rollup",
     "metrics.energy_unavailable_daily_status",
+    "metrics.fit_strain_denominator",
     "metrics.goose_hrv_v0",
     "metrics.goose_recovery_v0",
     "metrics.goose_sleep_v0",
     "metrics.goose_sleep_v1",
     "metrics.goose_strain_v0",
+    "metrics.goose_strain_v1",
     "metrics.goose_stress_v0",
     "metrics.heart_rate_features",
     "metrics.hourly_activity_metrics",
@@ -557,6 +559,15 @@ struct PropertySuiteArgs {
     seed: u64,
     #[serde(default = "default_property_cases")]
     cases_per_group: usize,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FitStrainDenominatorArgs {
+    pairs: Vec<(f64, f64)>,
+    // Included for API consistency with DB-backed methods; unused (pure computation).
+    #[serde(default)]
+    #[allow(dead_code)]
+    database_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2152,6 +2163,21 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.goose_strain_v0" => request_args::<StrainInput>(&request)
             .and_then(|input| metric_result_to_value(goose_strain_v0(&input)))
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.goose_strain_v1" => request_args::<StrainInput>(&request)
+            .and_then(|input| metric_result_to_value(goose_strain_v1(&input)))
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.fit_strain_denominator" => request_args::<FitStrainDenominatorArgs>(&request)
+            .and_then(|args| {
+                match fit_strain_denominator(&args.pairs) {
+                    Some(d) => Ok(serde_json::json!({ "denominator": d })),
+                    None => Err(GooseError::message(
+                        "insufficient_or_degenerate_pairs".to_string(),
+                    )),
+                }
+            })
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.goose_recovery_v0" => request_args::<RecoveryInput>(&request)
