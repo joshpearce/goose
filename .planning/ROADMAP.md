@@ -6,7 +6,7 @@
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
 - ✅ **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-15 (shipped 2026-06-05)
 - ✅ **v4.0 Security, Performance & Coach Expansion** — Phases 16-19 (shipped 2026-06-06)
-- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-26 (backlog)
+- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-28 (backlog)
 
 ## Phases
 
@@ -68,15 +68,17 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 </details>
 
 <details>
-<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-26) — BACKLOG</summary>
+<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-28) — BACKLOG</summary>
 
-- [ ] **Phase 20: Upstream Fixes & Storage** (2 plans) — SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05
-- [ ] **Phase 21: IMU Data Foundation** — IMU-01, IMU-02, IMU-03, IMU-04
-- [ ] **Phase 22: HRV Accuracy** (3 plans) — ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04
+- [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
+- [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
+- [~] **Phase 22: HRV Accuracy** (3/3 plans done) — ALG-HRV-01 ✓, ALG-HRV-02 ✓, ALG-HRV-03 ✓, ALG-HRV-04 manual gate pending
 - [ ] **Phase 23: Strain & Calories** — ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02
 - [ ] **Phase 24: Sleep Metrics Without Staging + Baselines** — ALG-SLP-01, ALG-SLP-02
 - [ ] **Phase 25: Recovery Score v1** — ALG-REC-01, ALG-REC-02, ALG-REC-03
 - [ ] **Phase 26: Sleep Staging** — ALG-SLP-03, ALG-SLP-04
+- [ ] **Phase 27: V24 Biometric Decode** — BIO-01, BIO-02, BIO-03, BIO-04
+- [ ] **Phase 28: Exercise Detection** — EX-01, EX-02, EX-03, EX-04
 
 </details>
 
@@ -255,11 +257,13 @@ Plans:
 | 19. pt-PT Localisation Completion | v4.0 | 1/1 | Complete | 2026-06-06 |
 | 20. Upstream Fixes & Storage | v5.0 | 2/2 | Complete   | 2026-06-06 |
 | 21. IMU Data Foundation | v5.0 | 3/3 | Complete   | 2026-06-06 |
-| 22. HRV Accuracy | v5.0 | 0/3 | Planned | — |
+| 22. HRV Accuracy | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 0/0 | Not started | — |
 | 25. Recovery Score v1 | v5.0 | 0/0 | Not started | — |
 | 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
+| 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
+| 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 
 ## Backlog
 
@@ -375,21 +379,23 @@ Plans:
 **Goal**: Overnight RMSSD uses BLE-gap-aware segmentation, ectopic beat filtering with adaptive thresholds, and tiered SWS window selection — and the output is cross-validated to within 1 ms of the Python reference.
 **Depends on**: Phase 21
 **Requirements**: ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04
+**Source**: `my-whoop/server/ingest/app/analysis/hrv.py` — `rmssd_ms()`, `clean_rr()`, `nightly_hrv()`
 **Success Criteria** (what must be TRUE):
 
   1. `rmssd_segment_aware` treats any gap > 3 s between consecutive RR timestamps as a segment boundary; successive differences that cross a boundary are excluded — RMSSD is not inflated by BLE dropouts, verified by unit test with an injected 4 s gap
-  2. Lipponen-Tarvainen ectopic beat filter is the primary filter: local median reference ± adaptive threshold rejects ectopic beats before the 300–2000 ms range gate; `ectopic_filter_removal_fraction` is exposed in `HrvOutput` and observable in the Recovery V2 dashboard
-  3. `HrvInput` accepts an optional `stage_segments` field; tiered SWS window selection uses (1) last deep-sleep episode >= 5 min, (2) weighted mean of all deep episodes, (3) full-night fallback — unit tests cover all three tiers
-  4. Rust RMSSD output delta vs `my-whoop` Python reference is <= 1 ms on >= 5 real overnight sessions before the phase is closed — cross-validation result documented in phase notes
-  5. `cargo test -p goose-core` green; tests cover: gap boundary rejection, ectopic filter removal fraction, all three SWS window tiers
+  2. Lipponen-Tarvainen ectopic beat filter is reimplemented in Rust (no FFI): local median of previous N intervals ± Malik 20% threshold (`|RR_i − median| > 0.2 × median` → reject); 300–2000 ms range gate applied first; `ectopic_filter_removal_fraction` exposed in `HrvOutput` and observable in Recovery V2 dashboard
+  3. `HrvInput` accepts an optional `stage_segments` field; tiered SWS window selection uses (1) last deep-sleep episode >= 5 min, (2) weighted mean of all deep episodes, (3) full-night fallback — `window_tier_used` ∈ {`last_sws`, `weighted_sws`, `full_night`} present in `HrvOutput`; unit tests cover all three tiers
+  4. Frequency-domain features (`hf_power`, `lf_power`, `lf_hf_ratio`) computed via Welch periodogram (HF band 0.15–0.4 Hz, LF band 0.04–0.15 Hz) from clean RR series; used as inputs to sleep staging classifier (Phase 26); exposed as optional fields in `HrvOutput`
+  5. Rust RMSSD output delta vs `my-whoop` Python reference is <= 1 ms on >= 5 real overnight sessions before the phase is closed — cross-validation result documented in phase notes
+  6. `cargo test -p goose-core` green; tests cover: gap boundary rejection, Malik threshold (exact 20% boundary cases), ectopic filter removal fraction, all three SWS window tiers, HF/LF band boundaries
 
 **Plans**: 3 plans
 
 Plans:
 
-- [ ] 22-01-PLAN.md — Wave 1: BLE gap-aware RR segmentation — rr_timestamps_s on HrvInput + segment-aware RMSSD (ALG-HRV-01)
-- [ ] 22-02-PLAN.md — Wave 2: Lipponen-Tarvainen ectopic filter per segment + ectopic_filter_removal_fraction in HrvOutput (ALG-HRV-02)
-- [ ] 22-03-PLAN.md — Wave 3: Tiered SWS window selection + window_tier_used in HrvOutput + ALG-HRV-04 cross-validation doc comment (ALG-HRV-03, ALG-HRV-04)
+- [x] 22-01-PLAN.md — Wave 1: BLE gap-aware RR segmentation — rr_timestamps_s on HrvInput + segment-aware RMSSD (ALG-HRV-01)
+- [x] 22-02-PLAN.md — Wave 2: Lipponen-Tarvainen ectopic filter per segment (Rust reimplementation, Malik 20% rule) + ectopic_filter_removal_fraction in HrvOutput (ALG-HRV-02)
+- [x] 22-03-PLAN.md — Wave 3: Tiered SWS window selection + window_tier_used in HrvOutput + Welch HF/LF/LFHF frequency features + ALG-HRV-04 cross-validation doc comment (ALG-HRV-03, ALG-HRV-04)
 
 ---
 
@@ -398,14 +404,17 @@ Plans:
 **Goal**: Strain uses Tanaka HRmax and Banister TRIMP with sex-specific constants; a personal denominator calibration helper is available; calorie computation uses Mifflin-St Jeor RMR and Ghidra-confirmed Keytel/Harris-Benedict coefficients.
 **Depends on**: Phase 21
 **Requirements**: ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02
+**Source**: `my-whoop/server/ingest/app/analysis/strain.py`, `calories.py`
 **Success Criteria** (what must be TRUE):
 
-  1. `StrainInput` carries a `profile_sex` field; `tanaka_hrmax(age) = 208 - 0.7 * age` is the default HRmax formula throughout the strain pipeline; `estimate_hrmax_from_history` returns the 99.5th percentile when >= 600 samples are available — unit test confirms Tanaka differs from 220-age by >= 2 bpm for age > 40
-  2. `banister_trimp_zone_midpoint` is implemented with b=1.92 (male) / b=1.67 (female); the `banister_trimp_zone_midpoint_approximation` quality flag is present in output; a test asserts male and female TRIMP outputs differ by the expected constant ratio for the same session
-  3. `fit_strain_denominator` fits the denominator D in `21 * ln(TRIMP+1) / ln(D)` from >= 2 (TRIMP, strain_WHOOP) pairs via least-squares and is exposed as a bridge calibration method
-  4. `rmr_mifflin_st_jeor(weight_kg, height_cm, age, sex)` is implemented in `energy_rollup.rs`; a quality flag is emitted when `profile_height_cm` is absent; the existing `weight_kg * 22.0` proxy is replaced
-  5. Keytel and Harris-Benedict coefficients in `energy_rollup.rs` match the Ghidra-confirmed values exactly (Keytel men: -55.0969, 0.6309, 0.1988, 0.2017; women: -20.4022, 0.4472, -0.1263, 0.0740; H-B men: 88.362, 13.397, 479.9, -5.677; women: 447.593, 9.247, 309.8, -4.330), verified by test asserting exact coefficient values
-  6. `cargo test -p goose-core` green
+  1. `StrainInput` carries a `profile_sex` field; `tanaka_hrmax(age) = 208 - 0.7 * age` is the default HRmax; `estimate_hrmax_from_history` returns the 99.5th percentile when >= 600 trailing samples are available, else Tanaka, else 220-age — `hrmax_source` ∈ {`observed`, `tanaka`, `fallback`} present in output; unit test confirms Tanaka differs from 220-age by >= 2 bpm for age > 40
+  2. Karvonen `%HRR = (HR − RHR) / (HRmax − RHR) × 100`, clamped [0, 100], is the per-sample intensity input; active/resting split threshold is `%HRR >= 30` (30% HRR conventional light-activity cut-off)
+  3. Edwards 5-zone TRIMP accumulates zone weights 1–5 at HRR cut-offs [50, 60, 70, 80, 90]%; zone-time percentages (`zone_time_pct: BTreeMap<u8, f64>`) are computed and always sum to 100; exposed in `StrainOutput`
+  4. Banister TRIMP uses continuous exponential weighting `weight = k × exp(b × %HRR)` with sex-specific b: male=1.92, female=1.67; the `banister_trimp_uncalibrated` quality flag is present; a test asserts male and female TRIMP outputs differ by the expected ratio for identical HR traces
+  5. `fit_strain_denominator` fits the denominator D in `strain = 21 × ln(TRIMP+1) / ln(D)` from >= 2 (TRIMP, strain_WHOOP) pairs via least-squares and is exposed as a bridge calibration method; default D=7201 (theoretical max)
+  6. `rmr_mifflin_st_jeor(weight_kg, height_cm, age, sex)` is implemented in `energy_rollup.rs`; a quality flag is emitted when `profile_height_cm` is absent; the existing `weight_kg * 22.0` proxy is replaced; active EE (Keytel) and resting EE (Harris-Benedict) split on the 30% HRR threshold
+  7. Keytel and Harris-Benedict coefficients in `energy_rollup.rs` match the Ghidra-confirmed AARCH64 values exactly (Keytel men: -55.0969, 0.6309, 0.1988, 0.2017; women: -20.4022, 0.4472, -0.1263, 0.0740; H-B men: 88.362, 13.397, 479.9, -5.677; women: 447.593, 9.247, 309.8, -4.330), verified by test asserting exact coefficient values; Keytel EE clamped >= 0, HR capped at HRmax; convert kJ/min → kcal/s via ÷ (60 × 4.184)
+  8. `cargo test -p goose-core` green; tests cover: Karvonen %HRR boundaries, zone assignment at cut-off edges, Banister sex ratio, Keytel coefficient exact values
 
 **Plans**: TBD
 
@@ -416,12 +425,15 @@ Plans:
 **Goal**: Sleep quality metrics (HR dip, WASO, SOL, disturbance count) are computed from existing HR data and surfaced in the Sleep V2 dashboard; the EWMA baseline engine required by Recovery is implemented and idempotent.
 **Depends on**: Phase 21
 **Requirements**: ALG-SLP-01, ALG-SLP-02
+**Source**: `my-whoop/server/ingest/app/analysis/sleep.py`, `baselines.py`, `daily.py`
 **Success Criteria** (what must be TRUE):
 
-  1. `SleepScoreOutput` exposes `heart_rate_dip_pct`, `waso_minutes`, `sol_minutes`, `rem_latency_minutes`, and `disturbance_count`; all fields are populated (not null) for sessions with sufficient HR coverage (>= 50%); the Sleep V2 dashboard displays them
-  2. `baselines.rs` implements an EWMA state struct with alpha=0.1; `fold_history()` rebuilds baseline from `daily_recovery_metrics` rows; the baseline is inactive (returns null) until 7 nights of valid data are available
-  3. Concurrent write safety is enforced: the EWMA update uses `BEGIN EXCLUSIVE` transaction or an atomic SQL expression; a double-update on the same date is prevented by a `WHERE last_updated_date < ?` guard
-  4. `cargo test -p goose-core` green; tests cover: HR dip with correct nadir, WASO = 0 when no wake-after-onset, cold-start gate at exactly 7 nights, idempotent write (same date called twice produces same baseline value)
+  1. `SleepScoreOutput` exposes `heart_rate_dip_pct` (rolling 5-min min HR during in-bed window vs pre-sleep RHR), `waso_minutes` (wake-after-sleep-onset: sum of post-onset wake epochs × 30 s), `sol_minutes` (sleep-onset latency: first sustained sleep epoch), `disturbance_count` (number of distinct post-onset wake runs), and `rem_latency_minutes`; all fields populated (not null) for sessions with >= 50% HR coverage; the Sleep V2 dashboard displays them
+  2. EWMA baseline engine in `baselines.rs` implements per-metric state with **Winsorized center** (14-night half-life α ≈ 0.0483) and **EWMA-of-absolute-deviation spread** (21-night half-life); per-metric σ-floors: HRV=5 ms, RHR=2 bpm, resp=0.3 BrPM; Winsor gate clamps input to ± 3σ before folding; hard-reject gate skips nights where `|value − mean| > 5σ`
+  3. Per-metric configs in `METRIC_CFG` table: each entry carries `min_val`, `max_val`, `floor_spread`, `half_life_center_nights`, `half_life_spread_nights`; metrics keyed as `"hrv"`, `"resting_hr"`, `"resp"`; `deviation()` returns `(z_score, delta, ratio)` for a value vs baseline
+  4. Cold-start gates: MIN_NIGHTS_SEED=4 (status=`provisional`), MIN_NIGHTS_TRUST=14 (status=`trusted`), STALE_DAYS=14 (status=`stale` if last update > 14 days ago); baseline returns `None` until MIN_NIGHTS_SEED reached; `fold_history()` rebuilds baseline from a list of historical daily values
+  5. Concurrent write safety: EWMA update uses `BEGIN EXCLUSIVE` transaction; double-update on the same date is prevented by a `WHERE last_updated_date < ?` guard (idempotent)
+  6. `cargo test -p goose-core` green; tests cover: HR dip nadir (rolling 5-min window), WASO = 0 when no wake-after-onset, disturbance count, Winsor gate clamping, hard-reject at 5σ, cold-start gate at exactly 4 nights, idempotent write, stale flag after 14 days
 
 **Plans**: TBD
 **UI hint**: yes
@@ -433,32 +445,77 @@ Plans:
 **Goal**: The Recovery score is computed from a personal EWMA baseline using Z-score normalisation and logistic squash, with trust levels and colour bands visible in the dashboard.
 **Depends on**: Phase 22, Phase 24
 **Requirements**: ALG-REC-01, ALG-REC-02, ALG-REC-03
+**Source**: `my-whoop/server/ingest/app/analysis/recovery.py` — `recovery_score()`, `resting_hr()`
 **Success Criteria** (what must be TRUE):
 
-  1. `goose_recovery_v1` in `metrics.rs` implements `score = 100 / (1 + exp(-1.6 * (Z + 0.20)))`; when Z = 0 the output is approximately 58% (within 0.5%); the bridge method is callable from Swift via `HealthDataStore+Recovery.swift`
-  2. Each z-score is normalised against the personal EWMA baseline from `baselines.rs`, not a population mean; cold-start gate returns `null` for < 4 nights of valid baseline history
-  3. The `RecoveryScoreOutput` trust level transitions correctly: `calibrating` (< 4 nights) → `provisional` (4–13 nights) → `trusted` (>= 14 nights); the `RecoveryV2DashboardView` shows an "A calibrar" state when trust is `calibrating`
-  4. Colour bands are applied correctly: Verde >= 67, Amarelo 34–66, Vermelho < 34; the dashboard reflects the correct band colour for any given score
-  5. `cargo test -p goose-core` green; tests cover: Z=0 produces ~58%, cold-start null, trust level transitions, all three colour bands
+  1. `goose_recovery_v1` in `metrics.rs` computes weighted composite Z-score: `Z = 0.60·Z_HRV + 0.20·Z_RHR + 0.05·Z_resp + 0.15·Z_sleep_perf`; missing terms are dropped and weights renormalised; logistic squash: `score = 100 / (1 + exp(−1.6 × (Z + 0.20)))`; when Z = 0 the output is approximately 58% (within 0.5%); the bridge method is callable from Swift via `HealthDataStore+Recovery.swift`
+  2. Z_RHR is **inverted** (lower RHR = better recovery): `Z_RHR = (baseline_RHR − RHR_night) / σ_RHR`; Z_sleep_perf uses sleep efficiency centred at 0.85, σ=0.12: `Z_sleep_perf = (efficiency − 0.85) / 0.12`
+  3. Each z-score normalised against the personal EWMA baseline from `baselines.rs`, not a population mean; cold-start gate returns `null` for < 4 nights of valid baseline history (MIN_NIGHTS_SEED); population fallback value RECOVERY_POPULATION_MEAN=58.0 available but must be flagged with `trust=calibrating`
+  4. `RecoveryScoreOutput` trust level transitions: `calibrating` (< 4 nights) → `provisional` (4–13 nights) → `trusted` (>= 14 nights); `RecoveryV2DashboardView` shows "A calibrar" state when trust is `calibrating`
+  5. Colour bands: Verde >= 67, Amarelo 34–66, Vermelho < 34; dashboard reflects correct band colour for any given score
+  6. `cargo test -p goose-core` green; tests cover: Z=0 produces ~58%, Z_RHR inversion, weight renormalisation with one missing term, cold-start null, trust level transitions at exact night thresholds, all three colour bands
 
 **Plans**: TBD
 **UI hint**: yes
 
 ---
 
+### Phase 27: V24 Biometric Decode
+
+**Goal**: All biometric fields in V24 HISTORICAL_DATA packets (packet_k == 24) are extracted — SpO2 red/IR, skin temperature raw, respiratory raw, signal quality, skin contact — stored in dedicated SQLite tables and exposed via bridge methods, unlocking cardiorespiratory inputs for sleep staging and HRV.
+**Depends on**: Phase 21
+**Requirements**: BIO-01, BIO-02, BIO-03, BIO-04
+**Source**: `my-whoop/re/verify_v24.py` (verified byte offsets, V12/V24 layout, 762 real records); `my-whoop/server/ingest/app/analysis/units.py` (conversion formulas); `my-whoop/server/ingest/app/store.py` (table schema reference)
+**Success Criteria** (what must be TRUE):
+
+  1. `DataPacketBodySummary` for packet_k == 24 carries all V24 fields at verified byte offsets (data = pkt[3:]): `spo2_red` u16 @ data[61], `spo2_ir` u16 @ data[63], `skin_temp_raw` u16 @ data[65], `ambient` u16 @ data[67], `resp_raw` u16 @ data[73], `sig_quality` u16 @ data[75], `skin_contact` u8 @ data[48], `ppg_green` u16 @ data[26], `ppg_red_ir` u16 @ data[28], RR intervals up to 4 × u16 @ data[16+2i] (skip zeros) — verified by unit test with synthetic V24 payload matching `verify_v24.py::decode_v24()` output
+  2. All biometrics gated on `skin_contact == 1`; samples where skin_contact == 0 are stored with a `contact=false` flag but excluded from unit conversion output and downstream HRV/sleep computations
+  3. Four new SQLite tables added via schema migration: `spo2_samples(device_id TEXT, ts REAL, red INTEGER, ir INTEGER)`, `skin_temp_samples(device_id TEXT, ts REAL, raw INTEGER)`, `resp_samples(device_id TEXT, ts REAL, raw INTEGER)`, `sig_quality_samples(device_id TEXT, ts REAL, quality INTEGER, contact INTEGER)` — each with `UNIQUE(device_id, ts)` + `INSERT OR IGNORE`, index on `(device_id, ts)`
+  4. Bridge methods `insert_v24_biometric_batch` and `v24_biometric_samples_between(device_id, start_ts, end_ts)` callable from Swift and covered by `cargo test` with insert + query roundtrip
+  5. Physical unit helpers with mandatory `quality_flag: "uncalibrated"` in all outputs: SpO2 ratio-of-ratios windowed (AC = MAD-based robust spread, DC = mean, R = (AC_red/DC_red)/(AC_ir/DC_ir), SpO2 = 110 − 25·R, clamp [70, 100], defaults a=110 b=25 TI SLAA655); `skin_temp_celsius` linear slope (default slope un-calibrated, reference raw≈930 → 33°C); `resp_rate_bpm` Welch spectral (0.1–0.5 Hz band, 1 Hz input, no calibration needed)
+  6. Plausibility gates reject samples before storage: SpO2 [70, 100]%, skin_temp_celsius [25, 40]°C, resp_raw within device ADC bounds [0, 65535]; gate failures logged as warnings, not hard errors
+  7. `cargo test -p goose-core` green; tests cover: all field offsets against synthetic payload, skin_contact gate, insert+query roundtrip per table, SpO2 ratio-of-ratios at known R values, uncalibrated flag always present, plausibility gate rejection
+
+**Plans**: TBD
+
+---
+
+### Phase 28: Exercise Detection
+
+**Goal**: Workout sessions are detected retroactively from HR + gravity data, Karvonen zones are computed per bout, and calories are accumulated per session — exposing `exercise_sessions` rows with strain, zone breakdown, and calorie estimates.
+**Depends on**: Phase 21, Phase 23
+**Requirements**: EX-01, EX-02, EX-03, EX-04
+**Source**: `my-whoop/server/ingest/app/analysis/exercise.py` — `detect_exercise_sessions()`, `ExerciseSession`
+**Success Criteria** (what must be TRUE):
+
+  1. `detect_exercise_sessions(hr_samples, gravity_samples, profile)` detects sustained windows where HR > (RHR + 30 bpm margin) AND rolling-mean gravity activity magnitude > motion threshold (0.01 g/sample), with nearest-neighbour temporal alignment between HR and gravity streams (± 5 s tolerance); sessions shorter than MIN_EXERCISE_MIN=10 min are rejected
+  2. Adjacent sessions separated by a gap < MERGE_GAP_S=60 s are merged into a single session; the merged session recomputes all metrics; bouts where Edwards zone 2–5 (≥ 60% HRR) fraction < MIN_INTENSITY_Z2PLUS=50% are discarded as non-exercise (guard: skip if HRmax unknown)
+  3. Per-session metrics in `ExerciseSession`: `avg_hr`, `peak_hr`, `duration_s`, `avg_hrr_pct`, `hrmax`, `hrmax_source` ∈ {`observed`, `tanaka`, `fallback`}, `zone_time_pct: BTreeMap<u8, f64>` (Edwards 5-zone percentages summing to 100), `strain` (from Phase 23 Banister TRIMP + logarithmic scale), `calories_kcal` (active Keytel + resting Harris-Benedict split on 30% HRR threshold)
+  4. Detected sessions are persisted in an `exercise_sessions` SQLite table (migration from Phase 23): `(device_id TEXT, start_ts REAL, end_ts REAL, duration_s REAL, avg_hr REAL, peak_hr REAL, strain REAL, calories_kcal REAL, zone_time_pct_json TEXT, hrmax_source TEXT)`; bridge methods `insert_exercise_session` and `exercise_sessions_between` covered by `cargo test`
+  5. Resting HR fallback: if no sleep session available, use 10th percentile of the day's HR values as RHR proxy; `rhr_source` ∈ {`sleep_session`, `daily_p10`, `profile_override`} present in session output
+  6. `cargo test -p goose-core` green; tests cover: HR + gravity alignment (±5 s), merge gap bridging, intensity qualification gate, zone percentages sum to 100, calories positive and physically plausible (> 0 kcal for 30 min at 70% HRR)
+
+**Plans**: TBD
+
+---
+
 ### Phase 26: Sleep Staging
 
 **Goal**: A 4-class (wake/light/deep/REM) sleep hypnogram is derived from IMU gravity data and cardiorespiratory features, with a mandatory uncalibrated quality flag and validation against >= 5 real overnight sessions.
-**Depends on**: Phase 21
+**Depends on**: Phase 21, Phase 22
 **Requirements**: ALG-SLP-03, ALG-SLP-04
+**Source**: `my-whoop/server/ingest/app/analysis/sleep.py` — `detect_sleep()`; `sleep_features.py` — `classify_epochs()`
 **Success Criteria** (what must be TRUE):
 
-  1. `sleep_staging.rs` implements the Cole-Kripke actigraphy classifier on 1-minute aggregated epochs from `full_samples`; the `staging_method_actigraphy_uncalibrated` quality flag is mandatory and always present in output — shipping without it is a blocker
-  2. The 4-class classifier (wake/light/deep/REM) uses cardiorespiratory features per 30 s epoch; physiological reimposition is applied (minimum 5-min segment merge, no REM in first 15 min, forbidden-transition suppression)
-  3. AASM metrics are computed from the hypnogram: TST, sleep efficiency, SOL, WASO, REM latency, and stage_minutes per class
-  4. Epoch-level agreement with WHOOP official stages is >= 70% on >= 5 overnight sessions before the phase is closed — validation result documented in phase notes
-  5. `cargo test -p goose-core` green; tests cover: Cole-Kripke activity computation, stillness threshold, short-run merge, physiological reimposition rules
+  1. Cole-Kripke actigraphy spine on **30 s epochs** (not 1 min) from `full_samples`: activity counts = sum of |Δg| per epoch (gravity change-magnitude, threshold 0.01 g/sample); 7-epoch sliding window with te Lindert weights `[activity/100, clip 300]`; threshold classifies each epoch as `sleep` or `wake`; `staging_method_actigraphy_uncalibrated` quality flag is mandatory — shipping without it is a blocker
+  2. Per-epoch cardiorespiratory feature vector: HR mean, HR low percentile (p25), HR high percentile (p70), RMSSD (from Phase 22 segment-aware), HF power (0.15–0.4 Hz from Phase 22 Welch), LF/HF ratio, respiratory rate variability (std of resp_raw window), clock proxy (fractional position in the night 0–1); features normalised to [0, 1] per-session
+  3. Rule-based 4-class classifier (transparent seam for future ML): wake epoch → stay `wake`; sleep epoch with RMSSD > HRV_HIGH_THR (p70 personal) AND HF > HF_HIGH_THR AND low motion → `deep`; sleep epoch with irregular resp variability AND late clock proxy (> 0.4) → `rem`; remaining sleep epochs → `light`
+  4. Physiological reimposition after per-epoch classification: (a) no REM in first 15 min of sleep, (b) deep sleep concentrated in first 1/3 of sleep period, (c) minimum 5-min segment merge (≤ 10 epochs same class → absorbed into neighbour), (d) forbidden transitions suppressed (deep→REM direct: insert light bridge epoch)
+  5. AASM metrics computed from the final hypnogram: TST, sleep efficiency (TST/TIB), SOL, WASO, REM latency, stage_minutes per class; surfaced in Sleep V2 dashboard
+  6. Epoch-level agreement with WHOOP official stages >= 70% on >= 5 overnight sessions before the phase is closed — known literature ceiling for EEG-free methods is 65–73%; validation result documented in phase notes
+  7. `cargo test -p goose-core` green; tests cover: Cole-Kripke activity count computation, 7-epoch window weights, stillness threshold, all four reimposition rules, AASM metric derivation from synthetic hypnogram
 
 **Plans**: TBD
+**UI hint**: yes
 
 ---
