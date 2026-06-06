@@ -502,6 +502,15 @@ fn parse_data_packet_payload(payload: &[u8]) -> ParsedPayload {
         parse_data_packet_body_summary(payload, packet_k, hr_marker_offset, hr_present_marker);
     warnings.extend(body_warnings);
 
+    // PERF-05: omit body_hex for high-volume K10/K21 raw-motion frames;
+    // the structured body_summary already carries all useful motion data,
+    // and the large hex dump roughly doubles the stored JSON for these types.
+    // body_hex remains populated for all other packet_k values.
+    let body_hex = if matches!(packet_k, Some(10) | Some(21)) {
+        String::new()
+    } else {
+        hex::encode(&payload[13.min(payload.len())..])
+    };
     ParsedPayload::DataPacket {
         packet_k,
         domain: packet_k.and_then(data_packet_domain).map(str::to_string),
@@ -512,7 +521,7 @@ fn parse_data_packet_payload(payload: &[u8]) -> ParsedPayload {
         hr_marker_offset,
         hr_present_marker,
         body_offset: 13.min(payload.len()),
-        body_hex: hex::encode(&payload[13.min(payload.len())..]),
+        body_hex,
         body_summary,
         warnings,
     }
