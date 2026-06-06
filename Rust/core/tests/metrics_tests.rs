@@ -6,11 +6,11 @@ use goose_core::{
         GOOSE_SLEEP_V1_ID, GOOSE_STRAIN_V0_ID, GOOSE_STRESS_V0_ID, HrvInput, RecoveryInput,
         SleepInput, SleepModelStatus, SleepModelStatusInput, SleepNightHistoryInput,
         SleepStageSegment, SleepV1Input, SleepV1Output, StrainInput, StressInput,
-        algorithm_run_record, built_in_algorithm_definitions,
+        algorithm_run_record, banister_trimp_zone_midpoint, built_in_algorithm_definitions,
         built_in_default_algorithm_preferences, estimate_hrmax_from_history,
-        evaluate_sleep_model_status, goose_hrv_v0, goose_recovery_v0, goose_sleep_v0,
-        goose_sleep_v1, goose_strain_v0, goose_stress_v0, hrv_run_record,
-        resolve_effective_hrmax, sleep_baseline_from_history, tanaka_hrmax,
+        evaluate_sleep_model_status, fit_strain_denominator, goose_hrv_v0, goose_recovery_v0,
+        goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_strain_v1, goose_stress_v0,
+        hrv_run_record, resolve_effective_hrmax, sleep_baseline_from_history, tanaka_hrmax,
     },
     store::GooseStore,
 };
@@ -2920,4 +2920,179 @@ fn resolve_effective_hrmax_source_is_one_of_known_labels() {
     // fallback path
     let (_, source) = resolve_effective_hrmax(175.0, None, &history_small);
     assert!(valid_sources.contains(&source.as_str()), "got: {source}");
+}
+
+// ── ALG-STR-02: banister_trimp_zone_midpoint tests ─────────────────────────
+
+#[test]
+fn banister_trimp_male_greater_than_female_for_identical_zones() {
+    // Male b=1.92 > female b=1.67 → male TRIMP larger for identical inputs
+    let zones = vec![10.0, 20.0, 15.0, 10.0, 5.0];
+    let resting_hr = 55.0;
+    let hrmax = 185.0;
+    let male = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("male"));
+    let female = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("female"));
+    assert!(
+        male > female,
+        "expected male TRIMP ({male}) > female TRIMP ({female})"
+    );
+}
+
+#[test]
+fn banister_trimp_unknown_sex_lies_between_male_and_female() {
+    // unknown/None sex uses b=1.795 → result strictly between male and female
+    let zones = vec![10.0, 20.0, 15.0, 10.0, 5.0];
+    let resting_hr = 55.0;
+    let hrmax = 185.0;
+    let male = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("male"));
+    let female = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("female"));
+    let unknown_none = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, None);
+    let unknown_str = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("other"));
+    assert!(
+        unknown_none > female && unknown_none < male,
+        "expected female ({female}) < unknown_none ({unknown_none}) < male ({male})"
+    );
+    assert_eq!(
+        unknown_none, unknown_str,
+        "None and unknown string must use same b constant"
+    );
+}
+
+#[test]
+fn banister_trimp_zone_midpoints_and_hrr_fraction_formula() {
+    // Verify formula manually for a single zone scenario:
+    // zone_mid_hr = 0.55 * hrmax; x = (zone_mid - resting) / (hrmax - resting)
+    // contribution = minutes * x * 0.64 * exp(b * x)
+    let hrmax = 200.0;
+    let resting_hr = 60.0;
+    let b_male = 1.92_f64;
+    // All 60 minutes in zone 1, zones 2-5 = 0
+    let zones = vec![60.0, 0.0, 0.0, 0.0, 0.0];
+    let zone1_mid = 0.55_f64 * hrmax;
+    let x = ((zone1_mid - resting_hr) / (hrmax - resting_hr)).clamp(0.0_f64, 1.0_f64);
+    let expected = 60.0_f64 * x * 0.64_f64 * (b_male * x).exp();
+    let actual = banister_trimp_zone_midpoint(&zones, resting_hr, hrmax, Some("male"));
+    assert!(
+        (actual - expected).abs() < 1e-9,
+        "expected {expected}, got {actual}"
+    );
+}
+
+// ── ALG-STR-03: fit_strain_denominator tests ───────────────────────────────
+
+#[test]
+fn fit_strain_denominator_recovers_known_d() {
+    // Generate pairs from a known D=7201 using strain = 21 * ln(TRIMP+1) / ln(D)
+    let d_true = 7201.0_f64;
+    let trimp_values = [50.0_f64, 100.0, 200.0, 400.0];
+    let pairs: Vec<(f64, f64)> = trimp_values
+        .iter()
+        .map(|&t| {
+            let strain = 21.0 * (t + 1.0).ln() / d_true.ln();
+            (t, strain)
+        })
+        .collect();
+    let d_fit = fit_strain_denominator(&pairs).expect("should return Some for 4 pairs");
+    assert!(
+        (d_fit - d_true).abs() < 1.0,
+        "expected D near {d_true}, got {d_fit}"
+    );
+}
+
+#[test]
+fn fit_strain_denominator_returns_none_for_fewer_than_two_pairs() {
+    assert!(fit_strain_denominator(&[]).is_none());
+    assert!(fit_strain_denominator(&[(100.0, 10.0)]).is_none());
+}
+
+#[test]
+fn fit_strain_denominator_two_pairs_sufficient() {
+    let d_true = 5000.0_f64;
+    let pairs: Vec<(f64, f64)> = [80.0_f64, 200.0]
+        .iter()
+        .map(|&t| (t, 21.0 * (t + 1.0).ln() / d_true.ln()))
+        .collect();
+    let d_fit = fit_strain_denominator(&pairs).expect("should return Some for 2 pairs");
+    assert!(
+        (d_fit - d_true).abs() < 1.0,
+        "expected D near {d_true}, got {d_fit}"
+    );
+}
+
+// ── ALG-STR-02/03: goose_strain_v1 tests ──────────────────────────────────
+
+#[test]
+fn goose_strain_v1_contains_banister_approximation_quality_flag() {
+    let input = StrainInput {
+        start_time: "2024-01-01T06:00:00Z".to_string(),
+        end_time: "2024-01-01T07:00:00Z".to_string(),
+        duration_minutes: 60.0,
+        resting_hr_bpm: 55.0,
+        average_hr_bpm: 140.0,
+        max_hr_bpm: 175.0,
+        hr_zone_minutes: vec![10.0, 15.0, 20.0, 10.0, 5.0],
+        input_ids: vec![],
+        profile_sex: Some("male".to_string()),
+        profile_age: Some(35.0),
+    };
+    let result = goose_strain_v1(&input);
+    assert!(
+        result.quality_flags.contains(&"banister_trimp_zone_midpoint_approximation".to_string()),
+        "quality_flags must always contain banister_trimp_zone_midpoint_approximation, got: {:?}",
+        result.quality_flags
+    );
+}
+
+#[test]
+fn goose_strain_v1_output_contains_both_edwards_and_banister_scores() {
+    let input = StrainInput {
+        start_time: "2024-01-01T06:00:00Z".to_string(),
+        end_time: "2024-01-01T07:00:00Z".to_string(),
+        duration_minutes: 60.0,
+        resting_hr_bpm: 55.0,
+        average_hr_bpm: 140.0,
+        max_hr_bpm: 175.0,
+        hr_zone_minutes: vec![10.0, 15.0, 20.0, 10.0, 5.0],
+        input_ids: vec![],
+        profile_sex: Some("female".to_string()),
+        profile_age: None,
+    };
+    let result = goose_strain_v1(&input);
+    let output = result.output.expect("should produce output for valid input");
+    let component_names: Vec<&str> = output.components.iter().map(|c| c.name.as_str()).collect();
+    assert!(
+        component_names.contains(&"edwards_zone_load"),
+        "output must contain edwards_zone_load component, got: {component_names:?}"
+    );
+    assert!(
+        component_names.contains(&"banister_trimp"),
+        "output must contain banister_trimp component, got: {component_names:?}"
+    );
+}
+
+#[test]
+fn goose_strain_v1_uses_resolve_effective_hrmax_and_records_hrmax_source() {
+    let input = StrainInput {
+        start_time: "2024-01-01T06:00:00Z".to_string(),
+        end_time: "2024-01-01T07:00:00Z".to_string(),
+        duration_minutes: 60.0,
+        resting_hr_bpm: 55.0,
+        average_hr_bpm: 140.0,
+        max_hr_bpm: 175.0,
+        hr_zone_minutes: vec![10.0, 15.0, 20.0, 10.0, 5.0],
+        input_ids: vec![],
+        profile_sex: None,
+        profile_age: Some(40.0),
+    };
+    let result = goose_strain_v1(&input);
+    let provenance = &result.provenance;
+    assert!(
+        provenance.get("hrmax_source").is_some(),
+        "provenance must contain hrmax_source, got: {provenance:?}"
+    );
+    // With age=40 and no history, source should be "tanaka"
+    assert_eq!(
+        provenance["hrmax_source"].as_str().unwrap_or(""),
+        "tanaka"
+    );
 }
