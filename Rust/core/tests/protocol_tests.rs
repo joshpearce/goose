@@ -275,6 +275,7 @@ fn parses_r17_optical_body_offsets_and_signed_sample_stats() {
                         max: Some(1000),
                         sum: 200,
                         preview: vec![1000, -1000, 200],
+                        full_samples: Some(vec![1000, -1000, 200]),
                     }),
                     warnings: Vec::new(),
                 })
@@ -359,6 +360,10 @@ fn parses_k10_raw_motion_offsets_without_claiming_units() {
             assert_eq!(axes[5].name, "gyroscope_z");
             assert_eq!(axes[5].min, Some(-10));
             assert_eq!(axes[5].max, Some(20));
+            // full_samples preservation: all 100 K10 samples retained
+            assert_eq!(axes[0].full_samples.as_ref().unwrap().len(), 100);
+            assert_eq!(axes[0].full_samples.as_ref().unwrap()[0..3], [1, -2, 3]);
+            assert_eq!(axes[0].preview.len(), 8);
         }
         other => panic!("expected data packet, got {other:?}"),
     }
@@ -467,6 +472,8 @@ fn truncated_long_motion_frame_keeps_partial_samples_with_quality_warnings() {
             assert_eq!(axes[0].expected_count, 100);
             assert_eq!(axes[0].parsed_count, 76);
             assert_eq!(axes[0].preview[0..3], [-1, 2, -3]);
+            // full_samples length tracks parsed_count under truncation
+            assert_eq!(axes[0].full_samples.as_ref().unwrap().len(), 76);
         }
         other => panic!("expected data packet, got {other:?}"),
     }
