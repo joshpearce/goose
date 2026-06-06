@@ -34,9 +34,9 @@ Complete pt-PT translation of 119 non-trivial strings covering Coach Multi-Provi
 
 | Task | Name | Commit | Files |
 |------|------|--------|-------|
-| 1 | Add pt-PT translations for Coach/Provider config strings (GROUP A) | 6cd6eeb | GooseSwift/Localizable.xcstrings |
-| 2 | Add pt-PT translations for Health/Sleep/Cardio/UI strings (GROUPs B-E) | b23a855 | GooseSwift/Localizable.xcstrings |
-| 3 | Verification gate — Python scan + xcodebuild (no new commit needed) | b23a855 | — |
+| 1 | Add pt-PT translations for Coach/Provider config strings (GROUP A) | ae7d3c1 | GooseSwift/Localizable.xcstrings |
+| 2 | Add pt-PT translations for Health/Sleep/Cardio/UI strings (GROUPs B-E) | 9146b53 | GooseSwift/Localizable.xcstrings |
+| 3 | Verification gate — Python scan + xcodebuild (no new commit needed) | 9146b53 | — |
 
 ## Coverage After This Plan
 
@@ -121,7 +121,7 @@ Files exist:
 - GooseSwift/Localizable.xcstrings: FOUND (754 entries, 716 with pt-PT)
 
 Commits exist:
-- 6cd6eeb: FOUND (GROUP A — 32 Coach/provider strings)
-- b23a855: FOUND (GROUPs B-E — 87 Health/UI/format strings)
+- ae7d3c1: FOUND (GROUP A — 32 Coach/provider strings)
+- 9146b53: FOUND (GROUPs B-E — 87 Health/UI/format strings)
 
 ## Self-Check: PASSED
