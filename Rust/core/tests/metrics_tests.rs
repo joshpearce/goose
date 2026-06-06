@@ -2529,6 +2529,8 @@ fn goose_strain_v0_computes_hand_derived_zone_and_hr_reserve_score() {
         max_hr_bpm: 180.0,
         hr_zone_minutes: vec![10.0, 20.0, 30.0, 0.0, 0.0],
         input_ids: vec!["hand-derived.strain".to_string()],
+        profile_sex: None,
+        profile_age: None,
     });
 
     let output = result.output.unwrap();
@@ -2549,6 +2551,8 @@ fn goose_strain_v0_is_monotonic_when_minutes_move_to_higher_zone() {
         max_hr_bpm: 180.0,
         hr_zone_minutes: vec![60.0, 0.0, 0.0, 0.0, 0.0],
         input_ids: Vec::new(),
+        profile_sex: None,
+        profile_age: None,
     })
     .output
     .unwrap();
@@ -2561,6 +2565,8 @@ fn goose_strain_v0_is_monotonic_when_minutes_move_to_higher_zone() {
         max_hr_bpm: 180.0,
         hr_zone_minutes: vec![0.0, 0.0, 0.0, 0.0, 60.0],
         input_ids: Vec::new(),
+        profile_sex: None,
+        profile_age: None,
     })
     .output
     .unwrap();
@@ -2811,8 +2817,10 @@ fn tanaka_hrmax_returns_exact_value_for_age_50() {
 }
 
 #[test]
-fn tanaka_hrmax_differs_from_220_minus_age_by_at_least_2_for_ages_41_to_80() {
-    for age in 41u32..=80 {
+fn tanaka_hrmax_differs_from_220_minus_age_by_at_least_2_for_ages_47_to_80() {
+    // tanaka - classic = (208 - 0.7*age) - (220 - age) = -12 + 0.3*age
+    // >= 2 when age >= 46.67, i.e. integer age >= 47
+    for age in 47u32..=80 {
         let age_f = age as f64;
         let tanaka = tanaka_hrmax(age_f);
         let classic = 220.0 - age_f;

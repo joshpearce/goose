@@ -923,6 +923,8 @@ fn check_strain_bounds(group: &mut GroupBuilder, rng: &mut DeterministicRng, cas
         max_hr_bpm: max_hr,
         hr_zone_minutes: zones,
         input_ids: Vec::new(),
+        profile_sex: None,
+        profile_age: None,
     });
     let Some(output) = result.output else {
         group.fail(
@@ -1080,6 +1082,8 @@ fn base_strain_input() -> StrainInput {
         max_hr_bpm: 180.0,
         hr_zone_minutes: vec![60.0, 0.0, 0.0, 0.0, 0.0],
         input_ids: Vec::new(),
+        profile_sex: None,
+        profile_age: None,
     }
 }
 

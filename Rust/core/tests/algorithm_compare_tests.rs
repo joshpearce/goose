@@ -363,6 +363,8 @@ fn strain_comparison_reports_edwards_zone_load_delta() {
         max_hr_bpm: 180.0,
         hr_zone_minutes: vec![10.0, 20.0, 30.0, 0.0, 0.0],
         input_ids: vec!["hand-derived.strain".to_string()],
+        profile_sex: None,
+        profile_age: None,
     })
     .unwrap();
 
