@@ -4,7 +4,7 @@ milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
 stopped_at: Phase 20 Plan 02 complete — PERF-05 body_hex exclusion for K10/K21
-last_updated: "2026-06-06T21:25:01.699Z"
+last_updated: "2026-06-06T21:47:34.751Z"
 last_activity: 2026-06-06 -- Phase 20 Plan 01 completed (SYNC-01..05)
 progress:
   total_phases: 7
