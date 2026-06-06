@@ -247,10 +247,16 @@ fn parses_r17_optical_body_offsets_and_signed_sample_stats() {
 
     match parsed.parsed_payload.unwrap() {
         ParsedPayload::DataPacket {
+            body_hex,
             body_summary,
             warnings,
             ..
         } => {
+            // WR-01: body_hex must be populated for R17 — PERF-05 only excludes K10/K21.
+            assert!(
+                !body_hex.is_empty(),
+                "body_hex must be non-empty for R17 (PERF-05 only excludes K10 and K21)"
+            );
             assert!(warnings.is_empty());
             assert_eq!(
                 body_summary,

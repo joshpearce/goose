@@ -2834,6 +2834,7 @@ fn compact_parsed_frame_summary(parsed: &ParsedFrame) -> serde_json::Value {
             packet_k,
             domain,
             body_hex,
+            body_offset,
             body_summary,
             ..
         }) => {
@@ -2847,6 +2848,13 @@ fn compact_parsed_frame_summary(parsed: &ParsedFrame) -> serde_json::Value {
                 _ => None,
             };
             let movement = compact_k10_movement_summary(body_summary.as_ref());
+            // CR-01 fix: when body_hex is suppressed (PERF-05 K10/K21), derive the actual
+            // byte count from declared_len rather than from the empty string.
+            let body_byte_count = if body_hex.is_empty() {
+                parsed.declared_len.saturating_sub(*body_offset)
+            } else {
+                body_hex.len() / 2
+            };
             json!({
                 "packet_type": parsed.packet_type,
                 "packet_type_name": packet_type_name,
@@ -2856,7 +2864,7 @@ fn compact_parsed_frame_summary(parsed: &ParsedFrame) -> serde_json::Value {
                 "packet_k": packet_k,
                 "domain": domain,
                 "body_kind": body_kind,
-                "body_byte_count": body_hex.len() / 2,
+                "body_byte_count": body_byte_count,
                 "heart_rate": heart_rate,
                 "movement": movement,
                 "summary": format!("packet={packet_name}({packet}) seq={sequence} data.k={packet_k_text} domain={domain_text} body={body_kind} warnings={warning_count}"),
