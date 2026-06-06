@@ -21,6 +21,7 @@ fn goose_hrv_v0_computes_hand_derived_time_domain_metrics() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["hand-derived".to_string()],
+        rr_timestamps_s: None,
     });
 
     let output = result.output.unwrap();
@@ -46,6 +47,7 @@ fn goose_hrv_v0_pnn50_uses_strictly_greater_than_50_ms() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 850.0, 901.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     });
 
     let output = result.output.unwrap();
@@ -59,6 +61,7 @@ fn goose_hrv_v0_drops_nonphysiological_intervals_and_flags_quality() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 100.0, 810.0, 2500.0, 790.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     });
 
     let output = result.output.unwrap();
@@ -80,6 +83,7 @@ fn goose_hrv_v0_reports_insufficient_data_without_output() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     });
 
     assert!(result.output.is_none());
@@ -108,6 +112,7 @@ fn hrv_definition_and_run_persist_to_sqlite() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["fixture.synthetic".to_string()],
+        rr_timestamps_s: None,
     });
     let record = hrv_run_record("hrv-run-1", &result).unwrap();
     assert!(store.insert_algorithm_run(&record).unwrap());
@@ -146,6 +151,75 @@ fn hrv_definition_and_run_persist_to_sqlite() {
             .len(),
         1
     );
+}
+
+#[test]
+fn goose_hrv_v0_excludes_cross_gap_differences() {
+    // Intervals: [800, 810, 790, 805, 795] ms
+    // Timestamps: [0.0, 0.8, 1.6, 6.0, 6.8] s — 4.4 s gap before index 3 (> 3.0 s threshold)
+    // Segments after gap split: [[800, 810, 790], [805, 795]]
+    // Successive squared diffs within seg 1: (810-800)^2=100, (790-810)^2=400
+    // Successive squared diffs within seg 2: (795-805)^2=100
+    // pair_count=3, sum_sq=600, RMSSD=sqrt(600/3)=sqrt(200)
+    let intervals = vec![800.0, 810.0, 790.0, 805.0, 795.0];
+    let timestamps = vec![0.0, 0.8, 1.6, 6.0, 6.8];
+
+    let result_with_timestamps = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:01:00Z".to_string(),
+        rr_intervals_ms: intervals.clone(),
+        input_ids: Vec::new(),
+        rr_timestamps_s: Some(timestamps),
+    });
+    let output = result_with_timestamps.output.unwrap();
+    assert_close(output.rmssd_ms, 200.0_f64.sqrt());
+    assert!(
+        result_with_timestamps
+            .quality_flags
+            .contains(&"rr_segment_gap_detected".to_string()),
+        "expected rr_segment_gap_detected quality flag"
+    );
+
+    // Without timestamps (legacy path): cross-gap pair (805-790)^2=225 is included.
+    // pairs: (810-800)^2=100, (790-810)^2=400, (805-790)^2=225, (795-805)^2=100 → sum=825, n=4
+    // RMSSD_legacy = sqrt(825/4) = sqrt(206.25) > sqrt(200)
+    let result_no_timestamps = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:01:00Z".to_string(),
+        rr_intervals_ms: intervals,
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+    });
+    let output_legacy = result_no_timestamps.output.unwrap();
+    assert!(
+        output_legacy.rmssd_ms > output.rmssd_ms,
+        "legacy RMSSD ({}) should be strictly greater than gap-aware RMSSD ({})",
+        output_legacy.rmssd_ms,
+        output.rmssd_ms
+    );
+    assert!(
+        !result_no_timestamps
+            .quality_flags
+            .contains(&"rr_segment_gap_detected".to_string()),
+        "rr_segment_gap_detected must not appear when timestamps are None"
+    );
+}
+
+#[test]
+fn goose_hrv_v0_timestamps_none_matches_legacy() {
+    // Verify that rr_timestamps_s: None produces the same RMSSD as the
+    // original single-segment computation (bit-for-bit parity with pre-ALG-HRV-01 code).
+    // intervals: [800, 810, 790, 800] — hand-derived single-segment value sqrt(200)
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:01:00Z".to_string(),
+        rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+    });
+    let output = result.output.unwrap();
+    // (810-800)^2=100, (790-810)^2=400, (800-790)^2=100 → sum=600, n=3 → sqrt(200)
+    assert_close(output.rmssd_ms, 200.0_f64.sqrt());
 }
 
 #[test]

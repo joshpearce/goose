@@ -19,6 +19,7 @@ fn reference_hrv_time_domain_matches_hand_derived_values() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["hand-derived".to_string()],
+        rr_timestamps_s: None,
     });
 
     let output = result.output.unwrap();
@@ -39,6 +40,7 @@ fn reference_hrv_time_domain_flags_invalid_intervals() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, f64::NAN, 810.0, 2501.0, 790.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     });
 
     let output = result.output.unwrap();
@@ -58,6 +60,7 @@ fn reference_hrv_time_domain_reports_insufficient_data_without_output() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![100.0, 800.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     });
 
     assert!(result.output.is_none());
@@ -75,6 +78,7 @@ fn goose_hrv_v0_matches_internal_reference_for_shared_policy() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: Vec::new(),
+        rr_timestamps_s: None,
     };
 
     let goose = goose_hrv_v0(&input).output.unwrap();
@@ -245,6 +249,7 @@ fn reference_definition_and_run_persist_to_sqlite() {
         end_time: "2026-05-27T00:01:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["fixture.synthetic".to_string()],
+        rr_timestamps_s: None,
     });
     let hrv_record = hrv_reference_run_record("reference-hrv-run-1", &hrv_result).unwrap();
     assert!(store.insert_algorithm_run(&hrv_record).unwrap());

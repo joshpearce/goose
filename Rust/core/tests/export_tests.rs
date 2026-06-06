@@ -391,6 +391,7 @@ fn exports_sqlite_timeframe_to_jsonl_csv_and_sqlite_bundle() {
         end_time: "2026-05-27T00:20:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["synthetic.goose.v5.get_hello_frame".to_string()],
+        rr_timestamps_s: None,
     });
     let hrv_record = hrv_run_record("hrv-run-1", &hrv_result).unwrap();
     store.insert_algorithm_run(&hrv_record).unwrap();
@@ -1111,6 +1112,7 @@ fn raw_export_can_select_metric_outputs_only() {
         end_time: "2026-05-27T00:20:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["metric-output-test".to_string()],
+        rr_timestamps_s: None,
     });
     let hrv_record = hrv_run_record("metric-output-run-1", &hrv_result).unwrap();
     store.insert_algorithm_run(&hrv_record).unwrap();
@@ -2752,6 +2754,7 @@ fn raw_export_filters_algorithm_outputs_and_labels() {
         end_time: "2026-05-27T00:20:00Z".to_string(),
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["metric-filter-test".to_string()],
+        rr_timestamps_s: None,
     });
     let hrv_record = hrv_run_record("filter-hrv-run", &hrv_result).unwrap();
     store.insert_algorithm_run(&hrv_record).unwrap();
