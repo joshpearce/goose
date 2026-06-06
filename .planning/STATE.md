@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
-stopped_at: Phase 20 Plan 02 complete — PERF-05 body_hex exclusion for K10/K21
-last_updated: "2026-06-06T21:47:34.751Z"
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-06-06T21:56:53.461Z"
 last_activity: 2026-06-06 -- Phase 20 Plan 01 completed (SYNC-01..05)
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 14
 ---
 
@@ -65,6 +65,7 @@ Progress: [█████░░░░░] 50%
 
 *Updated after each plan completion*
 | Phase 20-upstream-fixes-storage P02 | 20min | 2 tasks | 2 files |
+| Phase 21-imu-data-foundation P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work:
 - Phase 20 Plan 01: SYNC-01 and SYNC-05 were already-satisfied in the fork (weak captures already present, both Gen4 UUID paths already lowercase); SYNC-02 was a real change (three &+= conversions); SYNC-03 and SYNC-04 were doc-comment additions only
 - [Phase ?]: PERF-05: body_hex excluded for K10/K21 via matches!(packet_k, Some(10) | Some(21)); empty String sentinel; downstream consumers (timeline.rs non_empty, bridge.rs body_byte_count) handle empty string safely
 - [Phase ?]: PERF-05 K21 test: build_v5_payload_frame adds alignment padding (1038 mod 4 = 2 bytes); K21 RED-baseline uses !is_empty() instead of exact hex comparison; K10 (1288 bytes, no padding) uses exact comparison
+- [Phase ?]: full_samples field added to I16SeriesSummary: all 100 IMU samples now survive parse layer; preview unchanged
 
 ### Pending Todos
 
@@ -124,6 +126,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-06T21:25:01.695Z
-Stopped at: Phase 20 Plan 02 complete — PERF-05 body_hex exclusion for K10/K21
+Last session: 2026-06-06T21:56:53.441Z
+Stopped at: Completed 21-01-PLAN.md
 Next: /gsd-new-milestone to start v5.0
