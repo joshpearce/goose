@@ -421,7 +421,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 18-05-PLAN.md — Wave 5: CoachSettingsSheet provider picker UI + gear icon + four-provider registry (COACH-05)
+- [x] 18-05-PLAN.md — Wave 5: CoachSettingsSheet provider picker UI + gear icon + four-provider registry (COACH-05)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -441,4 +441,4 @@ Plans:
 | 15. Recovery Formula V2 SDNN | v3.0 | 1/1 | Complete | 2026-06-05 |
 | 16. Deep Link Security | v4.0 | 1/0 | Complete    | 2026-06-05 |
 | 17. @Observable Migration | v4.0 | 4/4 | Complete | 2026-06-05 |
-| 18. Coach Multi-Provider | v4.0 | 4/6 | In Progress|  |
+| 18. Coach Multi-Provider | v4.0 | 5/6 | In Progress|  |
