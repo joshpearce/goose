@@ -1827,6 +1827,7 @@ pub fn run_hrv_feature_report(
             rr_intervals_ms,
             input_ids,
             rr_timestamps_s: None,
+            stage_segments: None,
         })
     } else {
         None
@@ -5889,6 +5890,7 @@ fn daily_hrv_features(
                 rr_intervals_ms,
                 input_ids: input_ids.clone(),
                 rr_timestamps_s: None,
+                stage_segments: None,
             };
             let result = goose_hrv_v0(&input);
             let output = result.output?;

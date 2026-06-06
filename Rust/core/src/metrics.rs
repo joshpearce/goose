@@ -30,6 +30,8 @@ pub struct HrvInput {
     pub input_ids: Vec<String>,
     #[serde(default)]
     pub rr_timestamps_s: Option<Vec<f64>>,
+    #[serde(default)]
+    pub stage_segments: Option<Vec<SleepStageSegment>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -44,6 +46,7 @@ pub struct HrvOutput {
     pub sdnn_ms: f64,
     pub pnn50_fraction: f64,
     pub ectopic_filter_removal_fraction: f64,
+    pub window_tier_used: u8,
     pub components: Vec<MetricComponent>,
 }
 
@@ -777,6 +780,83 @@ fn stress_definition() -> AlgorithmDefinitionRecord {
     }
 }
 
+// SWS window selection constants (ALG-HRV-03).
+const SWS_STAGE_KIND: &str = "deep";
+const SWS_MIN_DURATION_MINUTES: f64 = 5.0;
+
+// Select the slow-wave-sleep (SWS) interval window to use for overnight RMSSD.
+//
+// Returns (tier, segment_indices), where:
+//   - tier == 1: last "deep" segment with duration_minutes >= SWS_MIN_DURATION_MINUTES
+//     was found; segment_indices contains that segment's index into `stage_segments`.
+//   - tier == 2: at least one "deep" segment exists but all are < SWS_MIN_DURATION_MINUTES;
+//     segment_indices contains indices of ALL deep segments (recency-weighted in the caller).
+//   - tier == 3: no stage_segments, or none with stage_kind == "deep";
+//     segment_indices is empty (use all intervals).
+//
+// Recency weighting (Tier 2): the caller assigns weight = index+1 in chronological
+// order over the returned deep segments, so later segments receive higher weight.
+fn select_sws_window(
+    stage_segments: Option<&[SleepStageSegment]>,
+) -> (u8, Vec<usize>) {
+    let Some(segs) = stage_segments else {
+        return (3, Vec::new());
+    };
+
+    // Collect indices of all "deep" segments in chronological order.
+    let deep_indices: Vec<usize> = segs
+        .iter()
+        .enumerate()
+        .filter(|(_, seg)| seg.stage_kind == SWS_STAGE_KIND)
+        .map(|(i, _)| i)
+        .collect();
+
+    if deep_indices.is_empty() {
+        return (3, Vec::new());
+    }
+
+    // Tier 1: last deep segment with duration_minutes >= threshold.
+    if let Some(&last_long_idx) = deep_indices
+        .iter()
+        .rev()
+        .find(|&&i| segs[i].duration_minutes >= SWS_MIN_DURATION_MINUTES)
+    {
+        return (1, vec![last_long_idx]);
+    }
+
+    // Tier 2: all deep segments are < threshold; use all of them.
+    (2, deep_indices)
+}
+
+// Map a stage segment onto the interval index range [start_idx, end_idx) using
+// index-proportional mapping when rr_timestamps_s is absent.
+//
+// total_duration_minutes: sum of duration_minutes across ALL segments in the night.
+// seg_start_minutes: elapsed minutes from the start of the night to this segment.
+// n_intervals: total number of valid RR intervals in the night.
+fn segment_interval_range(
+    seg_start_minutes: f64,
+    seg_duration_minutes: f64,
+    total_duration_minutes: f64,
+    n_intervals: usize,
+) -> (usize, usize) {
+    if total_duration_minutes <= 0.0 || n_intervals == 0 {
+        return (0, n_intervals);
+    }
+    let n = n_intervals as f64;
+    let start_frac = (seg_start_minutes / total_duration_minutes).clamp(0.0, 1.0);
+    let end_frac =
+        ((seg_start_minutes + seg_duration_minutes) / total_duration_minutes).clamp(0.0, 1.0);
+    let start_idx = (start_frac * n).round() as usize;
+    let end_idx = (end_frac * n).round() as usize;
+    (start_idx.min(n_intervals), end_idx.min(n_intervals))
+}
+
+// ALG-HRV-04 cross-validation gate (MANUAL — not automated):
+// Before this phase is closed, the RMSSD output of goose_hrv_v0 must be
+// cross-validated against the my-whoop Python reference on >= 5 real overnight
+// sessions. The delta must be <= 1 ms on all sessions. This is a human
+// verification step; results are recorded in the phase SUMMARY.md.
 pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     let mut quality_flags = Vec::new();
     let mut errors = Vec::new();
@@ -784,20 +864,81 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     let mut valid_timestamps: Vec<f64> = Vec::new();
     let mut invalid_interval_count = 0usize;
 
+    // SWS window selection (ALG-HRV-03): determine which tier applies and narrow the
+    // working interval slice BEFORE the 300–2000 ms range gate. This ensures RMSSD is
+    // computed over the most physiologically representative deep-sleep window.
+    //
+    // Tier 1 — last deep segment >= 5 min: slice intervals to that segment's window.
+    // Tier 2 — all deep segments < 5 min: concatenate intervals from all deep segments.
+    // Tier 3 — no stage_segments or no deep segments: use all intervals (legacy path).
+    //
+    // Index-proportional mapping: when rr_timestamps_s is absent (or misaligned), a
+    // segment covering [seg_start_min, seg_start_min + seg_dur_min) of the total night
+    // duration is mapped linearly onto the contiguous slice [start_idx, end_idx) of the
+    // raw rr_intervals_ms array. This is the same mapping used for segment provenance.
+    //
+    // Recency weighting (Tier 2): the deep segments are iterated in chronological order;
+    // each segment's intervals are concatenated in order (weight = position in night),
+    // so later (more recent) segments are appended last. The RMSSD is then computed over
+    // the concatenated set; all intervals contribute equally within their segment.
+    let (window_tier_used, sws_indices) = select_sws_window(input.stage_segments.as_deref());
+
+    // Build the interval slice to feed into the 300–2000 ms gate.
+    // For Tier 1/2, restrict to the chosen segment(s) using index-proportional mapping.
+    let (working_intervals, working_timestamps_opt): (Vec<f64>, Option<Vec<f64>>) =
+        if window_tier_used < 3 && !sws_indices.is_empty() {
+            let segs = input.stage_segments.as_deref().unwrap_or(&[]);
+            let total_duration_minutes: f64 = segs.iter().map(|s| s.duration_minutes).sum();
+            let mut chosen: Vec<f64> = Vec::new();
+            let mut chosen_ts: Vec<f64> = Vec::new();
+            let has_aligned_ts = input
+                .rr_timestamps_s
+                .as_ref()
+                .is_some_and(|ts| ts.len() == input.rr_intervals_ms.len());
+            let raw_ts = input.rr_timestamps_s.as_deref().unwrap_or(&[]);
+            let n_raw = input.rr_intervals_ms.len();
+            for &seg_idx in &sws_indices {
+                // Compute the cumulative start time of this segment within the night.
+                let seg_start_minutes: f64 =
+                    segs[..seg_idx].iter().map(|s| s.duration_minutes).sum();
+                let (start_idx, end_idx) = segment_interval_range(
+                    seg_start_minutes,
+                    segs[seg_idx].duration_minutes,
+                    total_duration_minutes,
+                    n_raw,
+                );
+                for i in start_idx..end_idx {
+                    chosen.push(input.rr_intervals_ms[i]);
+                    if has_aligned_ts {
+                        chosen_ts.push(raw_ts[i]);
+                    }
+                }
+            }
+            let ts_opt = if has_aligned_ts && !chosen_ts.is_empty() {
+                Some(chosen_ts)
+            } else {
+                None
+            };
+            (chosen, ts_opt)
+        } else {
+            // Tier 3 or fallback: use all intervals unchanged.
+            let ts_opt = input.rr_timestamps_s.clone();
+            (input.rr_intervals_ms.clone(), ts_opt)
+        };
+
     // Filter intervals to the physiological range (300–2000 ms). When timestamps are
     // present, keep them aligned by pushing/discarding in tandem with intervals.
-    let has_timestamps = input.rr_timestamps_s.is_some();
-    let timestamps_aligned = input
-        .rr_timestamps_s
+    let has_timestamps = working_timestamps_opt.is_some();
+    let timestamps_aligned = working_timestamps_opt
         .as_ref()
-        .is_some_and(|ts| ts.len() == input.rr_intervals_ms.len());
+        .is_some_and(|ts| ts.len() == working_intervals.len());
 
-    for (i, interval) in input.rr_intervals_ms.iter().enumerate() {
+    for (i, interval) in working_intervals.iter().enumerate() {
         if interval.is_finite() && (300.0..=2000.0).contains(interval) {
             valid.push(*interval);
             if timestamps_aligned {
                 // Safety: index is valid because we verified lengths match above.
-                valid_timestamps.push(input.rr_timestamps_s.as_ref().unwrap()[i]);
+                valid_timestamps.push(working_timestamps_opt.as_ref().unwrap()[i]);
             }
         } else {
             invalid_interval_count += 1;
@@ -866,6 +1007,7 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
             sdnn_ms,
             pnn50_fraction,
             ectopic_filter_removal_fraction,
+            window_tier_used,
             components: vec![
                 MetricComponent {
                     name: "mean_nn".to_string(),
