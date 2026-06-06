@@ -4,10 +4,19 @@ struct CoachView: View {
   @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
   var healthStore: HealthDataStore
-  @StateObject private var chat = OpenAICoachChatModel()
+  @State private var registry = CoachProviderRegistry()
+  @State private var chat: CoachChatModel
   @State private var promptDraft = ""
   @State private var appliedCoachPromptRequestID = 0
   @State private var showingChat = false
+  @State private var showingSettings = false
+
+  init(healthStore: HealthDataStore) {
+    self.healthStore = healthStore
+    let registry = CoachProviderRegistry()
+    self._registry = State(initialValue: registry)
+    self._chat = State(initialValue: CoachChatModel(registry: registry))
+  }
 
   var body: some View {
     CoachOverviewScreen(
@@ -24,11 +33,37 @@ struct CoachView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackground(.hidden, for: .navigationBar)
     .toolbar {
+      if let providerName = registry.activeProvider?.displayName {
+        ToolbarItem(placement: .principal) {
+          VStack(spacing: 1) {
+            Text("Coach")
+              .font(.headline.weight(.semibold))
+            Text(providerName)
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+          }
+        }
+      }
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showingSettings = true
+        } label: {
+          Image(systemName: "gearshape")
+        }
+        .accessibilityLabel(String(localized: "Coach settings"))
+      }
       if chat.isSignedIn {
         ToolbarItem(placement: .topBarTrailing) {
           CoachProfileMenu(chat: chat)
         }
       }
+    }
+    .sheet(isPresented: $showingSettings) {
+      NavigationStack {
+        CoachSettingsSheet(registry: registry, chat: chat)
+      }
+      .presentationDetents([.large])
+      .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingChat) {
       NavigationStack {
@@ -108,7 +143,11 @@ struct CoachView: View {
         promptDraft = trimmedPrompt
       }
     }
-    showingChat = true
+    if registry.activeProvider == nil {
+      showingSettings = true
+    } else {
+      showingChat = true
+    }
   }
 
   private func applyRequestedCoachPromptIfNeeded() {
@@ -629,7 +668,7 @@ private extension View {
 }
 
 private struct CoachProfileMenu: View {
-  @ObservedObject var chat: OpenAICoachChatModel
+  var chat: CoachChatModel
 
   var body: some View {
     Menu {
@@ -638,7 +677,7 @@ private struct CoachProfileMenu: View {
           Button {
             chat.selectModelPreset(preset)
           } label: {
-            if chat.modelPreset == preset {
+            if chat.activePreset == preset {
               Label(preset.title, systemImage: "checkmark")
             } else {
               Text(preset.title)

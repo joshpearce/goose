@@ -49,7 +49,7 @@ final class HealthDataStore {
   var packetInputRunID: UUID?
   var packetInputIsRunning = false
   var heartRateTimelineRefreshID: UUID?
-  nonisolated(unsafe) var heartRateSeriesUpdateObserver: NSObjectProtocol?
+  @ObservationIgnored nonisolated(unsafe) var heartRateSeriesUpdateObserver: NSObjectProtocol?
   let packetInputQueue = DispatchQueue(label: "com.goose.swift.health.packet-inputs", qos: .utility)
   let heartRateTimelineQueue = DispatchQueue(label: "com.goose.swift.health.heart-rate-timeline", qos: .utility)
   var databasePath: String
@@ -93,12 +93,16 @@ final class HealthDataStore {
   }
 
   nonisolated static func defaultDatabasePath() -> String {
+    _sharedDatabasePath
+  }
+
+  private nonisolated static let _sharedDatabasePath: String = {
     let baseDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       ?? FileManager.default.temporaryDirectory
     let directory = baseDirectory.appendingPathComponent("GooseSwift", isDirectory: true)
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     return directory.appendingPathComponent("goose.sqlite").path
-  }
+  }()
 
   var usesSampleData: Bool {
     false

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: milestone
-status: completed
+status: executing
 stopped_at: Phase 17 Plan 04 complete — @Observable migration final sweep (Wave 4)
-last_updated: "2026-06-05T19:33:34.000Z"
-last_activity: 2026-06-05
+last_updated: "2026-06-05T23:38:38.884Z"
+last_activity: 2026-06-05 -- Phase 18 execution started
 progress:
-  total_phases: 13
-  completed_phases: 8
-  total_plans: 21
-  completed_plans: 21
-  percent: 65
+  total_phases: 14
+  completed_phases: 9
+  total_plans: 27
+  completed_plans: 22
+  percent: 64
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 09 — ble-stability-data-integrity
+**Current focus:** Phase 18 — Coach Multi-Provider
 
 ## Current Position
 
-Phase: 17
-Plan: 04 complete
-Status: Phase 17 Plan 04 complete — @Observable migration final sweep; global sweep clean (0 legacy wrappers); cargo test 0 failed; BUILD SUCCEEDED; PERF-01 PERF-02 PERF-03 structurally confirmed; 145 @Published removed total across 3 classes
-Last activity: 2026-06-05
+Phase: 18 (Coach Multi-Provider) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 18
+Last activity: 2026-06-05 -- Phase 18 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

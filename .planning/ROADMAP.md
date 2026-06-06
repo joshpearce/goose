@@ -382,6 +382,7 @@ Plans:
   4. `Update NavigationRequestObserver tried to update multiple times per frame` no longer appears in logs during BLE capture
 
 **Plans**: 4 plans (4 waves)
+
 - [ ] 17-01-PLAN.md — Wave 1: GooseAppModel @Observable migration + @Environment rewire + MoreDataStore Combine removal
 - [ ] 17-02-PLAN.md — Wave 2: HealthDataStore @Observable migration + @State ownership + @ObservedObject removal
 - [ ] 17-03-PLAN.md — Wave 3: GooseBLEClient @Observable migration (NSObject kept) + MoreView onChange route status
@@ -401,7 +402,50 @@ Plans:
   5. Existing single OpenAI key is automatically migrated to a named account on first launch
   6. Streaming responses work for all supported providers
 
-**Plans**: TBD
+**Plans**: 6 plans (6 waves)
+**Wave 1**
+
+- [x] 18-01-PLAN.md — Wave 1: CoachProvider protocol + CoachProviderRegistry + CoachChatModel refactor + ChatGPTCoachProvider + Wave 0 test stubs (COACH-01, COACH-06)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 18-02-PLAN.md — Wave 2: ClaudeCoachProvider (Anthropic Messages API SSE + Keychain) (COACH-02, COACH-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 18-03-PLAN.md — Wave 3: CustomEndpointCoachProvider (OpenAI Chat Completions SSE + URL validation + Keychain) (COACH-02, COACH-04)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 18-04-PLAN.md — Wave 4: GeminiCoachProvider (Google OAuth PKCE via WKWebView + streamGenerateContent SSE) (COACH-02, COACH-03)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 18-05-PLAN.md — Wave 5: CoachSettingsSheet provider picker UI + gear icon + four-provider registry (COACH-05)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 18-06-PLAN.md — Wave 6: Integration, build/test verification, migration smoke test (COACH-01, COACH-05, COACH-06)
+
+---
+
+### Phase 999.7: Gen4 Historical Sync — Upstream Fixes (BACKLOG)
+
+**Goal:** Apply the correctness fixes identified during review of upstream PR #26 (jakobrmarrone) to the fork's existing Gen4 historical sync implementation.
+**Source:** PR #26 review — b-nnett/goose (2026-06-06)
+
+**What's needed:**
+
+1. **`onHistoricalSyncCompleted` retain / lifetime inversion** (`AppShellView.swift`) — closure captures `HealthDataStore` strongly; `GooseAppModel` (mais longo) fica a segurar um objecto da view layer indefinidamente. Fix: `[weak healthStore]` + `.onDisappear { model.onHistoricalSyncCompleted = nil }`. Confirmar que `handleHistoricalSyncProgress` corre no main actor antes de invocar `runPacketInputs()` (`@MainActor`).
+2. **`gen4HistoricalPageSeq` overflow inconsistente** (`GooseBLEClient+HistoricalHandlers.swift`) — site cmd-34 usa `&+ 1` (wrapping) mas historyEnd e retry usam `+= 1` (trapping). Unificar para `&+= 1` em todos os sites de incremento.
+3. **Gen4 payload padding não verificado** (`GooseBLETypes.swift`) — `buildGen4CommandFrame` não faz padding de 4 bytes enquanto `buildV5CommandFrame` e o builder Rust fazem. Confirmar contra capturas PacketLogger se os frames do app oficial são padded; adicionar padding ou comentário.
+4. **`activeDeviceGeneration` confinamento implícito** (`GooseBLEClient.swift`) — adicionar `/// Only mutated/read on coreBluetoothQueue.` à declaração.
+5. **UUID prefix case-sensitivity** (`WhoopGeneration.detect`) — `hasPrefix("61080002")` deve normalizar para lowercase.
+
+**Requirements:** TBD
+**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+
+---
 
 ## Progress
 
@@ -416,5 +460,5 @@ Plans:
 | 14. pt-PT Localisation | v3.0 | 4/4 | Complete | 2026-06-05 |
 | 15. Recovery Formula V2 SDNN | v3.0 | 1/1 | Complete | 2026-06-05 |
 | 16. Deep Link Security | v4.0 | 1/0 | Complete    | 2026-06-05 |
-| 17. @Observable Migration | v4.0 | 0/4 | Planned | - |
-| 18. Coach Multi-Provider | v4.0 | 0/? | Not started | - |
+| 17. @Observable Migration | v4.0 | 4/4 | Complete | 2026-06-05 |
+| 18. Coach Multi-Provider | v4.0 | 5/6 | In Progress|  |

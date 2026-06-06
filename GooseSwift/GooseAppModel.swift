@@ -167,8 +167,8 @@ final class GooseAppModel {
   var notificationParseQueueDepth = 0
   var notificationParseQueueHighWatermark = 0
   let captureFrameRowBuildStateLock = NSLock()
-  nonisolated(unsafe) var captureFrameRowBuildQueueDepth = 0
-  nonisolated(unsafe) var captureFrameRowBuildQueueHighWatermark = 0
+  @ObservationIgnored nonisolated(unsafe) var captureFrameRowBuildQueueDepth = 0
+  @ObservationIgnored nonisolated(unsafe) var captureFrameRowBuildQueueHighWatermark = 0
   let pipelinePerformanceLogLock = NSLock()
   var lastPipelinePerformanceLoggedAt = Date.distantPast
   var respiratoryPacketWatchK18Count = 0
@@ -178,7 +178,7 @@ final class GooseAppModel {
   var lastWhoopEventStatusUpdatedAt = Date.distantPast
   var activityTimelineRefreshGeneration = 0
   var skippedNotificationDiagnostics = SkippedNotificationDiagnostics()
-  nonisolated(unsafe) var frameReassemblyBuffers: [String: Data] = [:]
+  @ObservationIgnored nonisolated(unsafe) var frameReassemblyBuffers: [String: Data] = [:]
   var lastNotificationEvent: GooseNotificationEvent?
   let autoStartHealthPacketCaptureOnReady: Bool = {
     let processInfo = ProcessInfo.processInfo

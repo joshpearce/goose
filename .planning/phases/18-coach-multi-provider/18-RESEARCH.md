@@ -37,7 +37,7 @@ None stated.
 | ID | Description | Research Support |
 |----|-------------|------------------|
 | COACH-01 | `CoachProvider` protocol with `send(messages:systemPrompt:) async throws -> AsyncStream<String>` | D-06 locked; protocol shape and `AsyncStream` pattern documented in §Architecture Patterns |
-| COACH-02 | Multiple named accounts per provider stored in Keychain with provider prefix | D-03 scopes this to one account per provider; Keychain pattern from `CodexSelfContainedAuthKeychain` and `RemoteServerKeychain` documented |
+| COACH-02 | One Keychain credential per provider, namespaced by provider service key (e.g. `com.goose.swift.claude` / `com.goose.swift.custom-endpoint` / `com.goose.swift.gemini`). D-03 locks one-account-per-provider — multi-account support is out of scope. | D-03 locks one account per provider; Keychain pattern from `CodexSelfContainedAuthKeychain` and `RemoteServerKeychain` documented |
 | COACH-03 | At least one additional provider supported (Claude API by Anthropic) | Claude Messages API + SSE verified via official docs; model IDs confirmed |
 | COACH-04 | User-configured custom endpoint (OpenAI Chat Completions-compatible SSE) | Same SSE pattern as ChatGPT, `data: [DONE]` sentinel; standard OpenAI Chat Completions format documented |
 | COACH-05 | Provider picker UI in Coach settings sheet | UI-SPEC approved; gear icon + `CoachSettingsSheet` component inventory documented |
@@ -633,22 +633,25 @@ extension CoachModelPreset {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Gemini OAuth `client_id` origin**
    - What we know: Google OAuth 2.0 requires a client_id registered in Google Cloud Console. ChatGPT's client_id is bundled (`app_EMoamEEZ73f0CkXaXp7hrann`). Gemini's is not.
    - What's unclear: Should the app prompt the user to enter their Google OAuth Client ID in the settings panel, or is there a shared client_id the developer will register?
    - Recommendation: Wave 5 (`CoachSettingsSheet`) should include a `TextField("Google Client ID", text: $geminiClientID)` in the Gemini config section, stored in UserDefaults `goose.coach.gemini.oauthClientId`. Wave 4 (`GeminiCoachProvider`) reads it. If empty, the sign-in button is disabled.
+   - **RESOLVED:** The Gemini `client_id` is user-supplied. Wave 5 `CoachSettingsSheet` exposes a `TextField` bound to UserDefaults key `goose.coach.gemini.oauthClientId`; Wave 4 `GeminiCoachProvider` reads it at sign-in time and disables the sign-in button when empty. Confirmed by CONTEXT.md D-02 and the Key Findings (no bundled Gemini client_id exists).
 
 2. **Tool call context for Claude/Gemini/Custom — system prompt size**
    - What we know: `CoachLocalToolContext.build()` returns a large nested dictionary. Serialised as JSON it can be several kilobytes.
    - What's unclear: Is the full context always injected into the system prompt, or should it be selectively included?
    - Recommendation: Serialise the full context (same data as the tool outputs) into the system prompt. Claude Haiku 4.5 has a 200k token context window — the context JSON is well within limits for all models.
+   - **RESOLVED:** Tool calls run only for ChatGPT (internal to `ChatGPTCoachProvider`). Claude/Gemini/Custom never receive interleaved tool calls through the `AsyncStream<String>` protocol; instead they receive the full `CoachLocalToolContext.build()` result serialised as JSON inside the `systemPrompt` parameter of `CoachProvider.send(messages:systemPrompt:preset:)`. The full context is always injected (well within every model's context window per the note above).
 
 3. **`CoachChatModel` send() signature — who builds the system prompt?**
    - What we know: D-06 protocol has `send(messages:systemPrompt:preset:)`. The `CoachChatModel` currently builds contextual prompts using `contextualPrompt(for:)`.
    - What's unclear: The `systemPrompt` parameter is for the static instructions. Should `CoachChatModel` inject the full tool context into `systemPrompt` before calling `send()`, or into the last user message?
    - Recommendation: Pass full tool context serialised as JSON in `systemPrompt`. Provider implementations use this as the `system` (Claude), `systemInstruction` (Gemini), or first `system` role message (Chat Completions).
+   - **RESOLVED:** `CoachChatModel.send()` builds the `systemPrompt` (static instructions + `CoachLocalToolContext.build()` serialised as JSON) and calls `registry.activeProvider.send(messages:systemPrompt:preset:)`. The same systemPrompt is passed to every provider; `ChatGPTCoachProvider` additionally wraps it into the ChatGPT tool_choice format internally. The tool context goes in `systemPrompt`, never in the last user message.
 
 ---
 
