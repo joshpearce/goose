@@ -23,7 +23,7 @@ extension GooseBLEClient {
     case V5PacketType.commandResponse, V5PacketType.puffinCommandResponse:
       handleHistoricalCommandResponse(payload)
     case V5PacketType.historicalData, V5PacketType.historicalIMUDataStream:
-      historicalPacketsReceivedThisSync += 1
+      historicalPacketsReceivedThisSync &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
       publishHistoricalPacketCountIfNeeded()
       scheduleHistoricalIdleCompletion(reason: "historical_data_idle")
       notifyHistoricalSyncProgress(
@@ -491,7 +491,7 @@ extension GooseBLEClient {
 
   func handleHistoricalCommandPending(_ pending: PendingHistoricalCommand) {
     if pending.kind == .getDataRange {
-      historicalRangePendingResponses += 1
+      historicalRangePendingResponses &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
       updateHistoricalRangeDebugStatus("pending seq=\(pending.sequence) count=\(historicalRangePendingResponses)")
       scheduleHistoricalCommandTimeout(
         kind: pending.kind,
@@ -669,7 +669,7 @@ extension GooseBLEClient {
       || statusChanged
       || elapsed >= Self.historicalProgressCallbackInterval
     guard shouldPublish else {
-      coalescedHistoricalSyncProgressCallbackCount += 1
+      coalescedHistoricalSyncProgressCallbackCount &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
       return
     }
 
