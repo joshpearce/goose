@@ -664,6 +664,7 @@ fn hrv_input(index: usize) -> HrvInput {
             .collect(),
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     }
 }
 

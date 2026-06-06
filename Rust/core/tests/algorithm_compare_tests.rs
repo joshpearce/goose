@@ -18,6 +18,7 @@ fn hrv_comparison_reports_zero_deltas_for_shared_time_domain_fields() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["hand-derived.hrv".to_string()],
         rr_timestamps_s: None,
+        stage_segments: None,
     })
     .unwrap();
 
@@ -418,6 +419,7 @@ fn comparison_fails_when_both_algorithms_lack_comparable_outputs() {
         rr_intervals_ms: vec![100.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     })
     .unwrap();
 

@@ -22,6 +22,7 @@ fn goose_hrv_v0_computes_hand_derived_time_domain_metrics() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["hand-derived".to_string()],
         rr_timestamps_s: None,
+        stage_segments: None,
     });
 
     let output = result.output.unwrap();
@@ -48,6 +49,7 @@ fn goose_hrv_v0_pnn50_uses_strictly_greater_than_50_ms() {
         rr_intervals_ms: vec![800.0, 850.0, 901.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
 
     let output = result.output.unwrap();
@@ -62,6 +64,7 @@ fn goose_hrv_v0_drops_nonphysiological_intervals_and_flags_quality() {
         rr_intervals_ms: vec![800.0, 100.0, 810.0, 2500.0, 790.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
 
     let output = result.output.unwrap();
@@ -84,6 +87,7 @@ fn goose_hrv_v0_reports_insufficient_data_without_output() {
         rr_intervals_ms: vec![800.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
 
     assert!(result.output.is_none());
@@ -113,6 +117,7 @@ fn hrv_definition_and_run_persist_to_sqlite() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: vec!["fixture.synthetic".to_string()],
         rr_timestamps_s: None,
+        stage_segments: None,
     });
     let record = hrv_run_record("hrv-run-1", &result).unwrap();
     assert!(store.insert_algorithm_run(&record).unwrap());
@@ -122,8 +127,8 @@ fn hrv_definition_and_run_persist_to_sqlite() {
     assert_eq!(saved_run.algorithm_id, GOOSE_HRV_V0_ID);
     assert!(saved_run.output_json.contains("\"rmssd_ms\""));
     let metric_values = store.metric_values_for_run("hrv-run-1").unwrap();
-    // 7 original fields + ectopic_filter_removal_fraction = 8
-    assert_eq!(metric_values.len(), 8);
+    // 7 original fields + ectopic_filter_removal_fraction + window_tier_used = 9
+    assert_eq!(metric_values.len(), 9);
     assert!(metric_values.iter().any(|row| {
         row.metric_value_id == "hrv-run-1.rmssd_ms"
             && row.metric_family == "hrv"
@@ -171,6 +176,7 @@ fn goose_hrv_v0_excludes_cross_gap_differences() {
         rr_intervals_ms: intervals.clone(),
         input_ids: Vec::new(),
         rr_timestamps_s: Some(timestamps),
+        stage_segments: None,
     });
     let output = result_with_timestamps.output.unwrap();
     assert_close(output.rmssd_ms, 200.0_f64.sqrt());
@@ -190,6 +196,7 @@ fn goose_hrv_v0_excludes_cross_gap_differences() {
         rr_intervals_ms: intervals,
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
     let output_legacy = result_no_timestamps.output.unwrap();
     assert!(
@@ -217,6 +224,7 @@ fn goose_hrv_v0_timestamps_none_matches_legacy() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
     let output = result.output.unwrap();
     // (810-800)^2=100, (790-810)^2=400, (800-790)^2=100 → sum=600, n=3 → sqrt(200)
@@ -234,6 +242,7 @@ fn goose_hrv_v0_removes_ectopic_beat_and_reports_fraction() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 1500.0, 805.0, 795.0, 800.0, 810.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
     let output = result.output.unwrap();
     // ectopic filter removed the 1500 ms interval → fraction > 0
