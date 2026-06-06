@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 14;
+pub const CURRENT_SCHEMA_VERSION: i64 = 15;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -1406,6 +1406,17 @@ impl GooseStore {
                 PRIMARY KEY (session_id, sequence)
             );
 
+            CREATE TABLE IF NOT EXISTS gravity (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                x REAL NOT NULL,
+                y REAL NOT NULL,
+                z REAL NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts);
+
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (1);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (2);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (3);
@@ -1420,7 +1431,8 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (12);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (13);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (14);
-            PRAGMA user_version = 14;
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (15);
+            PRAGMA user_version = 15;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -7606,6 +7618,7 @@ pub fn known_tables() -> &'static [&'static str] {
         "debug_sessions",
         "debug_commands",
         "debug_events",
+        "gravity",
     ]
 }
 
