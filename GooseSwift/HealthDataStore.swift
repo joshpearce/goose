@@ -93,12 +93,16 @@ final class HealthDataStore {
   }
 
   nonisolated static func defaultDatabasePath() -> String {
+    _sharedDatabasePath
+  }
+
+  private nonisolated static let _sharedDatabasePath: String = {
     let baseDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       ?? FileManager.default.temporaryDirectory
     let directory = baseDirectory.appendingPathComponent("GooseSwift", isDirectory: true)
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     return directory.appendingPathComponent("goose.sqlite").path
-  }
+  }()
 
   var usesSampleData: Bool {
     false

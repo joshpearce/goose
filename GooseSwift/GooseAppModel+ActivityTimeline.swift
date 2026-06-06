@@ -670,7 +670,7 @@ extension GooseAppModel {
       .appendingPathComponent(sessionID, isDirectory: true)
   }
 
-  static func overnightGuardRootDirectoryURL() -> URL {
+  nonisolated static func overnightGuardRootDirectoryURL() -> URL {
     let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
       ?? FileManager.default.temporaryDirectory
     return documents
