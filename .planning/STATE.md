@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
-stopped_at: v4.0 shipped ✅ — v5.0 not yet started
-last_updated: "2026-06-06T21:10:49.951Z"
-last_activity: 2026-06-06 -- Phase 19 execution started
+stopped_at: Phase 20 Plan 02 complete — PERF-05 body_hex exclusion for K10/K21
+last_updated: "2026-06-06T21:25:01.699Z"
+last_activity: 2026-06-06 -- Phase 20 Plan 01 completed (SYNC-01..05)
 progress:
-  total_phases: 9
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 7
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+  percent: 14
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 19 — pt-pt-localisation-completion
+**Current focus:** Phase 20 — Upstream Fixes & Storage
 
 ## Current Position
 
-Phase: 19 (pt-pt-localisation-completion) — EXECUTING
-Plan: 1 of 1
-Status: Ready to execute
-Last activity: 2026-06-06 -- Phase 19 execution started
+Phase: 20 (Upstream Fixes & Storage) — EXECUTING
+Plan: 2 of 2
+Status: Plan 01 complete — executing Plan 02 next
+Last activity: 2026-06-06 -- Phase 20 Plan 01 completed (SYNC-01..05)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 20-upstream-fixes-storage P02 | 20min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - Phase 17 Plan 02: @Bindable required on CalibrationHealthView when @Observable class property needs Picker binding; nonisolated(unsafe) on NSObjectProtocol observer enables deinit cleanup; lazy var incompatible with @Observable — convert to init-assigned var
 - Phase 17 Plan 03: @Bindable local var in View.body is the correct pattern when an @Observable object is passed as plain var parameter and needs $ binding; three onChange modifiers replace MoreDataStore Combine MergeMany pipeline
 - Phase 17 Plan 04: Wave 4 verification-only — global sweep passed with zero legacy wrappers; PERF-03 is a manual runtime check (launch app, connect WHOOP, start capture, confirm no NavigationRequestObserver warning in Xcode console)
+- Phase 20 Plan 01: SYNC-01 and SYNC-05 were already-satisfied in the fork (weak captures already present, both Gen4 UUID paths already lowercase); SYNC-02 was a real change (three &+= conversions); SYNC-03 and SYNC-04 were doc-comment additions only
+- [Phase ?]: PERF-05: body_hex excluded for K10/K21 via matches!(packet_k, Some(10) | Some(21)); empty String sentinel; downstream consumers (timeline.rs non_empty, bridge.rs body_byte_count) handle empty string safely
+- [Phase ?]: PERF-05 K21 test: build_v5_payload_frame adds alignment padding (1038 mod 4 = 2 bytes); K21 RED-baseline uses !is_empty() instead of exact hex comparison; K10 (1288 bytes, no padding) uses exact comparison
 
 ### Pending Todos
 
@@ -120,6 +124,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-06T15:30:00.000Z
-Stopped at: v4.0 shipped ✅ — v5.0 not yet started
+Last session: 2026-06-06T21:25:01.695Z
+Stopped at: Phase 20 Plan 02 complete — PERF-05 body_hex exclusion for K10/K21
 Next: /gsd-new-milestone to start v5.0

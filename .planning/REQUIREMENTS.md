@@ -12,7 +12,7 @@
 - [ ] **SYNC-03**: Gen4 padding clarified (`GooseBLETypes.swift`: `buildGen4CommandFrame` 4-byte padding confirmed or documented against PacketLogger captures)
 - [ ] **SYNC-04**: Gen4 confinement documented (`GooseBLEClient.swift`: `activeDeviceGeneration` has queue-confinement doc comment)
 - [ ] **SYNC-05**: Gen4 UUID normalised (`WhoopGeneration.detect`: `hasPrefix` comparison lowercased before match)
-- [ ] **PERF-05**: `body_hex` excluded from K10/K21 cached parsed-payload JSON (K10/K21 `body_hex` assertions added to `protocol_tests.rs` first; then exclusion applied in `parse_frame_batch`)
+- [x] **PERF-05**: `body_hex` excluded from K10/K21 cached parsed-payload JSON (K10/K21 `body_hex` assertions added to `protocol_tests.rs` first; then exclusion applied in `parse_frame_batch`)
 
 ## IMU Data Pipeline
 

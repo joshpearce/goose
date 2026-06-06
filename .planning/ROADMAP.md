@@ -253,7 +253,7 @@ Plans:
 | 17. @Observable Migration | v4.0 | 4/4 | Complete | 2026-06-05 |
 | 18. Coach Multi-Provider | v4.0 | 6/6 | Complete | 2026-06-06 |
 | 19. pt-PT Localisation Completion | v4.0 | 1/1 | Complete | 2026-06-06 |
-| 20. Upstream Fixes & Storage | v5.0 | 0/2 | Planned | — |
+| 20. Upstream Fixes & Storage | v5.0 | 2/2 | Complete   | 2026-06-06 |
 | 21. IMU Data Foundation | v5.0 | 0/0 | Not started | — |
 | 22. HRV Accuracy | v5.0 | 0/0 | Not started | — |
 | 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
@@ -341,9 +341,9 @@ Absorbed into Phase 20: Upstream Fixes & Storage (as PERF-05).
 **Plans**: 2 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Wave 1: Gen4 historical-sync correctness fixes SYNC-01..SYNC-05 (Swift; verify-then-document/fix against actual fork symbols)
-- [ ] 20-02-PLAN.md — Wave 2: PERF-05 body_hex exclusion for K10/K21 in protocol.rs (Rust, test-first)
 
+- [x] 20-01-PLAN.md — Wave 1: Gen4 historical-sync correctness fixes SYNC-01..SYNC-05 (Swift; verify-then-document/fix against actual fork symbols)
+- [x] 20-02-PLAN.md — Wave 2: PERF-05 body_hex exclusion for K10/K21 in protocol.rs (Rust, test-first)
 
 ---
 
