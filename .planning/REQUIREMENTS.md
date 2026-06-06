@@ -17,7 +17,7 @@
 ## IMU Data Pipeline
 
 - [x] **IMU-01**: `I16SeriesSummary` in `protocol.rs` gains `full_samples: Option<Vec<i16>>` — additive, non-breaking; `preview` field unchanged; existing tests unaffected
-- [ ] **IMU-02**: `gravity` table created in SQLite (schema migration v14 → v15): `(device_id TEXT, ts REAL, x REAL, y REAL, z REAL)` with index on `(device_id, ts)`; `insert_gravity_rows` and `gravity_rows_between` bridge methods implemented
+- [x] **IMU-02**: `gravity` table created in SQLite (schema migration v14 → v15): `(device_id TEXT, ts REAL, x REAL, y REAL, z REAL)` with index on `(device_id, ts)`; `insert_gravity_rows` and `gravity_rows_between` bridge methods implemented
 - [ ] **IMU-03**: K21/K10 gravity extraction in `bridge.rs` populates `gravity` Vec from `RawMotionK10` frames with LSB→g conversion (factor ~3900, configurable); replaces `Vec::new()` placeholder
 - [ ] **IMU-04**: TOGGLE_IMU_MODE (command 106) feature-flagged off by default; type-51 packet parsing implemented in `protocol.rs` before flag is enabled
 
