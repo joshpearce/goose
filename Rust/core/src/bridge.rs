@@ -3183,13 +3183,17 @@ fn upload_get_recent_decoded_streams_bridge(
                                 .and_then(|a| a.full_samples.as_ref());
                             let az = axes.iter().find(|a| a.name == "accelerometer_z")
                                 .and_then(|a| a.full_samples.as_ref());
+                            // CR-02 fix: assign per-sample timestamp so the gravity time
+                            // series is recoverable. WHOOP 5 IMU samples at 50 Hz.
+                            const K10_SAMPLE_RATE_HZ: f64 = 50.0;
                             if let (Some(xs), Some(ys), Some(zs), Some(ts_base)) =
                                 (ax, ay, az, ts_unix)
                             {
                                 let n = xs.len().min(ys.len()).min(zs.len());
                                 for i in 0..n {
+                                    let sample_ts = ts_base + i as f64 / K10_SAMPLE_RATE_HZ;
                                     gravity.push(json!({
-                                        "ts": ts_base,
+                                        "ts": sample_ts,
                                         "x": xs[i] as f64 / IMU_LSB_PER_G,
                                         "y": ys[i] as f64 / IMU_LSB_PER_G,
                                         "z": zs[i] as f64 / IMU_LSB_PER_G,

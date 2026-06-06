@@ -1421,7 +1421,8 @@ impl GooseStore {
                 x REAL NOT NULL,
                 y REAL NOT NULL,
                 z REAL NOT NULL,
-                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
             );
 
             CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts);
@@ -6057,7 +6058,7 @@ impl GooseStore {
         let mut inserted = 0usize;
         for &(ts, x, y, z) in rows {
             let changed = self.conn.execute(
-                "INSERT INTO gravity (device_id, ts, x, y, z) VALUES (?1, ?2, ?3, ?4, ?5)",
+                "INSERT OR IGNORE INTO gravity (device_id, ts, x, y, z) VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![device_id, ts, x, y, z],
             )?;
             inserted += changed;
