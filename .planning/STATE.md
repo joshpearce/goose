@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Security, Performance & Coach Expansion
-status: lifecycle
-stopped_at: All v4.0 phases complete — lifecycle in progress
-last_updated: "2026-06-06T00:00:00.000Z"
-last_activity: 2026-06-06 -- Phase 19 complete, v4.0 lifecycle started
+milestone: v5.0
+milestone_name: Metrics Accuracy, IMU & Upstream Fixes
+status: planning
+stopped_at: v4.0 milestone closed — v5.0 not yet started
+last_updated: "2026-06-06T15:30:00.000Z"
+last_activity: 2026-06-06 -- v4.0 shipped (tag v4.0); v5.0 planning pending
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 9
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -120,6 +120,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-06T15:10:00.000Z
-Stopped at: v4.0 milestone close in progress
-Resume: /gsd-complete-milestone v4.0
+Last session: 2026-06-06T15:30:00.000Z
+Stopped at: v4.0 shipped ✅ — v5.0 not yet started
+Next: /gsd-new-milestone to start v5.0
