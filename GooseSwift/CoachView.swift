@@ -9,6 +9,7 @@ struct CoachView: View {
   @State private var promptDraft = ""
   @State private var appliedCoachPromptRequestID = 0
   @State private var showingChat = false
+  @State private var showingSettings = false
 
   init(healthStore: HealthDataStore) {
     self.healthStore = healthStore
@@ -32,11 +33,37 @@ struct CoachView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackground(.hidden, for: .navigationBar)
     .toolbar {
+      if let providerName = registry.activeProvider?.displayName {
+        ToolbarItem(placement: .principal) {
+          VStack(spacing: 1) {
+            Text("Coach")
+              .font(.headline.weight(.semibold))
+            Text(providerName)
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+          }
+        }
+      }
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          showingSettings = true
+        } label: {
+          Image(systemName: "gearshape")
+        }
+        .accessibilityLabel(String(localized: "Coach settings"))
+      }
       if chat.isSignedIn {
         ToolbarItem(placement: .topBarTrailing) {
           CoachProfileMenu(chat: chat)
         }
       }
+    }
+    .sheet(isPresented: $showingSettings) {
+      NavigationStack {
+        CoachSettingsSheet(registry: registry, chat: chat)
+      }
+      .presentationDetents([.large])
+      .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingChat) {
       NavigationStack {

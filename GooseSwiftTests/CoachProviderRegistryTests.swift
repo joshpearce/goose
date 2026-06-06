@@ -13,11 +13,12 @@ final class CoachProviderRegistryTests: XCTestCase {
     XCTAssertEqual(stored, "chatgpt", "Selecting chatgpt must persist 'chatgpt' to goose.coach.activeProviderId")
   }
 
-  // MARK: - COACH-01: Registry exposes all four providers (Waves 2-4 stubs)
+  // MARK: - COACH-01: Registry exposes all four providers
 
-  func testRegistryExposesAllFourProviders() throws {
-    // Wave 2-4: ClaudeCoachProvider, GeminiCoachProvider, CustomEndpointCoachProvider
-    // are added in those waves. This test re-enables in Plan 18-05.
-    throw XCTSkip("providers added in Waves 2-4; re-enabled in Plan 18-05")
+  func testRegistryExposesAllFourProviders() {
+    let registry = CoachProviderRegistry()
+    XCTAssertEqual(registry.allProviders.count, 4, "Registry must expose exactly four providers")
+    let ids = Set(registry.allProviders.map { $0.id })
+    XCTAssertEqual(ids, ["chatgpt", "claude", "gemini", "custom"], "Provider IDs must be exactly the four expected values")
   }
 }
