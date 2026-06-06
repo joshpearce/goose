@@ -1,425 +1,194 @@
-# Architecture Research
+# Architecture Research — v5.0 Metrics Accuracy
 
-**Domain:** iOS BLE wearable app with Rust core — v3.0 feature integration
-**Researched:** 2026-06-04
-**Confidence:** HIGH (all findings from direct source inspection)
+**Domain:** Rust biometric algorithm layer for an iOS WHOOP app
+**Researched:** 2026-06-06
+**Confidence:** HIGH — based on direct codebase reading
 
-## Standard Architecture
+---
 
-### System Overview
+## New vs Modified Components
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│                        SwiftUI Views (@MainActor)               │
-│  HomeDashboardView  HealthMetricFamilyStrainViews  MoreTabView  │
-│  RecoveryV2OverviewPage (existing skeleton)                     │
-│  [NEW] HRMonitorScanView                                        │
-└───────────────────────────┬────────────────────────────────────┘
-                            │ @EnvironmentObject / @ObservedObject
-┌───────────────────────────▼────────────────────────────────────┐
-│   GooseAppModel (@MainActor coordinator)                        │
-│   @Published state — observed by all views                      │
-│   Extension files: +HealthCapture, +NotificationPipeline,       │
-│   +ActivityRecording, +Upload, +OvernightRun, +Lifecycle        │
-│   [MODIFY] +NotificationPipeline — remove WHOOP-session gate    │
-│   [NEW]    +HRMonitorSession — independent HR capture session   │
-└────────┬───────────────────────────────────┬───────────────────┘
-         │                                   │
-┌────────▼───────────┐           ┌───────────▼─────────────────┐
-│  GooseBLEClient     │           │  HealthDataStore             │
-│  (ObservableObject) │           │  (@MainActor, ObservableObj) │
-│  +Commands          │           │  +ActivitySnapshots          │
-│  +CentralDelegate   │           │  +Trends                     │
-│  +HRMonitor         │           │  +CoachSummaries             │
-│  [MODIFY] backoff   │           │  [NEW] +RecoveryV2           │
-│  [MODIFY] RTC sync  │           └────────────┬────────────────┘
-│  hrMonitorManager   │                        │
-│  (GooseBLEHRMonitor │           ┌────────────▼────────────────┐
-│   Manager — exists) │           │  GooseRustBridge (stateless) │
-└────────┬────────────┘           │  JSON-over-FFI               │
-         │ coreBluetoothQueue     │  metrics.daily_recovery_*    │
-┌────────▼────────────┐           │  [FIX] device_id namespace   │
-│  CoreBluetooth      │           └────────────┬────────────────┘
-│  CBCentralManager x2│                       │ synchronous FFI
-│  (WHOOP + HR monitor)│          ┌────────────▼────────────────┐
-└─────────────────────┘           │  Rust libgoose_core (SQLite) │
-                                  │  capture_import.rs           │
-                                  │  store.rs                    │
-                                  │  [FIX] CR-02 device_id query │
-                                  └─────────────────────────────┘
-```
+| Component | New/Modified | Description |
+|-----------|-------------|-------------|
+| `protocol.rs` — `summarize_i16_series` | Modified | Expand `preview: Vec<i16>` from hardcoded cap of 8 to full 100 samples; changes the serialised `I16SeriesSummary` shape in `parsed_payload_json` stored in `decoded_frames` |
+| `store.rs` — `gravity` table | New | Add `CREATE TABLE gravity (row_id INTEGER PK, device_id TEXT, ts_unix_ms INTEGER, x INTEGER, y INTEGER, z INTEGER)`; new schema migration bump to version 15 |
+| `store.rs` — `GooseStore::insert_gravity_rows` | New | Batch INSERT function for gravity rows; called from the K21/K10 path in `upload.get_recent_decoded_streams` and from new bridge method |
+| `metrics.rs` — Lipponen-Tarvainen ectopic filter | Modified | New pre-processing step inside `goose_hrv_v0`: classify RR intervals as normal/ectopic/missed using morphological rules from Lipponen & Tarvainen (2018); replaces the current simple range-gate drop |
+| `metrics.rs` — Tanaka HRmax formula | Modified | New helper `tanaka_hrmax(age_years: u32) -> f64` = `208.0 - 0.7 * age`; used as denominator in `StrainInput` when user has not calibrated a personal max |
+| `metrics.rs` — Banister TRIMP strain | Modified | New `goose_strain_v1` function implementing Banister's TRIMP formula using exponential HR-zone weighting; replaces the linear zone-weight model in `goose_strain_v0`; registered as a new `algorithm_definitions` row, not replacing v0 |
+| `metrics.rs` — `fit_strain_denominator` | Modified | Helper that normalises raw TRIMP score to the 0–21 Goose scale using a fitted population denominator; feeds into `goose_strain_v1` |
+| `metrics.rs` — `rmr_mifflin_st_jeor` | Modified | RMR calculator for energy rollup; replaces the current placeholder constant in `energy_rollup.rs` |
+| `metrics.rs` — `heart_rate_dip_pct` | Modified | Computes nocturnal HR dip % = (pre-sleep average HR - nadir HR) / pre-sleep x 100; the field already exists as `heart_rate_dip_percent: Option<f64>` in `SleepInput` and `SleepV1Input` but is currently not computed from captured data |
+| `metrics.rs` — `waso_estimation` | Modified | Computes WASO (Wake After Sleep Onset) from `SleepStageSegment` sequences; `wake_after_sleep_onset_minutes` already in `SleepInput`, currently populated externally |
+| `sleep_staging.rs` | New | New module: Cole-Kripke activity-based staging pipeline, cardiorespiratory features per 30 s epoch, 4-class classifier (Awake/Core/Deep/REM) with physiological reimposition rules; consumes `gravity` rows + HR series from store |
+| `baselines.rs` | New | New module: EWMA baseline state struct, `update(new_value: f64)` method, `fold_history(rows: &[DailyRecoveryMetricRow])` to rebuild from persisted data; used by recovery score to produce personal Z-scores instead of simple ratio |
+| `metrics.rs` — `recovery_score_v1` | New | New function `goose_recovery_v1(input: &RecoveryV1Input)`: logistic squash of Z-scored HRV and RHR relative to personal EWMA baselines from `baselines.rs`; registered as new algorithm definition |
+| `bridge.rs` — new methods | Modified | Four new RPC methods added to `BRIDGE_METHODS` and `handle_bridge_request` dispatcher; see Integration Points below |
+| `GooseBLEClient.swift` — IMU sequence | Not changed | `startPhysiologyCapture` and `stopPhysiologyCapture` already include `TOGGLE_IMU_MODE_ON/OFF` (command 106); the IMU stream is already enabled; what changes is the extraction of that data downstream |
+| `bridge.rs` — `upload.get_recent_decoded_streams` | Modified | Populate the currently-empty `gravity: Vec<serde_json::Value>` by extracting from `DataPacketBodySummary::RawMotionK21` axes; each sample becomes `{ts, device_id, x, y, z}` |
+| `GooseUploadService.swift` | Not changed | Already sends `gravity` key in upload payload; no Swift changes needed |
 
-### Component Responsibilities (v3.0 scope)
+---
 
-| Component | Current Responsibility | v3.0 Change |
-|-----------|----------------------|-------------|
-| `GooseBLEClient` | WHOOP BLE central; notification routing; command writes | Add backoff state vars + `scheduleReconnectWithBackoff()`; add `sendRTCSyncIfNeeded()` called from `processDiscoveredCharacteristics` for Gen4 only |
-| `GooseBLEClient+CentralDelegate` | `didDisconnectPeripheral` fires immediate reconnect | Replace immediate reconnect with `scheduleReconnectWithBackoff()` |
-| `GooseBLEHRMonitorManager` | HR scan/connect/notify (no scan UI caller, no independent session, no disconnect backoff) | Add `didDisconnectPeripheral` backoff; expose `@Published discoveredHRDevices` forwarding via owner |
-| `GooseAppModel` | Central coordinator; owns `activeHealthPacketCapture` | Add `activeHRMonitorCapture`, `hrMonitorCaptureStatus`, `hrMonitorCaptureFrameCount` `@Published` vars |
-| `GooseAppModel+NotificationPipeline` | `importCapturedFrames` gated on `activeHealthPacketCapture != nil` (line 170) | Split gate: WHOOP frames keep existing gate; HR frames check `activeHRMonitorCapture != nil` independently |
-| `GooseAppModel+HRMonitorSession` (NEW) | — | Start/stop independent HR capture session; wire `startHRMonitorScan()` / `connectHRMonitor()` |
-| `HealthDataStore+RecoveryV2` (NEW) | — | Bridge calls for `metrics.daily_recovery_metrics`; publish `@Published recoveryV2Metrics` |
-| `HealthRecoveryStressViews` | Skeleton Recovery V2 UI with placeholder timeline and insights sections | Wire timeline, insights sections to bridge-backed `HealthDataStore+RecoveryV2` data |
-| Rust `store.rs` | `device_id` column exists; per-row filter was reverted to no-op in v2.0 | Fix `active_device_id` namespace so per-row `device_id` matches the session's `active_device_id` |
-| `Localizable.xcstrings` (NEW) | No localisation infrastructure exists | Add String Catalog to `GooseSwift/` target; add pt-PT strings for all v3.0 UI text |
+## Data Flow Changes
 
-## Recommended Project Structure (v3.0 additions)
+### New path: gravity data BLE -> SQLite
 
 ```
-GooseSwift/
-├── GooseBLEClient.swift                   # Add: backoff state vars (reconnectAttemptCount,
-│                                          #   reconnectBackoffWorkItem); @Published discoveredHRDevices
-├── GooseBLEClient+Commands.swift          # Add: scheduleReconnectWithBackoff(), sendRTCSyncIfNeeded()
-├── GooseBLEClient+CentralDelegate.swift   # Modify: didDisconnectPeripheral uses backoff
-├── GooseBLEClient+HRMonitor.swift         # Modify: didDisconnectPeripheral adds HR backoff
-├── GooseAppModel.swift                    # Add: activeHRMonitorCapture, @Published HR session vars
-├── GooseAppModel+HRMonitorSession.swift   # NEW: start/stop independent HR session
-├── GooseAppModel+NotificationPipeline.swift  # Modify: decouple HR gate from WHOOP gate (line 170)
-├── HealthDataStore+RecoveryV2.swift       # NEW: bridge-backed recovery metrics for V2 dashboard
-├── HealthRecoveryStressViews.swift        # Modify: wire timeline/insights/trends sections
-├── HRMonitorScanView.swift                # NEW: SwiftUI scan/connect sheet for HR monitors
-├── Localizable.xcstrings                  # NEW: String Catalog (Xcode 15+ format)
-
-Rust/core/src/
-├── store.rs                               # Fix: device_id namespace in per-row filter query
-├── capture_import.rs                      # Verify: HrMonitor branch uses correct device_id format
+WHOOP BLE (K21 packet, packet_type=51/52)
+  -> GooseBLEClient -> CaptureFrameWriteQueue
+  -> bridge: capture.import_frame_batch (existing)
+  -> decoded_frames table (existing, stores parsed_payload_json with I16SeriesSummary)
+  -> [NEW] upload.get_recent_decoded_streams extracts RawMotionK21 axes (preview now 100 samples)
+  -> [NEW] bridge: store.insert_gravity_rows -> gravity table
 ```
 
-## Architectural Patterns
+The key change in `protocol.rs` is that `I16SeriesSummary.preview` grows from 8 to 100 samples. The `I16SeriesSummary` struct itself does not change shape — `preview` is already `Vec<i16>`. Existing rows stored in `decoded_frames` with 8-sample previews are not backfilled; the gravity extraction path operates on new frames only (filtered by `since_ts`).
 
-### Pattern 1: Extension file per concern on GooseBLEClient / GooseAppModel
-
-**What:** Large classes (GooseBLEClient, GooseAppModel) are split into focused extension files. Each extension owns one coherent slice of behaviour. All extensions share state on the parent class.
-
-**When to use:** Every new capability in v3.0. Do not add methods to the main `.swift` files; create a new `+Feature.swift` extension file.
-
-**Trade-offs:** State lives on the parent class (good for cohesion); extension count grows (acceptable, already 10+ on GooseBLEClient).
-
-**Example for HRMonitorSession:**
-```swift
-// GooseAppModel+HRMonitorSession.swift
-extension GooseAppModel {
-  func startHRMonitorCapture() {
-    guard activeHRMonitorCapture == nil else { return }
-    activeHRMonitorCapture = ActiveHRMonitorCapture(sessionID: UUID().uuidString)
-    ble.startHRMonitorScan()
-    hrMonitorCaptureStatus = "Scanning..."
-  }
-
-  func stopHRMonitorCapture() {
-    guard activeHRMonitorCapture != nil else { return }
-    ble.stopHRMonitorScan()
-    activeHRMonitorCapture = nil
-    hrMonitorCaptureStatus = "Stopped"
-  }
-}
-```
-
-### Pattern 2: Independent capture session for HR monitor
-
-**What:** `activeHRMonitorCapture: ActiveHRMonitorCapture?` on `GooseAppModel` mirrors the existing `activeHealthPacketCapture` pattern. The notification pipeline checks both independently.
-
-**When to use:** HR monitor frames must persist to SQLite regardless of whether a WHOOP session is active.
-
-**Current gate (to be split) — GooseAppModel+NotificationPipeline.swift line 170:**
-```swift
-// CURRENT: HR frames dropped unless a WHOOP session is open
-guard activeHealthPacketCapture != nil || activeActivityPersistence != nil else { return }
-
-// AFTER: independent per-device-type gate
-let isHRFrame = event.serviceUUID == "180D"
-if isHRFrame {
-  guard activeHRMonitorCapture != nil else { return }
-} else {
-  guard activeHealthPacketCapture != nil || activeActivityPersistence != nil else { return }
-}
-```
-
-**Trade-offs:** Minimal code delta; does not affect the WHOOP capture path at all.
-
-### Pattern 3: Exponential backoff on BLE disconnect
-
-**What:** State vars on `GooseBLEClient` track attempt count and compute delay. `scheduleReconnectWithBackoff()` replaces the immediate `connect(peripheral, reason:)` call in `didDisconnectPeripheral`. Circuit breaker fires at 10 attempts.
-
-**When to use:** Both WHOOP central delegate (`GooseBLEClient+CentralDelegate`) and HR monitor delegate (`GooseBLEHRMonitorManager`) need this. The WHOOP backoff is added to `GooseBLEClient+Commands.swift`. The HR monitor backoff is a parallel, simpler version inside `GooseBLEHRMonitorManager`.
-
-**State to add to `GooseBLEClient`:**
-```swift
-var reconnectAttemptCount: Int = 0
-var reconnectBackoffWorkItem: DispatchWorkItem?
-static let reconnectMaxAttempts = 10
-static let reconnectBaseInterval: TimeInterval = 1.0
-static let reconnectMaxInterval: TimeInterval = 60.0
-```
-
-**Delay formula:** `min(baseInterval * pow(2.0, Double(attempt)), maxInterval)`
-
-**Reset:** `reconnectAttemptCount = 0` inside `didConnect` on successful connection.
-
-**Important:** HR monitor backoff state must live on `GooseBLEHRMonitorManager` directly, not on `GooseBLEClient` via `owner`. WHOOP reconnect cycles and HR monitor reconnect cycles are independent.
-
-### Pattern 4: Rust bridge call from HealthDataStore extension
-
-**What:** All bridge-backed data queries live in `HealthDataStore+*.swift` extensions. Each extension calls `bridge.request(method: "metrics.*", args: [...])` on a background queue, then publishes results as `@Published` state on `@MainActor`.
-
-**Constraint:** `GooseRustBridge.request()` is synchronous. Never call from `@MainActor` directly; dispatch to a background queue first.
-
-**When to use:** `HealthDataStore+RecoveryV2.swift` follows the exact pattern already established in `HealthDataStore+PacketInputs.swift` (lines 134-256).
-
-**Example:**
-```swift
-// HealthDataStore+RecoveryV2.swift
-func refreshRecoveryV2Metrics() {
-  let db = Self.defaultDatabasePath()
-  let bridge = self.bridge
-  Task.detached(priority: .utility) { [weak self] in
-    guard let self else { return }
-    let result = try? bridge.request(
-      method: "metrics.daily_recovery_metrics",
-      args: ["database_path": db, "start_time_unix_ms": ..., "end_time_unix_ms": ...]
-    )
-    await MainActor.run { self.recoveryV2Metrics = Self.parseRecoveryMetrics(result) }
-  }
-}
-```
-
-### Pattern 5: WHOOP 4.0 RTC sync on connect
-
-**What:** Call `writeClockCommand(.get, syncIfNeeded: true)` when `connectionState` transitions to `"ready"` and `activeDescriptor == .whoopGen4`. The existing `writeClockCommand` infrastructure already handles read-then-sync logic (in `GooseBLEClient+HistoricalHandlers.swift` lines 194-207) — RTC sync on connect only needs a caller.
-
-**When to use:** Hook into `processDiscoveredCharacteristics` (end of function, after `updateConnectionState("ready")`) in `GooseBLEClient+Commands.swift`.
-
-**Trade-off:** Adding the call directly after `updateConnectionState("ready")` is cleanest; avoids a cross-type callback. Use `DispatchQueue.main.asyncAfter(deadline: .now() + 1)` to avoid colliding with in-flight GATT discovery.
-
-### Pattern 6: String Catalogs for pt-PT localisation
-
-**What:** Xcode 15+ String Catalog (`.xcstrings`) is the current standard. A single `Localizable.xcstrings` file in the `GooseSwift/` target replaces the older `.strings`/`.stringsdict` per-locale system. The catalog holds all locales in one JSON file with source-language strings as keys.
-
-**When to use:** No localisation infrastructure currently exists. Adding `Localizable.xcstrings` is zero-disruption. Existing hardcoded strings become candidates for extraction in phases.
-
-**Scope for v3.0:** Only new strings introduced by v3.0 features need to be localised immediately (HRMonitorScanView strings, Recovery V2 section headers, RTC sync status strings). Existing UI strings can be extracted incrementally.
-
-## Data Flow
-
-### HR Monitor Independent Capture Flow (new)
+### New path: sleep staging
 
 ```
-User taps "Start HR Monitor Capture"
-    |
-GooseAppModel.startHRMonitorCapture()         [@MainActor]
-    |
-ble.startHRMonitorScan()                      [-> coreBluetoothQueue via hrMonitorManager]
-    | user selects device from HRMonitorScanView
-GooseAppModel.connectHRMonitor(device)        [@MainActor]
-    |
-GooseBLEHRMonitorManager.didUpdateValue(0x2A37)  [coreBluetoothQueue]
-    | owner.onNotification?(event)  [serviceUUID = "180D"]
-GooseAppModel.handleNotification(event)       [coreBluetoothQueue -> notificationIngestQueue]
-    | serviceUUID == "180D" -> check activeHRMonitorCapture
-importCapturedFrames(frames, event)           [notificationIngestQueue]
-    |
-CaptureFrameWriteQueue.enqueue(rows)          [captureFrameRowBuildQueue -> SQLite]
+gravity table (x, y, z timeseries at ~50 Hz per packet)
+  + decoded_frames HR series
+  -> [NEW] sleep_staging.rs: cole_kripke_activity_series (activity count per 30s epoch)
+  -> [NEW] sleep_staging.rs: cardiorespiratory_features (HR features per epoch)
+  -> [NEW] sleep_staging.rs: 4-class classifier with physiological reimposition
+  -> Vec<SleepStageSegment>
+  -> SleepV1Input.stage_segments (existing field, already handled by goose_sleep_v1)
 ```
 
-### BLE Reconnect Backoff Flow (new, both WHOOP and HR monitor)
+`sleep_staging.rs` is a pure computation module. It reads from the store, computes, and returns `Vec<SleepStageSegment>`. It does not write to any table; the caller passes the result through the existing `SleepV1Input` path. No new output types are required.
+
+### Modified path: HRV with ectopic filter
 
 ```
-didDisconnectPeripheral(peripheral, error)    [@MainActor, dispatched from coreBluetoothQueue]
-    |
-reconnectAttemptCount += 1
-if reconnectAttemptCount > maxAttempts -> updateReconnectState("circuit open"); return
-    |
-delay = min(base * 2^attempt, maxInterval)    [exponential]
-scheduleReconnectWithBackoff(peripheral, delay)
-    | DispatchQueue.main.asyncAfter(delay)
-connect(peripheral, reason: "auto.backoff.\(attempt)")
-    | on successful connect
-reconnectAttemptCount = 0                     [reset in didConnect]
+rr_intervals_ms (from decoded_frames, unchanged source)
+  -> [NEW] lipponen_tarvainen_ectopic_filter()  (inside goose_hrv_v0 pre-step)
+  -> cleaned rr_intervals
+  -> existing RMSSD / SDNN / pNN50 computation (unchanged)
 ```
 
-### WHOOP 4.0 RTC Sync Flow (new)
+The existing `invalid_interval_count` counter and `invalid_rr_interval_dropped` quality flag are reused to cover ectopic-rejected intervals. No new output fields are required in `HrvOutput` for v1.
+
+### Modified path: recovery with personal baselines
 
 ```
-processDiscoveredCharacteristics(...)         [main thread via dispatchCoreBluetoothDelegateToMainIfNeeded]
-    | commandCharacteristic found
-updateConnectionState("ready")
-    | if activeDescriptor == .whoopGen4
-scheduleRTCSyncIfNeeded()                     [DispatchQueue.main.asyncAfter(+1s)]
-    |
-writeClockCommand(.get, syncIfNeeded: true)   [existing path -> auto-syncs if offset > 5s]
+daily_recovery_metrics table (existing, stores hrv_rmssd_ms + resting_hr_bpm per day)
+  -> [NEW] baselines.rs: fold_history() -> EwmaBaselineState {hrv_ewma, rhr_ewma}
+  -> [NEW] goose_recovery_v1: Z-score each vital sign against personal EWMA
+  -> logistic squash -> score_0_to_100
 ```
 
-### CR-02 device_id Filter Fix (Rust side)
+The `baselines.rs` state is reconstructed on each call — not persisted in SQLite in v1. This avoids a new table and migration for the first iteration. The EWMA fold is cheap: typically 30–90 rows from `daily_recovery_metrics`.
+
+### Modified path: strain with Banister TRIMP
 
 ```
-capture_import.rs import_captured_frame_batch()
-    | for HrMonitor frames, CapturedFrameInput.device_id = peripheral.identifier.uuidString
-store.rs start_capture_session() sets active_device_id
-    | PROBLEM: active_device_id in capture session uses a different namespace/format
-    |          than per-row device_id from Swift, causing filter to never match
-Fix: align device_id format in capture session with per-row device_id
-     (both must use the same UUID string format, with or without dashes)
+StrainInput {duration_minutes, resting_hr_bpm, average_hr_bpm, max_hr_bpm, hr_zone_minutes}
+  -> [NEW] tanaka_hrmax(age_years) if max_hr_bpm not calibrated
+  -> [NEW] goose_strain_v1 Banister TRIMP exponential weighting
+  -> [NEW] fit_strain_denominator() -> normalised score_0_to_21
 ```
 
-### Recovery V2 Data Flow (new)
+`goose_strain_v0` remains registered and active as fallback. `goose_strain_v1` is a new algorithm definition row; `settings.set_algorithm_preference` switches the active algorithm per scope.
+
+---
+
+## Build Order
+
+Strict dependency order (each phase must be complete before the arrow target begins):
 
 ```
-HealthDataStore.refreshRecoveryV2Metrics()    [background Task]
-    |
-GooseRustBridge.request("metrics.daily_recovery_metrics", args: [db, date_range])
-    |
-Rust bridge.rs -> daily_recovery_metrics_bridge() -> store.daily_recovery_metrics_between()
-    |
-await MainActor.run { self.recoveryV2Metrics = parsed }
-    |
-HealthRecoveryStressViews observes @Published recoveryV2Metrics
-    | timeline, insights, trends sections populated
+Phase 1 — protocol.rs + store.rs + gravity extraction in bridge.rs
+  |
+  +-> Phase 2 — sleep_staging.rs
+  |     (needs gravity rows in store)
+  |
+  +-> Phase 3 — baselines.rs EWMA
+  |     (reads existing daily_recovery_metrics; no Phase 1 data dependency,
+  |      but wait for Phase 1 to stabilise the build before branching)
+  |
+  +-> Phase 4 — HRV ectopic filter (in metrics.rs)
+  |     (pure computation, no data dependency on Phase 1,
+  |      but logically grouped after data foundation)
+  |
+  +-> Phase 5 — Strain v1 Banister TRIMP (in metrics.rs)
+        (pure computation, no data dependency)
+
+After Phase 2 + Phase 3 + Phase 4 complete:
+  -> Phase 6 — Recovery v1 (metrics.rs + bridge.rs + HealthDataStore Swift extension)
+       (needs EWMA baselines from Phase 3, sleep staging from Phase 2,
+        ectopic-filtered HRV from Phase 4 for accurate baseline history)
+
+Phase 7 — Helper metrics (heart_rate_dip_pct, waso_estimation, rmr_mifflin_st_jeor)
+  (independent, can be done at any time alongside Phase 2-5)
 ```
+
+Phases 2, 3, 4, 5 can be developed in parallel after Phase 1 merges. Phase 6 is the only gate that requires all four to be complete.
+
+---
 
 ## Integration Points
 
-### Existing Components — Modified
+### bridge.rs — new methods
 
-| Component | What Changes | Threading Constraint |
-|-----------|-------------|---------------------|
-| `GooseBLEClient` (main file) | Add backoff state vars; add `@Published discoveredHRDevices: [GooseDiscoveredDevice]` forwarded from manager | `@Published` on `@MainActor`; safe via `objectWillChange.send()` dispatch already in manager |
-| `GooseBLEClient+CentralDelegate` | `didDisconnectPeripheral` delegates reconnect to `scheduleReconnectWithBackoff()` instead of immediate `connect()` | Already dispatches to main; backoff `DispatchWorkItem` scheduled on `DispatchQueue.main` |
-| `GooseBLEClient+HRMonitor` | `GooseBLEHRMonitorManager.didDisconnectPeripheral` adds HR backoff; `didDiscover` updates forwarded `@Published` array | HR manager runs on `coreBluetoothQueue`; `DispatchQueue.main.async` for UI state |
-| `GooseBLEClient+Commands` | Add `scheduleReconnectWithBackoff()`, `sendRTCSyncIfNeeded()` | Both called from main thread; schedule main-thread work items |
-| `GooseAppModel` | Add `activeHRMonitorCapture`, `hrMonitorCaptureStatus`, `hrMonitorCaptureFrameCount` `@Published` vars | All `@Published` on `@MainActor` — no threading concern |
-| `GooseAppModel+NotificationPipeline` | Split `importCapturedFrames` gate at line 170 | No threading change; same queue path |
-| `HealthRecoveryStressViews` | Wire timeline/insights sections to bridge data from `HealthDataStore+RecoveryV2` | `@ObservedObject store` already on view; no new threading |
-| Rust `store.rs` | Fix per-row `device_id` namespace in the capture import query | Pure Rust; no threading implication for Swift |
+These four entries must be added to `BRIDGE_METHODS` (in lexicographic order to pass the constant-sync test) and to the `handle_bridge_request` match dispatcher:
 
-### New Components
+| Method | Args | Returns | Depends on |
+|--------|------|---------|------------|
+| `metrics.goose_recovery_v1` | `database_path, start_time, end_time, baseline_window_days` | `AlgorithmRunResult<RecoveryScoreOutput>` | `baselines.rs`, `goose_recovery_v1` |
+| `metrics.goose_strain_v1` | `StrainInput` JSON (same schema as v0) | `AlgorithmRunResult<StrainScoreOutput>` | `goose_strain_v1`, `tanaka_hrmax` |
+| `metrics.sleep_staging` | `database_path, sleep_start, sleep_end, device_id` | `Vec<SleepStageSegment>` | `sleep_staging.rs` |
+| `store.insert_gravity_rows` | `database_path, rows: [{ts_unix_ms, device_id, x, y, z}]` | `{inserted: usize}` | `GooseStore::insert_gravity_rows` |
 
-| Component | Depends On | Used By |
-|-----------|-----------|---------|
-| `GooseAppModel+HRMonitorSession.swift` | `GooseBLEClient.hrMonitorManager`, `activeHRMonitorCapture` on `GooseAppModel` | `HRMonitorScanView`, `GooseAppModel+NotificationPipeline` |
-| `HRMonitorScanView.swift` | `GooseAppModel` (`@EnvironmentObject`), `GooseBLEClient.discoveredHRDevices` (`@Published`) | Health tab or dedicated BLE sheet |
-| `HealthDataStore+RecoveryV2.swift` | `GooseRustBridge`, `metrics.daily_recovery_metrics` bridge method | `HealthRecoveryStressViews` |
-| `Localizable.xcstrings` | Xcode 15 build toolchain | All new v3.0 views |
+`metrics.goose_recovery_v1` requires `database_path` because it reads `daily_recovery_metrics` history to build baselines. `metrics.goose_strain_v1` does not — it is a pure computation like v0.
 
-### Internal Boundaries
+### store.rs changes
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `GooseAppModel` <-> `GooseBLEHRMonitorManager` | `ble.hrMonitorManager.*` direct calls; forwarded `@Published discoveredHRDevices` on `GooseBLEClient` for UI observation | `hrMonitorManager` itself is not `@Published`; forward discovered devices list to `GooseBLEClient` |
-| `GooseAppModel+HRMonitorSession` <-> `GooseAppModel+NotificationPipeline` | Shared `activeHRMonitorCapture` var on `GooseAppModel` | Both extensions run on `@MainActor`; no lock needed |
-| `HealthDataStore+RecoveryV2` <-> `HealthRecoveryStressViews` | `@Published recoveryV2Metrics` on `HealthDataStore` | Follow same pattern as `packetInputReports` |
-| Swift <-> Rust (`device_id` fix) | CR-02 fix is Rust-only; Swift side already passes `peripheral.identifier.uuidString` | Verify format consistency: UUID string with dashes in both capture session start and per-row insert |
+1. Bump `CURRENT_SCHEMA_VERSION` from 14 to 15.
+2. Add migration block for version 15 in `apply_migrations`: create `gravity` table with index.
+3. Add `GooseStore::insert_gravity_rows(rows: &[GravityRowInput]) -> GooseResult<usize>`.
+4. Add `GooseStore::gravity_rows_between(device_id: &str, start_unix_ms: i64, end_unix_ms: i64) -> GooseResult<Vec<GravityRow>>` — used by `sleep_staging.rs`.
 
-## Anti-Patterns
+Gravity table DDL:
+```sql
+CREATE TABLE IF NOT EXISTS gravity (
+    row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id TEXT NOT NULL,
+    ts_unix_ms INTEGER NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    z INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts_unix_ms);
+```
 
-### Anti-Pattern 1: Binding `GooseBLEHRMonitorManager.discoveredHRDevices` directly in SwiftUI
+### protocol.rs changes
 
-**What people do:** Bind `ble.hrMonitorManager.discoveredHRDevices` directly in a SwiftUI `ForEach`.
+In `summarize_i16_series`: change `if preview.len() < 8` to `if preview.len() < expected_count`. The `I16SeriesSummary` struct is unchanged — `preview` is already `Vec<i16>`. The only effect is that K21 and K10 packets now store all 100 samples in `parsed_payload_json` instead of the first 8.
 
-**Why it's wrong:** `GooseBLEHRMonitorManager` is not an `ObservableObject`. Mutations call `objectWillChange.send()` on the owning `GooseBLEClient`, not on `GooseBLEHRMonitorManager`. A direct array reference in SwiftUI will not trigger view updates.
+### Swift call sites
 
-**Do this instead:** Add `@Published var discoveredHRDevices: [GooseDiscoveredDevice] = []` to `GooseBLEClient`, updated from the manager's `didDiscover` callback. `GooseBLEClient` is already an `@ObservedObject` in views.
-
-### Anti-Pattern 2: Calling `GooseRustBridge.request()` from `@MainActor`
-
-**What people do:** Call bridge methods inline in a `HealthDataStore` method that runs on `@MainActor`.
-
-**Why it's wrong:** `goose_bridge_handle_json` blocks the calling thread. On `@MainActor`, this freezes the UI.
-
-**Do this instead:** `Task.detached(priority: .utility)` or `DispatchQueue.global().async`. Publish results back via `await MainActor.run { self.property = ... }`. See `HealthDataStore+PacketInputs.swift` lines 134-256 for the established pattern.
-
-### Anti-Pattern 3: Storing backoff state on `GooseBLEClient` and reading it from `GooseBLEHRMonitorManager` via `owner`
-
-**What people do:** Use one `reconnectAttemptCount` on `GooseBLEClient` for both WHOOP and HR monitor reconnect cycles.
-
-**Why it's wrong:** WHOOP and HR monitor reconnect cycles are independent. A WHOOP reconnect failure must not exhaust the HR monitor circuit breaker.
-
-**Do this instead:** Add separate `hrReconnectAttemptCount: Int` and `hrReconnectBackoffWorkItem: DispatchWorkItem?` directly to `GooseBLEHRMonitorManager`. WHOOP backoff state lives on `GooseBLEClient`.
-
-### Anti-Pattern 4: Adding HR monitor capture session state to `GooseBLEClient`
-
-**What people do:** Add `@Published var hrMonitorCaptureStatus` to `GooseBLEClient`.
-
-**Why it's wrong:** Capture session lifecycle is `GooseAppModel`'s responsibility. `GooseBLEClient` owns BLE connectivity; `GooseAppModel` owns session state.
-
-**Do this instead:** Add capture session state (`activeHRMonitorCapture`, `hrMonitorCaptureStatus`, `hrMonitorCaptureFrameCount`) to `GooseAppModel`. Add only connectivity state (`discoveredHRDevices`, `hrConnectionState`) to `GooseBLEClient`.
-
-## Build Order (Suggested)
-
-### Step 1: CR-02 device_id Fix (Rust, isolated)
-
-**Rationale:** Pure Rust change. Zero Swift impact. Fixing it first means all subsequent testing with HR monitor capture produces correct per-device storage. Unblocks meaningful integration testing.
-
-**Files:** `Rust/core/src/store.rs`, `Rust/core/src/capture_import.rs`
-**Risk:** LOW — SQL query fix; existing Rust integration tests cover capture import
-
-### Step 2: BLE Reconnect Backoff — WHOOP + HR Monitor
-
-**Rationale:** Infrastructure change that touches both `GooseBLEClient+CentralDelegate` and `GooseBLEHRMonitorManager`. Must be done before HR monitor scan UI is wired (otherwise reconnect behaviour is undefined after user connects an HR monitor and it drops). Does not depend on any other v3.0 feature.
-
-**Files:** `GooseBLEClient.swift` (add state vars), `GooseBLEClient+Commands.swift` (add `scheduleReconnectWithBackoff()`), `GooseBLEClient+CentralDelegate.swift` (hook in backoff), `GooseBLEClient+HRMonitor.swift` (HR manager `didDisconnectPeripheral`)
-**Risk:** MEDIUM — changes live reconnect path; requires real-device testing
-
-### Step 3: HR Monitor Scan/Connect UI + Independent Capture Session
-
-**Rationale:** Depends on Step 2 (backoff) being stable. Adds `HRMonitorScanView`, wires `startHRMonitorScan()`, adds `GooseAppModel+HRMonitorSession`, and modifies `GooseAppModel+NotificationPipeline` to decouple the capture gate. These sub-tasks are tightly coupled; implement together.
-
-**Sub-tasks (sequential within step):**
-1. Add `@Published discoveredHRDevices` forwarding on `GooseBLEClient`
-2. Add `activeHRMonitorCapture` + `@Published` status vars on `GooseAppModel`
-3. Create `GooseAppModel+HRMonitorSession.swift`
-4. Modify `GooseAppModel+NotificationPipeline.swift` gate at line 170
-5. Create `HRMonitorScanView.swift`
-
-**Files:** `GooseBLEClient.swift`, `GooseAppModel.swift`, `GooseAppModel+HRMonitorSession.swift` (new), `GooseAppModel+NotificationPipeline.swift`, `HRMonitorScanView.swift` (new)
-**Risk:** MEDIUM — modifies notification pipeline (hot path for all BLE frames)
-
-### Step 4: WHOOP 4.0 RTC Sync
-
-**Rationale:** Depends on Step 2 (backoff) because the RTC sync call occurs at the `"ready"` connection state, which is in the same `processDiscoveredCharacteristics` code path modified for backoff. Isolated to Gen4 peripherals; no impact on WHOOP 5.0 sessions.
-
-**Files:** `GooseBLEClient+Commands.swift` (add `sendRTCSyncIfNeeded()`; call from `processDiscoveredCharacteristics`)
-**Risk:** LOW — uses existing `writeClockCommand(.get, syncIfNeeded: true)` infrastructure; Gen4-only guard
-
-### Step 5: Recovery V2 Dashboard (bridge-backed data)
-
-**Rationale:** Self-contained. `RecoveryV2OverviewPage` view skeleton already exists (`HealthRecoveryStressViews.swift`). Only needs `HealthDataStore+RecoveryV2.swift` to provide `@Published` data and the view wired to consume it. No dependencies on other v3.0 features.
-
-**Files:** `HealthDataStore+RecoveryV2.swift` (new), `HealthRecoveryStressViews.swift` (wire timeline/insights sections)
-**Risk:** LOW — additive; follows established bridge query pattern; bridge methods already exist in Rust
-
-### Step 6: pt-PT Localisation
-
-**Rationale:** Should be done last because it touches every new string introduced by Steps 3-5. Doing it after the UI is stable avoids re-running string extraction multiple times.
-
-**Files:** `Localizable.xcstrings` (new, added to `GooseSwift/` target), pt-PT translations for all new v3.0 UI text
-**Risk:** LOW — additive; does not change logic
-
-## Scaling Considerations
-
-This is a single-user personal device app. The following capacity concerns apply for v3.0:
-
-| Concern | Current State | v3.0 Impact |
-|---------|--------------|-------------|
-| SQLite write throughput | Handled by `CaptureFrameWriteQueue` with batching | HR monitor adds a second concurrent write source; same queue, same DB — acceptable |
-| `@Published` state mutations | GooseAppModel has 60+ @Published vars | Each new HR monitor var adds one more; no performance concern |
-| BLE queue contention | Two `CBCentralManager` instances share `coreBluetoothQueue` | `GooseBLEHRMonitorManager` was already created with the same queue in v2.0; no change |
-| Rust bridge synchrony | `goose_bridge_handle_json` blocks calling thread | No new synchronous calls added to hot paths; Recovery V2 query is on background queue |
-
-## Sources
-
-All findings from direct source inspection of the repository. No external references required.
-
-- `GooseSwift/GooseBLEClient+HRMonitor.swift` — existing HR monitor manager; confirmed: no scan UI caller, no disconnect backoff in `didDisconnectPeripheral`
-- `GooseSwift/GooseBLEClient+CentralDelegate.swift` — existing disconnect path (lines 228-283); immediate reconnect, no backoff
-- `GooseSwift/GooseAppModel+NotificationPipeline.swift` — capture frame gate (line 170); gated on WHOOP `activeHealthPacketCapture` only
-- `GooseSwift/GooseAppModel.swift` — `activeHealthPacketCapture` pattern (line 99); HR monitor mirrors this
-- `GooseSwift/HealthDataStore+ActivitySnapshots.swift` — `dailyRecoveryMetrics()` bridge call pattern (lines 7-10)
-- `GooseSwift/HealthDataStore+PacketInputs.swift` — background bridge query pattern (lines 134-256)
-- `GooseSwift/HealthRecoveryStressViews.swift` — existing Recovery V2 skeleton with placeholder timeline and insights sections
-- `Rust/core/src/capture_import.rs` — HrMonitor branch (line 637); `active_device_id: None` (line 400) is the CR-02 root cause
-- `GooseSwift/GooseBLEClient.swift` — `ClockCommandKind.set(Date)` (line 462); `strapClockAutoSyncThresholdSeconds` (line 354); no backoff state vars present
+| File | Change |
+|------|--------|
+| `GooseBLEClient.swift` | No change — IMU already toggled in `startPhysiologyCapture` |
+| `GooseUploadService.swift` | No change — `gravity` key already sent in upload payload |
+| `HealthDataStore+Recovery.swift` (new file) | Add `refreshRecoveryV1(start:end:)` calling `bridge.request(method: "metrics.goose_recovery_v1", args: [...])` |
+| Existing `RecoveryV2DashboardView` | Update to consume `recoveryV1` property from `HealthDataStore` |
 
 ---
-*Architecture research for: Goose v3.0 — Wearable UX, CI Hardening & RTC Sync*
-*Researched: 2026-06-04*
+
+## Suggested Phase Groupings
+
+| Phase | Work | Parallel with | Gate for |
+|-------|------|--------------|----------|
+| 1 — Data Foundation | `protocol.rs` preview expansion, gravity table + migration, K21 extraction in bridge | Nothing (first) | All algorithm phases |
+| 2 — Sleep Staging | `sleep_staging.rs`, `metrics.sleep_staging` bridge method | Phase 3, 4, 5 after Phase 1 | Phase 6 |
+| 3 — EWMA Baselines | `baselines.rs`, `fold_history` | Phase 2, 4, 5 after Phase 1 | Phase 6 |
+| 4 — HRV Ectopic Filter | Lipponen-Tarvainen in `metrics.rs` | Phase 2, 3, 5 after Phase 1 | Phase 6 |
+| 5 — Strain v1 | Banister TRIMP + Tanaka HRmax + `fit_strain_denominator`, `metrics.goose_strain_v1` bridge method | Phase 2, 3, 4 after Phase 1 | Independent |
+| 6 — Recovery v1 | `goose_recovery_v1` in `metrics.rs`, bridge method, `HealthDataStore` extension | Nothing (last gate) | User-facing delivery |
+| 7 — Helper metrics | `heart_rate_dip_pct`, `waso_estimation`, `rmr_mifflin_st_jeor` | Any phase | Not blocking |
+
+Phase 7 is the lowest-risk work and can be used as a warm-up or fill work during the Phase 2-3-4 parallel sprint.

@@ -1,253 +1,315 @@
-# Stack Research — Goose v3.0
+# Stack Research — v5.0 Metrics Accuracy
 
-**Domain:** iOS wearable app (SwiftUI + Rust core), WHOOP BLE + HR monitor UX
-**Researched:** 2026-06-04
-**Confidence:** HIGH — all findings verified against live codebase and Context7 Apple docs
-
----
-
-## Scope
-
-This document covers only the NEW capabilities in v3.0. Existing validated stack
-(CoreBluetooth GATT, Rust FFI bridge, rusqlite, FastAPI server) is not re-researched.
+**Project:** Goose biometric algorithm accuracy
+**Researched:** 2026-06-06
+**Based on:** Direct inspection of `Rust/core/Cargo.toml`, `src/metrics.rs`, `src/energy_rollup.rs`, `src/protocol.rs`, `src/metric_features.rs`
 
 ---
 
-## Core Technologies (new v3.0 usage)
+## New Crates Needed
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| CoreBluetooth — `writeValue(_:for:type:)` | iOS 26.0 (already in SDK) | WHOOP 4.0 RTC clock sync write | Already used for WHOOP 5.0 clock sync; identical API path. `CBCharacteristicWriteType.withResponse` gives delegate callback via `peripheral(_:didWriteValueFor:error:)` for error detection. No new import or dependency. |
-| CoreBluetooth — `CBCentralManager.isScanning` + `scanForPeripherals` | iOS 26.0 (already in SDK) | HR monitor scan list UI state | `isScanning` is a published-observable Bool; `GooseBLEHRMonitorManager.discoveredHRDevices` is already populated by `centralManager(_:didDiscover:advertisementData:rssi:)`. Only the SwiftUI view layer is missing. |
-| SwiftUI `List` / `ForEach` + `@ObservedObject` | iOS 26.0 (already in project) | HR monitor scan list + connect UI | Pattern already exists in `ConnectionView.swift` (WHOOP scan list). Reuse `GooseDiscoveredDevice` (already `Identifiable`) and the `hrMonitorManager.discoveredHRDevices` array. No new framework. |
-| Xcode String Catalog (`.xcstrings`) | Xcode 15+ / iOS 17+ | pt-PT localisation | Apple's current-generation localisation format. Replaces `.strings` files. Xcode auto-extracts strings from `Text("…")` literals and `String(localized:)` on build. Single source of truth — no separate `.strings` per language. `knownRegions` in `project.pbxproj` currently only has `en` + `Base`; adding `pt-PT` is a project setting change + catalog entry. |
-| `DispatchQueue.main.asyncAfter` (Foundation) | iOS 26.0 (already in SDK) | BLE reconnect exponential backoff + circuit breaker | No external dependency. Pattern: on `didDisconnect`, increment attempt counter, compute `min(pow(2, attempt) * baseDelay, maxDelay)`, schedule reconnect via `asyncAfter`. Cancel pending work item on manual disconnect. Reset counter on successful `ready` state. |
-| rusqlite `params!` macro — optional WHERE clause | 0.37 (already in Cargo.toml) | CR-02 per-row `device_id` filter | No new crate. The fix requires adding `device_id` to the `decoded_frames` table (via schema migration) or resolving it through `raw_evidence → capture_sessions.active_device_id` (JOIN). Then pass `device_id: Option<&str>` to `decoded_frames_between` and gate the `WHERE` clause. |
+**None.**
 
----
+Every mathematical primitive required for the algorithms listed in scope can be implemented
+directly in Rust using `f64` standard library methods (`f64::exp`, `f64::ln`, `f64::sqrt`,
+`f64::powi`, `f64::abs`, `f64::signum`). The algorithms are closed-form formulas with no
+dependency on external numerical libraries.
 
-## Supporting Libraries (no new additions needed)
+The existing Cargo.toml already provides everything the new algorithms need to persist
+results, serialise outputs, and report errors:
 
-| Library | Version | Purpose | Status |
-|---------|---------|---------|--------|
-| rusqlite | 0.37 (bundled) | SQLite query changes for CR-02 device_id filter | Already in `Cargo.toml`; only query/schema changes needed |
-| serde / serde_json | 1.0 | `UploadGetRecentDecodedStreamsArgs` already has `device_id: String` field | Already in `Cargo.toml` |
-| Foundation `DispatchWorkItem` | iOS 26.0 | Cancel in-flight backoff timer on manual disconnect | Already used for `clockCommandTimeoutWorkItem` — reuse the same pattern |
+- `rusqlite 0.37` — gravity table in SQLite, algorithm run records
+- `serde 1.0` + `serde_json 1.0` — all input/output structs and bridge protocol
+- `thiserror 2.0` — error types
 
-**No new Swift packages, no new Rust crates, no new server dependencies are required for v3.0.**
+Do not add `ndarray`, `nalgebra`, `statrs`, `rand`, or any ML runtime crate. The algorithms
+in scope (Lipponen-Tarvainen, Mifflin-St Jeor, Keytel, Banister TRIMP, Cole-Kripke) are
+well-defined arithmetic formulas expressible in a dozen lines of Rust each.
 
 ---
 
-## Feature-by-Feature Stack Decisions
+## Existing Crates Sufficient For
 
-### HR Monitor Scan/Connect UI
-
-**What exists:** `GooseBLEHRMonitorManager` (in `GooseBLEClient+HRMonitor.swift`) fully implements
-`didDiscover`, `discoveredHRDevices` array (sorted by RSSI), and `connect(_:)`. `startHRMonitorScan()`
-exists on `GooseBLEClient` but has no UI caller.
-
-**What is missing:** A SwiftUI view that renders `hrMonitorManager.discoveredHRDevices` as a `List`,
-with a "Scan" / "Stop" button and a "Connect" button per row. The `GooseBLEHRMonitorManager` is not
-`ObservableObject` — it triggers `owner?.objectWillChange.send()` on the parent `GooseBLEClient`.
-The UI should observe `GooseBLEClient` (already `@ObservedObject` in existing views) and access
-`ble.hrMonitorManager.discoveredHRDevices` directly.
-
-**Pattern to follow:** `ConnectionView.swift` lines 65–100 (WHOOP `discoveredDevices` list).
-
-**Stack call:** No new API. Use `@ObservedObject var ble: GooseBLEClient`, `ForEach(ble.hrMonitorManager.discoveredHRDevices)`, `ble.startHRMonitorScan()` / `ble.stopHRMonitorScan()` / `ble.connectHRMonitor(_:)`.
-
----
-
-### HR Monitor Independent Capture Session
-
-**Problem:** HR frames are currently routed through `onNotification?` only when
-`activeHealthPacketCapture` is active (WHOOP session gate).
-
-**Fix:** The `GooseBLEHRMonitorManager.peripheral(_:didUpdateValueFor:)` already fires unconditionally
-and calls `owner?.onNotification?`. The gate is upstream in `GooseAppModel`. Add a separate
-`@Published var hrCaptureActive: Bool` and `hrCaptureSessionID: String?` to `GooseAppModel` that
-controls whether HR frames get persisted, independent of the WHOOP capture path.
-
-**Stack:** No new API. Pattern follows existing `healthPacketCaptureSessionID` / `healthPacketCaptureStatus`.
+| Algorithm or Feature | Covered By |
+|---|---|
+| Lipponen-Tarvainen ectopic beat filter | `f64` stdlib (`abs`, comparison) — pure iteration over RR array |
+| EWMA baseline (HRV, RHR) | `f64` stdlib — single-pass iterator with alpha x + (1-alpha) x prev |
+| Z-score normalisation | `f64::sqrt`, `f64::powi` — existing `mean` + `sample_sd` already in `metrics.rs` |
+| Logistic recovery model (sigmoid) | `f64::exp` — `1.0 / (1.0 + (-z).exp())` |
+| Mifflin-St Jeor RMR | `f64` arithmetic — replaces the `weight_kg * 22.0` proxy in `energy_rollup.rs` |
+| Keytel active-kcal formula | `f64` arithmetic — already uses HR-reserve zone approach; Keytel adds sex-specific coefficients |
+| Harris-Benedict coefficients | `f64` arithmetic — sex + age + weight + height lookup table as `match` |
+| Tanaka HRmax (208 - 0.7 x age) | `f64` arithmetic — single expression |
+| Banister TRIMP (zone-weighted impulse) | `f64::exp`, zone-time iteration — compatible with existing `hr_zone_minutes` input |
+| Cole-Kripke 4-class sleep staging | `f64` arithmetic on epoch features — thresholded scoring table |
+| HR dip computation | `f64` arithmetic — ratio of means already partially handled in `metrics.rs` |
+| WASO / SOL from stage segments | `f64` arithmetic on `SleepStageSegment` — already parsed |
+| I16SeriesSummary gravity projection | `f64` arithmetic — dot product with calibration table row |
+| SQLite gravity table persistence | `rusqlite` — existing store pattern |
+| JSON bridge input/output | `serde_json` — existing `AlgorithmRunResult<T>` pattern |
+| Quality flags and provenance | `serde_json::json!` macro — existing pattern |
 
 ---
 
-### CR-02 Per-Row `device_id` Filter (Rust/SQLite)
+## Mathematical Primitives Needed
 
-**Root cause (from code comment at `bridge.rs:3065`):** The `device_id` field in
-`UploadGetRecentDecodedStreamsArgs` is a CoreBluetooth `peripheral.identifier` UUID string. The
-`decoded_frames` table has `device_type` (e.g., `"WHOOP_GEN5"`) but no `device_id` column.
-`raw_evidence` has no `device_id` either. `capture_sessions.active_device_id` holds it but
-`decoded_frames` is linked via `raw_evidence.capture_session_id → capture_sessions`.
+All of these are pure Rust, no external crates. They follow the same module-local private
+function pattern already used in `metrics.rs` and `metric_features.rs`.
 
-**Fix options (choose one):**
+### 1. EWMA (exponential weighted moving average)
 
-Option A — JOIN path (no schema change): Change `decoded_frames_between` to LEFT JOIN
-`raw_evidence → capture_sessions` and filter `WHERE capture_sessions.active_device_id = ?`.
-Available immediately; no migration needed.
+Used for: HRV RMSSD baseline, RHR baseline — both replace the simple windowed mean
+currently passed in as `hrv_baseline_rmssd_ms` and `resting_hr_baseline_bpm`.
 
-Option B — Denormalise (schema migration): Add `device_id TEXT` column to `decoded_frames`,
-populate on insert via the active session, add `CREATE INDEX IF NOT EXISTS idx_decoded_frames_device_id`.
-More performant at scale; requires a schema version bump.
+```rust
+fn ewma_update(prev: f64, new_value: f64, alpha: f64) -> f64 {
+    alpha * new_value + (1.0 - alpha) * prev
+}
 
-**Recommendation:** Option A first (minimal risk), then Option B if performance matters. The existing
-rusqlite migration infrastructure (`goose_schema_migrations` table in `store.rs`) supports this.
-
-**Stack:** `rusqlite 0.37` `params!` with `Option<&str>` — pattern already used throughout `store.rs`.
-Named parameters (`":device_id"`) or positional `?N` both work; the codebase uses positional.
-
----
-
-### Recovery V2 Dashboard
-
-**What exists:** `RecoveryV2OverviewPage` view struct is already in `HealthRecoveryStressViews.swift`
-and calls `store.recoveryHRVDisplayText(for:)` (defined in `HealthDataStore+CoachSummaries.swift`).
-Bridge methods `metrics.daily_recovery_metrics`, `metrics.goose_recovery_v0`,
-`metrics.recovery_sensor_daily_rollup`, `metrics.recovery_sensor_discovery` all exist in `bridge.rs`.
-
-**What is missing:** The `HealthDataStore` extension for per-date `daily_recovery_metrics` bridging
-(RHR, HRV, recovery score per `selectedDate`) and the routing of `RecoveryV2OverviewPage` into the
-Health tab navigator. Verified: `daily_recovery_metrics_bridge` in `bridge.rs` exists and calls
-`store.daily_recovery_metrics_between(start, end)` in `store.rs`.
-
-**Stack:** No new bridge methods. Add a `HealthDataStore+Recovery.swift` extension that calls
-`metrics.daily_recovery_metrics` with a ±12h window around `selectedDate`. Pattern follows
-`HealthDataStore+Sleep.swift`.
-
----
-
-### pt-PT Localisation (String Catalogs)
-
-**Current state:** Zero localisation files. `knownRegions = (en, Base)` in `project.pbxproj`.
-51 existing `NSLocalizedString` / `String(localized:)` calls already localisation-ready.
-SwiftUI `Text("…")` literals auto-extract to String Catalog on build.
-
-**Recommended approach:** String Catalog (`.xcstrings`), not legacy `.strings`.
-
-Rationale:
-- Apple standard from Xcode 15 / iOS 17 onwards. Context7 Apple docs confirm auto-extraction from `Text("…")` literals on build.
-- Single file per target (not one `.strings` per language per `.lproj` folder).
-- Xcode 26.x String Catalog editor supports cut/copy/paste between languages, remove language, and pre-fill from existing language — confirmed in Xcode release notes.
-- Migrating from `.strings` is one-way (`xcstrings` supersedes it); starting fresh with `.xcstrings` avoids the migration step entirely since the project has no existing `.strings`.
-
-**Steps:**
-1. File > New > File from Template > String Catalog → `Localizable.xcstrings` in `GooseSwift/` target.
-2. Project editor > Info > Localizations > `+` → Portuguese (Portugal) `pt-PT`.
-3. `knownRegions` in `project.pbxproj` gains `pt-PT`.
-4. Product > Build — Xcode auto-populates catalog with all `Text("…")` literals and `String(localized:)` calls.
-5. Translate entries in the catalog editor or export XLIFF for external translation.
-
-**No external library needed.** Do NOT use `Localize-Swift` or similar packages — the project constraint forbids external iOS dependencies and the native String Catalog achieves the same result.
-
----
-
-### WHOOP 4.0 RTC Clock Sync
-
-**Current state:** `writeClockCommand(_:syncIfNeeded:)` already implements the full RTC write flow:
-- Discovers command characteristic; Gen4 = `61080002`, Gen5 = `fd4b0002`.
-- `ClockCommandKind.set(Date)` encodes timestamp as two LE `UInt32` (seconds + subseconds).
-- `supportsClockCommands` gates on `activeDescriptor.isCommandCharacteristic(_:)` — so Gen4 command char is already gated correctly.
-- UI button "Clock" in `DeviceView.swift` already calls `writeClockCommand(.get, syncIfNeeded: true)`.
-
-**v3.0 task:** Confirm the Gen4 command numbers (`.get = 11`, `.set = 10`) match upstream issue #17's
-documented protocol for WHOOP 4.0. If Gen4 uses different command numbers, add a `ClockCommandKind`
-variant or check `activeDescriptor` before choosing command numbers. This is a verification + possible
-one-line payload change, not a new API.
-
-**Stack:** `CBPeripheral.writeValue(_:for:type:)` with `CBCharacteristicWriteType.withResponse`
-(confirmed via Context7 Apple CoreBluetooth docs). The `peripheral(_:didWriteValueFor:error:)` delegate
-already handles the response in `GooseBLEClient+HistoricalHandlers.swift`.
-
----
-
-### BLE Reconnect Exponential Backoff + Circuit Breaker
-
-**Current state:** On `didDisconnectPeripheral`, `connect(peripheral, reason:)` is called immediately
-with no delay and no attempt limit. `reconnectState` is a `String` status label only.
-
-**Implementation pattern (no new API):**
-
-```swift
-// New stored properties on GooseBLEClient
-private var reconnectAttemptCount = 0
-private static let reconnectMaxAttempts = 10
-private static let reconnectBaseDelay: TimeInterval = 1.0
-private static let reconnectMaxDelay: TimeInterval = 60.0
-private var reconnectWorkItem: DispatchWorkItem?
-
-// In didDisconnectPeripheral, replace immediate connect() with:
-func scheduleReconnect(peripheral: CBPeripheral, reason: String) {
-  guard reconnectAttemptCount < Self.reconnectMaxAttempts else {
-    updateReconnectState("circuit open — \(reconnectAttemptCount) attempts exhausted")
-    reconnectAttemptCount = 0
-    return
-  }
-  let delay = min(
-    pow(2.0, Double(reconnectAttemptCount)) * Self.reconnectBaseDelay,
-    Self.reconnectMaxDelay
-  )
-  reconnectAttemptCount += 1
-  let item = DispatchWorkItem { [weak self] in
-    self?.connect(peripheral, reason: reason)
-  }
-  reconnectWorkItem = item
-  DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
+fn ewma_series(values: &[f64], alpha: f64) -> Option<f64> {
+    let mut acc = *values.first()?;
+    for &v in &values[1..] {
+        acc = ewma_update(acc, v, alpha);
+    }
+    Some(acc)
 }
 ```
 
-Reset `reconnectAttemptCount = 0` in the `ready` state handler.
-Cancel `reconnectWorkItem` in `forgetRememberedDevice()` and on manual disconnect.
+### 2. Z-score
 
-Apply the same pattern to `GooseBLEHRMonitorManager` for the HR monitor reconnect (upstream PR #18
-says "apply to both WHOOP and HR monitor delegates").
+Used for: recovery logistic model normalisation.
 
-**Stack:** `DispatchQueue.main.asyncAfter` + `DispatchWorkItem` — already used for `clockCommandTimeoutWorkItem`. No new import.
+```rust
+fn z_score(value: f64, mean: f64, sd: f64) -> Option<f64> {
+    if sd <= 0.0 || !sd.is_finite() { return None; }
+    Some((value - mean) / sd)
+}
+```
+
+`mean` and `sample_sd` are already defined as private functions in `metrics.rs`. They
+may need to be made `pub(crate)` or moved to a shared `math.rs` if reused across modules.
+
+### 3. Logistic function (sigmoid)
+
+Used for: recovery score — map z-score to 0..1 probability, scale to 0..100.
+
+```rust
+fn logistic(z: f64) -> f64 {
+    1.0 / (1.0 + (-z).exp())
+}
+```
+
+### 4. Lipponen-Tarvainen ectopic beat filter
+
+Three-pass algorithm on a `&[f64]` RR interval series:
+
+1. Reject intervals outside `[300, 2000]` ms (already done in `goose_hrv_v0` — reuse).
+2. Compute a local reference using the median of k nearest valid neighbours (k=5). Flag
+   as ectopic if `|RR_i - RR_ref| / RR_ref > 0.2`.
+3. Replace ectopic beats with linear interpolation between nearest valid neighbours.
+
+Primitive needed: `median5` on a fixed-size window — no heap allocation.
+
+```rust
+fn median5(window: &[f64]) -> f64 {
+    let mut buf = [0.0f64; 5];
+    let len = window.len().min(5);
+    buf[..len].copy_from_slice(&window[..len]);
+    buf[..len].sort_by(|a, b| a.partial_cmp(b).unwrap());
+    buf[len / 2]
+}
+```
+
+### 5. Tiered SWS window selection
+
+Pure control-flow logic on `Vec<SleepStageSegment>` (already parsed in `metrics.rs`).
+Pick the longest contiguous `stage_kind == "deep"` run in the first half of the sleep
+window. Returns `Option<(usize, usize)>` index range for the RMSSD computation window.
+No new math — iterator + `max_by`.
+
+### 6. Mifflin-St Jeor RMR
+
+Replaces `weight_kg * 22.0` proxy in `energy_rollup.rs::resting_kcal`.
+
+```rust
+fn mifflin_st_jeor_rmr_kcal_per_day(
+    weight_kg: f64,
+    height_cm: f64,
+    age_years: u32,
+    sex: &str, // "male" | "female" | other
+) -> f64 {
+    let base = 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years as f64;
+    match sex {
+        "male"   => base + 5.0,
+        "female" => base - 161.0,
+        _        => base - 78.0, // sex-neutral midpoint
+    }
+}
+```
+
+Requires adding `profile_height_cm: Option<f64>` to `EnergyDailyRollupOptions`.
+
+### 7. Keytel active-kcal per minute
+
+Sex-specific polynomial from Keytel et al. 2005:
+
+```rust
+fn keytel_active_kcal_per_minute(
+    hr_bpm: f64,
+    age_years: u32,
+    weight_kg: f64,
+    sex: &str,
+) -> f64 {
+    let age = age_years as f64;
+    let raw = match sex {
+        "male"   => -55.0969 + 0.6309*hr_bpm + 0.1988*weight_kg + 0.2017*age,
+        "female" => -20.4022 + 0.4472*hr_bpm - 0.1263*weight_kg + 0.0740*age,
+        _        => -37.5496 + 0.5390*hr_bpm + 0.0363*weight_kg + 0.1379*age,
+    };
+    (raw / 4.184).max(0.0)
+}
+```
+
+### 8. Tanaka HRmax estimate
+
+Used when `max_hr_bpm` is not provided as a profile field.
+
+```rust
+fn tanaka_hrmax(age_years: u32) -> f64 {
+    208.0 - 0.7 * age_years as f64
+}
+```
+
+### 9. Banister TRIMP
+
+Supplements the existing zone-weighted `zone_load` in `goose_strain_v0`.
+
+```rust
+fn banister_trimp(
+    duration_minutes: f64,
+    hr_average_bpm: f64,
+    hr_rest_bpm: f64,
+    hr_max_bpm: f64,
+    sex: &str,
+) -> f64 {
+    let delta = ((hr_average_bpm - hr_rest_bpm) / (hr_max_bpm - hr_rest_bpm))
+        .clamp(0.0, 1.0);
+    let y = match sex { "male" => 1.92, "female" => 1.67, _ => 1.80 };
+    duration_minutes * delta * y.exp().powf(delta)
+}
+```
+
+### 10. Cole-Kripke activity-based sleep/wake classifier
+
+Fixed coefficient table from Cole-Kripke 1992, 1-minute wrist actigraphy epochs:
+
+```rust
+const CK_WEIGHTS: [f64; 5] = [0.0033, 0.0055, 0.0080, 0.0055, 0.0033];
+const CK_P: f64 = 0.00001;
+
+fn cole_kripke_epoch_is_sleep(activity_window: &[f64; 5]) -> bool {
+    let score = CK_P * CK_WEIGHTS.iter().zip(activity_window.iter())
+        .map(|(w, a)| w * a).sum::<f64>();
+    score < 1.0
+}
+```
+
+The 4-class extension (Wake/NREM-light/NREM-deep/REM) adds HR and RMSSD thresholds in a
+decision tree — no runtime fitting required.
+
+### 11. Gravity projection for IMU samples
+
+```rust
+fn project_gravity_axis(samples: &[i16], scale_factor: f64, unit_vector: f64) -> f64 {
+    let raw_mean = samples.iter().map(|&s| s as f64).sum::<f64>() / samples.len() as f64;
+    raw_mean * scale_factor * unit_vector
+}
+```
+
+The calibration unit vector `[gx, gy, gz]` is loaded from the SQLite gravity table
+(new schema migration). `scale_factor` is device-specific (stored alongside unit vector).
 
 ---
 
-## Alternatives Considered
+## Integration Points
 
-| Feature | Recommended | Alternative | Why Not |
-|---------|-------------|-------------|---------|
-| Localisation format | `.xcstrings` String Catalog | Legacy `.strings` + `.lproj` folders | `.strings` requires manual sync per language; `.xcstrings` auto-extracts from build. No migration path advantage since project has zero existing `.strings`. |
-| CR-02 fix — JOIN path | SQL JOIN through `raw_evidence → capture_sessions` | Add `device_id` column to `decoded_frames` | JOIN is zero-migration-risk; denormalisation can come later as a schema migration if needed. |
-| Backoff timer | `DispatchWorkItem` + `asyncAfter` | Combine `Timer.publish` or `AsyncStream` | `DispatchWorkItem` already used in project for timeouts; avoids introducing Combine or Swift Concurrency patterns inconsistent with existing code style. |
-| HR scan UI | Extend existing `GooseBLEHRMonitorManager` + `GooseBLEClient` | New `ObservableObject` manager | `hrMonitorManager` already fires `owner?.objectWillChange.send()` — the parent BLE client is already observed. No duplication needed. |
+### bridge.rs
+
+Add new `method` strings in the existing `match method_str` dispatch. The C FFI surface
+(`goose_bridge_handle_json` / `goose_bridge_free_string`) stays unchanged.
+
+Proposed additions:
+- `"metrics.hrv_v1"` — Lipponen-Tarvainen filter + SWS-tiered window + RMSSD
+- `"metrics.recovery_v1"` — EWMA baselines + z-score + logistic model
+- `"metrics.strain_v1"` — Tanaka HRmax + Banister TRIMP alongside existing zone_load
+- `"metrics.calories_v1"` — Mifflin-St Jeor RMR + Keytel active-kcal
+- `"metrics.sleep_stage_classify"` — Cole-Kripke epoch classifier on IMU series
+- `"store.upsert_gravity_calibration"` — write gravity calibration row via rusqlite
+- `"store.read_gravity_calibration"` — read latest gravity row for a device
+
+### metrics.rs
+
+Add `goose_hrv_v1`, `goose_recovery_v1`, `goose_strain_v1` following the
+`AlgorithmRunResult<T>` pattern. Math helpers (`ewma_series`, `z_score`, `logistic`,
+`lipponen_tarvainen_filter`, `median5`) placed as module-private `fn` at the bottom of
+the file, matching the existing `mean`, `rmssd`, `sample_sd`, `pnn50` layout.
+
+Existing helpers (`mean`, `sample_sd`, `clamp_0_100`, `clamp_fraction`, `score_component`,
+`component_sum`, `require_finite_positive`) can be reused as-is or made `pub(crate)` if
+needed across modules.
+
+### energy_rollup.rs
+
+- Replace `resting_kcal()` with `mifflin_st_jeor_rmr_kcal_per_day()` when
+  `profile_height_cm` is available; fall back to `weight_kg * 22.0` with a quality flag.
+- Supplement the `reserve_active_met_minutes` path with `keytel_active_kcal_per_minute()`
+  when age + sex are available, selecting the higher of the two estimates.
+- Add `profile_height_cm: Option<f64>` to both `EnergyDailyRollupOptions` and
+  `EnergyHourlyRollupOptions`.
+
+### protocol.rs / I16SeriesSummary
+
+`I16SeriesSummary` currently stores `preview: Vec<i16>` (a capped sample count, not all
+100 IMU samples per axis). The milestone requires full samples for Cole-Kripke and gravity
+projection. Add `samples: Option<Vec<i16>>` alongside `preview`; populate it only when
+the bridge call requests it via an explicit flag argument. Keep `preview` for existing
+callers (additive, backward-compatible).
+
+### store.rs — new gravity_calibration table
+
+New SQLite migration in `GooseStore::initialize`, following the existing pattern:
+
+```sql
+CREATE TABLE IF NOT EXISTS gravity_calibration (
+    id            TEXT PRIMARY KEY,
+    device_id     TEXT NOT NULL,
+    calibrated_at TEXT NOT NULL,
+    gx            REAL NOT NULL,
+    gy            REAL NOT NULL,
+    gz            REAL NOT NULL,
+    scale_factor  REAL NOT NULL,
+    source        TEXT NOT NULL,
+    provenance_json TEXT NOT NULL
+);
+```
 
 ---
 
 ## What NOT to Add
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `Localize-Swift` or similar package | Project constraint: no external iOS dependencies | Native `.xcstrings` String Catalog |
-| `RxBluetoothKit` / `SpeziBluetooth` | External dependency; existing CoreBluetooth code is complete | Native `CoreBluetooth` (`writeValue`, `scanForPeripherals`) |
-| New Rust crates for device_id | `rusqlite 0.37` supports optional WHERE filtering with `params!` | Extend existing `decoded_frames_between` query |
-| `goose_recovery_v1` / `goose_recovery_v2` Rust algorithm | Recovery V2 dashboard uses existing `metrics.daily_recovery_metrics` bridge — no new algorithm needed | Existing `daily_recovery_metrics_bridge` in `bridge.rs` |
-| Combine or async/await for backoff | Inconsistent with project's `DispatchQueue`-based concurrency style | `DispatchWorkItem` + `asyncAfter` |
+| Candidate | Reason |
+|---|---|
+| `ndarray` | All vector ops are simple O(n) iteration; ndarray's compile cost and API surface is not justified for these scalar formulas |
+| `nalgebra` | Same as ndarray — gravity projection is a single dot product, not linear algebra |
+| `statrs` | Normal CDF and other distributions not needed; logistic sigmoid is a one-liner and sufficient |
+| `rand` | No stochastic algorithms in scope; all algorithms are deterministic |
+| `linregress` / `polyfit` | No curve fitting at runtime; all coefficients are from published papers, hard-coded as `const` |
+| `tensorflow` / `tract` / `candle` | No neural network inference; Cole-Kripke and the 4-class extension are threshold classifiers with fixed coefficients |
+| `chrono` | Time arithmetic already handled with the custom RFC3339 parser in `energy_rollup.rs`; chrono would pull a large dependency for no new capability |
+| Any Python FFI crate | The reference scripts in `Rust/core/tools/reference/` are validation tools only, not runtime dependencies |
+| `approx` (even as dev-dep) | Use manual delta assertions matching the existing test style — `(result - expected).abs() < 0.01` |
 
----
-
-## Version Compatibility
-
-| Component | Version | Notes |
-|-----------|---------|-------|
-| String Catalog (`.xcstrings`) | Xcode 15+ / iOS 17+ | Project targets iOS 26.0; fully supported |
-| `CBCharacteristicWriteType.withResponse` | iOS 5+ | Available on all supported targets |
-| `DispatchWorkItem` + `asyncAfter` | iOS 8+ | No compatibility concern |
-| `rusqlite 0.37` | Already locked in `Cargo.lock` | No version change |
-| `params!` optional binding | rusqlite 0.37 | `Option<&str>` works natively via `ToSql` impl |
-
----
-
-## Sources
-
-- `/websites/developer_apple_corebluetooth` (Context7) — `writeValue(_:for:type:)`, `CBCharacteristicWriteType`, `scanForPeripherals(withServices:options:)`, `centralManager(_:didDiscover:advertisementData:rssi:)` — HIGH confidence
-- `/websites/developer_apple_xcode` (Context7) — String Catalog `.xcstrings`, `String(localized:)`, `Text` auto-extraction, `LocalizedStringResource`, Xcode 26.x new localisation features — HIGH confidence
-- `/websites/rs_rusqlite_rusqlite` (Context7) — named parameters, `params!` macro, optional WHERE clause pattern — HIGH confidence
-- Live codebase inspection — `GooseBLEClient+HRMonitor.swift`, `GooseBLEClient+Commands.swift`, `GooseBLEClient+CentralDelegate.swift`, `HealthRecoveryStressViews.swift`, `HealthDataStore+CoachSummaries.swift`, `Rust/core/src/bridge.rs` (CR-02 comment at line 3065), `Rust/core/src/store.rs` (`decoded_frames_between` query) — HIGH confidence
-
----
-
-*Stack research for: Goose v3.0 — HR Monitor UX, RTC Sync, CR-02 fix, Recovery V2, pt-PT localisation, BLE backoff*
-*Researched: 2026-06-04*
+The correct constraint is: every formula needed for these algorithms is in a published paper
+and can be transcribed as a pure arithmetic Rust function under 30 lines. If implementing
+a formula requires a crate, that is a sign the algorithm scope has drifted, not that the
+crate should be added.
