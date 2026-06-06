@@ -28,6 +28,8 @@ pub struct HrvInput {
     pub rr_intervals_ms: Vec<f64>,
     #[serde(default)]
     pub input_ids: Vec<String>,
+    #[serde(default)]
+    pub rr_timestamps_s: Option<Vec<f64>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1925,6 +1927,54 @@ fn pnn50(values: &[f64]) -> f64 {
         .filter(|pair| (pair[1] - pair[0]).abs() > 50.0)
         .count();
     above_threshold as f64 / (values.len() - 1) as f64
+}
+
+// Segment RR intervals by BLE gap. Any gap > gap_threshold_s between consecutive
+// timestamps starts a new segment. Cross-boundary successive differences are excluded
+// from RMSSD (ALG-HRV-01).
+//
+// Defensive: if lengths differ or intervals is empty, returns a single segment
+// containing all intervals (preserves existing behaviour, never panics).
+fn segment_rr_by_gaps(
+    intervals: &[f64],
+    timestamps: &[f64],
+    gap_threshold_s: f64,
+) -> Vec<Vec<f64>> {
+    if intervals.is_empty() || timestamps.len() != intervals.len() {
+        return vec![intervals.to_vec()];
+    }
+    let mut segments: Vec<Vec<f64>> = Vec::new();
+    let mut current: Vec<f64> = Vec::new();
+    current.push(intervals[0]);
+    for i in 1..intervals.len() {
+        if timestamps[i] - timestamps[i - 1] > gap_threshold_s {
+            segments.push(current);
+            current = Vec::new();
+        }
+        current.push(intervals[i]);
+    }
+    segments.push(current);
+    segments
+}
+
+// Compute RMSSD across multiple segments. Successive differences are only computed
+// within each segment; cross-boundary pairs are excluded. A single segment reproduces
+// the standard rmssd result bit-for-bit.
+fn rmssd_segmented(segments: &[Vec<f64>]) -> f64 {
+    let mut sum_sq = 0.0f64;
+    let mut pair_count = 0usize;
+    for segment in segments {
+        for pair in segment.windows(2) {
+            let diff = pair[1] - pair[0];
+            sum_sq += diff * diff;
+            pair_count += 1;
+        }
+    }
+    if pair_count > 0 {
+        (sum_sq / pair_count as f64).sqrt()
+    } else {
+        0.0
+    }
 }
 
 fn stage_minutes(stage_minutes: &BTreeMap<String, f64>, stage: &str) -> Option<f64> {
