@@ -268,11 +268,145 @@ fn goose_hrv_v0_clean_input_has_zero_removal_fraction() {
         rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
+        stage_segments: None,
     });
     let output = result.output.unwrap();
     assert_close(output.ectopic_filter_removal_fraction, 0.0);
     // RMSSD must be unchanged from the hand-derived value sqrt(200)
     assert_close(output.rmssd_ms, 200.0_f64.sqrt());
+}
+
+#[test]
+fn goose_hrv_v0_sws_tier1_last_deep_episode() {
+    // Build a night with two stages: a "core" stage (30 min), then a "deep" stage (6 min).
+    // The deep segment covers the last 6/(30+6) fraction of the night = last 6/36 of intervals.
+    // Intervals: 36 beats at 800 ms each — the last 6 fall in the deep window.
+    // Tier 1 fires because the last (and only) deep segment has duration_minutes = 6.0 >= 5 min.
+    use goose_core::metrics::SleepStageSegment;
+    use std::collections::BTreeMap;
+
+    let n = 36usize;
+    let rr_intervals_ms: Vec<f64> = vec![800.0; n];
+    let stage_segments = Some(vec![
+        SleepStageSegment {
+            stage_kind: "core".to_string(),
+            start_time: "2026-05-27T00:00:00Z".to_string(),
+            end_time: "2026-05-27T00:30:00Z".to_string(),
+            duration_minutes: 30.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+        SleepStageSegment {
+            stage_kind: "deep".to_string(),
+            start_time: "2026-05-27T00:30:00Z".to_string(),
+            end_time: "2026-05-27T00:36:00Z".to_string(),
+            duration_minutes: 6.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+    ]);
+
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:36:00Z".to_string(),
+        rr_intervals_ms,
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+        stage_segments,
+    });
+
+    let output = result.output.unwrap();
+    assert_eq!(
+        output.window_tier_used, 1,
+        "expected Tier 1 (last deep >= 5 min), got {}",
+        output.window_tier_used
+    );
+}
+
+#[test]
+fn goose_hrv_v0_sws_tier2_weighted_mean_short_episodes() {
+    // Two deep segments each 3.0 min (< 5 min) — Tier 1 does not fire.
+    // Tier 2 fires (all deep segments < 5 min but at least one deep segment exists).
+    use goose_core::metrics::SleepStageSegment;
+    use std::collections::BTreeMap;
+
+    let n = 40usize;
+    let rr_intervals_ms: Vec<f64> = vec![800.0; n];
+    let stage_segments = Some(vec![
+        SleepStageSegment {
+            stage_kind: "core".to_string(),
+            start_time: "2026-05-27T00:00:00Z".to_string(),
+            end_time: "2026-05-27T00:17:00Z".to_string(),
+            duration_minutes: 17.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+        SleepStageSegment {
+            stage_kind: "deep".to_string(),
+            start_time: "2026-05-27T00:17:00Z".to_string(),
+            end_time: "2026-05-27T00:20:00Z".to_string(),
+            duration_minutes: 3.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+        SleepStageSegment {
+            stage_kind: "core".to_string(),
+            start_time: "2026-05-27T00:20:00Z".to_string(),
+            end_time: "2026-05-27T00:37:00Z".to_string(),
+            duration_minutes: 17.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+        SleepStageSegment {
+            stage_kind: "deep".to_string(),
+            start_time: "2026-05-27T00:37:00Z".to_string(),
+            end_time: "2026-05-27T00:40:00Z".to_string(),
+            duration_minutes: 3.0,
+            confidence_0_to_1: 0.9,
+            stage_probabilities: BTreeMap::new(),
+        },
+    ]);
+
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:40:00Z".to_string(),
+        rr_intervals_ms,
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+        stage_segments,
+    });
+
+    let output = result.output.unwrap();
+    assert_eq!(
+        output.window_tier_used, 2,
+        "expected Tier 2 (only short deep segments), got {}",
+        output.window_tier_used
+    );
+}
+
+#[test]
+fn goose_hrv_v0_sws_tier3_full_night_fallback() {
+    // stage_segments: None → Tier 3 (full-night fallback).
+    // Metrics must match the legacy (pre-22-03) single-segment result.
+    // intervals: [800, 810, 790, 800] → RMSSD = sqrt(200) (hand-derived)
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:01:00Z".to_string(),
+        rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+        stage_segments: None,
+    });
+
+    let output = result.output.unwrap();
+    assert_eq!(
+        output.window_tier_used, 3,
+        "expected Tier 3 (no stage_segments), got {}",
+        output.window_tier_used
+    );
+    // Metrics must be identical to the legacy computation.
+    assert_close(output.rmssd_ms, 200.0_f64.sqrt());
+    assert_close(output.mean_nn_ms, 800.0);
 }
 
 #[test]
