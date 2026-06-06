@@ -7,8 +7,9 @@ final class CoachKeychainTests: XCTestCase {
 
   override func tearDown() {
     super.tearDown()
-    // Clean up any Claude Keychain state left by tests
+    // Clean up any Keychain state left by tests
     try? ClaudeCredentialStore.delete()
+    try? CustomEndpointCredentialStore.delete()
   }
 
   func testClaudeKeychainRoundtrip() throws {
@@ -30,6 +31,20 @@ final class CoachKeychainTests: XCTestCase {
   }
 
   func testCustomEndpointKeychainRoundtrip() throws {
-    throw XCTSkip("Wave 3: CustomEndpointCoachProvider not yet implemented")
+    let testKey = "custom-test-key-\(UUID().uuidString)"
+
+    // Save a key
+    try CustomEndpointCredentialStore.save(testKey)
+
+    // Load it back — must match
+    let loaded = try CustomEndpointCredentialStore.load()
+    XCTAssertEqual(loaded, testKey, "Loaded custom endpoint key must match the saved key")
+
+    // Delete it
+    try CustomEndpointCredentialStore.delete()
+
+    // Load after delete — must be nil
+    let afterDelete = try CustomEndpointCredentialStore.load()
+    XCTAssertNil(afterDelete, "Custom endpoint key must be nil after deletion")
   }
 }
