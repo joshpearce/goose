@@ -780,11 +780,24 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     let mut quality_flags = Vec::new();
     let mut errors = Vec::new();
     let mut valid = Vec::new();
+    let mut valid_timestamps: Vec<f64> = Vec::new();
     let mut invalid_interval_count = 0usize;
 
-    for interval in &input.rr_intervals_ms {
+    // Filter intervals to the physiological range (300–2000 ms). When timestamps are
+    // present, keep them aligned by pushing/discarding in tandem with intervals.
+    let has_timestamps = input.rr_timestamps_s.is_some();
+    let timestamps_aligned = input
+        .rr_timestamps_s
+        .as_ref()
+        .is_some_and(|ts| ts.len() == input.rr_intervals_ms.len());
+
+    for (i, interval) in input.rr_intervals_ms.iter().enumerate() {
         if interval.is_finite() && (300.0..=2000.0).contains(interval) {
             valid.push(*interval);
+            if timestamps_aligned {
+                // Safety: index is valid because we verified lengths match above.
+                valid_timestamps.push(input.rr_timestamps_s.as_ref().unwrap()[i]);
+            }
         } else {
             invalid_interval_count += 1;
         }
@@ -802,7 +815,21 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
 
     let output = if errors.is_empty() {
         let mean_nn_ms = mean(&valid);
-        let rmssd_ms = rmssd(&valid);
+
+        // Segment-aware RMSSD (ALG-HRV-01): use gap segmentation when timestamps are
+        // present and aligned; fall back to the legacy single-segment path otherwise.
+        let (rmssd_ms, segment_count) = if has_timestamps && timestamps_aligned {
+            let segments = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
+            let count = segments.len();
+            (rmssd_segmented(&segments), count)
+        } else {
+            (rmssd(&valid), 1)
+        };
+
+        if segment_count > 1 {
+            quality_flags.push("rr_segment_gap_detected".to_string());
+        }
+
         let sdnn_ms = sample_sd(&valid, mean_nn_ms);
         let pnn50_fraction = pnn50(&valid);
         let interval_count = input.rr_intervals_ms.len();
@@ -844,6 +871,14 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         None
     };
 
+    // Segment count for provenance: resolve from timestamps state (1 when absent).
+    let provenance_segment_count = if has_timestamps && timestamps_aligned && output.is_some() {
+        let segments = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
+        segments.len()
+    } else {
+        1
+    };
+
     AlgorithmRunResult {
         algorithm_id: GOOSE_HRV_V0_ID.to_string(),
         algorithm_version: GOOSE_HRV_V0_VERSION.to_string(),
@@ -857,7 +892,9 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
             "input_ids": input.input_ids,
             "input_interval_count": input.rr_intervals_ms.len(),
             "valid_rr_range_ms": [300.0, 2000.0],
-            "expected_values_policy": "hand-derived-tests-and-versioned-goose-output"
+            "expected_values_policy": "hand-derived-tests-and-versioned-goose-output",
+            "gap_segmentation_threshold_s": 3.0,
+            "segment_count": provenance_segment_count
         }),
     }
 }
