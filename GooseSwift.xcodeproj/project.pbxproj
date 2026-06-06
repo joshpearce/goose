@@ -154,26 +154,26 @@
 		D10000000000000000000058 /* GooseBLEClient+HRMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000058 /* GooseBLEClient+HRMonitor.swift */; };
 		D10000000000000000000059 /* GooseBLEReconnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000059 /* GooseBLEReconnect.swift */; };
 		D1000000000000000000005A /* HRMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005A /* HRMonitorView.swift */; };
-		D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005C /* LocalizedStatusStrings.swift */; };
 		D1000000000000000000005B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005B /* Localizable.xcstrings */; };
-		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
-		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
-		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
-		T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000006 /* GooseUploadServiceTests.swift */; };
-		T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000007 /* HRMonitorStateTests.swift */; };
+		D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005C /* LocalizedStatusStrings.swift */; };
 		E1000000000000000000001 /* CoachProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000001 /* CoachProviderProtocol.swift */; };
 		E1000000000000000000002 /* CoachChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000002 /* CoachChatModel.swift */; };
 		E1000000000000000000003 /* ChatGPTCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003 /* ChatGPTCoachProvider.swift */; };
 		E1000000000000000000004 /* ClaudeCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000004 /* ClaudeCoachProvider.swift */; };
 		E1000000000000000000005 /* CustomEndpointCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000005 /* CustomEndpointCoachProvider.swift */; };
+		E1000000000000000000006 /* GeminiCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000006 /* GeminiCoachProvider.swift */; };
+		E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000007 /* GeminiOAuthWebView.swift */; };
+		E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000008 /* CoachSettingsSheet.swift */; };
+		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
+		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
+		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
+		T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000006 /* GooseUploadServiceTests.swift */; };
+		T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000007 /* HRMonitorStateTests.swift */; };
 		T10000000000000000000006 /* CoachProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000008 /* CoachProviderTests.swift */; };
 		T10000000000000000000007 /* CoachProviderRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000009 /* CoachProviderRegistryTests.swift */; };
 		T10000000000000000000008 /* CoachKeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000A /* CoachKeychainTests.swift */; };
 		T10000000000000000000009 /* ClaudeProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000B /* ClaudeProviderTests.swift */; };
 		T1000000000000000000000A /* CustomEndpointProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000C /* CustomEndpointProviderTests.swift */; };
-		E1000000000000000000006 /* GeminiCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000006 /* GeminiCoachProvider.swift */; };
-		E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000007 /* GeminiOAuthWebView.swift */; };
-		E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000008 /* CoachSettingsSheet.swift */; };
 		T1000000000000000000000B /* GeminiProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000D /* GeminiProviderTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -354,8 +354,16 @@
 		D20000000000000000000058 /* GooseBLEClient+HRMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HRMonitor.swift"; sourceTree = "<group>"; };
 		D20000000000000000000059 /* GooseBLEReconnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEReconnect.swift; sourceTree = "<group>"; };
 		D2000000000000000000005A /* HRMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorView.swift; sourceTree = "<group>"; };
-		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
 		D2000000000000000000005B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
+		E2000000000000000000001 /* CoachProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderProtocol.swift; sourceTree = "<group>"; };
+		E2000000000000000000002 /* CoachChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatModel.swift; sourceTree = "<group>"; };
+		E2000000000000000000003 /* ChatGPTCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000004 /* ClaudeCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000005 /* CustomEndpointCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000006 /* GeminiCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000007 /* GeminiOAuthWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiOAuthWebView.swift; sourceTree = "<group>"; };
+		E2000000000000000000008 /* CoachSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsSheet.swift; sourceTree = "<group>"; };
 		T20000000000000000000001 /* GooseSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GooseSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		T20000000000000000000002 /* WearableDescriptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableDescriptorTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000003 /* GooseBLETypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypesTests.swift; sourceTree = "<group>"; };
@@ -363,19 +371,11 @@
 		T20000000000000000000005 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Xcode/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		T20000000000000000000006 /* GooseUploadServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadServiceTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000007 /* HRMonitorStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorStateTests.swift; sourceTree = "<group>"; };
-		E2000000000000000000001 /* CoachProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderProtocol.swift; sourceTree = "<group>"; };
-		E2000000000000000000002 /* CoachChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatModel.swift; sourceTree = "<group>"; };
-		E2000000000000000000003 /* ChatGPTCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTCoachProvider.swift; sourceTree = "<group>"; };
-		E2000000000000000000004 /* ClaudeCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCoachProvider.swift; sourceTree = "<group>"; };
-		E2000000000000000000005 /* CustomEndpointCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointCoachProvider.swift; sourceTree = "<group>"; };
 		T20000000000000000000008 /* CoachProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000009 /* CoachProviderRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderRegistryTests.swift; sourceTree = "<group>"; };
 		T2000000000000000000000A /* CoachKeychainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachKeychainTests.swift; sourceTree = "<group>"; };
 		T2000000000000000000000B /* ClaudeProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProviderTests.swift; sourceTree = "<group>"; };
 		T2000000000000000000000C /* CustomEndpointProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointProviderTests.swift; sourceTree = "<group>"; };
-		E2000000000000000000006 /* GeminiCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiCoachProvider.swift; sourceTree = "<group>"; };
-		E2000000000000000000007 /* GeminiOAuthWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiOAuthWebView.swift; sourceTree = "<group>"; };
-		E2000000000000000000008 /* CoachSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsSheet.swift; sourceTree = "<group>"; };
 		T2000000000000000000000D /* GeminiProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiProviderTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -987,6 +987,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1051,6 +1052,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";

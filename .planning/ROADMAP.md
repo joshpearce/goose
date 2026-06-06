@@ -427,6 +427,26 @@ Plans:
 
 - [ ] 18-06-PLAN.md — Wave 6: Integration, build/test verification, migration smoke test (COACH-01, COACH-05, COACH-06)
 
+---
+
+### Phase 999.7: Gen4 Historical Sync — Upstream Fixes (BACKLOG)
+
+**Goal:** Apply the correctness fixes identified during review of upstream PR #26 (jakobrmarrone) to the fork's existing Gen4 historical sync implementation.
+**Source:** PR #26 review — b-nnett/goose (2026-06-06)
+
+**What's needed:**
+
+1. **`onHistoricalSyncCompleted` retain / lifetime inversion** (`AppShellView.swift`) — closure captures `HealthDataStore` strongly; `GooseAppModel` (mais longo) fica a segurar um objecto da view layer indefinidamente. Fix: `[weak healthStore]` + `.onDisappear { model.onHistoricalSyncCompleted = nil }`. Confirmar que `handleHistoricalSyncProgress` corre no main actor antes de invocar `runPacketInputs()` (`@MainActor`).
+2. **`gen4HistoricalPageSeq` overflow inconsistente** (`GooseBLEClient+HistoricalHandlers.swift`) — site cmd-34 usa `&+ 1` (wrapping) mas historyEnd e retry usam `+= 1` (trapping). Unificar para `&+= 1` em todos os sites de incremento.
+3. **Gen4 payload padding não verificado** (`GooseBLETypes.swift`) — `buildGen4CommandFrame` não faz padding de 4 bytes enquanto `buildV5CommandFrame` e o builder Rust fazem. Confirmar contra capturas PacketLogger se os frames do app oficial são padded; adicionar padding ou comentário.
+4. **`activeDeviceGeneration` confinamento implícito** (`GooseBLEClient.swift`) — adicionar `/// Only mutated/read on coreBluetoothQueue.` à declaração.
+5. **UUID prefix case-sensitivity** (`WhoopGeneration.detect`) — `hasPrefix("61080002")` deve normalizar para lowercase.
+
+**Requirements:** TBD
+**Plans:** 0 plans — promote with `/gsd-review-backlog` when ready
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
