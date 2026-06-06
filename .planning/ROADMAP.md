@@ -425,7 +425,30 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 18-06-PLAN.md — Wave 6: Integration, build/test verification, migration smoke test (COACH-01, COACH-05, COACH-06)
+- [x] 18-06-PLAN.md — Wave 6: Integration, build/test verification, migration smoke test (COACH-01, COACH-05, COACH-06)
+
+---
+
+### Phase 19: pt-PT Localisation Completion (Coach + Startup Fixes)
+
+**Goal**: All user-visible strings introduced in v4.0 (Phase 16-18) are translated to pt-PT; onboarding shows on reinstall; app startup is non-blocking
+**Depends on**: Phase 18
+**Requirements**: L10N-03, PERF-04, UX-01
+**Success Criteria** (what must be TRUE):
+
+  1. All 129 strings missing pt-PT translation are translated — app is fully Portuguese when OS is set to pt-PT
+  2. When OS is English, app shows English; when OS is pt-PT, app shows Portuguese (verified by switching simulator language)
+  3. Onboarding shows on fresh install even when Keychain has previous profile data (profile fields pre-filled, completion state NOT restored)
+  4. App renders first frame before overnight recovery runs (startup no longer blocked by file I/O on main thread)
+  5. "Saltar configuração" skip button available on onboarding for quick bypass
+
+**Audit findings (2026-06-06):**
+
+- Phase 18 added CoachSettingsSheet, provider config views, API key fields — none of these were added to Localizable.xcstrings. Missing strings include: `API Key`, `Base URL`, `Claude Sonnet 4.6`, `Claude Opus 4.8`, `Claude Haiku 4.5`, `Coach Settings`, `Configuration`, `Anthropic API key`, `Bearer token (API key)`, `GPT-5.5 High`, `Filters`, `Change`, `Calibrate`, and ~115 others.
+- Of 754 total xcstrings, 597 have pt-PT translation, 129 real-text strings do not (27 trivial format strings can be left).
+- 3 startup fixes already shipped (overnight recovery to background, defaultDatabasePath cache, skip button).
+
+**Plans:** TBD
 
 ---
 
