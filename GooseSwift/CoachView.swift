@@ -143,7 +143,11 @@ struct CoachView: View {
         promptDraft = trimmedPrompt
       }
     }
-    showingChat = true
+    if registry.activeProvider == nil {
+      showingSettings = true
+    } else {
+      showingChat = true
+    }
   }
 
   private func applyRequestedCoachPromptIfNeeded() {
