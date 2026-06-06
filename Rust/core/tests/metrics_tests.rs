@@ -122,7 +122,8 @@ fn hrv_definition_and_run_persist_to_sqlite() {
     assert_eq!(saved_run.algorithm_id, GOOSE_HRV_V0_ID);
     assert!(saved_run.output_json.contains("\"rmssd_ms\""));
     let metric_values = store.metric_values_for_run("hrv-run-1").unwrap();
-    assert_eq!(metric_values.len(), 7);
+    // 7 original fields + ectopic_filter_removal_fraction = 8
+    assert_eq!(metric_values.len(), 8);
     assert!(metric_values.iter().any(|row| {
         row.metric_value_id == "hrv-run-1.rmssd_ms"
             && row.metric_family == "hrv"
@@ -219,6 +220,58 @@ fn goose_hrv_v0_timestamps_none_matches_legacy() {
     });
     let output = result.output.unwrap();
     // (810-800)^2=100, (790-810)^2=400, (800-790)^2=100 → sum=600, n=3 → sqrt(200)
+    assert_close(output.rmssd_ms, 200.0_f64.sqrt());
+}
+
+#[test]
+fn goose_hrv_v0_removes_ectopic_beat_and_reports_fraction() {
+    // Intervals: [800, 810, 790, 1500, 805, 795, 800, 810] ms — 1500 is an ectopic spike.
+    // The rolling-median filter rejects 1500 because |1500 - ~800| > 0.20 * ~800.
+    // After removal: RMSSD must be much lower than if 1500 were included.
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:10:00Z".to_string(),
+        rr_intervals_ms: vec![800.0, 810.0, 790.0, 1500.0, 805.0, 795.0, 800.0, 810.0],
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+    });
+    let output = result.output.unwrap();
+    // ectopic filter removed the 1500 ms interval → fraction > 0
+    assert!(
+        output.ectopic_filter_removal_fraction > 0.0,
+        "expected ectopic_filter_removal_fraction > 0.0, got {}",
+        output.ectopic_filter_removal_fraction
+    );
+    // RMSSD without the ectopic beat should be well under 100 ms (the spike would produce
+    // enormous successive differences); with the spike included it would exceed 200 ms.
+    assert!(
+        output.rmssd_ms < 100.0,
+        "RMSSD {} should be low once ectopic beat is removed",
+        output.rmssd_ms
+    );
+    // ectopic_beats_removed quality flag must be present
+    assert!(
+        result
+            .quality_flags
+            .contains(&"ectopic_beats_removed".to_string()),
+        "expected ectopic_beats_removed quality flag; flags = {:?}",
+        result.quality_flags
+    );
+}
+
+#[test]
+fn goose_hrv_v0_clean_input_has_zero_removal_fraction() {
+    // Clean intervals — no ectopic beats, removal fraction must be exactly 0.0.
+    let result = goose_hrv_v0(&HrvInput {
+        start_time: "2026-05-27T00:00:00Z".to_string(),
+        end_time: "2026-05-27T00:01:00Z".to_string(),
+        rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
+        input_ids: Vec::new(),
+        rr_timestamps_s: None,
+    });
+    let output = result.output.unwrap();
+    assert_close(output.ectopic_filter_removal_fraction, 0.0);
+    // RMSSD must be unchanged from the hand-derived value sqrt(200)
     assert_close(output.rmssd_ms, 200.0_f64.sqrt());
 }
 
