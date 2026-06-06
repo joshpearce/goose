@@ -916,6 +916,10 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
             "created_at",
         ],
     );
+    columns.insert(
+        "gravity",
+        vec!["device_id", "ts", "x", "y", "z", "created_at"],
+    );
 
     for table in known_tables() {
         debug_assert!(columns.contains_key(table));

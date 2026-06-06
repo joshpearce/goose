@@ -614,6 +614,15 @@ pub struct StepCounterSampleRow {
     pub created_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct GravityRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
 #[derive(Debug, Clone)]
 pub struct ActivityIntervalInput<'a> {
     pub interval_id: &'a str,
@@ -6033,6 +6042,54 @@ impl GooseStore {
     pub fn integrity_check(&self) -> GooseResult<String> {
         self.conn
             .query_row("PRAGMA integrity_check", [], |row| row.get(0))
+            .map_err(GooseError::from)
+    }
+
+    pub fn insert_gravity_rows(
+        &self,
+        device_id: &str,
+        rows: &[(f64, f64, f64, f64)],
+    ) -> GooseResult<usize> {
+        validate_required("device_id", device_id)?;
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let mut inserted = 0usize;
+        for &(ts, x, y, z) in rows {
+            let changed = self.conn.execute(
+                "INSERT INTO gravity (device_id, ts, x, y, z) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![device_id, ts, x, y, z],
+            )?;
+            inserted += changed;
+        }
+        Ok(inserted)
+    }
+
+    pub fn gravity_rows_between(
+        &self,
+        device_id: &str,
+        ts_start: f64,
+        ts_end: f64,
+    ) -> GooseResult<Vec<GravityRow>> {
+        validate_required("device_id", device_id)?;
+        if ts_end < ts_start {
+            return Err(GooseError::message(
+                "ts_end must be greater than or equal to ts_start",
+            ));
+        }
+        let mut statement = self.conn.prepare(
+            "SELECT device_id, ts, x, y, z FROM gravity WHERE device_id = ?1 AND ts >= ?2 AND ts < ?3 ORDER BY ts",
+        )?;
+        let rows = statement.query_map(params![device_id, ts_start, ts_end], |row| {
+            Ok(GravityRow {
+                device_id: row.get(0)?,
+                ts: row.get(1)?,
+                x: row.get(2)?,
+                y: row.get(3)?,
+                z: row.get(4)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>()
             .map_err(GooseError::from)
     }
 }

@@ -18,7 +18,7 @@ use goose_core::{
         DailyRecoveryMetricInput, DebugCommandRow, DebugEventRow, DebugSessionRow,
         DecodedFrameInput, ExternalSleepSessionInput, ExternalSleepStageInput, GooseStore,
         HourlyActivityMetricInput, MetricDebugFeatureInput, MetricProvenanceInput,
-        RawEvidenceInput, StepCounterSampleInput,
+        GravityRow, RawEvidenceInput, StepCounterSampleInput,
     },
 };
 use serde_json::json;
@@ -3193,4 +3193,69 @@ fn debug_stream_rows_persist_with_session_command_and_event_ordering() {
             .to_string()
             .contains("JSON object")
     );
+}
+
+#[test]
+fn gravity_insert_and_query_returns_rows_in_ts_order() {
+    let store = GooseStore::open_in_memory().unwrap();
+
+    let rows = vec![
+        (2.0_f64, 0.1_f64, 0.2_f64, 9.8_f64),
+        (1.0_f64, 0.0_f64, 0.1_f64, 9.7_f64),
+        (3.0_f64, 0.2_f64, 0.3_f64, 9.9_f64),
+    ];
+    let inserted = store.insert_gravity_rows("device-A", &rows).unwrap();
+    assert_eq!(inserted, 3);
+
+    let result = store.gravity_rows_between("device-A", 0.0, 10.0).unwrap();
+    assert_eq!(result.len(), 3);
+    assert_eq!(
+        result[0],
+        GravityRow { device_id: "device-A".to_string(), ts: 1.0, x: 0.0, y: 0.1, z: 9.7 }
+    );
+    assert_eq!(
+        result[1],
+        GravityRow { device_id: "device-A".to_string(), ts: 2.0, x: 0.1, y: 0.2, z: 9.8 }
+    );
+    assert_eq!(
+        result[2],
+        GravityRow { device_id: "device-A".to_string(), ts: 3.0, x: 0.2, y: 0.3, z: 9.9 }
+    );
+}
+
+#[test]
+fn gravity_rows_between_half_open_window_and_device_isolation() {
+    let store = GooseStore::open_in_memory().unwrap();
+
+    let rows_a = vec![
+        (1.0_f64, 0.1_f64, 0.2_f64, 9.8_f64),
+        (5.0_f64, 0.3_f64, 0.4_f64, 9.7_f64),
+        (10.0_f64, 0.5_f64, 0.6_f64, 9.6_f64),
+    ];
+    store.insert_gravity_rows("device-A", &rows_a).unwrap();
+
+    let rows_b = vec![(3.0_f64, 1.0_f64, 2.0_f64, 3.0_f64)];
+    store.insert_gravity_rows("device-B", &rows_b).unwrap();
+
+    // Half-open window [1.0, 10.0) excludes ts == 10.0 and device-B rows.
+    let result = store.gravity_rows_between("device-A", 1.0, 10.0).unwrap();
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].ts, 1.0);
+    assert_eq!(result[1].ts, 5.0);
+
+    // device-B query returns only its own row.
+    let result_b = store.gravity_rows_between("device-B", 0.0, 100.0).unwrap();
+    assert_eq!(result_b.len(), 1);
+    assert_eq!(result_b[0].ts, 3.0);
+}
+
+#[test]
+fn gravity_insert_empty_slice_is_noop() {
+    let store = GooseStore::open_in_memory().unwrap();
+
+    let inserted = store.insert_gravity_rows("device-A", &[]).unwrap();
+    assert_eq!(inserted, 0);
+
+    let result = store.gravity_rows_between("device-A", 0.0, 1000.0).unwrap();
+    assert_eq!(result.len(), 0);
 }
