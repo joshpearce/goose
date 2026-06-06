@@ -193,7 +193,7 @@ struct OnboardingView: View {
           onPrimary: continueFromCurrentStep
         )
       }
-      Button(String(localized: "Saltar configuração")) {
+      Button(String(localized: "Skip setup")) {
         onComplete()
       }
       .font(.footnote)
