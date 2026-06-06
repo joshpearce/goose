@@ -9173,3 +9173,222 @@ fn bridge_hr_monitor_upload_stream_device_id_deferred() {
         hr
     );
 }
+
+// ── IMU gravity extraction tests (IMU-03, plan 21-03) ────────────────────────
+//
+// Test 1: K10 frame with known LSB values produces gravity rows with correct
+// LSB-to-g conversion. raw 3900 LSB / 3900 LSB_PER_G = 1.0 g.
+#[test]
+fn bridge_k10_gravity_extraction_lsb_to_g_conversion() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import a K10 frame with all accel samples = 3900 (expect 1.0 g after conversion)
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "k10-grav-import-1",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-imu",
+            "frames": [{
+                "evidence_id": "k10-grav-ev-1",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-06T10:00:00.000Z",
+                "device_model": "WHOOP-Test",
+                "frame_hex": k10_motion_frame_hex_with_value(3900),
+                "sensitivity": "user-owned-capture"
+            }]
+        }
+    }));
+    assert!(
+        import_resp.ok,
+        "K10 import failed: {:?}",
+        import_resp.error
+    );
+
+    // Call upload.get_recent_decoded_streams and assert gravity is populated
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "k10-grav-streams-1",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams failed: {:?}",
+        streams_resp.error
+    );
+    let result = streams_resp.result.unwrap();
+    let gravity = result["gravity"].as_array().expect("gravity must be an array");
+
+    // K10 has 100 samples per axis — expect 100 gravity rows
+    assert_eq!(
+        gravity.len(),
+        100,
+        "expected 100 gravity rows (100 samples per accel axis), got: {}",
+        gravity.len()
+    );
+
+    // Each row: raw 3900 LSB / 3900 LSB_PER_G = 1.0 g exactly
+    let first = &gravity[0];
+    let x = first["x"].as_f64().expect("x must be f64");
+    let y = first["y"].as_f64().expect("y must be f64");
+    let z = first["z"].as_f64().expect("z must be f64");
+    assert!(
+        (x - 1.0).abs() < 1e-9,
+        "x should be 1.0 g (3900/3900), got {x}"
+    );
+    assert!(
+        (y - 1.0).abs() < 1e-9,
+        "y should be 1.0 g (3900/3900), got {y}"
+    );
+    assert!(
+        (z - 1.0).abs() < 1e-9,
+        "z should be 1.0 g (3900/3900), got {z}"
+    );
+    // ts should equal the frame's base timestamp (0 for zero-filled header)
+    let ts = first["ts"].as_f64().expect("ts must be f64");
+    assert_eq!(ts, 0.0, "first row ts should be 0.0 (zero-filled header)");
+}
+
+// Test 2: gravity row count equals min of the three accel axis sample lengths;
+// first row ts matches the frame's base ts.
+#[test]
+fn bridge_k10_gravity_row_count_and_base_ts() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "k10-grav-import-2",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-imu",
+            "frames": [{
+                "evidence_id": "k10-grav-ev-2",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-06T10:01:00.000Z",
+                "device_model": "WHOOP-Test",
+                "frame_hex": k10_motion_frame_hex_with_value(1000),
+                "sensitivity": "user-owned-capture"
+            }]
+        }
+    }));
+    assert!(import_resp.ok, "K10 import-2 failed: {:?}", import_resp.error);
+
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "k10-grav-streams-2",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(streams_resp.ok, "streams-2 failed: {:?}", streams_resp.error);
+    let result = streams_resp.result.unwrap();
+    let gravity = result["gravity"].as_array().expect("gravity must be an array");
+
+    // 100 samples per axis, min(100,100,100) = 100 rows
+    assert_eq!(gravity.len(), 100, "row count should be 100 (min of axis lengths)");
+
+    // First row ts should equal base ts (0.0 for zero-filled header)
+    let ts = gravity[0]["ts"].as_f64().expect("ts must be f64");
+    assert_eq!(ts, 0.0, "first row ts should equal frame base ts");
+}
+
+// Test 3: insert extracted gravity rows via store.insert_gravity_rows, then query
+// via store.gravity_rows_between and confirm roundtrip correctness.
+#[test]
+fn bridge_gravity_insert_query_roundtrip() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Insert gravity rows via bridge method
+    let insert_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "grav-insert-1",
+        "method": "store.insert_gravity_rows",
+        "args": {
+            "database_path": db_path,
+            "device_id": "test-device-001",
+            "rows": [
+                {"ts": 1000.0, "x": 1.0, "y": 0.5, "z": -0.25},
+                {"ts": 1001.0, "x": 0.1, "y": 0.2, "z": 0.3},
+                {"ts": 1002.0, "x": -1.0, "y": -0.5, "z": 0.0}
+            ]
+        }
+    }));
+    assert!(
+        insert_resp.ok,
+        "insert_gravity_rows failed: {:?}",
+        insert_resp.error
+    );
+    let insert_result = insert_resp.result.unwrap();
+    assert_eq!(
+        insert_result["inserted"],
+        3,
+        "should have inserted 3 rows"
+    );
+
+    // Query via gravity_rows_between [1000.0, 1002.0)
+    let query_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "grav-query-1",
+        "method": "store.gravity_rows_between",
+        "args": {
+            "database_path": db_path,
+            "device_id": "test-device-001",
+            "ts_start": 1000.0,
+            "ts_end": 1002.0
+        }
+    }));
+    assert!(
+        query_resp.ok,
+        "gravity_rows_between failed: {:?}",
+        query_resp.error
+    );
+    let query_result = query_resp.result.unwrap();
+    let rows = query_result["rows"].as_array().expect("rows must be an array");
+
+    // Half-open window [1000.0, 1002.0) — should return ts 1000.0 and 1001.0, not 1002.0
+    assert_eq!(rows.len(), 2, "half-open window should return 2 rows, got: {}", rows.len());
+
+    let r0 = &rows[0];
+    assert!((r0["ts"].as_f64().unwrap() - 1000.0).abs() < 1e-9, "first ts should be 1000.0");
+    assert!((r0["x"].as_f64().unwrap() - 1.0).abs() < 1e-9, "first x should be 1.0");
+    assert!((r0["y"].as_f64().unwrap() - 0.5).abs() < 1e-9, "first y should be 0.5");
+    assert!((r0["z"].as_f64().unwrap() - (-0.25)).abs() < 1e-9, "first z should be -0.25");
+
+    let r1 = &rows[1];
+    assert!((r1["ts"].as_f64().unwrap() - 1001.0).abs() < 1e-9, "second ts should be 1001.0");
+
+    // Full window [1000.0, 1003.0) should return all 3 rows
+    let query_all_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "grav-query-2",
+        "method": "store.gravity_rows_between",
+        "args": {
+            "database_path": db_path,
+            "device_id": "test-device-001",
+            "ts_start": 1000.0,
+            "ts_end": 1003.0
+        }
+    }));
+    assert!(query_all_resp.ok, "gravity_rows_between all failed: {:?}", query_all_resp.error);
+    let all_rows = query_all_resp.result.unwrap()["rows"]
+        .as_array()
+        .expect("rows must be array")
+        .len();
+    assert_eq!(all_rows, 3, "full window should return all 3 rows");
+}
