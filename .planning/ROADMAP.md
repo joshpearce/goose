@@ -72,7 +72,7 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 
 - [ ] **Phase 20: Upstream Fixes & Storage** (2 plans) — SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05
 - [ ] **Phase 21: IMU Data Foundation** — IMU-01, IMU-02, IMU-03, IMU-04
-- [ ] **Phase 22: HRV Accuracy** — ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04
+- [ ] **Phase 22: HRV Accuracy** (3 plans) — ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04
 - [ ] **Phase 23: Strain & Calories** — ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02
 - [ ] **Phase 24: Sleep Metrics Without Staging + Baselines** — ALG-SLP-01, ALG-SLP-02
 - [ ] **Phase 25: Recovery Score v1** — ALG-REC-01, ALG-REC-02, ALG-REC-03
@@ -255,7 +255,7 @@ Plans:
 | 19. pt-PT Localisation Completion | v4.0 | 1/1 | Complete | 2026-06-06 |
 | 20. Upstream Fixes & Storage | v5.0 | 2/2 | Complete   | 2026-06-06 |
 | 21. IMU Data Foundation | v5.0 | 3/3 | Complete   | 2026-06-06 |
-| 22. HRV Accuracy | v5.0 | 0/0 | Not started | — |
+| 22. HRV Accuracy | v5.0 | 0/3 | Planned | — |
 | 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 0/0 | Not started | — |
 | 25. Recovery Score v1 | v5.0 | 0/0 | Not started | — |
@@ -383,7 +383,13 @@ Plans:
   4. Rust RMSSD output delta vs `my-whoop` Python reference is <= 1 ms on >= 5 real overnight sessions before the phase is closed — cross-validation result documented in phase notes
   5. `cargo test -p goose-core` green; tests cover: gap boundary rejection, ectopic filter removal fraction, all three SWS window tiers
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 22-01-PLAN.md — Wave 1: BLE gap-aware RR segmentation — rr_timestamps_s on HrvInput + segment-aware RMSSD (ALG-HRV-01)
+- [ ] 22-02-PLAN.md — Wave 2: Lipponen-Tarvainen ectopic filter per segment + ectopic_filter_removal_fraction in HrvOutput (ALG-HRV-02)
+- [ ] 22-03-PLAN.md — Wave 3: Tiered SWS window selection + window_tier_used in HrvOutput + ALG-HRV-04 cross-validation doc comment (ALG-HRV-03, ALG-HRV-04)
 
 ---
 
