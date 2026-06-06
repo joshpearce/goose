@@ -584,6 +584,36 @@ fn compare_expected_json_subset(
                 }
             }
         }
+        // Arrays use element-wise subset semantics so that new optional fields added to
+        // structs (e.g. I16SeriesSummary::full_samples) do not break existing fixture
+        // expectations that were written before the field existed.
+        serde_json::Value::Array(expected_arr) => {
+            let Some(actual_arr) = actual.as_array() else {
+                issues.push(format!(
+                    "{id} expected {path} to be an array, got {actual}"
+                ));
+                return;
+            };
+            if actual_arr.len() != expected_arr.len() {
+                issues.push(format!(
+                    "{id} expected {path} to have {} element(s), got {}",
+                    expected_arr.len(),
+                    actual_arr.len()
+                ));
+                return;
+            }
+            for (i, (actual_elem, expected_elem)) in
+                actual_arr.iter().zip(expected_arr.iter()).enumerate()
+            {
+                compare_expected_json_subset(
+                    id,
+                    &format!("{path}[{i}]"),
+                    actual_elem,
+                    expected_elem,
+                    issues,
+                );
+            }
+        }
         _ => {
             if actual != expected {
                 issues.push(format!("{id} expected {path}={expected}, got {actual}"));
