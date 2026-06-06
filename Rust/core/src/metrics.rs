@@ -955,6 +955,16 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         errors.push("not_enough_valid_rr_intervals".to_string());
     }
 
+    // Hoist segment_count so it is available both inside and outside the output block
+    // (needed for provenance without a duplicate segment_rr_by_gaps call — CR-01 fix).
+    let segment_count_outer: usize = if !errors.is_empty() {
+        1
+    } else if has_timestamps && timestamps_aligned {
+        segment_rr_by_gaps(&valid, &valid_timestamps, 3.0).len()
+    } else {
+        1
+    };
+
     let output = if errors.is_empty() {
         let mean_nn_ms = mean(&valid);
 
@@ -1035,13 +1045,9 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         None
     };
 
-    // Segment count for provenance: resolve from timestamps state (1 when absent).
-    let provenance_segment_count = if has_timestamps && timestamps_aligned && output.is_some() {
-        let segments = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
-        segments.len()
-    } else {
-        1
-    };
+    // CR-01 fix: use the hoisted segment_count_outer (computed once before the output block)
+    // rather than re-calling segment_rr_by_gaps inside the provenance block.
+    let provenance_segment_count = segment_count_outer;
 
     AlgorithmRunResult {
         algorithm_id: GOOSE_HRV_V0_ID.to_string(),
@@ -1052,14 +1058,29 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         output,
         quality_flags,
         errors,
-        provenance: json!({
-            "input_ids": input.input_ids,
-            "input_interval_count": input.rr_intervals_ms.len(),
-            "valid_rr_range_ms": [300.0, 2000.0],
-            "expected_values_policy": "hand-derived-tests-and-versioned-goose-output",
-            "gap_segmentation_threshold_s": 3.0,
-            "segment_count": provenance_segment_count
-        }),
+        provenance: {
+            // CR-03 fix: include tier 1 selected segment index and duration so the manual
+            // ALG-HRV-04 cross-validation reviewer can reproduce which RR window was used.
+            let sws_selected_segment = if window_tier_used == 1 {
+                let segs = input.stage_segments.as_deref().unwrap_or(&[]);
+                sws_indices.first().map(|&i| json!({
+                    "index": i,
+                    "duration_minutes": segs.get(i).map(|s| s.duration_minutes)
+                }))
+            } else {
+                None
+            };
+            json!({
+                "input_ids": input.input_ids,
+                "input_interval_count": input.rr_intervals_ms.len(),
+                "valid_rr_range_ms": [300.0, 2000.0],
+                "expected_values_policy": "hand-derived-tests-and-versioned-goose-output",
+                "gap_segmentation_threshold_s": 3.0,
+                "segment_count": provenance_segment_count,
+                "sws_window_tier": window_tier_used,
+                "sws_selected_segment": sws_selected_segment
+            })
+        },
     }
 }
 
@@ -2201,7 +2222,17 @@ fn lipponen_tarvainen_filter(segment: &[f64]) -> Vec<f64> {
         let half = ECTOPIC_WINDOW / 2; // 2 for window=5
         let start = i.saturating_sub(half);
         let end = (i + half + 1).min(segment.len());
+        // CR-02 fix: exclude the candidate beat from its own window before computing median,
+        // matching the canonical Lipponen-Tarvainen (2019) specification.
         let mut window: Vec<f64> = segment[start..end].to_vec();
+        let candidate_local_idx = i - start;
+        if candidate_local_idx < window.len() {
+            window.remove(candidate_local_idx);
+        }
+        if window.is_empty() {
+            result.push(segment[i]);
+            continue;
+        }
         window.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let median = window[window.len() / 2];
         if (segment[i] - median).abs() <= ECTOPIC_THRESHOLD * median {
