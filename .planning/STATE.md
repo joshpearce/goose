@@ -4,7 +4,7 @@ milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
 stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-06-06T22:19:27.872Z"
+last_updated: "2026-06-06T22:35:55.810Z"
 last_activity: 2026-06-06 -- Phase 20 Plan 01 completed (SYNC-01..05)
 progress:
   total_phases: 7
