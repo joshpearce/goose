@@ -254,7 +254,7 @@ Plans:
 | 18. Coach Multi-Provider | v4.0 | 6/6 | Complete | 2026-06-06 |
 | 19. pt-PT Localisation Completion | v4.0 | 1/1 | Complete | 2026-06-06 |
 | 20. Upstream Fixes & Storage | v5.0 | 2/2 | Complete   | 2026-06-06 |
-| 21. IMU Data Foundation | v5.0 | 0/0 | Not started | — |
+| 21. IMU Data Foundation | v5.0 | 0/3 | Planned | — |
 | 22. HRV Accuracy | v5.0 | 0/0 | Not started | — |
 | 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 0/0 | Not started | — |
@@ -360,7 +360,13 @@ Plans:
   4. TOGGLE_IMU_MODE (command 106) is implemented in `protocol.rs` for type-51 packets and feature-flagged off by default — sending the command does not corrupt the packet stream when the flag is disabled
   5. `cargo test -p goose-core` green; tests cover: `full_samples` preservation of all 100 values, LSB-to-g conversion, gravity row insert and time-range query
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 21-01-PLAN.md — Wave 1: I16SeriesSummary full_samples field + summarize_i16_series population (protocol.rs) (IMU-01)
+- [ ] 21-02-PLAN.md — Wave 1: gravity table schema v15 + insert_gravity_rows + gravity_rows_between (store.rs) (IMU-02)
+- [ ] 21-03-PLAN.md — Wave 2: K10 gravity LSB→g extraction + bridge methods + IMU-04 doc (bridge.rs) (IMU-03, IMU-04)
 
 ---
 
