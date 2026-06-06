@@ -175,6 +175,7 @@ pub struct I16SeriesSummary {
     pub max: Option<i16>,
     pub sum: i64,
     pub preview: Vec<i16>,
+    pub full_samples: Option<Vec<i16>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -662,6 +663,7 @@ fn summarize_i16_series(
                 max: None,
                 sum: 0,
                 preview: Vec::new(),
+                full_samples: Some(Vec::new()),
             }),
             Vec::new(),
         );
@@ -678,6 +680,7 @@ fn summarize_i16_series(
     let mut max = None;
     let mut sum = 0i64;
     let mut preview = Vec::new();
+    let mut full = Vec::new();
     for index in 0..parsed_count {
         let sample_offset = offset + index * 2;
         let value = read_i16_le(payload, sample_offset).expect("parsed_count guards bounds");
@@ -687,6 +690,7 @@ fn summarize_i16_series(
         if preview.len() < 8 {
             preview.push(value);
         }
+        full.push(value);
     }
 
     (
@@ -699,6 +703,7 @@ fn summarize_i16_series(
             max,
             sum,
             preview,
+            full_samples: Some(full),
         }),
         warnings,
     )
