@@ -56,6 +56,9 @@ final class GooseAppModel {
   var lastUploadAt: Date? = nil
   var pendingBatchCount: Int = 0
   var lastSyncedCount: Int? = nil
+  // SYNC-04: owned by the @MainActor GooseAppModel; only read and written on the main actor.
+  // Set from connect/disconnect handling in GooseAppModel+Lifecycle.swift.
+  // BLE-thread code must not touch this property directly.
   var connectedDeviceGeneration: String? = nil
 
   let ble: GooseBLEClient
@@ -366,11 +369,15 @@ final class GooseAppModel {
         self?.handleHRConnectionStateChange(state)
       }
     }
+    // SYNC-01: weak self prevents a GooseAppModel↔GooseBLEClient retain cycle;
+    // this closure is intentionally weak (per upstream PR #26 review).
     ble.onHistoricalSyncProgress = { [weak self] progress in
       Task { @MainActor in
         self?.handleHistoricalSyncProgress(progress)
       }
     }
+    // SYNC-01: weak self prevents a GooseAppModel↔GooseBLEClient retain cycle;
+    // this closure is intentionally weak (per upstream PR #26 review).
     ble.onHistoricalRangeTelemetry = { [weak self] telemetry in
       self?.persistOvernightHistoricalRangeTelemetry(telemetry)
     }
