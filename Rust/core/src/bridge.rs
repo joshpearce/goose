@@ -290,10 +290,10 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "sleep.validate_v1_explanation_stability",
     "sleep.validate_v1_release_gates",
     "sleep.validate_window_labels",
-    "store.gravity_rows_between",
-    "store.insert_gravity_rows",
     "storage.check",
     "storage.compact_raw_evidence",
+    "store.gravity_rows_between",
+    "store.insert_gravity_rows",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",
     "upload.get_recent_decoded_streams",
@@ -3075,6 +3075,17 @@ fn list_algorithm_preferences_bridge(args: ListPreferencesArgs) -> GooseResult<s
 
 // ── Upload bridge ─────────────────────────────────────────────────────────────
 
+/// WHOOP accelerometer scale factor (research-confirmed ~3900 LSB per g).
+/// Divide each raw i16 sample by this constant to obtain acceleration in g.
+/// Exposed as a named constant to allow future calibration adjustments.
+const IMU_LSB_PER_G: f64 = 3900.0;
+
+// TOGGLE_IMU_MODE (command 106) is already sent in production by
+// SensorStreamCommandKind.startPhysiologyCapture / stopPhysiologyCapture
+// in the Swift layer. No Rust toggle is needed — this pipeline only stores
+// and converts the resulting K10/K21 motion data. (IMU-04 — no code change
+// required beyond this documentation comment.)
+
 #[derive(Debug, Deserialize)]
 struct UploadGetRecentDecodedStreamsArgs {
     database_path: String,
@@ -3113,7 +3124,7 @@ fn upload_get_recent_decoded_streams_bridge(
     let spo2: Vec<serde_json::Value> = Vec::new();
     let skin_temp: Vec<serde_json::Value> = Vec::new();
     let resp: Vec<serde_json::Value> = Vec::new();
-    let gravity: Vec<serde_json::Value> = Vec::new();
+    let mut gravity: Vec<serde_json::Value> = Vec::new();
 
     for frame in &frames {
         // Skip CRC-failed frames (matches server-side rule)
@@ -3157,10 +3168,33 @@ fn upload_get_recent_decoded_streams_bridge(
                                 hr.push(json!({"ts": ts, "bpm": *bpm}));
                             }
                         }
-                        DataPacketBodySummary::RawMotionK10 { heart_rate, .. } => {
-                            // k10 raw motion carries an HR byte
+                        DataPacketBodySummary::RawMotionK10 { heart_rate, axes, .. } => {
+                            // K10 raw motion carries an HR byte and three accel axes
                             if let (Some(ts), Some(bpm)) = (ts_unix, heart_rate) {
                                 hr.push(json!({"ts": ts, "bpm": *bpm}));
+                            }
+                            // Extract accelerometer_x/y/z full_samples and convert
+                            // LSB → g via IMU_LSB_PER_G. Match axes by name (not offset)
+                            // to stay robust across any future reordering.
+                            // If any axis or its full_samples is absent, skip gracefully.
+                            let ax = axes.iter().find(|a| a.name == "accelerometer_x")
+                                .and_then(|a| a.full_samples.as_ref());
+                            let ay = axes.iter().find(|a| a.name == "accelerometer_y")
+                                .and_then(|a| a.full_samples.as_ref());
+                            let az = axes.iter().find(|a| a.name == "accelerometer_z")
+                                .and_then(|a| a.full_samples.as_ref());
+                            if let (Some(xs), Some(ys), Some(zs), Some(ts_base)) =
+                                (ax, ay, az, ts_unix)
+                            {
+                                let n = xs.len().min(ys.len()).min(zs.len());
+                                for i in 0..n {
+                                    gravity.push(json!({
+                                        "ts": ts_base,
+                                        "x": xs[i] as f64 / IMU_LSB_PER_G,
+                                        "y": ys[i] as f64 / IMU_LSB_PER_G,
+                                        "z": zs[i] as f64 / IMU_LSB_PER_G,
+                                    }));
+                                }
                             }
                         }
                         DataPacketBodySummary::R17OpticalOrLabradorFiltered { .. } => {
@@ -3169,8 +3203,11 @@ fn upload_get_recent_decoded_streams_bridge(
                             // (historical V24 spo2 comes via a different packet type)
                         }
                         DataPacketBodySummary::RawMotionK21 { .. } => {
-                            // K21 raw motion — gravity/accel data; no direct extraction
-                            // without additional parsing beyond what DataPacketBodySummary exposes
+                            // K21 gravity extraction is deferred: axis-to-physical mapping
+                            // unconfirmed (variable group_1_count/group_2_count, non-standard
+                            // axis naming). Only K10 accel axes (accelerometer_x/y/z) are
+                            // converted in this phase (IMU-03). K21 will be handled once
+                            // empirical K21 payload data is available to confirm the mapping.
                         }
                     }
                 }
