@@ -7,9 +7,10 @@ use goose_core::{
         SleepInput, SleepModelStatus, SleepModelStatusInput, SleepNightHistoryInput,
         SleepStageSegment, SleepV1Input, SleepV1Output, StrainInput, StressInput,
         algorithm_run_record, built_in_algorithm_definitions,
-        built_in_default_algorithm_preferences, evaluate_sleep_model_status, goose_hrv_v0,
-        goose_recovery_v0, goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_stress_v0,
-        hrv_run_record, sleep_baseline_from_history,
+        built_in_default_algorithm_preferences, estimate_hrmax_from_history,
+        evaluate_sleep_model_status, goose_hrv_v0, goose_recovery_v0, goose_sleep_v0,
+        goose_sleep_v1, goose_strain_v0, goose_stress_v0, hrv_run_record,
+        resolve_effective_hrmax, sleep_baseline_from_history, tanaka_hrmax,
     },
     store::GooseStore,
 };
@@ -2782,4 +2783,133 @@ fn sleep_history_night(
         source: "healthkit".to_string(),
         excluded_from_baseline: false,
     }
+}
+
+// ── ALG-STR-01: Task 1 tests ────────────────────────────────────────────────
+
+#[test]
+fn strain_input_deserializes_without_profile_fields() {
+    let json = r#"{
+        "start_time": "2026-06-01T10:00:00Z",
+        "end_time": "2026-06-01T11:00:00Z",
+        "duration_minutes": 60.0,
+        "resting_hr_bpm": 55.0,
+        "average_hr_bpm": 130.0,
+        "max_hr_bpm": 175.0,
+        "hr_zone_minutes": [10.0, 20.0, 20.0, 5.0, 5.0]
+    }"#;
+    let input: StrainInput = serde_json::from_str(json).expect("deserialization must succeed");
+    assert!(input.profile_sex.is_none(), "profile_sex must default to None");
+    assert!(input.profile_age.is_none(), "profile_age must default to None");
+}
+
+#[test]
+fn tanaka_hrmax_returns_exact_value_for_age_50() {
+    let hrmax = tanaka_hrmax(50.0);
+    assert_eq!(hrmax, 208.0 - 0.7 * 50.0, "tanaka_hrmax(50) must equal 173.0 exactly");
+    assert_eq!(hrmax, 173.0);
+}
+
+#[test]
+fn tanaka_hrmax_differs_from_220_minus_age_by_at_least_2_for_ages_41_to_80() {
+    for age in 41u32..=80 {
+        let age_f = age as f64;
+        let tanaka = tanaka_hrmax(age_f);
+        let classic = 220.0 - age_f;
+        assert!(
+            (tanaka - classic).abs() >= 2.0,
+            "tanaka_hrmax({age}) = {tanaka} vs classic = {classic}: difference must be >= 2 bpm"
+        );
+    }
+}
+
+#[test]
+fn estimate_hrmax_from_history_returns_none_with_599_samples() {
+    let samples: Vec<f64> = (0..599).map(|i| 100.0 + i as f64 * 0.1).collect();
+    let result = estimate_hrmax_from_history(&samples);
+    assert!(result.is_none(), "must return None for < 600 samples");
+}
+
+#[test]
+fn estimate_hrmax_from_history_returns_some_with_600_samples() {
+    let samples: Vec<f64> = (0..600).map(|i| 100.0 + i as f64 * 0.1).collect();
+    let result = estimate_hrmax_from_history(&samples);
+    assert!(result.is_some(), "must return Some for >= 600 samples");
+}
+
+#[test]
+fn estimate_hrmax_from_history_returns_p99_5_percentile() {
+    let mut samples: Vec<f64> = (0..600).map(|i| i as f64).collect();
+    // Sort ascending to know expected index
+    samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let len = samples.len() as f64;
+    let expected_index = ((0.995 * len).ceil() as usize).min(samples.len() - 1);
+    let expected_value = samples[expected_index];
+
+    let result = estimate_hrmax_from_history(&samples);
+    assert_eq!(result.unwrap(), expected_value);
+}
+
+#[test]
+fn estimate_hrmax_from_history_ignores_non_finite_samples() {
+    // Only 599 finite + some NaN/inf — must return None (< 600 finite)
+    let mut samples: Vec<f64> = (0..599).map(|i| 100.0 + i as f64 * 0.1).collect();
+    samples.push(f64::NAN);
+    samples.push(f64::INFINITY);
+    let result = estimate_hrmax_from_history(&samples);
+    assert!(result.is_none(), "must return None when fewer than 600 finite samples");
+}
+
+// ── ALG-STR-01: Task 2 tests ────────────────────────────────────────────────
+
+#[test]
+fn resolve_effective_hrmax_returns_observed_from_history() {
+    // 600 samples: sufficient history → source = "observed"
+    let history: Vec<f64> = (0..600).map(|i| 100.0 + i as f64 * 0.1).collect();
+    let (hrmax, source) = resolve_effective_hrmax(175.0, Some(35.0), &history);
+    assert_eq!(source, "observed");
+    // value must equal estimate_hrmax_from_history result
+    let expected = estimate_hrmax_from_history(&history).unwrap();
+    assert_eq!(hrmax, expected);
+}
+
+#[test]
+fn resolve_effective_hrmax_returns_tanaka_when_history_insufficient_and_age_present() {
+    // < 600 samples, profile_age = Some(40) → source = "tanaka"
+    let history: Vec<f64> = (0..100).map(|i| 150.0 + i as f64 * 0.1).collect();
+    let session_max_hr = 175.0;
+    let age = 40.0;
+    let (hrmax, source) = resolve_effective_hrmax(session_max_hr, Some(age), &history);
+    assert_eq!(source, "tanaka");
+    let expected = session_max_hr.max(tanaka_hrmax(age));
+    assert_eq!(hrmax, expected);
+}
+
+#[test]
+fn resolve_effective_hrmax_returns_fallback_when_no_history_and_no_age() {
+    // < 600 samples, no profile_age → source = "fallback"
+    let history: Vec<f64> = vec![150.0, 160.0];
+    let session_max_hr = 178.0;
+    let (hrmax, source) = resolve_effective_hrmax(session_max_hr, None, &history);
+    assert_eq!(source, "fallback");
+    assert_eq!(hrmax, session_max_hr);
+}
+
+#[test]
+fn resolve_effective_hrmax_source_is_one_of_known_labels() {
+    let valid_sources = ["observed", "tanaka", "fallback"];
+
+    // observed path
+    let history_600: Vec<f64> = (0..600).map(|i| 100.0 + i as f64 * 0.1).collect();
+    let (_, source) = resolve_effective_hrmax(175.0, Some(35.0), &history_600);
+    assert!(valid_sources.contains(&source.as_str()), "got: {source}");
+
+    // tanaka path
+    let history_small: Vec<f64> = vec![150.0; 50];
+    let (_, source) = resolve_effective_hrmax(175.0, Some(35.0), &history_small);
+    assert!(valid_sources.contains(&source.as_str()), "got: {source}");
+
+    // fallback path
+    let (_, source) = resolve_effective_hrmax(175.0, None, &history_small);
+    assert!(valid_sources.contains(&source.as_str()), "got: {source}");
 }
