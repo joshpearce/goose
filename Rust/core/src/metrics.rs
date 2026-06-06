@@ -43,6 +43,7 @@ pub struct HrvOutput {
     pub rmssd_ms: f64,
     pub sdnn_ms: f64,
     pub pnn50_fraction: f64,
+    pub ectopic_filter_removal_fraction: f64,
     pub components: Vec<MetricComponent>,
 }
 
@@ -818,17 +819,37 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
 
         // Segment-aware RMSSD (ALG-HRV-01): use gap segmentation when timestamps are
         // present and aligned; fall back to the legacy single-segment path otherwise.
-        let (rmssd_ms, segment_count) = if has_timestamps && timestamps_aligned {
-            let segments = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
-            let count = segments.len();
-            (rmssd_segmented(&segments), count)
+        let (segments, segment_count) = if has_timestamps && timestamps_aligned {
+            let segs = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
+            let count = segs.len();
+            (segs, count)
         } else {
-            (rmssd(&valid), 1)
+            // Treat all valid intervals as a single segment for the ectopic filter.
+            (vec![valid.clone()], 1)
         };
 
         if segment_count > 1 {
             quality_flags.push("rr_segment_gap_detected".to_string());
         }
+
+        // Ectopic beat filter (ALG-HRV-02): Lipponen-Tarvainen median-relative rejection
+        // applied per segment, before RMSSD. Application order:
+        //   1. 300–2000 ms range gate (above)
+        //   2. Gap segmentation (ALG-HRV-01, above)
+        //   3. Ectopic filter (ALG-HRV-02, here)
+        //   4. RMSSD on cleaned segments (below)
+        let (filtered_segments, total_before, total_after) = apply_ectopic_filter(&segments);
+        let removed = total_before - total_after;
+        let ectopic_filter_removal_fraction = if total_before > 0 {
+            removed as f64 / total_before as f64
+        } else {
+            0.0
+        };
+        if removed > 0 {
+            quality_flags.push("ectopic_beats_removed".to_string());
+        }
+
+        let rmssd_ms = rmssd_segmented(&filtered_segments);
 
         let sdnn_ms = sample_sd(&valid, mean_nn_ms);
         let pnn50_fraction = pnn50(&valid);
@@ -844,6 +865,7 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
             rmssd_ms,
             sdnn_ms,
             pnn50_fraction,
+            ectopic_filter_removal_fraction,
             components: vec![
                 MetricComponent {
                     name: "mean_nn".to_string(),
@@ -1931,6 +1953,7 @@ fn mean(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
 }
 
+#[allow(dead_code)]
 fn rmssd(values: &[f64]) -> f64 {
     let mean_square = values
         .windows(2)
@@ -2012,6 +2035,55 @@ fn rmssd_segmented(segments: &[Vec<f64>]) -> f64 {
     } else {
         0.0
     }
+}
+
+// Lipponen-Tarvainen-style ectopic beat filter (ALG-HRV-02).
+//
+// For each interval i, compute a local reference median over a centred window of up to
+// ECTOPIC_WINDOW beats (clamped to the segment boundaries). Reject interval i when:
+//
+//   |segment[i] - median| > ECTOPIC_THRESHOLD * median
+//
+// The rejection threshold (0.20) and window size (5) are the canonical values from
+// Lipponen & Tarvainen (2019).
+const ECTOPIC_WINDOW: usize = 5;
+const ECTOPIC_THRESHOLD: f64 = 0.20;
+
+fn lipponen_tarvainen_filter(segment: &[f64]) -> Vec<f64> {
+    if segment.len() <= 1 {
+        return segment.to_vec();
+    }
+    let mut result = Vec::with_capacity(segment.len());
+    for i in 0..segment.len() {
+        // Build a centred window of up to ECTOPIC_WINDOW beats around index i.
+        let half = ECTOPIC_WINDOW / 2; // 2 for window=5
+        let start = i.saturating_sub(half);
+        let end = (i + half + 1).min(segment.len());
+        let mut window: Vec<f64> = segment[start..end].to_vec();
+        window.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let median = window[window.len() / 2];
+        if (segment[i] - median).abs() <= ECTOPIC_THRESHOLD * median {
+            result.push(segment[i]);
+        }
+    }
+    result
+}
+
+// Apply the ectopic filter to every segment and return the filtered segments together
+// with total beat counts before and after. The caller computes the removal fraction.
+fn apply_ectopic_filter(
+    segments: &[Vec<f64>],
+) -> (Vec<Vec<f64>>, usize, usize) {
+    let mut filtered = Vec::with_capacity(segments.len());
+    let mut total_before = 0usize;
+    let mut total_after = 0usize;
+    for seg in segments {
+        total_before += seg.len();
+        let clean = lipponen_tarvainen_filter(seg);
+        total_after += clean.len();
+        filtered.push(clean);
+    }
+    (filtered, total_before, total_after)
 }
 
 fn stage_minutes(stage_minutes: &BTreeMap<String, f64>, stage: &str) -> Option<f64> {
