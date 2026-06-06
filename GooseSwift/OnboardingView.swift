@@ -177,20 +177,28 @@ struct OnboardingView: View {
 
   @ViewBuilder
   private var footer: some View {
-    if step == .connect {
-      OnboardingConnectActionBar(
-        ble: model.ble,
-        onBack: moveBack,
-        readyTitle: nextAvailableStep(after: step) == nil ? "Finish setup" : "Continue",
-        onComplete: moveForward
-      )
-    } else {
-      OnboardingStandardActionBar(
-        showBack: step.previous != nil,
-        primaryTitle: standardPrimaryTitle,
-        onBack: moveBack,
-        onPrimary: continueFromCurrentStep
-      )
+    VStack(spacing: 0) {
+      if step == .connect {
+        OnboardingConnectActionBar(
+          ble: model.ble,
+          onBack: moveBack,
+          readyTitle: nextAvailableStep(after: step) == nil ? "Finish setup" : "Continue",
+          onComplete: moveForward
+        )
+      } else {
+        OnboardingStandardActionBar(
+          showBack: step.previous != nil,
+          primaryTitle: standardPrimaryTitle,
+          onBack: moveBack,
+          onPrimary: continueFromCurrentStep
+        )
+      }
+      Button(String(localized: "Saltar configuração")) {
+        onComplete()
+      }
+      .font(.footnote)
+      .foregroundStyle(.secondary)
+      .padding(.vertical, 12)
     }
   }
 
