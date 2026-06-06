@@ -70,7 +70,7 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 <details>
 <summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-26) — BACKLOG</summary>
 
-- [ ] **Phase 20: Upstream Fixes & Storage** — SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05
+- [ ] **Phase 20: Upstream Fixes & Storage** (2 plans) — SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05, PERF-05
 - [ ] **Phase 21: IMU Data Foundation** — IMU-01, IMU-02, IMU-03, IMU-04
 - [ ] **Phase 22: HRV Accuracy** — ALG-HRV-01, ALG-HRV-02, ALG-HRV-03, ALG-HRV-04
 - [ ] **Phase 23: Strain & Calories** — ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02
@@ -253,7 +253,7 @@ Plans:
 | 17. @Observable Migration | v4.0 | 4/4 | Complete | 2026-06-05 |
 | 18. Coach Multi-Provider | v4.0 | 6/6 | Complete | 2026-06-06 |
 | 19. pt-PT Localisation Completion | v4.0 | 1/1 | Complete | 2026-06-06 |
-| 20. Upstream Fixes & Storage | v5.0 | 0/0 | Not started | — |
+| 20. Upstream Fixes & Storage | v5.0 | 0/2 | Planned | — |
 | 21. IMU Data Foundation | v5.0 | 0/0 | Not started | — |
 | 22. HRV Accuracy | v5.0 | 0/0 | Not started | — |
 | 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
@@ -338,7 +338,12 @@ Absorbed into Phase 20: Upstream Fixes & Storage (as PERF-05).
   4. `body_hex` assertions are added to K10/K21 protocol tests first; then `body_hex` is excluded from the cached parsed-payload JSON for K10/K21 frames in `parse_frame_batch` — `cargo test` green before and after
   5. `cargo test -p goose-core` and `xcodebuild` both pass after all 6 fixes
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 20-01-PLAN.md — Wave 1: Gen4 historical-sync correctness fixes SYNC-01..SYNC-05 (Swift; verify-then-document/fix against actual fork symbols)
+- [ ] 20-02-PLAN.md — Wave 2: PERF-05 body_hex exclusion for K10/K21 in protocol.rs (Rust, test-first)
+
 
 ---
 

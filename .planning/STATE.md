@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: planning
-stopped_at: v4.0 milestone closed — v5.0 not yet started
-last_updated: "2026-06-06T15:30:00.000Z"
-last_activity: 2026-06-06 -- v4.0 shipped (tag v4.0); v5.0 planning pending
+status: executing
+stopped_at: v4.0 shipped ✅ — v5.0 not yet started
+last_updated: "2026-06-06T21:10:49.951Z"
+last_activity: 2026-06-06 -- Phase 19 execution started
 progress:
   total_phases: 9
   completed_phases: 0
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 Phase: 19 (pt-pt-localisation-completion) — EXECUTING
 Plan: 1 of 1
-Status: Executing Phase 19
+Status: Ready to execute
 Last activity: 2026-06-06 -- Phase 19 execution started
 
 Progress: [░░░░░░░░░░] 0%
