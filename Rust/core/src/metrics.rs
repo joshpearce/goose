@@ -975,7 +975,8 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     if valid.len() < 30 {
         quality_flags.push("low_interval_count".to_string());
     }
-    if valid.len() < 2 {
+    if valid.len() < 20 {
+        // my-whoop MIN_BEATS=20; fewer than 20 valid RR intervals produces physiologically unreliable RMSSD
         errors.push("not_enough_valid_rr_intervals".to_string());
     }
 
