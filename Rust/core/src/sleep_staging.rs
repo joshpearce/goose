@@ -252,7 +252,7 @@ pub fn stage_sleep_four_class(
     apply_reimposition(&mut epochs, input.sleep_start_ts);
 
     // Step 5: AASM metrics.
-    let aasm = aasm_metrics(&epochs, COLE_KRIPKE_EPOCH_MINUTES);
+    let aasm = aasm_metrics(&epochs, COLE_KRIPKE_EPOCH_MINUTES, input.sleep_start_ts, input.sleep_end_ts);
     let total = epochs.len() as f64;
     let wake_count = epochs.iter().filter(|e| e.stage == "wake").count() as f64;
     let non_wake_count = total - wake_count;
@@ -477,20 +477,27 @@ struct AasmMetrics {
 }
 
 /// Derive AASM summary metrics from a final reimposed hypnogram.
-fn aasm_metrics(epochs: &[SleepEpoch], epoch_minutes: f64) -> AasmMetrics {
-    let n = epochs.len();
-    let tib = n as f64 * epoch_minutes;
+/// CR-02 fix: SOL derived from epoch timestamps, not array index × epoch_minutes.
+/// CR-03 fix: TIB derived from declared window bounds, not count of data epochs.
+fn aasm_metrics(
+    epochs: &[SleepEpoch],
+    epoch_minutes: f64,
+    sleep_start_ts: f64,
+    sleep_end_ts: f64,
+) -> AasmMetrics {
+    // CR-03: TIB = declared window duration (not count of sparse data epochs).
+    let tib = ((sleep_end_ts - sleep_start_ts).max(0.0) / 60.0).max(epoch_minutes);
 
     // TST: sum of non-wake epochs.
     let tst = epochs.iter().filter(|e| e.stage != "wake").count() as f64 * epoch_minutes;
 
     let efficiency = if tib > 0.0 { tst / tib } else { 0.0 };
 
-    // SOL: minutes from window start to first non-wake epoch.
+    // CR-02: SOL from epoch timestamp, not array index.
     let first_sleep_idx = epochs.iter().position(|e| e.stage != "wake");
     let sol = match first_sleep_idx {
-        None => tib,           // never fell asleep → full window is latency
-        Some(idx) => idx as f64 * epoch_minutes,
+        None => tib,
+        Some(idx) => ((epochs[idx].ts - sleep_start_ts).max(0.0) / 60.0),
     };
 
     // WASO: wake epochs that occur after sleep onset.
@@ -589,15 +596,17 @@ fn compute_activity_counts(sleep_start_ts: f64, rows: &[(f64, f64, f64, f64)]) -
 ///
 /// Out-of-range neighbours contribute 0.
 fn cole_kripke_d_score(i: usize, activity_counts: &[(i64, f64)]) -> f64 {
-    let n = activity_counts.len() as i64;
+    // CR-01 fix: look up neighbours by epoch_idx (temporal index) via a HashMap,
+    // not by array position. Gaps in the gravity table produce holes in the array;
+    // array[i+1] does NOT mean the temporally-adjacent minute when data is sparse.
+    use std::collections::HashMap;
+    let lookup: HashMap<i64, f64> =
+        activity_counts.iter().map(|&(idx, cnt)| (idx, cnt)).collect();
+    let current_epoch_idx = activity_counts[i].0;
     let mut d = 0.0_f64;
     for (coeff, &offset) in COLE_KRIPKE_COEFFS.iter().zip(COLE_KRIPKE_OFFSETS.iter()) {
-        let neighbour = i as i64 + offset;
-        let c = if neighbour >= 0 && neighbour < n {
-            COLE_KRIPKE_SCALE_FACTOR * activity_counts[neighbour as usize].1
-        } else {
-            0.0
-        };
+        let neighbour_idx = current_epoch_idx + offset;
+        let c = COLE_KRIPKE_SCALE_FACTOR * lookup.get(&neighbour_idx).copied().unwrap_or(0.0);
         d += coeff * c;
     }
     d / 100.0
@@ -907,7 +916,9 @@ mod tests {
             })
             .collect();
 
-        let aasm = aasm_metrics(&epochs, 1.0);
+        // sleep window: 30 minutes from ts=0 to ts=1800
+        let sleep_end = start + 30.0 * epoch_secs;
+        let aasm = aasm_metrics(&epochs, 1.0, start, sleep_end);
 
         assert_eq!(aasm.time_in_bed_minutes, 30.0, "TIB must be 30");
         assert_eq!(aasm.tst_minutes, 23.0, "TST must be 23");
