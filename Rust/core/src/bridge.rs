@@ -3150,6 +3150,59 @@ struct UploadGetRecentDecodedStreamsArgs {
     since_ts: f64, // Unix timestamp (seconds); fetch decoded frames captured >= since_ts
 }
 
+// ---------------------------------------------------------------------------
+// V24 physical unit helpers (uncalibrated; quality_flag="uncalibrated" always)
+// ---------------------------------------------------------------------------
+
+/// SpO2 estimate via ratio-of-ratios (uncalibrated).
+/// R = red / ir; SpO2 ≈ 110 - 25*R.
+/// Returns None if ir == 0 or if the computed value is outside the plausible
+/// physiological range [70, 100] % (clamp applied after plausibility gate).
+fn spo2_from_raw_uncalibrated(red: u16, ir: u16) -> Option<f64> {
+    if ir == 0 {
+        return None;
+    }
+    let r = (red as f64) / (ir as f64);
+    let spo2 = 110.0 - 25.0 * r;
+    if !(70.0..=100.0).contains(&spo2) {
+        // Outside plausible range — reject; caller emits a warning.
+        return None;
+    }
+    Some(spo2)
+}
+
+/// Skin temperature (uncalibrated linear approximation).
+/// Linear model: raw=930 → 33 °C, slope 30 ADC units per °C.
+/// Returns None if the result is outside the plausible range [25, 40] °C.
+fn skin_temp_celsius_from_raw(raw: u16) -> Option<f64> {
+    let celsius = (raw as f64 - 930.0) / 30.0 + 33.0;
+    if !(25.0..=40.0).contains(&celsius) {
+        // Outside plausible range — reject.
+        return None;
+    }
+    Some(celsius)
+}
+
+/// Respiratory rate estimate (uncalibrated) using zero-crossing count on a
+/// raw window sampled at 1 Hz. Returns None if window_len < 10 or if the
+/// computed rate is outside the plausible range (0, 60] breaths/min.
+fn resp_rate_bpm_zero_crossing(window: &[u16]) -> Option<f64> {
+    if window.len() < 10 {
+        return None;
+    }
+    let mean = window.iter().map(|&v| v as f64).sum::<f64>() / window.len() as f64;
+    let centered: Vec<f64> = window.iter().map(|&v| v as f64 - mean).collect();
+    let crossings = centered
+        .windows(2)
+        .filter(|w| (w[0] >= 0.0) != (w[1] >= 0.0))
+        .count();
+    let rate = (crossings as f64 / 2.0) / (window.len() as f64) * 60.0;
+    if rate <= 0.0 || rate > 60.0 {
+        return None;
+    }
+    Some(rate)
+}
+
 /// Extract biometric streams from recent decoded_frames and return them in the
 /// format expected by the server's `POST /v1/ingest-decoded` endpoint.
 ///
@@ -3174,12 +3227,12 @@ fn upload_get_recent_decoded_streams_bridge(
 
     let mut hr: Vec<serde_json::Value> = Vec::new();
 
-    let rr: Vec<serde_json::Value> = Vec::new();
+    let mut rr: Vec<serde_json::Value> = Vec::new();
     let mut events: Vec<serde_json::Value> = Vec::new();
     let battery: Vec<serde_json::Value> = Vec::new();
-    let spo2: Vec<serde_json::Value> = Vec::new();
-    let skin_temp: Vec<serde_json::Value> = Vec::new();
-    let resp: Vec<serde_json::Value> = Vec::new();
+    let mut spo2: Vec<serde_json::Value> = Vec::new();
+    let mut skin_temp: Vec<serde_json::Value> = Vec::new();
+    let mut resp: Vec<serde_json::Value> = Vec::new();
     let mut gravity: Vec<serde_json::Value> = Vec::new();
 
     for frame in &frames {
@@ -3269,10 +3322,57 @@ fn upload_get_recent_decoded_streams_bridge(
                             // converted in this phase (IMU-03). K21 will be handled once
                             // empirical K21 payload data is available to confirm the mapping.
                         }
-                        DataPacketBodySummary::V24History { .. } => {
-                            // V24 biometric fields (SpO2, skin temp, RR, PPG, gravity) are
-                            // stored via the v24 tables (Phase 27). Streaming extraction
-                            // is not yet wired here — handled by insert_v24_biometric_batch.
+                        DataPacketBodySummary::V24History {
+                            hr: v24_hr,
+                            rr_intervals_ms,
+                            skin_contact,
+                            spo2_red,
+                            spo2_ir,
+                            skin_temp_raw,
+                            resp_raw,
+                            ..
+                        } => {
+                            // V24 biometric fields: wire into the same upload streams as
+                            // NormalHistory (hr, rr) plus the V24-only streams (spo2,
+                            // skin_temp, resp). sig_quality is stored via
+                            // insert_v24_biometric_batch and is NOT included in the upload
+                            // payload (POST /v1/ingest-decoded schema does not include it).
+                            let contact = skin_contact.unwrap_or(0) == 1;
+
+                            // HR — only when skin contact is established
+                            if contact {
+                                if let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
+                                    hr.push(json!({"ts": ts, "bpm": bpm}));
+                                }
+                            }
+
+                            // RR intervals — accumulate with per-interval timestamps
+                            if let Some(ts_base) = ts_unix {
+                                let mut t = ts_base;
+                                for &ms in rr_intervals_ms.iter() {
+                                    rr.push(json!({"ts": t, "interval_ms": ms}));
+                                    t += ms as f64 / 1000.0;
+                                }
+                            }
+
+                            // SpO2 raw red/IR — only when in contact
+                            if contact {
+                                if let (Some(ts), Some(r), Some(i)) =
+                                    (ts_unix, *spo2_red, *spo2_ir)
+                                {
+                                    spo2.push(json!({"ts": ts, "red": r, "ir": i, "contact": 1}));
+                                }
+
+                                // Skin temperature raw ADC
+                                if let (Some(ts), Some(raw)) = (ts_unix, *skin_temp_raw) {
+                                    skin_temp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+
+                                // Respiratory raw ADC
+                                if let (Some(ts), Some(raw)) = (ts_unix, *resp_raw) {
+                                    resp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+                            }
                         }
                     }
                 }
