@@ -441,8 +441,22 @@ Plans:
   5. Concurrent write safety: EWMA update uses `BEGIN EXCLUSIVE` transaction; double-update on the same date is prevented by a `WHERE last_updated_date < ?` guard (idempotent)
   6. `cargo test -p goose-core` green; tests cover: HR dip nadir (rolling 5-min window), WASO = 0 when no wake-after-onset, disturbance count, Winsor gate clamping, hard-reject at 5σ, cold-start gate at exactly 4 nights, idempotent write, stale flag after 14 days
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+- [ ] 24-01-PLAN.md — Wave 1: HR-threshold sleep metric helpers (heart_rate_dip_pct, waso_from_hr, sol_from_hr, hr_disturbance_count) in metrics.rs + SleepScoreOutput fields + sleep_window_feature wiring + Sleep V2 dashboard surfacing (ALG-SLP-01)
+- [ ] 24-02-PLAN.md — Wave 1: baselines.rs EWMA engine (alpha 0.10, cold-start, trust levels) + fold_history from daily_recovery_metrics + idempotent BEGIN EXCLUSIVE update + store.ewma_baseline_* bridge methods (ALG-SLP-02)
+
 **UI hint**: yes
+
+> Planning note: ALG-SLP-02 was planned to the binding REQUIREMENTS.md + 24-CONTEXT scope
+> (EWMA mean/variance, alpha 0.10, hrv/resting_hr, cold-start >= 4 / trust >= 14, idempotent
+> EXCLUSIVE write). The richer success-criteria #2/#3 above (Winsorized center, EWMA-of-abs-
+> deviation spread, METRIC_CFG table, resp metric, stale flag) are additive refinements not
+> present in the ALG-SLP-02 requirement text; surface to the developer if they should be
+> pulled into this phase rather than Phase 25 (Recovery) where the σ-spread is consumed.
+
 
 ---
 
