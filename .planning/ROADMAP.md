@@ -260,7 +260,7 @@ Plans:
 | 22. HRV Accuracy | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 25. Recovery Score v1 | v5.0 | 0/2 | Planned | — |
+| 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
@@ -478,11 +478,11 @@ Plans:
 
 **Wave 1**
 
-  - [ ] 25-01-PLAN.md — Rust: RecoveryV1Input/Output + ColourBand + goose_recovery_v1 (Z-score + logistic squash, cold-start None) + metrics.goose_recovery_v1 bridge method (ALG-REC-01, ALG-REC-02)
+  - [x] 25-01-PLAN.md — Rust: RecoveryV1Input/Output + ColourBand + goose_recovery_v1 (Z-score + logistic squash, cold-start None) + metrics.goose_recovery_v1 bridge method (ALG-REC-01, ALG-REC-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-  - [ ] 25-02-PLAN.md — Swift: HealthDataStore+Recovery.swift + RecoveryV2OverviewPage "A calibrar" state + colour band indicator (ALG-REC-03)
+  - [x] 25-02-PLAN.md — Swift: HealthDataStore+Recovery.swift + RecoveryV2OverviewPage "A calibrar" state + colour band indicator (ALG-REC-03)
 
 **UI hint**: yes
 
