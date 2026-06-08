@@ -3155,9 +3155,8 @@ fn heart_rate_dip_pct_zero_baseline_returns_none() {
 
 #[test]
 fn waso_from_hr_returns_zero_when_no_post_onset_wake() {
-    // All HR below threshold after onset_ts=0
+    // All HR below threshold after onset_ts=0 (threshold = resting_hr * 1.05 = 63.0)
     let resting_hr = 60.0;
-    let threshold = resting_hr * 1.05; // 63.0
     let series: Vec<(f64, f64)> = vec![
         (0.0, 62.0), // below threshold
         (1.0, 61.0),
@@ -3265,4 +3264,58 @@ fn hr_disturbance_count_counts_two_separated_runs_as_two() {
     ];
     let count = hr_disturbance_count(&series, resting_hr, 0.0);
     assert_eq!(count, 2, "two separated wake runs should count as 2 disturbances");
+}
+
+// ALG-SLP-01 Task 2: SleepScoreOutput new fields
+
+#[test]
+fn goose_sleep_v0_output_carries_sol_waso_disturbance_and_rem_latency() {
+    // SleepScoreOutput must expose sol_minutes, waso_minutes, disturbance_count,
+    // rem_latency_minutes (None when no REM stage segment is available via stage inference).
+    let result = goose_sleep_v0(&SleepInput {
+        start_time: "2026-05-27T22:30:00Z".to_string(),
+        end_time: "2026-05-28T06:30:00Z".to_string(),
+        sleep_duration_minutes: 420.0,
+        sleep_need_minutes: 480.0,
+        time_in_bed_minutes: 480.0,
+        midpoint_deviation_minutes: 30.0,
+        disturbance_count: 3,
+        sleep_latency_minutes: 15.0,
+        wake_after_sleep_onset_minutes: 20.0,
+        wake_episode_count: 2,
+        stage_minutes: BTreeMap::from([
+            ("awake".to_string(), 60.0),
+            ("core".to_string(), 210.0),
+            ("deep".to_string(), 90.0),
+            ("rem".to_string(), 60.0),
+        ]),
+        heart_rate_dip_percent: Some(10.0),
+        input_ids: vec!["hand-derived.task2".to_string()],
+    });
+
+    assert!(result.errors.is_empty(), "expected no errors: {:?}", result.errors);
+    let output = result.output.expect("expected output for valid input");
+
+    // sol_minutes is populated from input.sleep_latency_minutes
+    assert!(
+        (output.sol_minutes - 15.0).abs() < 0.01,
+        "expected sol_minutes=15.0, got {}",
+        output.sol_minutes
+    );
+    // waso_minutes is populated from input.wake_after_sleep_onset_minutes
+    assert!(
+        (output.waso_minutes - 20.0).abs() < 0.01,
+        "expected waso_minutes=20.0, got {}",
+        output.waso_minutes
+    );
+    // disturbance_count is populated from input.disturbance_count
+    assert_eq!(
+        output.disturbance_count, 3,
+        "expected disturbance_count=3"
+    );
+    // rem_latency_minutes: None when no stage_segments are provided (stage_minutes path)
+    assert!(
+        output.rem_latency_minutes.is_none(),
+        "expected rem_latency_minutes=None when stage_segments are absent"
+    );
 }

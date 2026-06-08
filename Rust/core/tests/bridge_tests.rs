@@ -5141,8 +5141,15 @@ fn bridge_builds_local_sleep_score_from_motion_features() {
     assert_eq!(report["pass"], true);
     assert_eq!(report["sleep_window"]["time_in_bed_minutes"], 240.0);
     assert_eq!(report["sleep_window"]["sleep_duration_minutes"], 180.0);
-    assert_eq!(report["sleep_window"]["disturbance_count"], 1);
-    assert_eq!(report["score_result"]["output"]["score_0_to_100"], 80.75);
+    // ALG-SLP-01: HR-threshold disturbance_count replaces motion-heuristic when HR coverage >= 50%.
+    // The k10 frame payload (byte 17 = 72 bpm) provides full HR coverage. All HR at 72 bpm is
+    // below resting_hr * 1.05 (~75.6), so no HR threshold crossings → disturbance_count = 0.
+    assert_eq!(report["sleep_window"]["disturbance_count"], 0);
+    // Score updated: disturbance_score = 100 (0 disturbances * 5), weight 0.10 → adds 10.0
+    // vs prior 9.5 (1 disturbance). Score: 33.75 + 22.5 + 15.0 + 10.0 = 81.25
+    assert_eq!(report["score_result"]["output"]["score_0_to_100"], 81.25);
+    // ALG-SLP-01: new output fields carry HR-threshold metric values
+    assert_eq!(report["score_result"]["output"]["disturbance_count"], 0);
     assert_eq!(
         report["persisted_algorithm_run"]["run_id"],
         "bridge-sleep-feature-run-1"
@@ -6516,7 +6523,9 @@ fn bridge_builds_local_recovery_score_from_feature_reports_and_provided_vitals()
     assert_eq!(report["recovery_input"]["hrv_rmssd_ms"], 25.0);
     assert_eq!(report["recovery_input"]["hrv_baseline_rmssd_ms"], 50.0);
     assert_eq!(report["recovery_input"]["resting_hr_bpm"], 72.0);
-    assert_eq!(report["recovery_input"]["sleep_score_0_to_100"], 80.75);
+    // ALG-SLP-01: sleep score updated from 80.75 to 81.25 (HR-threshold disturbance_count=0
+    // replaces motion-heuristic disturbance_count=1 when full HR coverage available).
+    assert_eq!(report["recovery_input"]["sleep_score_0_to_100"], 81.25);
     assert_eq!(
         report["provided_vitals"]["source"],
         "metrics.recovery_sensor_discovery"

@@ -1417,10 +1417,15 @@ fn sleep_feature_score_report_derives_wake_stages_and_heart_rate_dip() {
     assert_close(window.sleep_duration_minutes, 180.0);
     assert_close(window.motion_coverage_fraction, 1.0);
     assert_close(window.heart_rate_coverage_fraction, 1.0);
-    assert_close(window.sleep_latency_minutes, 60.0);
-    assert_close(window.wake_after_sleep_onset_minutes, 60.0);
+    // ALG-SLP-01: HR-threshold SOL replaces stage-segment SOL when HR coverage >= 50%.
+    // First HR sample at 22:15 (minute 15) is 80 bpm ≤ baseline(80)*1.05(84) → SOL = 15 min.
+    assert_close(window.sleep_latency_minutes, 15.0);
+    // ALG-SLP-01: HR-threshold WASO — no HR samples exceed threshold (84 bpm) post-onset → 0.
+    assert_close(window.wake_after_sleep_onset_minutes, 0.0);
+    // wake_episode_count is still derived from stage segments (not overridden by HR-threshold).
     assert_eq!(window.wake_episode_count, 1);
-    assert_eq!(window.disturbance_count, 2);
+    // ALG-SLP-01: HR-threshold disturbance_count — no threshold crossings post-onset → 0.
+    assert_eq!(window.disturbance_count, 0);
     assert_eq!(window.stage_segments.len(), 5);
     assert_close(*window.stage_minutes.get("awake").unwrap(), 120.0);
     assert!(
@@ -1739,7 +1744,10 @@ fn sleep_feature_score_report_preserves_short_awake_stage_islands() {
     );
     assert_eq!(window.stage_segments[1].stage, SleepStageKind::Awake);
     assert_close(window.stage_segments[1].duration_minutes, 4.0);
-    assert_close(window.wake_after_sleep_onset_minutes, 4.0);
+    // ALG-SLP-01: HR-threshold WASO — HR at 22:31 is 70 bpm, threshold = baseline(70)*1.05 = 73.5.
+    // 70 ≤ 73.5 → no threshold crossing → WASO = 0 (replaces stage-segment WASO of 4 min).
+    assert_close(window.wake_after_sleep_onset_minutes, 0.0);
+    // wake_episode_count is still derived from stage segments (not overridden by HR-threshold).
     assert_eq!(window.wake_episode_count, 1);
     assert!(
         !window
@@ -2483,6 +2491,61 @@ fn stress_feature_score_report_requires_trusted_hrv_baseline() {
             .next_actions
             .iter()
             .any(|action| action.reason == "hrv_baseline_missing")
+    );
+}
+
+// ALG-SLP-01: verify that low HR coverage triggers the fallback path and emits quality flag.
+#[test]
+fn sleep_feature_score_report_emits_low_coverage_fallback_flag_when_hr_coverage_below_50_pct() {
+    let store = GooseStore::open_in_memory().unwrap();
+    // Insert motion frames WITHOUT heart rate — coverage will be 0%.
+    for captured_at in [
+        "2026-05-27T22:00:00Z",
+        "2026-05-27T23:00:00Z",
+        "2026-05-28T00:00:00Z",
+        "2026-05-28T01:00:00Z",
+    ] {
+        import_motion_frame_at_value_without_heart_rate(
+            &store,
+            "user-owned-live-notification",
+            captured_at,
+            1000, // low motion, no disturbances
+        );
+    }
+
+    let report = run_sleep_feature_score_report_for_store(
+        &store,
+        "test-db",
+        "2026-05-27T22:00:00Z",
+        "2026-05-28T02:00:00Z",
+        SleepFeatureScoreOptions {
+            min_owned_captures_per_summary: 1,
+            require_trusted_evidence: true,
+            sleep_need_minutes: 180.0,
+            low_motion_threshold_0_to_1: 0.05,
+            disturbance_motion_threshold_0_to_1: 0.20,
+            target_midpoint_minutes_since_midnight: 0.0,
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+    let window = report.sleep_window.unwrap();
+    assert_close(window.heart_rate_coverage_fraction, 0.0);
+    // ALG-SLP-01: low-coverage fallback quality flag must be emitted.
+    assert!(
+        window
+            .quality_flags
+            .contains(&"sleep_hr_metrics_low_coverage_fallback".to_string()),
+        "expected sleep_hr_metrics_low_coverage_fallback quality flag, got: {:?}",
+        window.quality_flags
+    );
+    // The high-coverage HR threshold path must NOT run — no HR data available.
+    assert!(
+        !window
+            .quality_flags
+            .contains(&"heart_rate_dip_not_detected".to_string()),
+        "heart_rate_dip_not_detected should only appear when HR data is present"
     );
 }
 

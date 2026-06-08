@@ -90,6 +90,19 @@ pub struct SleepScoreOutput {
     pub wake_after_sleep_onset_minutes: f64,
     pub wake_episode_count: u32,
     pub heart_rate_dip_percent: Option<f64>,
+    /// ALG-SLP-01: Sleep onset latency in minutes (from HR-threshold method when available,
+    /// else from stage-segment heuristic). Mirrors input.sleep_latency_minutes.
+    pub sol_minutes: f64,
+    /// ALG-SLP-01: Wake after sleep onset in minutes (from HR-threshold method when available,
+    /// else from stage-segment heuristic). Mirrors input.wake_after_sleep_onset_minutes.
+    pub waso_minutes: f64,
+    /// ALG-SLP-01: Number of distinct wake episodes after sleep onset. Mirrors
+    /// input.disturbance_count.
+    pub disturbance_count: u32,
+    /// ALG-SLP-01: REM onset latency in minutes. None when stage_segments lack a REM segment
+    /// (full REM latency requires sleep staging — Phase 26 deferral per 24-CONTEXT).
+    #[serde(default)]
+    pub rem_latency_minutes: Option<f64>,
     pub components: Vec<ScoreComponent>,
 }
 
@@ -1256,6 +1269,14 @@ pub fn goose_sleep_v0(input: &SleepInput) -> AlgorithmRunResult<SleepScoreOutput
             wake_after_sleep_onset_minutes: input.wake_after_sleep_onset_minutes,
             wake_episode_count: input.wake_episode_count,
             heart_rate_dip_percent: input.heart_rate_dip_percent,
+            // ALG-SLP-01: mirror input HR-threshold metric fields through to output
+            sol_minutes: input.sleep_latency_minutes,
+            waso_minutes: input.wake_after_sleep_onset_minutes,
+            disturbance_count: input.disturbance_count,
+            // rem_latency_minutes: None in v0 — full REM latency requires sleep staging
+            // (Phase 26 deferral per 24-CONTEXT). Populated when stage_segments contain
+            // a REM stage via a future scorer version.
+            rem_latency_minutes: None,
             components,
         })
     } else {
@@ -4112,27 +4133,20 @@ pub fn sol_from_hr(
     // samples. A run starts when a sample is <= threshold and ends when a
     // sample > threshold or when there is a gap with no samples.
     let mut run_start: Option<f64> = None;
-    let mut run_last: Option<f64> = None;
 
     for (ts, hr) in &sorted {
         let below = *hr <= threshold;
         if below {
-            if run_start.is_none() {
-                run_start = Some(*ts);
-            }
-            run_last = Some(*ts);
-        } else {
-            // Broke the run
-            run_start = None;
-            run_last = None;
-        }
-        // Check if current run meets the duration requirement.
-        // Duration = run_last - run_start (end inclusive of the last sample).
-        if let (Some(start), Some(last)) = (run_start, run_last) {
-            if last - start >= sustained_minutes - 1.0 {
+            let start = *run_start.get_or_insert(*ts);
+            // Check if current run meets the duration requirement.
+            // Duration = current_ts - run_start (end inclusive of the last sample).
+            if *ts - start >= sustained_minutes - 1.0 {
                 // SOL is the time from window start to run_start
                 return Some((start - window_start).max(0.0));
             }
+        } else {
+            // Broke the run
+            run_start = None;
         }
     }
     None
