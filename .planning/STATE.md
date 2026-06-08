@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: completed
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-06-06T23:31:59.897Z"
-last_activity: 2026-06-07 -- Phase 22 plan 03 complete (SWS window selection)
+status: executing
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-06-08T08:40:48.516Z"
+last_activity: 2026-06-07 -- Plan 23-02 complete
 progress:
   total_phases: 9
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 7
-  percent: 22
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 44
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 22 — HRV Accuracy
+**Current focus:** Phase 23 — Strain & Calories
 
 ## Current Position
 
-Phase: 22 (HRV Accuracy) — EXECUTING
-Plan: 3 of 3 (COMPLETE)
-Status: Phase 22 algorithmic implementation complete — ALG-HRV-04 manual gate pending
-Last activity: 2026-06-07 -- Phase 22 plan 03 complete (SWS window selection)
+Phase: 23 (Strain & Calories) — EXECUTING
+Plan: 3 of 3 complete
+Status: Ready to execute
+Last activity: 2026-06-07 -- Plan 23-02 complete
 
 Progress: [██████░░░░] 60%
 
@@ -69,6 +69,9 @@ Progress: [██████░░░░] 60%
 | Phase 21-imu-data-foundation P03 | 18 | 2 tasks | 2 files |
 | Phase 22-hrv-accuracy P02 | 5 | 2 tasks | 3 files |
 | Phase 22-hrv-accuracy P03 | 35 | 2 tasks | 8 files |
+| Phase 23-strain-calories P01 | 25 | 2 tasks | 7 files |
+| Phase 23-strain-calories P02 | 10 | 2 tasks | 3 files |
+| Phase 23-strain-calories P03 | 14 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase ?]: PERF-05: body_hex excluded for K10/K21 via matches!(packet_k, Some(10) | Some(21)); empty String sentinel; downstream consumers (timeline.rs non_empty, bridge.rs body_byte_count) handle empty string safely
 - [Phase ?]: PERF-05 K21 test: build_v5_payload_frame adds alignment padding (1038 mod 4 = 2 bytes); K21 RED-baseline uses !is_empty() instead of exact hex comparison; K10 (1288 bytes, no padding) uses exact comparison
 - [Phase ?]: full_samples field added to I16SeriesSummary: all 100 IMU samples now survive parse layer; preview unchanged
+- Phase 23 Plan 02: goose_strain_v1 component weights: edwards_zone_load=0.50, average_hr_reserve=0.20, banister_trimp=0.30 (balanced blend, calibration deferred)
+- Phase 23 Plan 02: fit_strain_denominator uses closed-form OLS on m=1/ln(D) (exact, O(n), no convergence issues vs iterative)
 - Phase 22 Plan 03: SWS window selection: select_sws_window returns (tier, Vec<usize>) indices into stage_segments; index-proportional mapping when rr_timestamps_s absent; Tier 2 recency = chronological concat; SWS runs before 300-2000 ms gate
 - Phase 22 Plan 03: ALG-HRV-04 is a manual gate only (code comment above goose_hrv_v0); phase remains open until >= 5 real session deltas <= 1 ms are recorded in 22-03-SUMMARY.md
 
@@ -131,6 +136,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-06T22:57:47.329Z
-Stopped at: Completed 21-01-PLAN.md
-Next: /gsd-new-milestone to start v5.0
+Last session: 2026-06-08T08:40:48.511Z
+Stopped at: Completed 23-02-PLAN.md
+Next: Execute Phase 23 Plan 03 (Mifflin-St Jeor RMR + Keytel active kcal)

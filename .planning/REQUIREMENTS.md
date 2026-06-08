@@ -23,18 +23,18 @@
 
 ## HRV Pipeline Accuracy
 
-- [ ] **ALG-HRV-01**: `rmssd_segment_aware` extended — BLE gaps > 3 s are segment boundaries; successive differences that cross gaps are rejected, not included in RMSSD computation
-- [ ] **ALG-HRV-02**: Lipponen-Tarvainen ectopic beat filter implemented with adaptive thresholds (local median reference ± computed threshold); `ectopic_filter_removal_fraction` exposed in `HrvOutput`; replaces static 300–2000 ms range gate as primary filter
-- [ ] **ALG-HRV-03**: Tiered SWS window selection: (1) last deep-sleep episode ≥ 5 min; (2) weighted mean of all deep episodes; (3) full night fallback — `HrvInput` accepts optional `stage_segments`
-- [ ] **ALG-HRV-04**: Cross-validation gate — Rust RMSSD output validated against `my-whoop` Python reference on ≥ 5 real overnight sessions; delta ≤ 1 ms required before phase is closed
+- [x] **ALG-HRV-01**: `rmssd_segment_aware` extended — BLE gaps > 3 s are segment boundaries; successive differences that cross gaps are rejected, not included in RMSSD computation
+- [x] **ALG-HRV-02**: Lipponen-Tarvainen ectopic beat filter implemented with adaptive thresholds (local median reference ± computed threshold); `ectopic_filter_removal_fraction` exposed in `HrvOutput`; replaces static 300–2000 ms range gate as primary filter
+- [x] **ALG-HRV-03**: Tiered SWS window selection: (1) last deep-sleep episode ≥ 5 min; (2) weighted mean of all deep episodes; (3) full night fallback — `HrvInput` accepts optional `stage_segments`
+- [~] **ALG-HRV-04**: Cross-validation gate — Rust RMSSD output validated against `my-whoop` Python reference on ≥ 5 real overnight sessions; delta ≤ 1 ms required before phase is closed — CODE COMMENT ADDED; manual validation pending
 
 ## Strain & Calories
 
-- [ ] **ALG-STR-01**: `profile_sex` field added to `StrainInput`; Tanaka HRmax formula (`208 − 0.7 × age`) replaces `220 − age` throughout strain pipeline; `estimate_hrmax_from_history` implemented (percentile 99.5 of history when ≥ 600 samples)
-- [ ] **ALG-STR-02**: `banister_trimp_zone_midpoint` implemented as alternative to Edwards — sex-dependent constants (b=1.92 men / b=1.67 women); `banister_trimp_zone_midpoint_approximation` quality flag in output; golden files updated
-- [ ] **ALG-STR-03**: `fit_strain_denominator` implemented — given ≥ 2 (TRIMP, strain_WHOOP) pairs, fits `D` in `21 × ln(TRIMP+1)/ln(D)` via least-squares; bridge exposes as calibration method
-- [ ] **ALG-CAL-01**: `rmr_mifflin_st_jeor(weight_kg, height_cm, age, sex)` implemented in `energy_rollup.rs`; `profile_height_cm: Option<f64>` added to `EnergyDailyRollupOptions`; quality flag emitted when height absent; replaces `weight_kg * 22.0` proxy
-- [ ] **ALG-CAL-02**: Keytel and Harris-Benedict coefficients in `energy_rollup.rs` validated against Ghidra-confirmed values (Keytel men: −55.0969, 0.6309, 0.1988, 0.2017; women: −20.4022, 0.4472, −0.1263, 0.0740; H-B men: 88.362, 13.397, 479.9, −5.677; women: 447.593, 9.247, 309.8, −4.330); SI unit variant confirmed
+- [x] **ALG-STR-01**: `profile_sex` field added to `StrainInput`; Tanaka HRmax formula (`208 − 0.7 × age`) replaces `220 − age` throughout strain pipeline; `estimate_hrmax_from_history` implemented (percentile 99.5 of history when ≥ 600 samples)
+- [x] **ALG-STR-02**: `banister_trimp_zone_midpoint` implemented as alternative to Edwards — sex-dependent constants (b=1.92 men / b=1.67 women); `banister_trimp_zone_midpoint_approximation` quality flag in output; golden files updated
+- [x] **ALG-STR-03**: `fit_strain_denominator` implemented — given ≥ 2 (TRIMP, strain_WHOOP) pairs, fits `D` in `21 × ln(TRIMP+1)/ln(D)` via least-squares; bridge exposes as calibration method
+- [x] **ALG-CAL-01**: `rmr_mifflin_st_jeor(weight_kg, height_cm, age, sex)` implemented in `energy_rollup.rs`; `profile_height_cm: Option<f64>` added to `EnergyDailyRollupOptions`; quality flag emitted when height absent; replaces `weight_kg * 22.0` proxy
+- [x] **ALG-CAL-02**: Keytel and Harris-Benedict coefficients in `energy_rollup.rs` validated against Ghidra-confirmed values (Keytel men: −55.0969, 0.6309, 0.1988, 0.2017; women: −20.4022, 0.4472, −0.1263, 0.0740; H-B men: 88.362, 13.397, 479.9, −5.677; women: 447.593, 9.247, 309.8, −4.330); SI unit variant confirmed
 
 ## Sleep Metrics (Without Staging)
 

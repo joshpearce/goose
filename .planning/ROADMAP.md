@@ -73,7 +73,7 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 - [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
 - [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
 - [~] **Phase 22: HRV Accuracy** (3/3 plans done) — ALG-HRV-01 ✓, ALG-HRV-02 ✓, ALG-HRV-03 ✓, ALG-HRV-04 manual gate pending
-- [ ] **Phase 23: Strain & Calories** — ALG-STR-01, ALG-STR-02, ALG-STR-03, ALG-CAL-01, ALG-CAL-02
+- [~] **Phase 23: Strain & Calories** (2/3 plans) — ALG-STR-01 ✓, ALG-STR-02 ✓, ALG-STR-03 ✓, ALG-CAL-01 pending, ALG-CAL-02 pending
 - [ ] **Phase 24: Sleep Metrics Without Staging + Baselines** — ALG-SLP-01, ALG-SLP-02
 - [ ] **Phase 25: Recovery Score v1** — ALG-REC-01, ALG-REC-02, ALG-REC-03
 - [ ] **Phase 26: Sleep Staging** — ALG-SLP-03, ALG-SLP-04
@@ -258,7 +258,7 @@ Plans:
 | 20. Upstream Fixes & Storage | v5.0 | 2/2 | Complete   | 2026-06-06 |
 | 21. IMU Data Foundation | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 22. HRV Accuracy | v5.0 | 3/3 | Complete   | 2026-06-06 |
-| 23. Strain & Calories | v5.0 | 0/0 | Not started | — |
+| 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 0/0 | Not started | — |
 | 25. Recovery Score v1 | v5.0 | 0/0 | Not started | — |
 | 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
@@ -420,9 +420,9 @@ Plans:
 
 Plans:
 
-- [ ] 23-01-PLAN.md — Wave 1: profile_sex/profile_age on StrainInput + Tanaka HRmax + estimate_hrmax_from_history + effective-HRmax resolver (ALG-STR-01)
-- [ ] 23-02-PLAN.md — Wave 2: Banister TRIMP (sex constants) + fit_strain_denominator + goose_strain_v1 bridge method (ALG-STR-02, ALG-STR-03)
-- [ ] 23-03-PLAN.md — Wave 3: Mifflin-St Jeor RMR + Keytel/Harris-Benedict Ghidra coefficients + profile_height_cm wiring (ALG-CAL-01, ALG-CAL-02)
+- [x] 23-01-PLAN.md — Wave 1: profile_sex/profile_age on StrainInput + Tanaka HRmax + estimate_hrmax_from_history + effective-HRmax resolver (ALG-STR-01)
+- [x] 23-02-PLAN.md — Wave 2: Banister TRIMP (sex constants) + fit_strain_denominator + goose_strain_v1 bridge method (ALG-STR-02, ALG-STR-03)
+- [x] 23-03-PLAN.md — Wave 3: Mifflin-St Jeor RMR + Keytel/Harris-Benedict Ghidra coefficients + profile_height_cm wiring (ALG-CAL-01, ALG-CAL-02)
 
 ---
 
