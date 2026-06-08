@@ -754,7 +754,7 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
     )
 }
 
-#[cfg(test)]
+/// Exposed for integration tests only. Do not call from production code.
 pub fn parse_v24_body_for_test(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
     parse_v24_body_summary(payload)
 }
