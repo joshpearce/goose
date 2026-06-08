@@ -5,6 +5,7 @@ use serde_json::json;
 
 use crate::{
     GooseError, GooseResult,
+    baselines::EwmaBaseline,
     store::{AlgorithmDefinitionRecord, AlgorithmPreferenceRecord, AlgorithmRunRecord},
 };
 
@@ -20,6 +21,8 @@ pub const GOOSE_STRAIN_V1_ID: &str = "goose.strain.v1";
 pub const GOOSE_STRAIN_V1_VERSION: &str = "0.1.0";
 pub const GOOSE_RECOVERY_V0_ID: &str = "goose.recovery.v0";
 pub const GOOSE_RECOVERY_V0_VERSION: &str = "0.1.0";
+pub const GOOSE_RECOVERY_V1_ID: &str = "goose.recovery.v1";
+pub const GOOSE_RECOVERY_V1_VERSION: &str = "0.1.0";
 pub const GOOSE_STRESS_V0_ID: &str = "goose.stress.v0";
 pub const GOOSE_STRESS_V0_VERSION: &str = "0.1.0";
 
@@ -4156,6 +4159,365 @@ pub fn sol_from_hr(
         }
     }
     None
+}
+
+// ---------------------------------------------------------------------------
+// Recovery V1 — personal-baseline score (Phase 25)
+// ---------------------------------------------------------------------------
+
+/// Population mean score used as a fallback band indicator during calibration.
+const RECOVERY_POPULATION_MEAN: f64 = 58.0;
+
+/// Colour band for the Recovery V1 score, named in PT-PT.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ColourBand {
+    Vermelho,
+    Amarelo,
+    Verde,
+}
+
+impl ColourBand {
+    /// Classify a 0–100 score into a colour band.
+    ///
+    /// Verde ≥ 67, Amarelo ≥ 34, Vermelho < 34.
+    pub fn from_score(score: f64) -> Self {
+        if score >= 67.0 {
+            Self::Verde
+        } else if score >= 34.0 {
+            Self::Amarelo
+        } else {
+            Self::Vermelho
+        }
+    }
+
+    /// PT-PT lowercase name, suitable for JSON serialisation.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Verde => "verde",
+            Self::Amarelo => "amarelo",
+            Self::Vermelho => "vermelho",
+        }
+    }
+}
+
+/// Input for the personal-baseline recovery score algorithm (v1).
+///
+/// The database path is carried by the bridge layer; this struct holds only the
+/// nightly biometric values. Keeping the database path out of the struct lets
+/// `goose_recovery_v1` stay a pure, unit-testable function.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RecoveryV1Input {
+    pub device_id: String,
+    pub date_key: String,
+    pub hrv_rmssd_ms: f64,
+    pub resting_hr_bpm: f64,
+}
+
+/// Output of the personal-baseline recovery score algorithm (v1).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RecoveryV1Output {
+    pub algorithm_id: String,
+    pub algorithm_version: String,
+    /// None when baseline is in Calibrating state (< 4 nights).
+    pub score_0_to_100: Option<f64>,
+    /// "calibrating" | "provisional" | "trusted"
+    pub trust_level: String,
+    /// "vermelho" | "amarelo" | "verde"
+    pub colour_band: String,
+    /// Z-score for HRV RMSSD (None when Calibrating).
+    pub z_hrv: Option<f64>,
+    /// Z-score for resting HR (None when Calibrating or RHR baseline insufficient).
+    pub z_rhr: Option<f64>,
+}
+
+/// Compute the personal-baseline Recovery score (v1, ALG-REC-01/02).
+///
+/// Takes the raw nightly biometrics and a pre-reconstructed EWMA baseline (the
+/// bridge layer reconstructs the baseline via `EwmaBaseline::fold_history`).
+///
+/// When the HRV baseline night_count < 4 (cold-start), returns `score_0_to_100`
+/// as `None`. The colour band is derived from the population mean (58.0) so the
+/// calibrating UI still shows a meaningful band.
+///
+/// When trust ≥ Provisional:
+/// - combined z = 0.7 * z_hrv - 0.3 * z_rhr  (or z_hrv alone when z_rhr is None)
+/// - score = 100.0 / (1.0 + exp(-1.6 * (z + 0.20)))  [logistic squash]
+pub fn goose_recovery_v1(input: &RecoveryV1Input, baseline: &EwmaBaseline) -> RecoveryV1Output {
+    let trust = baseline.hrv.trust_level();
+    let trust_level = trust.as_str().to_string();
+
+    let z_hrv = baseline.hrv.z_score(input.hrv_rmssd_ms);
+    // RHR z-score is sign-flipped: lower RHR than baseline = positive contribution.
+    let z_rhr_raw = baseline.resting_hr.z_score(input.resting_hr_bpm);
+
+    // Cold-start gate: HRV baseline not seeded yet.
+    if z_hrv.is_none() {
+        let band = ColourBand::from_score(RECOVERY_POPULATION_MEAN).as_str().to_string();
+        return RecoveryV1Output {
+            algorithm_id: GOOSE_RECOVERY_V1_ID.to_string(),
+            algorithm_version: GOOSE_RECOVERY_V1_VERSION.to_string(),
+            score_0_to_100: None,
+            trust_level,
+            colour_band: band,
+            z_hrv: None,
+            z_rhr: None,
+        };
+    }
+
+    let z_hrv_val = z_hrv.expect("checked above");
+
+    // Combined Z: positive HRV = better; lower RHR than baseline = better (sign flip).
+    let combined_z = match z_rhr_raw {
+        Some(z_rhr_val) => 0.7 * z_hrv_val - 0.3 * z_rhr_val,
+        None => z_hrv_val,
+    };
+
+    let score = 100.0 / (1.0 + (-1.6_f64 * (combined_z + 0.20)).exp());
+    let colour_band = ColourBand::from_score(score).as_str().to_string();
+
+    RecoveryV1Output {
+        algorithm_id: GOOSE_RECOVERY_V1_ID.to_string(),
+        algorithm_version: GOOSE_RECOVERY_V1_VERSION.to_string(),
+        score_0_to_100: Some(score),
+        trust_level,
+        colour_band,
+        z_hrv: Some(z_hrv_val),
+        z_rhr: z_rhr_raw,
+    }
+}
+
+#[cfg(test)]
+mod recovery_v1_tests {
+    use super::*;
+    use crate::baselines::{EwmaBaseline, EwmaState, MIN_NIGHTS_SEED, MIN_NIGHTS_TRUST};
+
+    /// Build a minimal EwmaState with exact mean/variance/night_count for test control.
+    fn make_state(mean: f64, variance: f64, night_count: usize) -> EwmaState {
+        EwmaState { mean, variance, night_count }
+    }
+
+    fn make_baseline(hrv: EwmaState, resting_hr: EwmaState) -> EwmaBaseline {
+        EwmaBaseline { hrv, resting_hr }
+    }
+
+    fn make_input() -> RecoveryV1Input {
+        RecoveryV1Input {
+            device_id: "test-device".to_string(),
+            date_key: "2024-01-01".to_string(),
+            hrv_rmssd_ms: 60.0,
+            resting_hr_bpm: 55.0,
+        }
+    }
+
+    // ---- Z=0 → ≈58% --------------------------------------------------------
+
+    #[test]
+    fn test_recovery_v1_z_zero_yields_approx_58_percent() {
+        // To get combined Z = 0: need z_hrv = 0 and z_rhr = 0.
+        // z_hrv = 0 when hrv_rmssd_ms == hrv.mean.
+        // z_rhr = 0 when resting_hr_bpm == resting_hr.mean.
+        let sigma = 5.0_f64;
+        let hrv = make_state(60.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let rhr = make_state(55.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let baseline = make_baseline(hrv, rhr);
+
+        let input = RecoveryV1Input {
+            device_id: "dev".to_string(),
+            date_key: "2024-01-01".to_string(),
+            hrv_rmssd_ms: 60.0,  // == hrv.mean → z_hrv = 0
+            resting_hr_bpm: 55.0, // == rhr.mean → z_rhr = 0
+        };
+
+        let output = goose_recovery_v1(&input, &baseline);
+        let score = output.score_0_to_100.expect("score must be Some when trusted");
+
+        // Expected: 100 / (1 + exp(-1.6 * 0.20)) = 100 / (1 + exp(-0.32)) ≈ 57.9%
+        let expected = 100.0 / (1.0 + (-1.6_f64 * 0.20_f64).exp());
+        assert!(
+            (score - expected).abs() < 0.5,
+            "Z=0 score must be within 0.5% of {:.4}, got {:.4}",
+            expected,
+            score
+        );
+        assert!(
+            (score - 58.0).abs() < 0.5,
+            "Z=0 score must be within 0.5% of 58.0, got {:.4}",
+            score
+        );
+    }
+
+    // ---- Z_RHR sign flip: lower RHR = better (positive contribution) --------
+
+    #[test]
+    fn test_recovery_v1_lower_rhr_improves_score() {
+        let sigma = 5.0_f64;
+        // HRV at mean (z_hrv = 0)
+        let hrv = make_state(60.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let rhr = make_state(60.0, sigma * sigma, MIN_NIGHTS_SEED);
+
+        // Baseline: low score (RHR at mean, HRV at mean → z=0 → ~58%)
+        let baseline_neutral = make_baseline(hrv.clone(), rhr.clone());
+        let input_neutral = RecoveryV1Input {
+            device_id: "dev".to_string(),
+            date_key: "2024-01-01".to_string(),
+            hrv_rmssd_ms: 60.0,
+            resting_hr_bpm: 60.0, // == rhr.mean → z_rhr = 0
+        };
+        let output_neutral = goose_recovery_v1(&input_neutral, &baseline_neutral);
+        let score_neutral = output_neutral.score_0_to_100.unwrap();
+
+        // Scenario: RHR is below baseline mean → lower than usual → BETTER → should raise score.
+        let baseline_good = make_baseline(hrv, rhr);
+        let input_good = RecoveryV1Input {
+            device_id: "dev".to_string(),
+            date_key: "2024-01-01".to_string(),
+            hrv_rmssd_ms: 60.0,
+            resting_hr_bpm: 55.0, // below rhr.mean=60 → z_rhr_raw < 0 → -0.3 * z_rhr_raw > 0
+        };
+        let output_good = goose_recovery_v1(&input_good, &baseline_good);
+        let score_good = output_good.score_0_to_100.unwrap();
+
+        assert!(
+            score_good > score_neutral,
+            "lower RHR than baseline must improve score: neutral={:.4}, good={:.4}",
+            score_neutral,
+            score_good
+        );
+    }
+
+    // ---- Cold-start: score is None when HRV baseline < 4 nights -------------
+
+    #[test]
+    fn test_recovery_v1_cold_start_score_none() {
+        let hrv = make_state(60.0, 25.0, 3); // < MIN_NIGHTS_SEED=4
+        let rhr = make_state(55.0, 25.0, 3);
+        let baseline = make_baseline(hrv, rhr);
+        let input = make_input();
+
+        let output = goose_recovery_v1(&input, &baseline);
+
+        assert!(
+            output.score_0_to_100.is_none(),
+            "cold-start: score must be None when HRV night_count < 4"
+        );
+        assert_eq!(
+            output.trust_level, "calibrating",
+            "cold-start: trust_level must be 'calibrating'"
+        );
+        assert!(
+            output.z_hrv.is_none(),
+            "cold-start: z_hrv must be None"
+        );
+    }
+
+    // ---- Cold-start: colour band falls back to population mean band ----------
+
+    #[test]
+    fn test_recovery_v1_cold_start_colour_band_population_mean() {
+        let hrv = make_state(60.0, 25.0, 0); // no nights
+        let rhr = make_state(55.0, 25.0, 0);
+        let baseline = make_baseline(hrv, rhr);
+        let input = make_input();
+
+        let output = goose_recovery_v1(&input, &baseline);
+
+        // RECOVERY_POPULATION_MEAN=58.0 → ColourBand::Amarelo (34 ≤ 58 < 67)
+        assert_eq!(
+            output.colour_band, "amarelo",
+            "cold-start colour band must be 'amarelo' (population mean 58.0)"
+        );
+    }
+
+    // ---- Colour band boundaries --------------------------------------------
+
+    #[test]
+    fn test_colour_band_verde_at_67() {
+        assert_eq!(ColourBand::from_score(67.0), ColourBand::Verde);
+        assert_eq!(ColourBand::from_score(67.0).as_str(), "verde");
+    }
+
+    #[test]
+    fn test_colour_band_amarelo_at_66_9() {
+        assert_eq!(ColourBand::from_score(66.9), ColourBand::Amarelo);
+        assert_eq!(ColourBand::from_score(66.9).as_str(), "amarelo");
+    }
+
+    #[test]
+    fn test_colour_band_amarelo_at_34() {
+        assert_eq!(ColourBand::from_score(34.0), ColourBand::Amarelo);
+        assert_eq!(ColourBand::from_score(34.0).as_str(), "amarelo");
+    }
+
+    #[test]
+    fn test_colour_band_vermelho_at_33_9() {
+        assert_eq!(ColourBand::from_score(33.9), ColourBand::Vermelho);
+        assert_eq!(ColourBand::from_score(33.9).as_str(), "vermelho");
+    }
+
+    // ---- Trust level mapping -----------------------------------------------
+
+    #[test]
+    fn test_recovery_v1_trust_calibrating_at_3_nights() {
+        let hrv = make_state(60.0, 25.0, 3);
+        let rhr = make_state(55.0, 25.0, 3);
+        let baseline = make_baseline(hrv, rhr);
+        let output = goose_recovery_v1(&make_input(), &baseline);
+        assert_eq!(output.trust_level, "calibrating");
+    }
+
+    #[test]
+    fn test_recovery_v1_trust_provisional_at_4_nights() {
+        let sigma = 5.0_f64;
+        let hrv = make_state(60.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let rhr = make_state(55.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let baseline = make_baseline(hrv, rhr);
+        let output = goose_recovery_v1(&make_input(), &baseline);
+        assert_eq!(output.trust_level, "provisional");
+        assert!(output.score_0_to_100.is_some(), "provisional must have a score");
+    }
+
+    #[test]
+    fn test_recovery_v1_trust_trusted_at_14_nights() {
+        let sigma = 5.0_f64;
+        let hrv = make_state(60.0, sigma * sigma, MIN_NIGHTS_TRUST);
+        let rhr = make_state(55.0, sigma * sigma, MIN_NIGHTS_TRUST);
+        let baseline = make_baseline(hrv, rhr);
+        let output = goose_recovery_v1(&make_input(), &baseline);
+        assert_eq!(output.trust_level, "trusted");
+        assert!(output.score_0_to_100.is_some(), "trusted must have a score");
+    }
+
+    // ---- z_rhr None fallback (only z_hrv used) -----------------------------
+
+    #[test]
+    fn test_recovery_v1_z_rhr_none_uses_z_hrv_alone() {
+        // HRV has 4 nights (provisional), RHR has 0 nights → z_rhr is None.
+        let sigma = 5.0_f64;
+        let hrv = make_state(60.0, sigma * sigma, MIN_NIGHTS_SEED);
+        let rhr = make_state(55.0, sigma * sigma, 0); // no nights
+        let baseline = make_baseline(hrv, rhr);
+
+        let input = RecoveryV1Input {
+            device_id: "dev".to_string(),
+            date_key: "2024-01-01".to_string(),
+            hrv_rmssd_ms: 60.0, // == hrv.mean → z_hrv = 0
+            resting_hr_bpm: 55.0,
+        };
+
+        let output = goose_recovery_v1(&input, &baseline);
+        // With z_hrv=0 and z_rhr=None: combined_z = z_hrv = 0
+        // score = 100 / (1 + exp(-1.6 * 0.20)) ≈ 57.9
+        let score = output.score_0_to_100.expect("must have score");
+        let expected = 100.0 / (1.0 + (-1.6_f64 * 0.20_f64).exp());
+        assert!(
+            (score - expected).abs() < 0.5,
+            "z_rhr None: score must use z_hrv alone, got {:.4}, expected {:.4}",
+            score,
+            expected
+        );
+        assert!(output.z_rhr.is_none(), "z_rhr must be None when rhr baseline cold");
+    }
 }
 
 /// Count distinct post-onset runs of samples crossing above `resting_hr * 1.05`.
