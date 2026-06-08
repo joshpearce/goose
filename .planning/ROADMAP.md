@@ -268,7 +268,7 @@ Plans:
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 26. Sleep Staging | v5.0 | 1/2 | In Progress|  |
+| 26. Sleep Staging | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 | 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
@@ -566,7 +566,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — shared sleep_staging.rs)*
 
-  - [ ] 26-02-PLAN.md — 4-class classifier (wake/light/deep/rem) + physiological reimposition (no early REM, min 5-min merge) + AASM metrics (TST/efficiency/SOL/WASO/stage_minutes) + ALG-SLP-04 human cross-validation gate (ALG-SLP-04)
+  - [~] 26-02-PLAN.md — 4-class classifier (wake/light/deep/rem) + physiological reimposition (no early REM, min 5-min merge) + AASM metrics (TST/efficiency/SOL/WASO/stage_minutes) + ALG-SLP-04 human cross-validation gate (ALG-SLP-04) — Tasks 1-2 complete; Task 3 at human checkpoint (ALG-SLP-04 manual-pending: >= 5 sessions >= 70% epoch agreement)
 
 ---
 

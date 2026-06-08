@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-06-08T12:02:37.839Z"
-last_activity: 2026-06-08 -- Phase 26 execution started
+stopped_at: Completed 26-02-PLAN.md (Tasks 1-2; Task 3 is ALG-SLP-04 human checkpoint)
+last_updated: "2026-06-08T12:12:17Z"
+last_activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
 progress:
   total_phases: 16
   completed_phases: 6
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 Phase: 26 (Sleep Staging) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
-Last activity: 2026-06-08 -- Phase 26 execution started
+Status: At human checkpoint (ALG-SLP-04 cross-validation gate)
+Last activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
 
 Progress: [██████░░░░] 65%
 
@@ -75,6 +75,7 @@ Progress: [██████░░░░] 65%
 | Phase 24-sleep-metrics-baselines P01 | 32 | 3 tasks (TDD+UI) | 10 files |
 | Phase 24-sleep-metrics-baselines P02 | 45 | 3 tasks (TDD) | 4 files |
 | Phase 26-sleep-staging P01 | 16min | 2 tasks | 3 files |
+| Phase 26-sleep-staging P02 | 27min | 2 tasks (Task 3 human) | 2 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,7 @@ Recent decisions affecting current work:
 - Phase 22 Plan 03: SWS window selection: select_sws_window returns (tier, Vec<usize>) indices into stage_segments; index-proportional mapping when rr_timestamps_s absent; Tier 2 recency = chronological concat; SWS runs before 300-2000 ms gate
 - Phase 22 Plan 03: ALG-HRV-04 is a manual gate only (code comment above goose_hrv_v0); phase remains open until >= 5 real session deltas <= 1 ms are recorded in 22-03-SUMMARY.md
 - [Phase ?]: Activity count uses inter-sample magnitude difference; COLE_KRIPKE_SCALE_FACTOR exposed as named const for future calibration
+- Phase 26 Plan 02: 4-class classifier built on Cole-Kripke spine; HR feature alignment via nearest-timestamp; physiological reimposition runs after per-epoch classification (rule a then b, fixed-point for cascades); ALG-SLP-04 manual gate = >= 5 sessions at >= 70% epoch agreement vs WHOOP
 
 ### Pending Todos
 
@@ -142,6 +144,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-08T12:02:37.832Z
-Stopped at: Completed 26-01-PLAN.md
-Next: Human verifies Sleep V2 detail sheet in simulator, then advance to Phase 25 (Recovery Score v1)
+Last session: 2026-06-08T12:12:17Z
+Stopped at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
+Next: Capture >= 5 real overnight WHOOP sessions, run metrics.sleep_staging, record epoch agreement in 26-02-SUMMARY.md. Resume with "validated" or "defer".
