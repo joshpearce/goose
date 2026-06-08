@@ -96,13 +96,13 @@ use crate::{
         AlgorithmRunResult, GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION, GOOSE_RECOVERY_V0_ID,
         GOOSE_RECOVERY_V0_VERSION, GOOSE_SLEEP_V0_ID, GOOSE_SLEEP_V0_VERSION, GOOSE_SLEEP_V1_ID,
         GOOSE_SLEEP_V1_VERSION, GOOSE_STRAIN_V0_ID, GOOSE_STRAIN_V0_VERSION, GOOSE_STRESS_V0_ID,
-        GOOSE_STRESS_V0_VERSION, HrvInput, RecoveryInput, RecoveryV1Input, SleepInput,
-        SleepModelStatusInput, SleepNightHistoryInput, SleepStageSegment, SleepV1Input,
+        GOOSE_STRESS_V0_VERSION, HrvInput, ReadinessInput, RecoveryInput, RecoveryV1Input,
+        SleepInput, SleepModelStatusInput, SleepNightHistoryInput, SleepStageSegment, SleepV1Input,
         StrainInput, StressInput, algorithm_run_record, built_in_algorithm_definitions,
         built_in_default_algorithm_preferences, default_algorithm_preferences_for_scope,
-        fit_strain_denominator, goose_hrv_v0, goose_recovery_v0, goose_recovery_v1,
-        goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_strain_v1, goose_stress_v0,
-        sleep_history_night_is_usable,
+        fit_strain_denominator, goose_hrv_v0, goose_readiness_v1, goose_recovery_v0,
+        goose_recovery_v1, goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_strain_v1,
+        goose_stress_v0, sleep_history_night_is_usable,
     },
     openwhoop_reference::{
         OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_COMMIT,
@@ -247,6 +247,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "metrics.energy_unavailable_daily_status",
     "metrics.fit_strain_denominator",
     "metrics.goose_hrv_v0",
+    "metrics.goose_readiness_v1",
     "metrics.goose_recovery_v0",
     "metrics.goose_recovery_v1",
     "metrics.goose_sleep_v0",
@@ -2209,6 +2210,13 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.goose_stress_v0" => request_args::<StressInput>(&request)
             .and_then(|input| metric_result_to_value(goose_stress_v0(&input)))
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.goose_readiness_v1" => request_args::<ReadinessInput>(&request)
+            .and_then(|input| {
+                serde_json::to_value(goose_readiness_v1(&input))
+                    .map_err(|e| GooseError::message(format!("cannot serialize readiness_v1 output: {e}")))
+            })
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.input_readiness" => request_args::<MetricInputReadinessArgs>(&request)
@@ -9825,6 +9833,103 @@ mod tests {
             "calibrating",
             "after 4 nights: trust must not be calibrating"
         );
+    }
+
+    // ---- metrics.goose_readiness_v1 bridge tests ---------------------------
+
+    #[test]
+    fn goose_readiness_v1_bridge_empty_input_returns_unknown() {
+        // empty daily_strain → insufficient_data=true, level="unknown"
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "r1".to_string(),
+            method: "metrics.goose_readiness_v1".to_string(),
+            args: json!({ "daily_strain": [] }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(response.ok, "empty input must succeed: {:?}", response.error);
+        let result = response.result.expect("result must be present");
+        assert_eq!(
+            result["insufficient_data"],
+            serde_json::Value::Bool(true),
+            "empty input: insufficient_data must be true"
+        );
+        assert_eq!(
+            result["level"],
+            "unknown",
+            "empty input: level must be 'unknown'"
+        );
+    }
+
+    #[test]
+    fn goose_readiness_v1_bridge_28_equal_strains_returns_primed() {
+        // 28 equal-strain pairs (strain=10.0) → level="primed", acwr≈1.0, zone="optimal",
+        // monotony=null (std=0 → None)
+        let pairs: Vec<[f64; 2]> = (0..28).map(|i| [i as f64 * 86400.0, 10.0]).collect();
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "r2".to_string(),
+            method: "metrics.goose_readiness_v1".to_string(),
+            args: json!({ "daily_strain": pairs }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(response.ok, "28 equal strains must succeed: {:?}", response.error);
+        let result = response.result.expect("result must be present");
+        assert_eq!(result["level"], "primed", "28 equal strains: level must be 'primed'");
+        assert_eq!(result["acwr_zone"], "optimal", "28 equal strains: zone must be 'optimal'");
+        assert!(
+            result["acwr"].as_f64().map_or(false, |v| (v - 1.0).abs() < 1e-9),
+            "28 equal strains: acwr must be ≈1.0, got {:?}",
+            result["acwr"]
+        );
+        assert!(
+            result["monotony"].is_null(),
+            "28 equal strains: monotony must be null (std=0), got {:?}",
+            result["monotony"]
+        );
+    }
+
+    #[test]
+    fn goose_readiness_v1_bridge_27_strains_returns_unknown() {
+        // 27 pairs → insufficient_data=true, level="unknown"
+        let pairs: Vec<[f64; 2]> = (0..27).map(|i| [i as f64 * 86400.0, 10.0]).collect();
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "r3".to_string(),
+            method: "metrics.goose_readiness_v1".to_string(),
+            args: json!({ "daily_strain": pairs }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(response.ok, "27 strains must succeed: {:?}", response.error);
+        let result = response.result.expect("result must be present");
+        assert_eq!(
+            result["insufficient_data"],
+            serde_json::Value::Bool(true),
+            "27 strains: insufficient_data must be true"
+        );
+        assert_eq!(result["level"], "unknown", "27 strains: level must be 'unknown'");
+    }
+
+    #[test]
+    fn goose_readiness_v1_bridge_high_acwr_returns_rundown() {
+        // 28 pairs: first 21 at strain=5.0, last 7 at strain=21.0
+        // chronic=(21*5+7*21)/28=9.0; acute=21.0; acwr=21/9≈2.33>1.5 → level="rundown"
+        let mut pairs: Vec<[f64; 2]> = (0..21).map(|i| [i as f64 * 86400.0, 5.0]).collect();
+        for j in 0..7 {
+            pairs.push([(21 + j) as f64 * 86400.0, 21.0]);
+        }
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "r4".to_string(),
+            method: "metrics.goose_readiness_v1".to_string(),
+            args: json!({ "daily_strain": pairs }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(response.ok, "high-ACWR 28 strains must succeed: {:?}", response.error);
+        let result = response.result.expect("result must be present");
+        assert_eq!(result["level"], "rundown", "high-ACWR input: level must be 'rundown'");
+        let acwr = result["acwr"].as_f64().expect("acwr must be a number");
+        assert!(acwr >= 1.5, "high-ACWR input: acwr must be >=1.5, got {acwr}");
     }
 
     // ---- metrics.sleep_staging bridge tests --------------------------------
