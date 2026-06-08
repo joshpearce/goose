@@ -6,7 +6,7 @@
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
 - ✅ **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-15 (shipped 2026-06-05)
 - ✅ **v4.0 Security, Performance & Coach Expansion** — Phases 16-19 (shipped 2026-06-06)
-- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-28 (backlog)
+- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-32 (backlog)
 
 ## Phases
 
@@ -68,7 +68,7 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 </details>
 
 <details>
-<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-28) — BACKLOG</summary>
+<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-32) — BACKLOG</summary>
 
 - [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
 - [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
@@ -79,6 +79,10 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 - [ ] **Phase 26: Sleep Staging** — ALG-SLP-03, ALG-SLP-04
 - [ ] **Phase 27: V24 Biometric Decode** — BIO-01, BIO-02, BIO-03, BIO-04
 - [ ] **Phase 28: Exercise Detection** — EX-01, EX-02, EX-03, EX-04
+- [ ] **Phase 29: Upload Sync Infrastructure** — SYNC-UP-01, SYNC-UP-02, SYNC-UP-03
+- [ ] **Phase 30: Readiness Engine** — RDY-01, RDY-02, RDY-03
+- [ ] **Phase 31: Protocol Corrections (noop)** — PROTO-01, PROTO-02, PROTO-03
+- [ ] **Phase 32: HRV Parity Validation** — VAL-01
 
 </details>
 
@@ -261,9 +265,13 @@ Plans:
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
+| 26. Sleep Staging | v5.0 | 0/2 | Planned | — |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
+| 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
+| 30. Readiness Engine | v5.0 | 0/0 | Not started | — |
+| 31. Protocol Corrections (noop) | v5.0 | 0/0 | Not started | — |
+| 32. HRV Parity Validation | v5.0 | 0/0 | Not started | — |
 
 ## Backlog
 
@@ -543,7 +551,84 @@ Plans:
   6. Epoch-level agreement with WHOOP official stages >= 70% on >= 5 overnight sessions before the phase is closed — known literature ceiling for EEG-free methods is 65–73%; validation result documented in phase notes
   7. `cargo test -p goose-core` green; tests cover: Cole-Kripke activity count computation, 7-epoch window weights, stillness threshold, all four reimposition rules, AASM metric derivation from synthetic hypnogram
 
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+**Wave 1**
+
+  - [ ] 26-01-PLAN.md — Cole-Kripke binary actigraphy spine: sleep_staging.rs module, activity-count computation, 1-min epochs, 7-term weighted D score, wake/sleep classification, metrics.sleep_staging bridge method (ALG-SLP-03)
+
+**Wave 2** *(blocked on Wave 1 — shared sleep_staging.rs)*
+
+  - [ ] 26-02-PLAN.md — 4-class classifier (wake/light/deep/rem) + physiological reimposition (no early REM, min 5-min merge) + AASM metrics (TST/efficiency/SOL/WASO/stage_minutes) + ALG-SLP-04 human cross-validation gate (ALG-SLP-04)
+
+---
+
+### Phase 29: Upload Sync Infrastructure
+
+**Goal**: Per-row `synced` flag on all stream tables prevents backfilled rows from being stranded by highwater cursors; a two-namespace cursor design separates upload tracking from pull tracking; the raw outbox invariant guarantees unsynced frames are never pruned.
+**Depends on**: Phase 21
+**Requirements**: SYNC-UP-01, SYNC-UP-02, SYNC-UP-03
+**Source**: `tigercraft4/noop` — `WhoopStore` v5 migration (`synced` flag), `Cursors.swift` (two-namespace design), `RawOutbox.swift` (`pruneRaw` invariant)
+**Success Criteria** (what must be TRUE):
+
+  1. Schema migration adds `synced INTEGER NOT NULL DEFAULT 0` to all 8 stream tables (`hr_samples`, `rr_intervals`, `spo2_samples`, `skin_temp_samples`, `resp_samples`, `gravity_samples`, `events`, `battery`); existing rows receive `synced = 0`; upload marks rows `synced = 1` after confirmed server receipt
+  2. Cursor table uses two namespaces: `highwater:<stream>` for upload tracking, `read:<stream>` for server-pull tracking — the two never collide; a row inserted by backfill (older timestamp) is correctly picked up by the upload cursor because it uses `WHERE synced = 0` rather than `WHERE ts > highwater`
+  3. Raw evidence prune logic deletes only rows where `synced = 1` (server confirmed); unsynced rows are never pruned regardless of age — verified by test asserting that a prune call on unsynced rows leaves them intact
+  4. `cargo test -p goose-core` green; tests cover: backfill row not stranded by highwater, cursor namespace isolation, prune-safe invariant
+
+**Plans**: TBD
+
+---
+
+### Phase 30: Readiness Engine
+
+**Goal**: A daily readiness level (5-class) is derived from ACWR (acute:chronic workload ratio) and Foster training monotony, giving the user a forward-looking load management signal alongside recovery.
+**Depends on**: Phase 23, Phase 25
+**Requirements**: RDY-01, RDY-02, RDY-03
+**Source**: `tigercraft4/noop` — `ReadinessEngine.swift`; sports science literature (Foster 1998 monotony index, Hulin 2016 ACWR injury-risk zones)
+**Success Criteria** (what must be TRUE):
+
+  1. `ReadinessInput` carries `daily_strain: Vec<(date, f64)>` (trailing 28 days minimum); `acwr(strains)` computes acute load (7-day mean) / chronic load (28-day mean), clamped to a safe range; returns `None` when < 28 days of data available
+  2. `foster_monotony(week_strains)` returns `mean / std` for the 7-day window; monotony flag set when result ≥ 2.0 (Foster 1998 threshold); returns `None` when std = 0 or < 3 days of data
+  3. `ReadinessOutput.level` ∈ `{rundown, strained, balanced, primed, unknown}` with deterministic synthesis rules: `rundown` when ACWR ≥ 1.5 OR (ACWR ≤ 0.8 AND recovery trend down); `primed` when ACWR ∈ [0.8, 1.3] AND monotony < 2.0 AND recovery trusted; `strained` when any single bad signal; `balanced` otherwise; `unknown` when insufficient data
+  4. ACWR injury-risk zones documented in output: < 0.8 (under-training), 0.8–1.3 (optimal), 1.3–1.5 (caution), ≥ 1.5 (danger); `acwr_zone` field present in `ReadinessOutput`
+  5. `cargo test -p goose-core` green; tests cover: ACWR zone boundaries, monotony flag at exactly 2.0, rundown rule, primed rule, unknown when < 28 days
+
+**Plans**: TBD
+
+---
+
+### Phase 31: Protocol Corrections (noop)
+
+**Goal**: Three protocol-level findings from `tigercraft4/noop` cross-verification are applied to the Phases 26 and 27 implementations: exact Cole-Kripke weights, the second gravity triplet (`gravity2`), and the resp stream dependency for sleep staging.
+**Depends on**: Phase 26, Phase 27
+**Requirements**: PROTO-01, PROTO-02, PROTO-03
+**Source**: `tigercraft4/noop` — `SleepStager.swift` (Cole-Kripke constants), `whoop_protocol.json` (V24 gravity2 offsets)
+**Success Criteria** (what must be TRUE):
+
+  1. Cole-Kripke weights corrected to exact noop/literature values: `[106, 54, 58, 76, 230, 74, 67]`, scale=0.001, look-back 4 epochs, look-forward 2 epochs, sleep threshold < 1.0 (replaces the vague `[activity/100, clip 300]` placeholder); unit test asserts the D-score for a known activity sequence matches the expected value
+  2. V24 `gravity2` second triplet extracted: `gravity2_x` (f32 @ data[49]), `gravity2_y` (f32 @ data[53]), `gravity2_z` (f32 @ data[57]); stored in a `gravity2_samples` table with the same schema and constraints as `gravity_samples`; bridge methods `insert_gravity2_batch` and `gravity2_samples_between` covered by `cargo test`
+  3. Sleep staging Phase 26 verification: the classifier uses `resp_raw` window (from Phase 27) as a mandatory RRV (respiratory rate variability) input; a missing resp stream degrades gracefully (RRV feature set to `None`, classifier falls back to 3-class wake/deep/light without REM) rather than erroring
+  4. `cargo test -p goose-core` green; tests cover: exact D-score with known weights, gravity2 insert+query roundtrip, resp-missing graceful degradation
+
+**Plans**: TBD
+
+---
+
+### Phase 32: HRV Parity Validation
+
+**Goal**: Rust `goose_hrv_v0` RMSSD output is cross-validated against the my-whoop Python reference on ≥ 5 real overnight sessions captured by the Goose iOS app, closing the ALG-HRV-04 manual gate from Phase 22.
+**Depends on**: Phase 22 (implementation), Phase 29 (synced upload of real RR data to server)
+**Requirements**: VAL-01
+**Source**: `tigercraft4/noop` — `HistoricalStreamsParityTests` (parity fixture pattern); `my-whoop/server/ingest/app/analysis/hrv.py` (Python reference)
+**Success Criteria** (what must be TRUE):
+
+  1. Golden fixture files (`rr_golden_night_<N>.json`, N=1..5) generated from 5 real overnight WHOOP sessions captured by the Goose iOS app: each file contains `rr_intervals_ms: [f64]`, `rr_timestamps_s: [f64]`, `python_rmssd_ms: f64` computed by `my-whoop/hrv.py::rmssd_ms(clean_rr(...))`
+  2. Rust integration test `hrv_parity_vs_python_golden` loads each fixture, calls `goose_hrv_v0` with the same RR + timestamp data, and asserts `|rust_rmssd - python_rmssd| <= 1.0 ms` for all 5 sessions
+  3. ALG-HRV-04 gate documented as CLOSED in phase notes with session dates, RMSSD values, and deltas tabulated
+  4. `cargo test -p goose-core` green including the 5 parity tests
+
+**Plans**: TBD
 
 ---
