@@ -2851,7 +2851,8 @@ fn estimate_hrmax_from_history_returns_p99_5_percentile() {
     // Sort ascending to know expected index
     samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let len = samples.len() as f64;
-    let expected_index = ((0.995 * len).ceil() as usize).min(samples.len() - 1);
+    // CR-01 fix: nearest-rank P99.5 is ceil(0.995*n) - 1 (0-indexed).
+    let expected_index = ((0.995 * len).ceil() as usize).saturating_sub(1).min(samples.len() - 1);
     let expected_value = samples[expected_index];
 
     let result = estimate_hrmax_from_history(&samples);

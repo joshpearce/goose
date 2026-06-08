@@ -1893,7 +1893,8 @@ pub fn estimate_hrmax_from_history(hr_history: &[f64]) -> Option<f64> {
     }
     finite.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let len = finite.len();
-    let index = ((0.995 * len as f64).ceil() as usize).min(len - 1);
+    // CR-01 fix: nearest-rank P99.5 is ceil(0.995*n) - 1 (0-indexed).
+    let index = ((0.995 * len as f64).ceil() as usize).saturating_sub(1).min(len - 1);
     Some(finite[index])
 }
 
@@ -1941,7 +1942,8 @@ pub fn banister_trimp_zone_midpoint(
     sex: Option<&str>,
 ) -> f64 {
     // Sex-specific exponential weighting constant (ALG-STR-02).
-    let b: f64 = match sex {
+    // CR-02 fix: case-insensitive comparison so "Male"/"MALE" route correctly.
+    let b: f64 = match sex.map(str::to_ascii_lowercase).as_deref() {
         Some("male") => 1.92,
         Some("female") => 1.67,
         _ => 1.795,
@@ -2063,8 +2065,8 @@ pub fn goose_strain_v1(input: &StrainInput) -> AlgorithmRunResult<StrainScoreOut
     let (effective_hrmax, hrmax_source) =
         resolve_effective_hrmax(input.max_hr_bpm, input.profile_age, &[]);
 
-    // Banister b constant for provenance recording (selected by sex).
-    let b_constant: f64 = match input.profile_sex.as_deref() {
+    // Banister b constant for provenance recording (selected by sex, case-insensitive).
+    let b_constant: f64 = match input.profile_sex.as_deref().map(str::to_ascii_lowercase).as_deref() {
         Some("male") => 1.92,
         Some("female") => 1.67,
         _ => 1.795,
