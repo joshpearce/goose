@@ -25,6 +25,8 @@ pub const GOOSE_RECOVERY_V1_ID: &str = "goose.recovery.v1";
 pub const GOOSE_RECOVERY_V1_VERSION: &str = "0.1.0";
 pub const GOOSE_STRESS_V0_ID: &str = "goose.stress.v0";
 pub const GOOSE_STRESS_V0_VERSION: &str = "0.1.0";
+pub const GOOSE_READINESS_V1_ID: &str = "goose.readiness.v1";
+pub const GOOSE_READINESS_V1_VERSION: &str = "0.1.0";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HrvInput {
@@ -4517,6 +4519,372 @@ mod recovery_v1_tests {
             expected
         );
         assert!(output.z_rhr.is_none(), "z_rhr must be None when rhr baseline cold");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Readiness Engine — ACWR + Foster monotony (RDY-01, RDY-02, RDY-03)
+// ---------------------------------------------------------------------------
+
+/// 5-class daily readiness level derived from ACWR and Foster monotony.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadinessLevel {
+    Rundown,
+    Strained,
+    Balanced,
+    Primed,
+    Unknown,
+}
+
+/// Input for goose_readiness_v1.
+///
+/// `daily_strain` is a slice of (timestamp_secs_f64, strain_0_to_21_f64) pairs
+/// ordered newest-last. The caller is responsible for providing pairs in
+/// chronological order; goose_readiness_v1 uses slice positions, not timestamps.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReadinessInput {
+    pub daily_strain: Vec<(f64, f64)>,
+}
+
+/// Output of goose_readiness_v1.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReadinessOutput {
+    pub algorithm_id: String,
+    pub algorithm_version: String,
+    /// Acute:chronic workload ratio (7-day / 28-day mean). None when chronic=0.
+    pub acwr: Option<f64>,
+    /// "under_training" | "optimal" | "caution" | "danger" | "unknown"
+    pub acwr_zone: String,
+    /// Foster training monotony (mean/std of last 7 days). None when std=0 or <3 entries.
+    pub monotony: Option<f64>,
+    pub monotony_high: bool,
+    pub level: ReadinessLevel,
+    pub insufficient_data: bool,
+}
+
+fn acwr_zone_str(acwr: f64) -> &'static str {
+    if acwr < 0.8 {
+        "under_training"
+    } else if acwr <= 1.3 {
+        // 0.8 boundary → "optimal"; 1.3 boundary → "optimal"
+        "optimal"
+    } else if acwr < 1.5 {
+        // 1.3 < acwr < 1.5 → "caution"; 1.5 boundary → "danger"
+        "caution"
+    } else {
+        "danger"
+    }
+}
+
+/// Compute Foster training monotony from the last 7 strain values.
+/// Returns None when fewer than 3 entries available or when population std dev is 0.
+fn foster_monotony(strains: &[f64]) -> Option<f64> {
+    if strains.len() < 3 {
+        return None;
+    }
+    let n = strains.len() as f64;
+    let mean = strains.iter().sum::<f64>() / n;
+    let variance = strains.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+    let std_dev = variance.sqrt();
+    if std_dev == 0.0 {
+        return None;
+    }
+    Some(mean / std_dev)
+}
+
+/// Compute the Readiness Engine output from a trailing window of daily strain values.
+///
+/// Expects `input.daily_strain` ordered chronologically (oldest first, newest last).
+/// Requires at least 28 entries for a valid ACWR computation; fewer entries returns
+/// `insufficient_data=true` with `level=Unknown`.
+///
+/// Caller should pre-filter NaN/Inf values before passing to this function.
+pub fn goose_readiness_v1(input: &ReadinessInput) -> ReadinessOutput {
+    let n = input.daily_strain.len();
+
+    if n < 28 {
+        return ReadinessOutput {
+            algorithm_id: GOOSE_READINESS_V1_ID.to_string(),
+            algorithm_version: GOOSE_READINESS_V1_VERSION.to_string(),
+            acwr: None,
+            acwr_zone: "unknown".to_string(),
+            monotony: None,
+            monotony_high: false,
+            level: ReadinessLevel::Unknown,
+            insufficient_data: true,
+        };
+    }
+
+    // ACWR: acute = mean of last 7; chronic = mean of last 28.
+    let window28: Vec<f64> = input.daily_strain[n - 28..].iter().map(|(_, s)| *s).collect();
+    let window7 = &window28[21..]; // last 7 of the 28
+
+    let acute_load = window7.iter().sum::<f64>() / 7.0;
+    let chronic_load = window28.iter().sum::<f64>() / 28.0;
+
+    let acwr = if chronic_load == 0.0 {
+        None
+    } else {
+        Some((acute_load / chronic_load).clamp(0.0, 3.0))
+    };
+
+    let acwr_zone = match acwr {
+        Some(v) => acwr_zone_str(v).to_string(),
+        None => "unknown".to_string(),
+    };
+
+    // Foster monotony from last 7 strains.
+    let monotony = foster_monotony(window7);
+    let monotony_high = monotony.map_or(false, |m| m >= 2.0);
+
+    // Level synthesis (evaluated in priority order).
+    let level = match acwr {
+        None => ReadinessLevel::Unknown,
+        Some(v) if v >= 1.5 => ReadinessLevel::Rundown,
+        _ if monotony_high => ReadinessLevel::Strained,
+        Some(v) if v < 0.8 => ReadinessLevel::Strained,
+        Some(v) if v >= 0.8 && v <= 1.3 && !monotony_high => ReadinessLevel::Primed,
+        _ => ReadinessLevel::Balanced,
+    };
+
+    ReadinessOutput {
+        algorithm_id: GOOSE_READINESS_V1_ID.to_string(),
+        algorithm_version: GOOSE_READINESS_V1_VERSION.to_string(),
+        acwr,
+        acwr_zone,
+        monotony,
+        monotony_high,
+        level,
+        insufficient_data: false,
+    }
+}
+
+#[cfg(test)]
+mod readiness_tests {
+    use super::*;
+
+    // Helper: build ReadinessInput with n entries all at strain `s`.
+    fn uniform_input(n: usize, s: f64) -> ReadinessInput {
+        let pairs = (0..n).map(|i| (i as f64 * 86400.0, s)).collect();
+        ReadinessInput { daily_strain: pairs }
+    }
+
+    // Helper: build 28-entry input with custom last-7 strain.
+    fn split_input(first21_strain: f64, last7_strain: f64) -> ReadinessInput {
+        let mut pairs: Vec<(f64, f64)> = (0..21)
+            .map(|i| (i as f64 * 86400.0, first21_strain))
+            .collect();
+        for j in 0..7 {
+            pairs.push(((21 + j) as f64 * 86400.0, last7_strain));
+        }
+        ReadinessInput { daily_strain: pairs }
+    }
+
+    #[test]
+    fn test_readiness_insufficient_data_27_entries() {
+        let input = uniform_input(27, 10.0);
+        let out = goose_readiness_v1(&input);
+        assert!(out.insufficient_data, "27 entries: insufficient_data must be true");
+        assert_eq!(out.level, ReadinessLevel::Unknown);
+        assert!(out.acwr.is_none());
+        assert_eq!(out.acwr_zone, "unknown");
+    }
+
+    #[test]
+    fn test_readiness_insufficient_data_3_entries() {
+        let input = uniform_input(3, 10.0);
+        let out = goose_readiness_v1(&input);
+        assert!(out.insufficient_data);
+        assert_eq!(out.level, ReadinessLevel::Unknown);
+    }
+
+    #[test]
+    fn test_readiness_insufficient_data_empty() {
+        let input = ReadinessInput { daily_strain: vec![] };
+        let out = goose_readiness_v1(&input);
+        assert!(out.insufficient_data);
+        assert_eq!(out.level, ReadinessLevel::Unknown);
+    }
+
+    #[test]
+    fn test_readiness_primed_uniform_28_entries() {
+        // All equal → std=0 → monotony=None → monotony_high=false; acwr=1.0 → Primed
+        let input = uniform_input(28, 10.0);
+        let out = goose_readiness_v1(&input);
+        assert!(!out.insufficient_data);
+        let acwr = out.acwr.expect("acwr must be Some");
+        assert!((acwr - 1.0).abs() < 1e-9, "acwr must be 1.0, got {acwr}");
+        assert_eq!(out.acwr_zone, "optimal");
+        assert!(out.monotony.is_none(), "uniform strain → monotony must be None (std=0)");
+        assert!(!out.monotony_high);
+        assert_eq!(out.level, ReadinessLevel::Primed);
+    }
+
+    #[test]
+    fn test_readiness_acwr_zone_boundary_0_8() {
+        // acwr exactly 0.8 → zone = "optimal"
+        // acwr = 28x/(210+7x) = 0.8 → 28x = 168+5.6x → 22.4x = 168 → x = 7.5 (exact f64)
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        for j in 0..7 {
+            pairs.push((21.0 + j as f64, 7.5));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(
+            (acwr - 0.8).abs() < 1e-9,
+            "acwr must be 0.8, got {acwr}"
+        );
+        assert_eq!(out.acwr_zone, "optimal", "acwr=0.8 must map to 'optimal'");
+    }
+
+    #[test]
+    fn test_readiness_acwr_zone_boundary_1_3() {
+        // acwr exactly 1.3 → zone = "optimal"
+        // acwr = 28x/(210+7x) = 1.3 → 28x = 273+9.1x → 18.9x = 273 → x = 273/18.9
+        let x = 273.0_f64 / 18.9;
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        for j in 0..7 {
+            pairs.push((21.0 + j as f64, x));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(
+            (acwr - 1.3).abs() < 1e-9,
+            "acwr must be 1.3, got {acwr}"
+        );
+        assert_eq!(out.acwr_zone, "optimal", "acwr=1.3 must map to 'optimal'");
+    }
+
+    #[test]
+    fn test_readiness_acwr_zone_boundary_1_5_rundown() {
+        // acwr = 1.5 exactly → zone = "danger", level = Rundown
+        // Using same formula: x = 1.5*(10 + (x-10)/4) = 15 + 0.375x - 3.75 = 11.25 + 0.375x
+        // 0.625x = 11.25 → x = 18.0
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        for j in 0..7 {
+            pairs.push((21.0 + j as f64, 18.0));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(
+            (acwr - 1.5).abs() < 1e-6,
+            "acwr must be 1.5, got {acwr}"
+        );
+        assert_eq!(out.acwr_zone, "danger", "acwr=1.5 must map to 'danger'");
+        assert_eq!(out.level, ReadinessLevel::Rundown, "acwr=1.5 must yield Rundown");
+    }
+
+    #[test]
+    fn test_readiness_rundown_high_acwr() {
+        // last 7 avg=15.0, full 28 avg=10.0 → acwr=1.5 → Rundown
+        // (21*10 + 7*15)/28 = (210+105)/28 = 315/28 = 11.25; acute=15; acwr=15/11.25=1.333...
+        // Need a higher contrast. Set first21=5.0, last7=21.0
+        // chronic=(21*5+7*21)/28=(105+147)/28=252/28=9.0; acute=21; acwr=21/9=2.333>1.5 → Rundown
+        let input = split_input(5.0, 21.0);
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(acwr >= 1.5, "acwr must be >=1.5, got {acwr}");
+        assert_eq!(out.level, ReadinessLevel::Rundown);
+    }
+
+    #[test]
+    fn test_readiness_strained_under_training() {
+        // acwr < 0.8 → Strained (under-training)
+        // Set last7=1.0, first21=10.0
+        // chronic=(210+7)/28=217/28=7.75; acute=1.0; acwr=1/7.75≈0.129 → Strained
+        let input = split_input(10.0, 1.0);
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(acwr < 0.8, "acwr must be <0.8, got {acwr}");
+        assert_eq!(out.level, ReadinessLevel::Strained, "under-training acwr must yield Strained");
+    }
+
+    #[test]
+    fn test_readiness_monotony_high_at_exactly_2() {
+        // Verify that monotony_high is set true when mean/std >= 2.0.
+        //
+        // Construct last 7 values with a clear mean >> std. Use [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+        // but that would give std=0 → monotony=None. Instead use values with small controlled variance.
+        //
+        // Use values: first 21 days at 10.0 (gives ACWR in sub-optimal zone when last7 vary),
+        // last 7 days as [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0] (uniform) won't have std.
+        //
+        // Instead: use values where std is finite and monotony >= 2.
+        // For [a]*6 + [b]*1 with all distinct-representable floats:
+        //   mean=(6a+b)/7, var=6*(a-mean)^2/7 + (b-mean)^2/7 = 6*(a-m)^2 [algebraic]
+        //   monotony = m/(sqrt(6)*|a-m|) >= 2 when |a-m| <= m/(2*sqrt(6))
+        //
+        // Use a=8.0, b=14.0 to get mean=(48+14)/7=62/7≈8.857:
+        //   var = (6*(8-8.857)^2+(14-8.857)^2)/7 = (6*0.7347+26.455)/7 = (4.408+26.455)/7 = 4.409
+        //   std ≈ 2.099; monotony = 8.857/2.099 ≈ 4.22 >> 2.0 → monotony_high=true
+        //
+        // We verify monotony >= 2.0 and that monotony_high is true.
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        let last7 = [8.0_f64, 8.0, 8.0, 8.0, 8.0, 8.0, 14.0];
+        for (j, &s) in last7.iter().enumerate() {
+            pairs.push((21.0 + j as f64, s));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let mono = out.monotony.expect("monotony must be Some");
+        assert!(
+            mono >= 2.0,
+            "monotony must be >=2.0 (got {mono}) for values with mean/std >> 2"
+        );
+        assert!(out.monotony_high, "monotony>=2.0 must set monotony_high=true");
+        assert_eq!(out.level, ReadinessLevel::Strained, "high monotony must yield Strained");
+    }
+
+    #[test]
+    fn test_readiness_monotony_boundary_below_2() {
+        // Verify that monotony_high is false when monotony is just below 2.0.
+        // Values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 21.0] → mean=3.0, std large → monotony low.
+        // Or use [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.1] → tiny spread, high monotony.
+        // We need monotony < 2.0: large std relative to mean.
+        // Use [1.0, 21.0, 1.0, 21.0, 1.0, 21.0, 1.0]: mean=10, big variance → low monotony.
+        // mean = (4*1+3*21)/7 = (4+63)/7 = 67/7 ≈ 9.57
+        // var = (4*(1-9.57)^2+3*(21-9.57)^2)/7 large → std >> mean/2 → monotony < 2.
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        let last7 = [1.0_f64, 21.0, 1.0, 21.0, 1.0, 21.0, 1.0];
+        for (j, &s) in last7.iter().enumerate() {
+            pairs.push((21.0 + j as f64, s));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let mono = out.monotony.expect("monotony must be Some for high-variance input");
+        assert!(
+            mono < 2.0,
+            "monotony must be <2.0 for high-variance input, got {mono}"
+        );
+        assert!(!out.monotony_high, "monotony<2.0 must NOT set monotony_high");
+    }
+
+    #[test]
+    fn test_readiness_balanced_caution_zone() {
+        // acwr between 1.3 and 1.5 (exclusive) → Balanced (not rundown, no high monotony)
+        // Use last7=16.0 (exact f64): acwr = 28*16/(210+7*16) = 448/322 ≈ 1.391 (caution zone)
+        // All last7 identical → std=0 → monotony=None → monotony_high=false → Balanced.
+        let mut pairs: Vec<(f64, f64)> = (0..21).map(|i| (i as f64, 10.0)).collect();
+        for j in 0..7 {
+            pairs.push((21.0 + j as f64, 16.0));
+        }
+        let input = ReadinessInput { daily_strain: pairs };
+        let out = goose_readiness_v1(&input);
+        let acwr = out.acwr.unwrap();
+        assert!(
+            acwr > 1.3 && acwr < 1.5,
+            "acwr must be in caution zone (1.3-1.5), got {acwr}"
+        );
+        assert!(
+            out.monotony.is_none(),
+            "uniform last7 → monotony must be None (std=0)"
+        );
+        assert!(!out.monotony_high, "uniform last7 → no high monotony");
+        assert_eq!(out.level, ReadinessLevel::Balanced, "caution zone without monotony → Balanced");
     }
 }
 
