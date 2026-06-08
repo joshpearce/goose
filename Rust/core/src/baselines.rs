@@ -339,7 +339,7 @@ mod tests {
         // Construct a state where mean=60, variance=sigma^2, then check
         // that z_score(60 + sigma) ≈ 1.0
         let sigma = 5.0_f64;
-        let mut state = EwmaState {
+        let state = EwmaState {
             mean: 60.0,
             variance: sigma * sigma,
             night_count: MIN_NIGHTS_SEED, // exactly at cold-start boundary
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn test_z_score_negative_below_mean() {
         let sigma = 5.0_f64;
-        let mut state = EwmaState {
+        let state = EwmaState {
             mean: 60.0,
             variance: sigma * sigma,
             night_count: MIN_NIGHTS_SEED,
