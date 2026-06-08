@@ -936,6 +936,25 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
         "sig_quality_samples",
         vec!["device_id", "ts", "quality", "contact", "created_at"],
     );
+    columns.insert(
+        "exercise_sessions",
+        vec![
+            "session_id",
+            "device_id",
+            "start_ts",
+            "end_ts",
+            "duration_s",
+            "avg_hr",
+            "peak_hr",
+            "strain",
+            "calories_kcal",
+            "zone_time_pct_json",
+            "hrmax_source",
+            "rhr_source",
+            "avg_hrr_pct",
+            "created_at",
+        ],
+    );
 
     for table in known_tables() {
         debug_assert!(columns.contains_key(table));

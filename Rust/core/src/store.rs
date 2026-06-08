@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 16;
+pub const CURRENT_SCHEMA_VERSION: i64 = 17;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -654,6 +654,22 @@ pub struct SigQualitySampleRow {
     pub ts: f64,
     pub quality: i64,
     pub contact: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExerciseSessionRow {
+    pub device_id: String,
+    pub start_ts: f64,
+    pub end_ts: f64,
+    pub duration_s: f64,
+    pub avg_hr: f64,
+    pub peak_hr: f64,
+    pub strain: f64,
+    pub calories_kcal: f64,
+    pub zone_time_pct_json: String,
+    pub hrmax_source: String,
+    pub rhr_source: String,
+    pub avg_hrr_pct: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -1521,6 +1537,26 @@ impl GooseStore {
 
             CREATE INDEX IF NOT EXISTS idx_sig_quality_samples_device_ts ON sig_quality_samples(device_id, ts);
 
+            CREATE TABLE IF NOT EXISTS exercise_sessions (
+                session_id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+                device_id TEXT NOT NULL,
+                start_ts REAL NOT NULL,
+                end_ts REAL NOT NULL,
+                duration_s REAL NOT NULL,
+                avg_hr REAL NOT NULL,
+                peak_hr REAL NOT NULL,
+                strain REAL NOT NULL DEFAULT 0.0,
+                calories_kcal REAL NOT NULL DEFAULT 0.0,
+                zone_time_pct_json TEXT NOT NULL DEFAULT '{}',
+                hrmax_source TEXT NOT NULL DEFAULT 'fallback',
+                rhr_source TEXT NOT NULL DEFAULT 'daily_p10',
+                avg_hrr_pct REAL NOT NULL DEFAULT 0.0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, start_ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_exercise_sessions_device_ts ON exercise_sessions(device_id, start_ts);
+
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (1);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (2);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (3);
@@ -1537,7 +1573,8 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (14);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (15);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (16);
-            PRAGMA user_version = 16;
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (17);
+            PRAGMA user_version = 17;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -6357,6 +6394,68 @@ impl GooseStore {
             .map_err(GooseError::from)
     }
 
+    pub fn insert_exercise_session(&self, row: &ExerciseSessionRow) -> GooseResult<bool> {
+        validate_required("device_id", &row.device_id)?;
+        self.immediate_transaction(|store| {
+            let changed = store.conn.execute(
+                "INSERT OR IGNORE INTO exercise_sessions \
+                 (device_id, start_ts, end_ts, duration_s, avg_hr, peak_hr, strain, \
+                  calories_kcal, zone_time_pct_json, hrmax_source, rhr_source, avg_hrr_pct) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                params![
+                    row.device_id,
+                    row.start_ts,
+                    row.end_ts,
+                    row.duration_s,
+                    row.avg_hr,
+                    row.peak_hr,
+                    row.strain,
+                    row.calories_kcal,
+                    row.zone_time_pct_json,
+                    row.hrmax_source,
+                    row.rhr_source,
+                    row.avg_hrr_pct
+                ],
+            )?;
+            Ok(changed > 0)
+        })
+    }
+
+    pub fn exercise_sessions_between(
+        &self,
+        device_id: &str,
+        ts_start: f64,
+        ts_end: f64,
+    ) -> GooseResult<Vec<ExerciseSessionRow>> {
+        validate_required("device_id", device_id)?;
+        if ts_end < ts_start {
+            return Err(GooseError::message("ts_end must be >= ts_start"));
+        }
+        let mut stmt = self.conn.prepare(
+            "SELECT device_id, start_ts, end_ts, duration_s, avg_hr, peak_hr, strain, \
+             calories_kcal, zone_time_pct_json, hrmax_source, rhr_source, avg_hrr_pct \
+             FROM exercise_sessions WHERE device_id = ?1 AND start_ts >= ?2 AND start_ts < ?3 \
+             ORDER BY start_ts",
+        )?;
+        let rows = stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+            Ok(ExerciseSessionRow {
+                device_id: row.get(0)?,
+                start_ts: row.get(1)?,
+                end_ts: row.get(2)?,
+                duration_s: row.get(3)?,
+                avg_hr: row.get(4)?,
+                peak_hr: row.get(5)?,
+                strain: row.get(6)?,
+                calories_kcal: row.get(7)?,
+                zone_time_pct_json: row.get(8)?,
+                hrmax_source: row.get(9)?,
+                rhr_source: row.get(10)?,
+                avg_hrr_pct: row.get(11)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(GooseError::from)
+    }
+
     pub fn insert_v24_biometric_batch(
         &self,
         device_id: &str,
@@ -8044,6 +8143,7 @@ pub fn known_tables() -> &'static [&'static str] {
         "debug_sessions",
         "debug_commands",
         "debug_events",
+        "exercise_sessions",
         "gravity",
         "spo2_samples",
         "skin_temp_samples",
@@ -8151,5 +8251,120 @@ mod v24_biometric_tests {
 
         assert_eq!(window.sig_quality.len(), 1);
         assert_eq!(window.sig_quality[0].contact, 0);
+    }
+}
+
+#[cfg(test)]
+mod exercise_session_tests {
+    use super::*;
+
+    fn make_store() -> GooseStore {
+        GooseStore::open_in_memory().expect("failed to open in-memory store")
+    }
+
+    fn make_row(start_ts: f64, end_ts: f64) -> ExerciseSessionRow {
+        ExerciseSessionRow {
+            device_id: "device-X".to_string(),
+            start_ts,
+            end_ts,
+            duration_s: end_ts - start_ts,
+            avg_hr: 145.0,
+            peak_hr: 182.0,
+            strain: 12.5,
+            calories_kcal: 420.0,
+            zone_time_pct_json: r#"{"1":10,"2":20,"3":30,"4":30,"5":10}"#.to_string(),
+            hrmax_source: "220_minus_age".to_string(),
+            rhr_source: "daily_p10".to_string(),
+            avg_hrr_pct: 65.0,
+        }
+    }
+
+    #[test]
+    fn test_exercise_sessions_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='exercise_sessions'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("failed to query sqlite_master");
+        assert_eq!(count, 1, "exercise_sessions table should exist after migration");
+    }
+
+    #[test]
+    fn test_exercise_sessions_schema_version() {
+        let store = make_store();
+        let version: i64 = store
+            .conn
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .expect("failed to read user_version");
+        assert_eq!(version, 17, "PRAGMA user_version should be 17 after v17 migration");
+    }
+
+    #[test]
+    fn test_insert_exercise_session_roundtrip() {
+        let store = make_store();
+        let row = make_row(1_000_000.0, 1_003_600.0);
+
+        let inserted = store.insert_exercise_session(&row).unwrap();
+        assert!(inserted, "first insert should return true");
+
+        let results = store
+            .exercise_sessions_between("device-X", 900_000.0, 2_000_000.0)
+            .unwrap();
+        assert_eq!(results.len(), 1);
+        let r = &results[0];
+        assert_eq!(r.device_id, row.device_id);
+        assert_eq!(r.start_ts, row.start_ts);
+        assert_eq!(r.end_ts, row.end_ts);
+        assert_eq!(r.duration_s, row.duration_s);
+        assert_eq!(r.avg_hr, row.avg_hr);
+        assert_eq!(r.peak_hr, row.peak_hr);
+        assert_eq!(r.strain, row.strain);
+        assert_eq!(r.calories_kcal, row.calories_kcal);
+        assert_eq!(r.zone_time_pct_json, row.zone_time_pct_json);
+        assert_eq!(r.hrmax_source, row.hrmax_source);
+        assert_eq!(r.rhr_source, row.rhr_source);
+        assert_eq!(r.avg_hrr_pct, row.avg_hrr_pct);
+    }
+
+    #[test]
+    fn test_insert_exercise_session_idempotent() {
+        let store = make_store();
+        let row = make_row(2_000_000.0, 2_003_600.0);
+
+        let first = store.insert_exercise_session(&row).unwrap();
+        let second = store.insert_exercise_session(&row).unwrap();
+
+        assert!(first, "first insert should return true");
+        assert!(!second, "duplicate insert should return false (OR IGNORE)");
+
+        let results = store
+            .exercise_sessions_between("device-X", 1_900_000.0, 3_000_000.0)
+            .unwrap();
+        assert_eq!(results.len(), 1, "only one row should exist after idempotent insert");
+    }
+
+    #[test]
+    fn test_exercise_sessions_between_ordering() {
+        let store = make_store();
+        // Insert 3 rows out of chronological order.
+        store.insert_exercise_session(&make_row(3_000.0, 3_600.0)).unwrap();
+        store.insert_exercise_session(&make_row(1_000.0, 1_600.0)).unwrap();
+        store.insert_exercise_session(&make_row(2_000.0, 2_600.0)).unwrap();
+
+        let results = store
+            .exercise_sessions_between("device-X", 0.0, 10_000.0)
+            .unwrap();
+        assert_eq!(results.len(), 3);
+        assert!(
+            results[0].start_ts < results[1].start_ts && results[1].start_ts < results[2].start_ts,
+            "results should be ordered by start_ts ascending"
+        );
+        assert_eq!(results[0].start_ts, 1_000.0);
+        assert_eq!(results[1].start_ts, 2_000.0);
+        assert_eq!(results[2].start_ts, 3_000.0);
     }
 }
