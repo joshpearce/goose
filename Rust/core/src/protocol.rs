@@ -672,10 +672,7 @@ fn read_f32_le(data: &[u8], offset: usize) -> Option<f32> {
 }
 
 fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
-    if payload.len() < 3 {
-        return (None, vec!["v24_payload_too_short".to_string()]);
-    }
-    let data = &payload[3..];
+    let data = payload.get(3..).unwrap_or(&[]);
     let mut warnings = Vec::new();
 
     if data.len() < 77 {
@@ -698,9 +695,9 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
                 led2: None,
                 resp_raw: None,
                 sig_quality: None,
-                warnings,
+                warnings: warnings.clone(),
             }),
-            vec!["v24_payload_too_short".to_string()],
+            warnings,
         );
     }
 
