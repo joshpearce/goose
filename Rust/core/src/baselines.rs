@@ -408,4 +408,194 @@ mod tests {
         // NaN / Inf would not be folded
         assert_eq!(state.night_count, 4);
     }
+
+    // ---- Store-backed fold_history tests -----------------------------------
+
+    fn insert_test_recovery_row(
+        store: &GooseStore,
+        date_key: &str,
+        hrv: Option<f64>,
+        rhr: Option<f64>,
+    ) {
+        use crate::store::DailyRecoveryMetricInput;
+        let id = format!("test-{}", date_key);
+        let start_ms: i64 = 1_700_000_000_000; // fixed value; ordering driven by date_key
+        store
+            .insert_daily_recovery_metric(DailyRecoveryMetricInput {
+                daily_metric_id: &id,
+                date_key,
+                timezone: "UTC",
+                start_time_unix_ms: start_ms,
+                end_time_unix_ms: start_ms + 3_600_000,
+                hrv_rmssd_ms: hrv,
+                resting_hr_bpm: rhr,
+                respiratory_rate_rpm: None,
+                oxygen_saturation_percent: None,
+                skin_temperature_delta_c: None,
+                source_kind: "local_estimate",
+                confidence: 1.0,
+                inputs_json: "{}",
+                quality_flags_json: "[]",
+                provenance_json: "{}",
+            })
+            .expect("insert test row");
+    }
+
+    #[test]
+    fn test_fold_history_empty_store_gives_default_state() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+        let baseline = EwmaBaseline::fold_history(&store).expect("fold_history");
+        assert_eq!(baseline.hrv.night_count, 0);
+        assert_eq!(baseline.resting_hr.night_count, 0);
+    }
+
+    #[test]
+    fn test_fold_history_reconstructs_known_mean() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+
+        // Insert 3 rows with known HRV values ordered by date_key
+        insert_test_recovery_row(&store, "2024-01-01", Some(60.0), Some(55.0));
+        insert_test_recovery_row(&store, "2024-01-02", Some(58.0), Some(56.0));
+        insert_test_recovery_row(&store, "2024-01-03", Some(62.0), Some(54.0));
+
+        // Compute expected EWMA by hand
+        let hrv_vals = [60.0_f64, 58.0, 62.0];
+        let rhr_vals = [55.0_f64, 56.0, 54.0];
+        let mut expected_hrv_mean = 0.0_f64;
+        let mut expected_rhr_mean = 0.0_f64;
+        for (i, (&hrv, &rhr)) in hrv_vals.iter().zip(rhr_vals.iter()).enumerate() {
+            if i == 0 {
+                expected_hrv_mean = hrv;
+                expected_rhr_mean = rhr;
+            } else {
+                expected_hrv_mean = 0.9 * expected_hrv_mean + 0.1 * hrv;
+                expected_rhr_mean = 0.9 * expected_rhr_mean + 0.1 * rhr;
+            }
+        }
+
+        let baseline = EwmaBaseline::fold_history(&store).expect("fold_history");
+        assert_eq!(baseline.hrv.night_count, 3);
+        assert_eq!(baseline.resting_hr.night_count, 3);
+        assert!(
+            (baseline.hrv.mean - expected_hrv_mean).abs() < 1e-9,
+            "hrv mean: got {}, expected {}",
+            baseline.hrv.mean,
+            expected_hrv_mean
+        );
+        assert!(
+            (baseline.resting_hr.mean - expected_rhr_mean).abs() < 1e-9,
+            "rhr mean: got {}, expected {}",
+            baseline.resting_hr.mean,
+            expected_rhr_mean
+        );
+    }
+
+    #[test]
+    fn test_fold_history_skips_null_hrv_rows() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+
+        // Row 1: has hrv, row 2: hrv is NULL, row 3: has hrv
+        insert_test_recovery_row(&store, "2024-01-01", Some(60.0), Some(55.0));
+        insert_test_recovery_row(&store, "2024-01-02", None, Some(56.0));
+        insert_test_recovery_row(&store, "2024-01-03", Some(62.0), None);
+
+        let baseline = EwmaBaseline::fold_history(&store).expect("fold_history");
+        // hrv: night 1 and 3 contributed → night_count = 2
+        assert_eq!(baseline.hrv.night_count, 2, "NULL hrv rows must be skipped");
+        // rhr: night 1 and 2 contributed → night_count = 2
+        assert_eq!(
+            baseline.resting_hr.night_count, 2,
+            "NULL rhr rows must be skipped"
+        );
+    }
+
+    // ---- Idempotent ewma_baseline_update tests ----------------------------
+
+    #[test]
+    fn test_ewma_baseline_update_inserts_new_row() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+        let wrote = store
+            .ewma_baseline_update("2024-01-01", 60.0, 55.0)
+            .expect("update");
+        assert!(wrote, "first update for a date_key must return true");
+    }
+
+    #[test]
+    fn test_ewma_baseline_update_idempotent_same_date() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+
+        // First call — should write
+        let wrote_first = store
+            .ewma_baseline_update("2024-01-01", 60.0, 55.0)
+            .expect("first update");
+        assert!(wrote_first, "first update must write");
+
+        // Second call for same date — must be skipped (idempotent)
+        let wrote_second = store
+            .ewma_baseline_update("2024-01-01", 60.0, 55.0)
+            .expect("second update");
+        assert!(
+            !wrote_second,
+            "second update for same date_key must be skipped (idempotent)"
+        );
+    }
+
+    #[test]
+    fn test_ewma_baseline_update_date_guard_different_values() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+
+        let wrote_first = store
+            .ewma_baseline_update("2024-01-01", 60.0, 55.0)
+            .expect("first update");
+        assert!(wrote_first);
+
+        // Second call same date with different values — guard blocks double-update (T-24-04)
+        let wrote_second = store
+            .ewma_baseline_update("2024-01-01", 65.0, 58.0)
+            .expect("second update different values");
+        assert!(
+            !wrote_second,
+            "date guard must prevent double-update even with different values"
+        );
+    }
+
+    #[test]
+    fn test_ewma_baseline_update_rejects_non_finite_hrv() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+        assert!(
+            store.ewma_baseline_update("2024-01-01", f64::NAN, 55.0).is_err(),
+            "NaN hrv must be rejected"
+        );
+        assert!(
+            store
+                .ewma_baseline_update("2024-01-02", f64::INFINITY, 55.0)
+                .is_err(),
+            "Inf hrv must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_ewma_baseline_update_rejects_non_finite_rhr() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+        assert!(
+            store
+                .ewma_baseline_update("2024-01-01", 60.0, f64::NAN)
+                .is_err(),
+            "NaN rhr must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_fold_history_after_update_includes_new_row() {
+        let store = GooseStore::open_in_memory().expect("open_in_memory");
+        store
+            .ewma_baseline_update("2024-01-01", 60.0, 55.0)
+            .expect("update");
+        let baseline = EwmaBaseline::fold_history(&store).expect("fold_history");
+        assert_eq!(baseline.hrv.night_count, 1, "fold_history must pick up ewma update rows");
+        assert!(
+            (baseline.hrv.mean - 60.0).abs() < 1e-9,
+            "mean should be 60.0 after one night"
+        );
+    }
 }
