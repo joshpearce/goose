@@ -917,24 +917,44 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
         ],
     );
     columns.insert(
+        "battery",
+        vec!["device_id", "ts", "level_pct", "synced", "created_at"],
+    );
+    columns.insert(
+        "events",
+        vec!["device_id", "ts", "event_id", "event_name", "synced", "created_at"],
+    );
+    columns.insert(
         "gravity",
-        vec!["device_id", "ts", "x", "y", "z", "created_at"],
+        vec!["device_id", "ts", "x", "y", "z", "synced", "created_at"],
     );
     columns.insert(
-        "spo2_samples",
-        vec!["device_id", "ts", "red", "ir", "contact", "created_at"],
-    );
-    columns.insert(
-        "skin_temp_samples",
-        vec!["device_id", "ts", "raw", "contact", "created_at"],
+        "hr_samples",
+        vec!["device_id", "ts", "bpm", "synced", "created_at"],
     );
     columns.insert(
         "resp_samples",
-        vec!["device_id", "ts", "raw", "contact", "created_at"],
+        vec!["device_id", "ts", "raw", "contact", "synced", "created_at"],
+    );
+    columns.insert(
+        "rr_intervals",
+        vec!["device_id", "ts", "interval_ms", "synced", "created_at"],
     );
     columns.insert(
         "sig_quality_samples",
         vec!["device_id", "ts", "quality", "contact", "created_at"],
+    );
+    columns.insert(
+        "skin_temp_samples",
+        vec!["device_id", "ts", "raw", "contact", "synced", "created_at"],
+    );
+    columns.insert(
+        "spo2_samples",
+        vec!["device_id", "ts", "red", "ir", "contact", "synced", "created_at"],
+    );
+    columns.insert(
+        "upload_cursors",
+        vec!["namespace", "stream", "value", "updated_at"],
     );
     columns.insert(
         "exercise_sessions",

@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 17;
+pub const CURRENT_SCHEMA_VERSION: i64 = 18;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -654,6 +654,39 @@ pub struct SigQualitySampleRow {
     pub ts: f64,
     pub quality: i64,
     pub contact: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HrSampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub bpm: i64,
+    pub synced: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RrIntervalRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub interval_ms: i64,
+    pub synced: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub event_id: i64,
+    pub event_name: String,
+    pub synced: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatteryRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub level_pct: i64,
+    pub synced: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1557,6 +1590,59 @@ impl GooseStore {
 
             CREATE INDEX IF NOT EXISTS idx_exercise_sessions_device_ts ON exercise_sessions(device_id, start_ts);
 
+            CREATE TABLE IF NOT EXISTS hr_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                bpm INTEGER NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_hr_samples_device_ts ON hr_samples(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS rr_intervals (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                interval_ms INTEGER NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_rr_intervals_device_ts ON rr_intervals(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS events (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                event_id INTEGER NOT NULL,
+                event_name TEXT NOT NULL DEFAULT '',
+                synced INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS battery (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                level_pct INTEGER NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_battery_device_ts ON battery(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS upload_cursors (
+                namespace TEXT NOT NULL,
+                stream TEXT NOT NULL,
+                value TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                PRIMARY KEY (namespace, stream)
+            );
+
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (1);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (2);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (3);
@@ -1574,7 +1660,8 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (15);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (16);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (17);
-            PRAGMA user_version = 17;
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (18);
+            PRAGMA user_version = 18;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -1583,6 +1670,7 @@ impl GooseStore {
         self.ensure_daily_activity_metric_multi_row_source_kind()?;
         self.ensure_daily_recovery_metric_multi_row_source_kind()?;
         self.ensure_step_counter_sample_columns()?;
+        self.ensure_synced_columns()?;
         Ok(())
     }
 
@@ -6841,6 +6929,48 @@ impl GooseStore {
         rows.collect::<Result<Vec<_>, _>>()
             .map_err(GooseError::from)
     }
+
+    fn ensure_synced_columns(&self) -> GooseResult<()> {
+        let synced_ddl = "synced INTEGER NOT NULL DEFAULT 0";
+        for table in &["spo2_samples", "skin_temp_samples", "resp_samples", "gravity"] {
+            let columns = self.table_columns_unchecked(table)?;
+            if !columns.contains("synced") {
+                self.conn.execute(
+                    &format!("ALTER TABLE {table} ADD COLUMN {synced_ddl}"),
+                    [],
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn upsert_upload_cursor(
+        &self,
+        namespace: &str,
+        stream: &str,
+        value: &str,
+    ) -> GooseResult<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO upload_cursors (namespace, stream, value) VALUES (?1, ?2, ?3)",
+            params![namespace, stream, value],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_upload_cursor(
+        &self,
+        namespace: &str,
+        stream: &str,
+    ) -> GooseResult<Option<String>> {
+        self.conn
+            .query_row(
+                "SELECT value FROM upload_cursors WHERE namespace=?1 AND stream=?2",
+                params![namespace, stream],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(GooseError::from)
+    }
 }
 
 fn finite_json_number(value: &Value) -> Option<f64> {
@@ -8149,6 +8279,11 @@ pub fn known_tables() -> &'static [&'static str] {
         "skin_temp_samples",
         "resp_samples",
         "sig_quality_samples",
+        "hr_samples",
+        "rr_intervals",
+        "events",
+        "battery",
+        "upload_cursors",
     ]
 }
 
@@ -8300,7 +8435,7 @@ mod exercise_session_tests {
             .conn
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("failed to read user_version");
-        assert_eq!(version, 17, "PRAGMA user_version should be 17 after v17 migration");
+        assert_eq!(version, 18, "PRAGMA user_version should be 18 after v18 migration");
     }
 
     #[test]
@@ -8366,5 +8501,149 @@ mod exercise_session_tests {
         assert_eq!(results[0].start_ts, 1_000.0);
         assert_eq!(results[1].start_ts, 2_000.0);
         assert_eq!(results[2].start_ts, 3_000.0);
+    }
+}
+
+#[cfg(test)]
+mod sync_schema_tests {
+    use super::*;
+
+    fn make_store() -> GooseStore {
+        GooseStore::open_in_memory().expect("failed to open in-memory store")
+    }
+
+    #[test]
+    fn test_schema_version_is_18() {
+        let store = make_store();
+        assert_eq!(store.schema_version().unwrap(), 18);
+    }
+
+    #[test]
+    fn test_hr_samples_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='hr_samples'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1, "hr_samples table should exist");
+    }
+
+    #[test]
+    fn test_rr_intervals_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='rr_intervals'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1, "rr_intervals table should exist");
+    }
+
+    #[test]
+    fn test_events_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='events'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1, "events table should exist");
+    }
+
+    #[test]
+    fn test_battery_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='battery'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1, "battery table should exist");
+    }
+
+    #[test]
+    fn test_upload_cursors_table_exists() {
+        let store = make_store();
+        let count: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='upload_cursors'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1, "upload_cursors table should exist");
+    }
+
+    #[test]
+    fn test_synced_column_on_new_tables() {
+        let store = make_store();
+        let cols = store.table_columns_unchecked("hr_samples").unwrap();
+        assert!(cols.contains("synced"), "hr_samples should have synced column");
+    }
+
+    #[test]
+    fn test_synced_column_added_to_existing() {
+        let store = make_store();
+        for table in &["spo2_samples", "skin_temp_samples", "resp_samples", "gravity"] {
+            let cols = store.table_columns_unchecked(table).unwrap();
+            assert!(
+                cols.contains("synced"),
+                "{table} should have synced column after migration"
+            );
+        }
+    }
+
+    #[test]
+    fn test_existing_rows_default_zero() {
+        let store = make_store();
+        store
+            .conn
+            .execute(
+                "INSERT OR IGNORE INTO gravity (device_id, ts, x, y, z) VALUES ('dev-1', 1000.0, 1.0, 2.0, 3.0)",
+                [],
+            )
+            .unwrap();
+        let synced: i64 = store
+            .conn
+            .query_row(
+                "SELECT synced FROM gravity WHERE device_id='dev-1' AND ts=1000.0",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(synced, 0, "synced should default to 0 for existing rows");
+    }
+
+    #[test]
+    fn test_upload_cursors_namespace_isolation() {
+        let store = make_store();
+        store
+            .upsert_upload_cursor("highwater", "hr_samples", "1000.0")
+            .unwrap();
+        store
+            .upsert_upload_cursor("read", "hr_samples", "500.0")
+            .unwrap();
+
+        let hw = store
+            .get_upload_cursor("highwater", "hr_samples")
+            .unwrap();
+        let rd = store.get_upload_cursor("read", "hr_samples").unwrap();
+
+        assert_eq!(hw.as_deref(), Some("1000.0"));
+        assert_eq!(rd.as_deref(), Some("500.0"));
     }
 }
