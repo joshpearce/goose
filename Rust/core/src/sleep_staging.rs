@@ -521,7 +521,7 @@ fn aasm_metrics(
     let first_sleep_idx = epochs.iter().position(|e| e.stage != "wake");
     let sol = match first_sleep_idx {
         None => tib,
-        Some(idx) => ((epochs[idx].ts - sleep_start_ts).max(0.0) / 60.0),
+        Some(idx) => (epochs[idx].ts - sleep_start_ts).max(0.0) / 60.0,
     };
 
     // WASO: wake epochs that occur after sleep onset.
