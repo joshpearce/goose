@@ -43,6 +43,7 @@ pub struct EnergyDailyRollupOptions<'a> {
     pub profile_weight_kg: Option<f64>,
     pub profile_age_years: Option<u32>,
     pub profile_sex: Option<&'a str>,
+    pub profile_height_cm: Option<f64>,
     pub resting_hr_bpm: Option<f64>,
     pub max_hr_bpm: Option<f64>,
     pub min_heart_rate_samples: usize,
@@ -78,6 +79,7 @@ impl Default for EnergyDailyRollupOptions<'_> {
             profile_weight_kg: None,
             profile_age_years: None,
             profile_sex: None,
+            profile_height_cm: None,
             resting_hr_bpm: None,
             max_hr_bpm: None,
             min_heart_rate_samples: 2,
@@ -373,6 +375,9 @@ pub fn rollup_energy_day_for_store(
     if options.profile_sex.is_none() {
         quality_flags.push("profile_sex_missing".to_string());
     }
+    if options.profile_height_cm.is_none() {
+        quality_flags.push("resting_kcal_mifflin_height_absent".to_string());
+    }
 
     let (
         covered_minutes,
@@ -416,7 +421,18 @@ pub fn rollup_energy_day_for_store(
 
     let pass = issues.is_empty();
     let (active_kcal, resting_kcal, total_kcal) = if pass {
-        let resting = resting_kcal(effective_weight_kg, covered_minutes);
+        let resting = match (options.profile_height_cm, options.profile_age_years) {
+            (Some(height_cm), Some(age_years)) => {
+                let rmr_per_day = rmr_mifflin_st_jeor(
+                    effective_weight_kg,
+                    height_cm,
+                    f64::from(age_years),
+                    options.profile_sex,
+                );
+                rmr_per_day * covered_minutes.max(0.0) / 1440.0
+            }
+            _ => resting_kcal(effective_weight_kg, covered_minutes),
+        };
         let active = active_kcal(
             effective_weight_kg,
             covered_minutes,
@@ -425,6 +441,8 @@ pub fn rollup_energy_day_for_store(
             options.resting_hr_bpm,
             options.max_hr_bpm,
             average_motion_intensity_0_to_1,
+            options.profile_age_years.map(f64::from),
+            options.profile_sex,
         );
         let total = resting + active;
         (
@@ -879,6 +897,8 @@ pub fn rollup_energy_hour_for_store(
             options.resting_hr_bpm,
             options.max_hr_bpm,
             average_motion_intensity_0_to_1,
+            options.profile_age_years.map(f64::from),
+            options.profile_sex,
         );
         let total = resting + active;
         (
@@ -1233,7 +1253,25 @@ fn active_kcal(
     resting_hr_bpm: Option<f64>,
     max_hr_bpm: Option<f64>,
     average_motion_intensity_0_to_1: Option<f64>,
+    profile_age: Option<f64>,
+    profile_sex: Option<&str>,
 ) -> f64 {
+    // Keytel (2005) active EE path: use when average_hr >= resting_hr + 0.30*(hrmax-resting_hr)
+    // and age is available. Otherwise retain the existing MET-based path.
+    if let (Some(avg_hr), Some(resting_hr), Some(hrmax), Some(age)) =
+        (average_hr_bpm, resting_hr_bpm, max_hr_bpm, profile_age)
+    {
+        if hrmax > resting_hr {
+            let threshold = resting_hr + 0.30 * (hrmax - resting_hr);
+            if avg_hr >= threshold {
+                let kcal_per_min =
+                    keytel_active_kcal_per_min(avg_hr, weight_kg, age, profile_sex, hrmax);
+                return kcal_per_min * covered_minutes.max(0.0);
+            }
+        }
+    }
+
+    // Original MET-based path (below threshold or missing inputs).
     let kcal_per_met_minute = 3.5 * weight_kg / 200.0;
     let zone_active_met_minutes = if hr_zone_minutes.len() == 5 {
         let active_met_by_zone = [0.0, 1.0, 2.5, 5.0, 8.0];
