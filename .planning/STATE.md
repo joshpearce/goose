@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: SHIPPED
-stopped_at: Milestone v5.0 complete — archived 2026-06-08
-last_updated: "2026-06-08T20:00:00Z"
-last_activity: 2026-06-08 -- v5.0 milestone archived; 128 Rust tests green
+milestone: v6.0
+milestone_name: UI Wiring, Algorithm Alignment & Parity Validation
+status: planning
+last_updated: "2026-06-08T19:07:32.335Z"
+last_activity: 2026-06-08
 progress:
-  total_phases: 16
-  completed_phases: 15
-  total_plans: 34
-  completed_plans: 34
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 ## Current Position
 
-Phase: 26 (Sleep Staging) — EXECUTING
-Plan: 2 of 2
-Status: At human checkpoint (ALG-SLP-04 cross-validation gate)
-Last activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
-
-Progress: [██████░░░░] 65%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-08 — Milestone v6.0 started
 
 ## Performance Metrics
 

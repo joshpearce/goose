@@ -44,17 +44,33 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - ✓ Coach multi-provider: CoachProvider protocol; ChatGPT/Claude/Custom/Gemini; CoachProviderRegistry; provider picker UI — v4.0 (COACH-01 to COACH-06)
 - ✓ pt-PT localisation for all v4.0 additions (128 new strings); onboarding skip button; startup non-blocking — v4.0 (L10N-03, PERF-04, UX-01)
 
-### Active (v5.0)
+### Validated (v5.0)
 
-- [ ] HRV pipeline accuracy: rmssd_segment_aware extended for BLE gaps > 3 s; Lipponen-Tarvainen ectopic filter; tiered SWS window selection (ALG-HRV-01 to ALG-HRV-04)
-- [ ] Recovery score Z-score + logistic model: EWMA baseline; cold-start gate; trust levels; Vermelho/Amarelo/Verde bands (ALG-REC-01 to ALG-REC-03)
-- [ ] Calorias — Mifflin-St Jeor RMR; Keytel + Harris-Benedict coefficients validated against WHOOP 5.37.0 binary (Ghidra MCP) (ALG-CAL-01, ALG-CAL-02)
-- [ ] Strain — Tanaka HRmax + Banister TRIMP + personal denominator calibration (ALG-STR-01 to ALG-STR-03)
-- [ ] Sleep metrics without staging: HR dip %, WASO, SOL, REM latency, disturbance count (ALG-SLP-01, ALG-SLP-02)
-- [ ] IMU data pipeline: I16SeriesSummary full samples; gravity table in SQLite; TOGGLE_IMU_MODE_ON/OFF in startCapture (IMU-01 to IMU-04)
-- [ ] 4-class sleep staging: Cole-Kripke + cardiorespiratory features + physiological reimposition (ALG-SLP-03, ALG-SLP-04)
-- [ ] body_hex storage optimization: exclude body_hex from K10/K21 cached JSON (PERF-05)
-- [ ] Gen4 historical sync upstream fixes: retain inversion, wrapping overflow, padding, confinement, UUID normalisation (SYNC-01 to SYNC-05)
+- ✓ HRV pipeline: rmssd_segment_aware BLE gap-aware, Lipponen-Tarvainen ectopic filter, tiered SWS window selection — v5.0 (ALG-HRV-01 to ALG-HRV-03; ALG-HRV-04 human gate pending)
+- ✓ Recovery score v1: Z-score + logistic squash; EWMA baseline; cold-start gate; trust levels; Vermelho/Amarelo/Verde — v5.0 (ALG-REC-01 to ALG-REC-03)
+- ✓ Calorias: Mifflin-St Jeor RMR; Keytel + H-B coefficients Ghidra-confirmed — v5.0 (ALG-CAL-01, ALG-CAL-02)
+- ✓ Strain: Tanaka HRmax + Banister TRIMP + fit_strain_denominator calibration helper — v5.0 (ALG-STR-01 to ALG-STR-03)
+- ✓ Sleep metrics without staging: HR dip %, WASO, SOL, disturbance count; EWMA baseline engine — v5.0 (ALG-SLP-01, ALG-SLP-02)
+- ✓ IMU data pipeline: I16SeriesSummary full_samples; gravity table schema v15; TOGGLE_IMU_MODE feature-flagged — v5.0 (IMU-01 to IMU-04)
+- ✓ 4-class sleep staging: Cole-Kripke + cardiorespiratory features + physiological reimposition — v5.0 (ALG-SLP-03; ALG-SLP-04 human gate pending)
+- ✓ body_hex excluded from K10/K21 cached JSON — v5.0 (PERF-05)
+- ✓ Gen4 historical sync correctness fixes — v5.0 (SYNC-01 to SYNC-05)
+- ✓ V24 biometric decode: SpO2, skin_temp, resp, gravity2; 4 new SQLite tables; uncalibrated flag — v5.0 (BIO-01 to BIO-04)
+- ✓ Exercise detection: retroactive from HR+gravity, Karvonen zones, exercise_sessions table — v5.0 (EX-01 to EX-04)
+- ✓ Upload sync: synced flag on 8 stream tables; two-namespace cursors; raw outbox prune invariant — v5.0 (SYNC-UP-01 to SYNC-UP-03)
+- ✓ Readiness Engine: ACWR (7d/28d) + Foster monotony + 5-class level synthesis — v5.0 (RDY-01 to RDY-03)
+
+### Active (v6.0)
+
+- [ ] Readiness Engine UI: Recovery dashboard mostra nível diário (rundown/strained/balanced/primed) com banda de cor (RDY-UI-01)
+- [ ] Sleep Staging UI: hipnograma 4-class + AASM metrics (REM latency, TST, eficiência, SOL, WASO) no Sleep V2 dashboard (SLP-UI-01)
+- [ ] V24 Biometrics UI: SpO2, skin temp, resp rate surfaçados com badge "não calibrado" obrigatório (BIO-UI-01)
+- [ ] Exercise Sessions UI: lista de sessões detectadas com duração, calorias, zonas Edwards (EX-UI-01)
+- [ ] Upload Sync UI: pending badge + botão "Sync pendente (N rows)" no More tab (SYNC-UI-01)
+- [ ] IMU Step Detection UI: contagem de passos via zero-crossing na magnitude de gravidade K10 (STEP-UI-01)
+- [ ] Algorithm Alignment: recovery Z-score+logística alinhada com my-whoop, EWMA alpha 0.0483 (14-night), Cole-Kripke epoch 30s (ALG-ALIGN-01)
+- [ ] HRV Parity Validation: gate ALG-HRV-04 fechada com ≥5 sessões overnight reais, delta ≤1 ms (VAL-01)
+- [ ] Sleep Staging Validation: gate ALG-SLP-04 fechada com ≥70% acordo de época em ≥5 sessões (VAL-02)
 
 ### Out of Scope
 
@@ -95,20 +111,25 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current State (v4.0)
+## Current Milestone: v6.0 UI Wiring, Algorithm Alignment & Parity Validation
 
-**Shipped:** 2026-06-06
-- Deep link security: `allowsRemoteInvocation` guard in GooseAppModel+Lifecycle.swift (SEC-01)
-- @Observable migration: 68 @Published removed; `@Environment(GooseAppModel.self)` throughout; per-property SwiftUI re-render (PERF-01/02/03)
-- Coach multi-provider: CoachProvider protocol + CoachProviderRegistry + 4 providers + CoachSettingsSheet picker (COACH-01–06)
-- pt-PT complete: 128 new strings; onboarding Keychain fix; startup unblocked (L10N-03, PERF-04, UX-01)
-- 148 Swift files, 73 Rust files
-- Known deferred: COACH-06 device migration test, 4 streaming provider runtime tests, PERF-03 runtime confirmation, 3 localisation device tests
+**Goal:** Ligar os algoritmos Rust do v5.0 à interface SwiftUI, corrigir as divergências de algoritmos identificadas no cross-project review, e fechar as gates de validação humana (HRV e sleep staging).
 
-**v3.0 baseline** (shipped 2026-06-05): HR monitor UX, BLE stability, Recovery V2, pt-PT infrastructure, WHOOP 4.0 RTC sync, SDNN accuracy
+**Target features:**
+- Readiness Engine UI — nível diário no Recovery dashboard
+- Sleep Staging UI — hipnograma 4-class + AASM metrics
+- V24 Biometrics UI — SpO2/skin temp/resp com badge "não calibrado"
+- Exercise Sessions UI — lista de sessões + zonas Edwards
+- Upload Sync UI — pending badge + backfill manual
+- IMU Step Detection UI — contagem de passos via acelerómetro
+- Algorithm Alignment — recovery Z-score+logística, EWMA 14-night alpha, Cole-Kripke epoch 30s
+- HRV Parity Validation — fechar gate ALG-HRV-04 (≥5 sessões reais)
+- Sleep Staging Validation — fechar gate ALG-SLP-04 (≥70% acordo de época)
+
+**Previous milestone (v5.0, shipped 2026-06-08):** Validated algorithm pipeline — HRV, Sleep staging 4-class, Strain/Calories, V24 biometric decode, Exercise detection, Upload sync, Readiness Engine. Schema v19. 128 Rust tests. 9 audit HIGH findings fixed.
 
 ---
-*Last updated: 2026-06-06 — v4.0 milestone shipped*
+*Last updated: 2026-06-08 — v6.0 milestone started*
 
 ## Evolution
 
