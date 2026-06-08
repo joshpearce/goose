@@ -30,6 +30,7 @@ pub mod debug_ws;
 #[cfg(not(target_os = "android"))]
 pub mod debug_ws_server;
 pub mod energy_rollup;
+pub mod exercise_detection;
 mod error;
 pub mod export;
 pub mod fixtures;
