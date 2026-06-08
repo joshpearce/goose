@@ -13,10 +13,11 @@ struct RecoveryV1Result {
 
 extension RecoveryV1Result {
   var bandColor: Color {
+    // CR-01 fix: Rust ColourBand::as_str() emits lowercase "verde"/"amarelo"/"vermelho".
     switch colourBand {
-    case "Verde": return .green
-    case "Amarelo": return .orange
-    case "Vermelho": return .red
+    case "verde": return .green
+    case "amarelo": return .orange
+    case "vermelho": return .red
     default: return .orange
     }
   }
@@ -87,36 +88,38 @@ extension HealthDataStore {
     }()
 
     guard let hrv = hrvRmssdMs, hrv > 0 else {
-      DispatchQueue.main.async { [weak self] in
+      Task { @MainActor [weak self] in
         self?.recoveryV1Result = nil
       }
       return
     }
 
-    let rhr = restingHrBpm ?? 55.0
+    // CR-02 fix: do NOT substitute a synthetic RHR when none is available.
+    // Rust handles absence via z_hrv-only fallback; a fabricated 55.0 biases z_rhr.
     let db = databasePath
-    // device_id is not strictly required by the bridge (baselines are keyed by date),
-    // but we pass a stable sentinel so the Rust side can log it if needed.
     let deviceID = "goose.swift.recovery.v1"
     let bridge = self.bridge
 
     packetInputQueue.async { [weak self] in
       guard let self else { return }
       do {
+        var bridgeArgs: [String: Any] = [
+          "database_path": db,
+          "device_id": deviceID,
+          "date_key": dateKey,
+          "hrv_rmssd_ms": hrv,
+        ]
+        if let rhr = restingHrBpm, rhr > 0 {
+          bridgeArgs["resting_hr_bpm"] = rhr
+        }
         let report = try bridge.request(
           method: "metrics.goose_recovery_v1",
-          args: [
-            "database_path": db,
-            "device_id": deviceID,
-            "date_key": dateKey,
-            "hrv_rmssd_ms": hrv,
-            "resting_hr_bpm": rhr,
-          ]
+          args: bridgeArgs
         )
         let scoreRaw = Self.doubleValue(report["score_0_to_100"])
         let score = scoreRaw.map { Int($0.rounded()) }
         let trustLevel = report["trust_level"] as? String ?? "calibrating"
-        let colourBand = report["colour_band"] as? String ?? "Amarelo"
+        let colourBand = report["colour_band"] as? String ?? "amarelo"
         let zHRV = Self.doubleValue(report["z_hrv"])
         let zRHR = Self.doubleValue(report["z_rhr"])
         let result = RecoveryV1Result(
@@ -126,11 +129,11 @@ extension HealthDataStore {
           zHRV: zHRV,
           zRHR: zRHR
         )
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
           self?.recoveryV1Result = result
         }
       } catch {
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
           self?.recoveryV1Result = nil
         }
       }
