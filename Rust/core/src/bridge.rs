@@ -126,7 +126,7 @@ use crate::{
         rollup_resting_heart_rate_day_for_store, validate_resting_heart_rate_capture_for_store,
     },
     reference::reference_algorithm_definitions,
-    sleep_staging::{SleepStagingInput, SleepStagingOutput, stage_sleep},
+    sleep_staging::{EpochHrFeature, SleepStagingInput, SleepStagingOutput, stage_sleep_four_class},
     sleep_validation::{
         SleepStageLabelValidationOptions, SleepV1EvidenceFolderOptions,
         SleepV1ExplanationStabilityOptions, SleepV1ReleaseGateInput,
@@ -3466,12 +3466,23 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
 // Sleep staging bridge (metrics.sleep_staging)
 // ---------------------------------------------------------------------------
 
+/// HR feature argument as received from Swift (mirrors EpochHrFeature in sleep_staging.rs).
+#[derive(Debug, Deserialize)]
+struct HrFeatureArg {
+    ts: f64,
+    hr_bpm: f64,
+}
+
 #[derive(Debug, Deserialize)]
 struct SleepStagingBridgeArgs {
     database_path: String,
     device_id: String,
     sleep_start_ts: f64,
     sleep_end_ts: f64,
+    /// Optional per-epoch HR features for the 4-class classifier.
+    /// Absent or empty → 4-class output still valid (light fallback).
+    #[serde(default)]
+    hr_features: Vec<HrFeatureArg>,
 }
 
 fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json::Value> {
@@ -3487,7 +3498,12 @@ fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json:
         sleep_start_ts: args.sleep_start_ts,
         sleep_end_ts: args.sleep_end_ts,
     };
-    let output: SleepStagingOutput = stage_sleep(&input, &tuples);
+    let hr_feats: Vec<EpochHrFeature> = args
+        .hr_features
+        .iter()
+        .map(|f| EpochHrFeature { ts: f.ts, hr_bpm: f.hr_bpm })
+        .collect();
+    let output: SleepStagingOutput = stage_sleep_four_class(&input, &tuples, &hr_feats);
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize sleep_staging output: {e}")))
 }
@@ -9369,6 +9385,27 @@ mod tests {
         assert!(
             result["epochs"].as_array().map(|a| a.is_empty()).unwrap_or(false),
             "epochs must be empty for an empty gravity table"
+        );
+        // AASM fields must be present in the output (even when no IMU data).
+        assert!(
+            result["stage_minutes"].is_object(),
+            "stage_minutes must be an object in the output"
+        );
+        assert!(
+            result["tst_minutes"].is_number(),
+            "tst_minutes must be present in the output"
+        );
+        assert!(
+            result["sol_minutes"].is_number(),
+            "sol_minutes must be present in the output"
+        );
+        assert!(
+            result["waso_minutes"].is_number(),
+            "waso_minutes must be present in the output"
+        );
+        assert!(
+            result["sleep_efficiency_fraction"].is_number(),
+            "sleep_efficiency_fraction must be present in the output"
         );
     }
 }
