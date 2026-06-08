@@ -1156,6 +1156,70 @@ pub fn validate_energy_capture_for_store(
     })
 }
 
+/// Mifflin-St Jeor resting metabolic rate (kcal/day).
+/// sex: `"male"` → intercept +5; `"female"` → -161; otherwise -78 (mean intercept).
+pub fn rmr_mifflin_st_jeor(weight_kg: f64, height_cm: f64, age: f64, sex: Option<&str>) -> f64 {
+    let intercept = match sex {
+        Some(s) if s.eq_ignore_ascii_case("male") => 5.0_f64,
+        Some(s) if s.eq_ignore_ascii_case("female") => -161.0_f64,
+        _ => -78.0_f64,
+    };
+    10.0 * weight_kg + 6.25 * height_cm - 5.0 * age + intercept
+}
+
+/// Keytel (2005) active energy expenditure (kcal/min).
+/// `hr` is capped at `hrmax`; result is clamped `>= 0.0`.
+/// sex: `"male"` → male formula; `"female"` → female formula; otherwise mean of the two.
+/// Divisor 251.04 converts VO2 (Keytel) to kcal/min (Ghidra-confirmed).
+pub fn keytel_active_kcal_per_min(
+    hr: f64,
+    weight_kg: f64,
+    age: f64,
+    sex: Option<&str>,
+    hrmax: f64,
+) -> f64 {
+    let effective_hr = hr.min(hrmax);
+    let raw = match sex {
+        Some(s) if s.eq_ignore_ascii_case("male") => {
+            -55.0969 + 0.6309 * effective_hr + 0.1988 * weight_kg + 0.2017 * age
+        }
+        Some(s) if s.eq_ignore_ascii_case("female") => {
+            -20.4022 + 0.4472 * effective_hr - 0.1263 * weight_kg + 0.0740 * age
+        }
+        _ => {
+            let male_raw = -55.0969 + 0.6309 * effective_hr + 0.1988 * weight_kg + 0.2017 * age;
+            let female_raw = -20.4022 + 0.4472 * effective_hr - 0.1263 * weight_kg + 0.0740 * age;
+            (male_raw + female_raw) / 2.0
+        }
+    };
+    (raw / 251.04).max(0.0)
+}
+
+/// Harris-Benedict resting metabolic rate (kcal/day).
+/// `height_cm` is converted to metres inside (coefficient × height_cm/100).
+/// sex: `"male"` → male formula; `"female"` → female formula; otherwise mean.
+pub fn harris_benedict_rmr_kcal_day(
+    weight_kg: f64,
+    height_cm: f64,
+    age: f64,
+    sex: Option<&str>,
+) -> f64 {
+    let height_m = height_cm / 100.0;
+    match sex {
+        Some(s) if s.eq_ignore_ascii_case("male") => {
+            88.362 + 13.397 * weight_kg + 479.9 * height_m - 5.677 * age
+        }
+        Some(s) if s.eq_ignore_ascii_case("female") => {
+            447.593 + 9.247 * weight_kg + 309.8 * height_m - 4.330 * age
+        }
+        _ => {
+            let male = 88.362 + 13.397 * weight_kg + 479.9 * height_m - 5.677 * age;
+            let female = 447.593 + 9.247 * weight_kg + 309.8 * height_m - 4.330 * age;
+            (male + female) / 2.0
+        }
+    }
+}
+
 fn resting_kcal(weight_kg: f64, minutes: f64) -> f64 {
     let rmr_kcal_per_day = weight_kg * 22.0;
     rmr_kcal_per_day * minutes.max(0.0) / 1440.0
