@@ -4,7 +4,7 @@ milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: At human checkpoint (ALG-SLP-04 cross-validation gate)
 stopped_at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
-last_updated: "2026-06-08T13:21:19.995Z"
+last_updated: "2026-06-08T13:21:37.423Z"
 last_activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
 progress:
   total_phases: 16
@@ -76,6 +76,7 @@ Progress: [██████░░░░] 65%
 | Phase 24-sleep-metrics-baselines P02 | 45 | 3 tasks (TDD) | 4 files |
 | Phase 26-sleep-staging P01 | 16min | 2 tasks | 3 files |
 | Phase 26-sleep-staging P02 | 27min | 2 tasks (Task 3 human) | 2 files |
+| Phase 27 P01 | 15 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-08T13:21:15.372Z
+Last session: 2026-06-08T13:21:37.416Z
 Stopped at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
 Next: Capture >= 5 real overnight WHOOP sessions, run metrics.sleep_staging, record epoch agreement in 26-02-SUMMARY.md. Resume with "validated" or "defer".
