@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 18;
+pub const CURRENT_SCHEMA_VERSION: i64 = 19;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -1547,6 +1547,18 @@ impl GooseStore {
 
             CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts);
 
+            CREATE TABLE IF NOT EXISTS gravity2_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                x REAL NOT NULL,
+                y REAL NOT NULL,
+                z REAL NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_gravity2_samples_device_ts ON gravity2_samples(device_id, ts);
+
             CREATE TABLE IF NOT EXISTS spo2_samples (
                 device_id TEXT NOT NULL,
                 ts REAL NOT NULL,
@@ -1683,7 +1695,8 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (16);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (17);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (18);
-            PRAGMA user_version = 18;
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (19);
+            PRAGMA user_version = 19;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -6504,6 +6517,83 @@ impl GooseStore {
             .map_err(GooseError::from)
     }
 
+    pub fn insert_gravity2_batch(
+        &self,
+        device_id: &str,
+        rows: &[(f64, f64, f64, f64)],
+    ) -> GooseResult<usize> {
+        validate_required("device_id", device_id)?;
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let mut inserted = 0usize;
+        for &(ts, x, y, z) in rows {
+            let changed = self.conn.execute(
+                "INSERT OR IGNORE INTO gravity2_samples (device_id, ts, x, y, z) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![device_id, ts, x, y, z],
+            )?;
+            inserted += changed;
+        }
+        Ok(inserted)
+    }
+
+    pub fn gravity2_samples_between(
+        &self,
+        device_id: &str,
+        ts_start: f64,
+        ts_end: f64,
+    ) -> GooseResult<Vec<GravityRow>> {
+        validate_required("device_id", device_id)?;
+        if ts_end < ts_start {
+            return Err(GooseError::message(
+                "ts_end must be greater than or equal to ts_start",
+            ));
+        }
+        let mut statement = self.conn.prepare(
+            "SELECT device_id, ts, x, y, z FROM gravity2_samples WHERE device_id = ?1 AND ts >= ?2 AND ts < ?3 ORDER BY ts",
+        )?;
+        let rows = statement.query_map(params![device_id, ts_start, ts_end], |row| {
+            Ok(GravityRow {
+                device_id: row.get(0)?,
+                ts: row.get(1)?,
+                x: row.get(2)?,
+                y: row.get(3)?,
+                z: row.get(4)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(GooseError::from)
+    }
+
+    /// Return resp_samples rows in [ts_start, ts_end). Used by the sleep staging
+    /// bridge to determine whether resp data is present for a session.
+    pub fn resp_samples_between(
+        &self,
+        device_id: &str,
+        ts_start: f64,
+        ts_end: f64,
+    ) -> GooseResult<Vec<RespSampleRow>> {
+        validate_required("device_id", device_id)?;
+        if ts_end < ts_start {
+            return Err(GooseError::message(
+                "ts_end must be greater than or equal to ts_start",
+            ));
+        }
+        let mut stmt = self.conn.prepare(
+            "SELECT device_id, ts, raw, contact FROM resp_samples WHERE device_id = ?1 AND ts >= ?2 AND ts < ?3 ORDER BY ts",
+        )?;
+        let rows = stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+            Ok(RespSampleRow {
+                device_id: row.get(0)?,
+                ts: row.get(1)?,
+                raw: row.get(2)?,
+                contact: row.get(3)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(GooseError::from)
+    }
+
     pub fn insert_exercise_session(&self, row: &ExerciseSessionRow) -> GooseResult<bool> {
         validate_required("device_id", &row.device_id)?;
         self.immediate_transaction(|store| {
@@ -8525,6 +8615,7 @@ pub fn known_tables() -> &'static [&'static str] {
         "debug_events",
         "exercise_sessions",
         "gravity",
+        "gravity2_samples",
         "spo2_samples",
         "skin_temp_samples",
         "resp_samples",
@@ -8685,7 +8776,7 @@ mod exercise_session_tests {
             .conn
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("failed to read user_version");
-        assert_eq!(version, 18, "PRAGMA user_version should be 18 after v18 migration");
+        assert_eq!(version, 19, "PRAGMA user_version should be 19 after v19 migration");
     }
 
     #[test]
@@ -8763,9 +8854,9 @@ mod sync_schema_tests {
     }
 
     #[test]
-    fn test_schema_version_is_18() {
+    fn test_schema_version_is_19() {
         let store = make_store();
-        assert_eq!(store.schema_version().unwrap(), 18);
+        assert_eq!(store.schema_version().unwrap(), 19);
     }
 
     #[test]

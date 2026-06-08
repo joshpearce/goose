@@ -307,7 +307,9 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "storage.compact_raw_evidence",
     "store.ewma_baseline_fold_history",
     "store.ewma_baseline_update",
+    "store.gravity2_samples_between",
     "store.gravity_rows_between",
+    "store.insert_gravity2_batch",
     "store.insert_gravity_rows",
     "sync.backfill_streams",
     "sync.mark_synced",
@@ -2727,8 +2729,16 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(gravity_rows_between_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.gravity2_samples_between" => request_args::<GravityRowsBetweenArgs>(&request)
+            .and_then(gravity2_samples_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "store.insert_gravity_rows" => request_args::<InsertGravityRowsArgs>(&request)
             .and_then(insert_gravity_rows_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.insert_gravity2_batch" => request_args::<InsertGravityRowsArgs>(&request)
+            .and_then(insert_gravity2_batch_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "sync.mark_synced" => request_args::<SyncMarkSyncedArgs>(&request)
@@ -3617,6 +3627,25 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
     Ok(json!({"rows": json_rows}))
 }
 
+fn insert_gravity2_batch_bridge(args: InsertGravityRowsArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let tuples: Vec<(f64, f64, f64, f64)> =
+        args.rows.iter().map(|r| (r.ts, r.x, r.y, r.z)).collect();
+    let inserted = store.insert_gravity2_batch(&args.device_id, &tuples)?;
+    Ok(json!({"inserted": inserted}))
+}
+
+fn gravity2_samples_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let rows: Vec<GravityRow> =
+        store.gravity2_samples_between(&args.device_id, args.ts_start, args.ts_end)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
 // ---------------------------------------------------------------------------
 // Sync bridge (sync.mark_synced / sync.rows_pending_upload / sync.backfill_streams)
 // ---------------------------------------------------------------------------
@@ -3965,6 +3994,15 @@ struct SleepStagingBridgeArgs {
     /// Absent or empty → 4-class output still valid (light fallback).
     #[serde(default)]
     hr_features: Vec<HrFeatureArg>,
+    /// Whether resp_samples data is available for this session. When false,
+    /// REM classification is suppressed (graceful degradation — see PROTO-03).
+    /// Defaults to true for backwards compatibility with existing callers.
+    #[serde(default = "default_resp_available")]
+    resp_available: bool,
+}
+
+fn default_resp_available() -> bool {
+    true
 }
 
 fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json::Value> {
@@ -3976,7 +4014,7 @@ fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json:
         .map(|r| (r.ts, r.x, r.y, r.z))
         .collect();
     let input = SleepStagingInput {
-        device_id: args.device_id,
+        device_id: args.device_id.clone(),
         sleep_start_ts: args.sleep_start_ts,
         sleep_end_ts: args.sleep_end_ts,
     };
@@ -3985,7 +4023,18 @@ fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json:
         .iter()
         .map(|f| EpochHrFeature { ts: f.ts, hr_bpm: f.hr_bpm })
         .collect();
-    let output: SleepStagingOutput = stage_sleep_four_class(&input, &tuples, &hr_feats);
+    // Determine resp availability: if caller did not pass resp_available=false explicitly,
+    // check whether there are any resp rows in the window (lazy check).
+    let resp_available = if args.resp_available {
+        let resp_count = store
+            .resp_samples_between(&args.device_id, args.sleep_start_ts, args.sleep_end_ts)
+            .map(|rows| rows.len())
+            .unwrap_or(0);
+        resp_count > 0
+    } else {
+        false
+    };
+    let output: SleepStagingOutput = stage_sleep_four_class(&input, &tuples, &hr_feats, resp_available);
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize sleep_staging output: {e}")))
 }

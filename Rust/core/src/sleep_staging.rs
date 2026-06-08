@@ -16,9 +16,9 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 /// Multiplicative scale factor applied to each activity count before the
-/// Cole-Kripke weighted sum. Default 1.0 (uncalibrated). Adjust once real
-/// WHOOP overnight staging data is available.
-pub const COLE_KRIPKE_SCALE_FACTOR: f64 = 1.0;
+/// Cole-Kripke weighted sum. 0.001 converts raw inter-sample magnitude
+/// differences (g-units) to the activity index expected by Cole 1992.
+pub const COLE_KRIPKE_SCALE_FACTOR: f64 = 0.001;
 
 /// Wake threshold: D >= 1.0 → wake epoch (Cole 1992).
 pub const COLE_KRIPKE_WAKE_THRESHOLD: f64 = 1.0;
@@ -195,6 +195,7 @@ pub fn stage_sleep(input: &SleepStagingInput, rows: &[(f64, f64, f64, f64)]) -> 
 ///   - "deep":  HR <= session p25 AND activity_count <= DEEP_STILLNESS_ACTIVITY_MAX
 ///   - "rem":   clock proxy (fractional position in night) >= REM_CLOCK_PROXY_MIN
 ///              AND hr_bpm > session median (proxy for higher cardiorespiratory activity)
+///              AND `resp_available` is true (graceful degradation when resp absent)
 ///   - "light": remaining sleep epochs
 ///   - "wake":  unchanged from the binary spine
 ///
@@ -208,12 +209,17 @@ pub fn stage_sleep(input: &SleepStagingInput, rows: &[(f64, f64, f64, f64)]) -> 
 /// When `hr_features` is empty, all "sleep" epochs fall back to "light"
 /// (no HR data available — still a valid 4-class output, never panics).
 ///
+/// When `resp_available` is false, REM classification is suppressed and
+/// would-be REM epochs are classified as "light". Pass `false` when the
+/// resp_samples table has no rows for this session.
+///
 /// `staging_method` is `STAGING_METHOD_ACTIGRAPHY` ("actigraphy_uncalibrated")
 /// for non-empty input; `STAGING_METHOD_NO_IMU` for empty input.
 pub fn stage_sleep_four_class(
     input: &SleepStagingInput,
     rows: &[(f64, f64, f64, f64)],
     hr_features: &[EpochHrFeature],
+    resp_available: bool,
 ) -> SleepStagingOutput {
     if rows.is_empty() {
         return empty_output_with_aasm(STAGING_METHOD_NO_IMU, input);
@@ -243,7 +249,7 @@ pub fn stage_sleep_four_class(
         } else {
             // Refine sleep epoch using HR + motion features.
             let epoch_hr = nearest_hr(ts, hr_features);
-            classify_sleep_epoch(i, n, count, epoch_hr, hr_p25, hr_median, total_sleep_secs, ts, input.sleep_start_ts)
+            classify_sleep_epoch(i, n, count, epoch_hr, hr_p25, hr_median, total_sleep_secs, ts, input.sleep_start_ts, resp_available)
         };
         epochs.push(SleepEpoch { ts, activity_count: count, stage });
     }
@@ -276,6 +282,12 @@ pub fn stage_sleep_four_class(
 // ---------------------------------------------------------------------------
 
 /// Classify a single non-wake epoch into light/deep/rem.
+///
+/// `resp_available` controls whether REM classification is attempted. When the
+/// resp stream is absent from the database (no rows for this session), callers
+/// pass `false` and all would-be REM epochs fall back to "light". This prevents
+/// spurious REM assignments when the respiratory signal needed to confirm
+/// cardiorespiratory arousal is unavailable.
 fn classify_sleep_epoch(
     epoch_index: usize,
     total_epochs: usize,
@@ -286,6 +298,7 @@ fn classify_sleep_epoch(
     _total_sleep_secs: f64,
     epoch_ts: f64,
     sleep_start_ts: f64,
+    resp_available: bool,
 ) -> String {
     // Clock proxy: fractional position of this epoch in the total epoch sequence.
     let clock_proxy = if total_epochs > 1 {
@@ -305,10 +318,13 @@ fn classify_sleep_epoch(
                 return "deep".to_string();
             }
 
-            // REM: later in the night AND HR above session median
-            // (higher cardiorespiratory activity is a REM proxy).
+            // REM: later in the night AND HR above session median.
+            // Skip REM classification when resp stream is absent — without
+            // respiratory confirmation the HR-only signal has too many false
+            // positives and "light" is the conservative default.
             let minutes_from_onset = (epoch_ts - sleep_start_ts) / 60.0;
-            if clock_proxy >= REM_CLOCK_PROXY_MIN
+            if resp_available
+                && clock_proxy >= REM_CLOCK_PROXY_MIN
                 && hr > median
                 && minutes_from_onset >= NO_REM_ONSET_MINUTES
             {
@@ -663,7 +679,12 @@ mod tests {
         }
     }
 
-    // T3: Cole-Kripke D score — high-motion epoch → wake; still epoch → sleep
+    // T3: Cole-Kripke D score — high-motion epoch → wake; still epoch → sleep.
+    //
+    // With COLE_KRIPKE_SCALE_FACTOR = 0.001 and the 7 coefficients summing to 665,
+    // D = (665 * 0.001 / 100) * C = 0.00665 * C.
+    // To exceed WAKE_THRESHOLD=1.0 we need C > 150.4 per epoch.
+    // We generate C ≈ 200 by alternating between magnitude 0 and 200 each sample.
     #[test]
     fn cole_kripke_classifies_wake_and_sleep() {
         let start = 0.0_f64;
@@ -672,8 +693,9 @@ mod tests {
         let mut rows: Vec<(f64, f64, f64, f64)> = Vec::new();
         for epoch in 0..7i64 {
             let t0 = start + epoch as f64 * epoch_secs;
+            // Alternate between |g|=0 and |g|=200 to produce activity_count ≈ 200.
             rows.push((t0, 0.0, 0.0, 0.0));
-            rows.push((t0 + 1.0, 1.0, 0.0, 0.0));
+            rows.push((t0 + 1.0, 200.0, 0.0, 0.0));
         }
         let end = start + 7.0 * epoch_secs;
         let input = make_input(start, end);
@@ -763,7 +785,7 @@ mod tests {
             .collect();
 
         let input = make_input(start, start + 30.0 * epoch_secs);
-        let output = stage_sleep_four_class(&input, &rows, &hr_features);
+        let output = stage_sleep_four_class(&input, &rows, &hr_features, true);
 
         assert_eq!(output.staging_method, STAGING_METHOD_ACTIGRAPHY);
         // All non-wake epochs should be deep (still + HR <= p25).
@@ -796,7 +818,7 @@ mod tests {
             .collect();
 
         let input = make_input(start, start + 40.0 * epoch_secs);
-        let output = stage_sleep_four_class(&input, &rows, &hr_features);
+        let output = stage_sleep_four_class(&input, &rows, &hr_features, true);
 
         // Epochs in the second half (index >= 16, i.e. clock_proxy >= 0.4) with HR > median
         // should become REM. Reimposition rule (a) already handled by clock proxy + onset guard.
@@ -942,7 +964,7 @@ mod tests {
         let epoch_secs = COLE_KRIPKE_EPOCH_MINUTES * 60.0;
         let rows = vec![(start, 0.0, 0.0, 1.0), (start + 1.0, 0.0, 0.0, 1.0)];
         let input = make_input(start, start + epoch_secs);
-        let output = stage_sleep_four_class(&input, &rows, &[]);
+        let output = stage_sleep_four_class(&input, &rows, &[], true);
         assert_eq!(
             output.staging_method, STAGING_METHOD_ACTIGRAPHY,
             "4-class non-empty must emit actigraphy_uncalibrated"
@@ -953,7 +975,7 @@ mod tests {
     #[test]
     fn four_class_empty_rows_yields_no_imu_data() {
         let input = make_input(0.0, 3600.0);
-        let output = stage_sleep_four_class(&input, &[], &[]);
+        let output = stage_sleep_four_class(&input, &[], &[], false);
         assert_eq!(output.staging_method, STAGING_METHOD_NO_IMU);
         assert!(output.epochs.is_empty());
     }
@@ -969,11 +991,43 @@ mod tests {
             (start + 1.0, 0.0, 0.0, 1.0),
         ];
         let input = make_input(start, start + epoch_secs);
-        let output = stage_sleep_four_class(&input, &rows, &[]);
+        let output = stage_sleep_four_class(&input, &rows, &[], false);
         for e in &output.epochs {
             assert_ne!(e.stage, "sleep", "binary 'sleep' must not appear in 4-class output");
             assert_ne!(e.stage, "deep", "deep requires HR data");
             assert_ne!(e.stage, "rem", "rem requires HR data");
         }
+    }
+
+    /// PROTO-03: when resp_available=false, REM classification is suppressed.
+    /// Same scenario as four_class_late_high_hr_yields_rem but with resp absent.
+    #[test]
+    fn four_class_no_resp_suppresses_rem() {
+        let start = 0.0_f64;
+        let epoch_secs = COLE_KRIPKE_EPOCH_MINUTES * 60.0;
+        // 40 still epochs.
+        let rows: Vec<(f64, f64, f64, f64)> = (0..40)
+            .flat_map(|i| {
+                let t = start + i as f64 * epoch_secs;
+                vec![(t, 0.0, 0.0, 1.0), (t + 1.0, 0.0, 0.0, 1.0)]
+            })
+            .collect();
+        // HR pattern that would normally produce REM (second half high HR).
+        let hr_features: Vec<EpochHrFeature> = (0..40)
+            .map(|i| EpochHrFeature {
+                ts: start + i as f64 * epoch_secs + 30.0,
+                hr_bpm: if i < 20 { 55.0 } else { 75.0 },
+            })
+            .collect();
+
+        let input = make_input(start, start + 40.0 * epoch_secs);
+        // resp_available=false → no REM should appear.
+        let output = stage_sleep_four_class(&input, &rows, &hr_features, false);
+
+        let rem_count = output.epochs.iter().filter(|e| e.stage == "rem").count();
+        assert_eq!(
+            rem_count, 0,
+            "resp_available=false must suppress all REM classification"
+        );
     }
 }

@@ -180,6 +180,11 @@ pub enum DataPacketBodySummary {
         led2: Option<u16>,
         resp_raw: Option<u16>,
         sig_quality: Option<u16>,
+        /// Second gravity triplet (bytes 49–60 in the V24 body). Present only
+        /// when data.len() >= 60.
+        gravity2_x: Option<f32>,
+        gravity2_y: Option<f32>,
+        gravity2_z: Option<f32>,
         warnings: Vec<String>,
     },
 }
@@ -695,6 +700,9 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
                 led2: None,
                 resp_raw: None,
                 sig_quality: None,
+                gravity2_x: None,
+                gravity2_y: None,
+                gravity2_z: None,
                 warnings: warnings.clone(),
             }),
             warnings,
@@ -718,6 +726,10 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
     let gravity_y = read_f32_le(data, 37);
     let gravity_z = read_f32_le(data, 41);
     let skin_contact = data.get(48).copied();
+    // Second gravity triplet at bytes 49–60 (present only when payload is long enough).
+    let gravity2_x = if data.len() >= 60 { read_f32_le(data, 49) } else { None };
+    let gravity2_y = if data.len() >= 60 { read_f32_le(data, 53) } else { None };
+    let gravity2_z = if data.len() >= 60 { read_f32_le(data, 57) } else { None };
     let spo2_red = read_u16_le(data, 61);
     let spo2_ir = read_u16_le(data, 63);
     let skin_temp_raw = read_u16_le(data, 65);
@@ -745,6 +757,9 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
             led2,
             resp_raw,
             sig_quality,
+            gravity2_x,
+            gravity2_y,
+            gravity2_z,
             warnings: warnings.clone(),
         }),
         warnings,

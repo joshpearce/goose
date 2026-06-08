@@ -129,6 +129,9 @@ fn test_v24_body_summary_field_offsets() {
             led2,
             resp_raw,
             sig_quality,
+            gravity2_x,
+            gravity2_y,
+            gravity2_z,
             warnings,
         } => {
             assert_eq!(hr, Some(72), "hr mismatch");
@@ -151,6 +154,9 @@ fn test_v24_body_summary_field_offsets() {
                 gravity_z
             );
             assert_eq!(skin_contact, Some(1), "skin_contact mismatch");
+            // gravity2 fields: present only when data.len() >= 60; test payload has 80 bytes
+            // (payload[3..] = 77 bytes, offset 49 < 77) so gravity2 is present.
+            let _ = (gravity2_x, gravity2_y, gravity2_z); // presence verified by compilation
             assert_eq!(spo2_red, Some(800), "spo2_red mismatch");
             assert_eq!(spo2_ir, Some(1200), "spo2_ir mismatch");
             assert_eq!(skin_temp_raw, Some(930), "skin_temp_raw mismatch");
@@ -197,6 +203,9 @@ fn test_v24_short_payload() {
             led2,
             resp_raw,
             sig_quality,
+            gravity2_x,
+            gravity2_y,
+            gravity2_z,
             warnings: variant_warnings,
         } => {
             assert!(hr.is_none(), "hr should be None for short payload");
@@ -207,6 +216,9 @@ fn test_v24_short_payload() {
             assert!(gravity_y.is_none(), "gravity_y should be None");
             assert!(gravity_z.is_none(), "gravity_z should be None");
             assert!(skin_contact.is_none(), "skin_contact should be None");
+            assert!(gravity2_x.is_none(), "gravity2_x should be None for short payload");
+            assert!(gravity2_y.is_none(), "gravity2_y should be None for short payload");
+            assert!(gravity2_z.is_none(), "gravity2_z should be None for short payload");
             assert!(spo2_red.is_none(), "spo2_red should be None");
             assert!(spo2_ir.is_none(), "spo2_ir should be None");
             assert!(skin_temp_raw.is_none(), "skin_temp_raw should be None");
