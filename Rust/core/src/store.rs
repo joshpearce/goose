@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 15;
+pub const CURRENT_SCHEMA_VERSION: i64 = 16;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -621,6 +621,55 @@ pub struct GravityRow {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Spo2SampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub red: i64,
+    pub ir: i64,
+    pub contact: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SkinTempSampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub raw: i64,
+    pub contact: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RespSampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub raw: i64,
+    pub contact: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SigQualitySampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub quality: i64,
+    pub contact: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct V24BiometricBatch {
+    pub spo2: Vec<(f64, i64, i64, i64)>,       // (ts, red, ir, contact)
+    pub skin_temp: Vec<(f64, i64, i64)>,        // (ts, raw, contact)
+    pub resp: Vec<(f64, i64, i64)>,             // (ts, raw, contact)
+    pub sig_quality: Vec<(f64, i64, i64)>,      // (ts, quality, contact)
+}
+
+#[derive(Debug, Clone)]
+pub struct V24BiometricWindow {
+    pub spo2: Vec<Spo2SampleRow>,
+    pub skin_temp: Vec<SkinTempSampleRow>,
+    pub resp: Vec<RespSampleRow>,
+    pub sig_quality: Vec<SigQualitySampleRow>,
 }
 
 #[derive(Debug, Clone)]
@@ -1427,6 +1476,51 @@ impl GooseStore {
 
             CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts);
 
+            CREATE TABLE IF NOT EXISTS spo2_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                red INTEGER NOT NULL,
+                ir INTEGER NOT NULL,
+                contact INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_spo2_samples_device_ts ON spo2_samples(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS skin_temp_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                raw INTEGER NOT NULL,
+                contact INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_skin_temp_samples_device_ts ON skin_temp_samples(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS resp_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                raw INTEGER NOT NULL,
+                contact INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_resp_samples_device_ts ON resp_samples(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS sig_quality_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                quality INTEGER NOT NULL,
+                contact INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_sig_quality_samples_device_ts ON sig_quality_samples(device_id, ts);
+
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (1);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (2);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (3);
@@ -1442,7 +1536,8 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (13);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (14);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (15);
-            PRAGMA user_version = 15;
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (16);
+            PRAGMA user_version = 16;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -6261,6 +6356,111 @@ impl GooseStore {
         rows.collect::<Result<Vec<_>, _>>()
             .map_err(GooseError::from)
     }
+
+    pub fn insert_v24_biometric_batch(
+        &self,
+        device_id: &str,
+        batch: &V24BiometricBatch,
+    ) -> GooseResult<()> {
+        validate_required("device_id", device_id)?;
+        self.immediate_transaction(|store| {
+            for &(ts, red, ir, contact) in &batch.spo2 {
+                store.conn.execute(
+                    "INSERT OR IGNORE INTO spo2_samples (device_id, ts, red, ir, contact) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    params![device_id, ts, red, ir, contact],
+                )?;
+            }
+            for &(ts, raw, contact) in &batch.skin_temp {
+                store.conn.execute(
+                    "INSERT OR IGNORE INTO skin_temp_samples (device_id, ts, raw, contact) VALUES (?1, ?2, ?3, ?4)",
+                    params![device_id, ts, raw, contact],
+                )?;
+            }
+            for &(ts, raw, contact) in &batch.resp {
+                store.conn.execute(
+                    "INSERT OR IGNORE INTO resp_samples (device_id, ts, raw, contact) VALUES (?1, ?2, ?3, ?4)",
+                    params![device_id, ts, raw, contact],
+                )?;
+            }
+            for &(ts, quality, contact) in &batch.sig_quality {
+                store.conn.execute(
+                    "INSERT OR IGNORE INTO sig_quality_samples (device_id, ts, quality, contact) VALUES (?1, ?2, ?3, ?4)",
+                    params![device_id, ts, quality, contact],
+                )?;
+            }
+            Ok(())
+        })
+    }
+
+    pub fn v24_biometric_samples_between(
+        &self,
+        device_id: &str,
+        ts_start: f64,
+        ts_end: f64,
+    ) -> GooseResult<V24BiometricWindow> {
+        validate_required("device_id", device_id)?;
+        if ts_end < ts_start {
+            return Err(GooseError::message("ts_end must be >= ts_start"));
+        }
+        let spo2 = {
+            let mut stmt = self.conn.prepare(
+                "SELECT device_id, ts, red, ir, contact FROM spo2_samples WHERE device_id=?1 AND ts>=?2 AND ts<?3 ORDER BY ts",
+            )?;
+            stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+                Ok(Spo2SampleRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    red: row.get(2)?,
+                    ir: row.get(3)?,
+                    contact: row.get(4)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+        };
+        let skin_temp = {
+            let mut stmt = self.conn.prepare(
+                "SELECT device_id, ts, raw, contact FROM skin_temp_samples WHERE device_id=?1 AND ts>=?2 AND ts<?3 ORDER BY ts",
+            )?;
+            stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+                Ok(SkinTempSampleRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    raw: row.get(2)?,
+                    contact: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+        };
+        let resp = {
+            let mut stmt = self.conn.prepare(
+                "SELECT device_id, ts, raw, contact FROM resp_samples WHERE device_id=?1 AND ts>=?2 AND ts<?3 ORDER BY ts",
+            )?;
+            stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+                Ok(RespSampleRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    raw: row.get(2)?,
+                    contact: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+        };
+        let sig_quality = {
+            let mut stmt = self.conn.prepare(
+                "SELECT device_id, ts, quality, contact FROM sig_quality_samples WHERE device_id=?1 AND ts>=?2 AND ts<?3 ORDER BY ts",
+            )?;
+            stmt.query_map(params![device_id, ts_start, ts_end], |row| {
+                Ok(SigQualitySampleRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    quality: row.get(2)?,
+                    contact: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+        };
+        Ok(V24BiometricWindow { spo2, skin_temp, resp, sig_quality })
+    }
 }
 
 impl GooseStore {
@@ -7845,6 +8045,10 @@ pub fn known_tables() -> &'static [&'static str] {
         "debug_commands",
         "debug_events",
         "gravity",
+        "spo2_samples",
+        "skin_temp_samples",
+        "resp_samples",
+        "sig_quality_samples",
     ]
 }
 
@@ -7852,4 +8056,100 @@ fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hex::encode(hasher.finalize())
+}
+
+#[cfg(test)]
+mod v24_biometric_tests {
+    use super::*;
+
+    fn make_store() -> GooseStore {
+        GooseStore::open_in_memory().expect("failed to open in-memory store")
+    }
+
+    fn make_batch() -> V24BiometricBatch {
+        V24BiometricBatch {
+            spo2: vec![(1000.0_f64, 60000_i64, 55000_i64, 1_i64)],
+            skin_temp: vec![(1000.0_f64, 930_i64, 1_i64)],
+            resp: vec![(1000.0_f64, 12345_i64, 1_i64)],
+            sig_quality: vec![(1000.0_f64, 3_i64, 1_i64)],
+        }
+    }
+
+    #[test]
+    fn test_insert_v24_batch_roundtrip() {
+        let store = make_store();
+        let batch = make_batch();
+
+        store.insert_v24_biometric_batch("device-A", &batch).unwrap();
+
+        let window = store.v24_biometric_samples_between("device-A", 0.0, 2000.0).unwrap();
+
+        assert_eq!(window.spo2.len(), 1);
+        assert_eq!(window.spo2[0].ts, 1000.0);
+        assert_eq!(window.spo2[0].red, 60000);
+        assert_eq!(window.spo2[0].ir, 55000);
+        assert_eq!(window.spo2[0].contact, 1);
+        assert_eq!(window.spo2[0].device_id, "device-A");
+
+        assert_eq!(window.skin_temp.len(), 1);
+        assert_eq!(window.skin_temp[0].ts, 1000.0);
+        assert_eq!(window.skin_temp[0].raw, 930);
+        assert_eq!(window.skin_temp[0].contact, 1);
+
+        assert_eq!(window.resp.len(), 1);
+        assert_eq!(window.resp[0].ts, 1000.0);
+        assert_eq!(window.resp[0].raw, 12345);
+        assert_eq!(window.resp[0].contact, 1);
+
+        assert_eq!(window.sig_quality.len(), 1);
+        assert_eq!(window.sig_quality[0].ts, 1000.0);
+        assert_eq!(window.sig_quality[0].quality, 3);
+        assert_eq!(window.sig_quality[0].contact, 1);
+    }
+
+    #[test]
+    fn test_insert_v24_batch_idempotent() {
+        let store = make_store();
+        let batch = make_batch();
+
+        // Insert twice — second INSERT OR IGNORE should be a no-op.
+        store.insert_v24_biometric_batch("device-A", &batch).unwrap();
+        store.insert_v24_biometric_batch("device-A", &batch).unwrap();
+
+        let window = store.v24_biometric_samples_between("device-A", 0.0, 2000.0).unwrap();
+
+        // Each table should have exactly 1 row.
+        assert_eq!(window.spo2.len(), 1, "spo2 should have exactly 1 row after idempotent insert");
+        assert_eq!(window.skin_temp.len(), 1, "skin_temp should have exactly 1 row");
+        assert_eq!(window.resp.len(), 1, "resp should have exactly 1 row");
+        assert_eq!(window.sig_quality.len(), 1, "sig_quality should have exactly 1 row");
+    }
+
+    #[test]
+    fn test_insert_v24_batch_contact_zero() {
+        let store = make_store();
+        let batch = V24BiometricBatch {
+            spo2: vec![(2000.0_f64, 50000_i64, 45000_i64, 0_i64)],
+            skin_temp: vec![(2000.0_f64, 800_i64, 0_i64)],
+            resp: vec![(2000.0_f64, 9999_i64, 0_i64)],
+            sig_quality: vec![(2000.0_f64, 0_i64, 0_i64)],
+        };
+
+        store.insert_v24_biometric_batch("device-A", &batch).unwrap();
+
+        let window = store.v24_biometric_samples_between("device-A", 0.0, 3000.0).unwrap();
+
+        // Rows with contact=0 are stored; downstream gating is consumer responsibility.
+        assert_eq!(window.spo2.len(), 1);
+        assert_eq!(window.spo2[0].contact, 0);
+
+        assert_eq!(window.skin_temp.len(), 1);
+        assert_eq!(window.skin_temp[0].contact, 0);
+
+        assert_eq!(window.resp.len(), 1);
+        assert_eq!(window.resp[0].contact, 0);
+
+        assert_eq!(window.sig_quality.len(), 1);
+        assert_eq!(window.sig_quality[0].contact, 0);
+    }
 }
