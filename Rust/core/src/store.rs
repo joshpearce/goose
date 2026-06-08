@@ -694,7 +694,9 @@ pub struct BatteryRow {
 const STREAM_ALLOWLIST: &[&str] = &[
     "battery",
     "events",
+    "exercise_sessions",
     "gravity",
+    "gravity2_samples",
     "hr_samples",
     "resp_samples",
     "rr_intervals",
@@ -1553,6 +1555,7 @@ impl GooseStore {
                 x REAL NOT NULL,
                 y REAL NOT NULL,
                 z REAL NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
                 UNIQUE(device_id, ts)
             );
@@ -1618,6 +1621,7 @@ impl GooseStore {
                 hrmax_source TEXT NOT NULL DEFAULT 'fallback',
                 rhr_source TEXT NOT NULL DEFAULT 'daily_p10',
                 avg_hrr_pct REAL NOT NULL DEFAULT 0.0,
+                synced INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
                 UNIQUE(device_id, start_ts)
             );
@@ -7089,7 +7093,7 @@ impl GooseStore {
 
     fn ensure_synced_columns(&self) -> GooseResult<()> {
         let synced_ddl = "synced INTEGER NOT NULL DEFAULT 0";
-        for table in &["spo2_samples", "skin_temp_samples", "resp_samples", "gravity"] {
+        for table in &["spo2_samples", "skin_temp_samples", "resp_samples", "gravity", "gravity2_samples", "exercise_sessions"] {
             let columns = self.table_columns_unchecked(table)?;
             if !columns.contains("synced") {
                 self.conn.execute(

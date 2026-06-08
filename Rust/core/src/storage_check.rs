@@ -930,7 +930,7 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
     );
     columns.insert(
         "gravity2_samples",
-        vec!["device_id", "ts", "x", "y", "z", "created_at"],
+        vec!["device_id", "ts", "x", "y", "z", "synced", "created_at"],
     );
     columns.insert(
         "hr_samples",
@@ -976,6 +976,7 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
             "hrmax_source",
             "rhr_source",
             "avg_hrr_pct",
+            "synced",
             "created_at",
         ],
     );
