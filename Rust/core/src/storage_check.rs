@@ -920,6 +920,22 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
         "gravity",
         vec!["device_id", "ts", "x", "y", "z", "created_at"],
     );
+    columns.insert(
+        "spo2_samples",
+        vec!["device_id", "ts", "red", "ir", "contact", "created_at"],
+    );
+    columns.insert(
+        "skin_temp_samples",
+        vec!["device_id", "ts", "raw", "contact", "created_at"],
+    );
+    columns.insert(
+        "resp_samples",
+        vec!["device_id", "ts", "raw", "contact", "created_at"],
+    );
+    columns.insert(
+        "sig_quality_samples",
+        vec!["device_id", "ts", "quality", "contact", "created_at"],
+    );
 
     for table in known_tables() {
         debug_assert!(columns.contains_key(table));
