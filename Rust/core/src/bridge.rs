@@ -191,6 +191,9 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "activity.list_sessions_with_metrics",
     "activity.metrics_for_session_in_window",
     "activity.update_session",
+    "biometrics.insert_v24_batch",
+    "biometrics.spo2_from_raw",
+    "biometrics.v24_between",
     "calibration.apply",
     "calibration.evaluate_dataset",
     "calibration.evaluate_stored_labels",
@@ -2687,6 +2690,18 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(ewma_baseline_update_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.insert_v24_batch" => request_args::<InsertV24BatchArgs>(&request)
+            .and_then(insert_v24_biometric_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.v24_between" => request_args::<V24BetweenArgs>(&request)
+            .and_then(v24_biometric_samples_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.spo2_from_raw" => request_args::<Spo2FromRawArgs>(&request)
+            .and_then(spo2_from_raw_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "store.gravity_rows_between" => request_args::<GravityRowsBetweenArgs>(&request)
             .and_then(gravity_rows_between_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -3566,6 +3581,176 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
         .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
         .collect();
     Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
+// V24 biometric bridge (biometrics.insert_v24_batch / biometrics.v24_between /
+// biometrics.spo2_from_raw)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct Spo2RawArg {
+    ts: f64,
+    red: u16,
+    ir: u16,
+    contact: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct SkinTempRawArg {
+    ts: f64,
+    raw: u16,
+    contact: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct RespRawArg {
+    ts: f64,
+    raw: u16,
+    contact: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct SigQualityArg {
+    ts: f64,
+    quality: u16,
+    contact: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct InsertV24BatchArgs {
+    database_path: String,
+    device_id: String,
+    #[serde(default)]
+    spo2: Vec<Spo2RawArg>,
+    #[serde(default)]
+    skin_temp: Vec<SkinTempRawArg>,
+    #[serde(default)]
+    resp: Vec<RespRawArg>,
+    #[serde(default)]
+    sig_quality: Vec<SigQualityArg>,
+}
+
+#[derive(Debug, Deserialize)]
+struct V24BetweenArgs {
+    database_path: String,
+    device_id: String,
+    start_ts: f64,
+    end_ts: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct Spo2FromRawArgs {
+    red: u16,
+    ir: u16,
+}
+
+fn insert_v24_biometric_batch_bridge(
+    args: InsertV24BatchArgs,
+) -> GooseResult<serde_json::Value> {
+    use crate::store::V24BiometricBatch;
+
+    let store = open_bridge_store(&args.database_path)?;
+    let mut warnings: Vec<String> = Vec::new();
+
+    // Build SpO2 tuples with plausibility gate
+    let spo2_tuples: Vec<(f64, i64, i64, i64)> = args
+        .spo2
+        .iter()
+        .filter_map(|row| {
+            match spo2_from_raw_uncalibrated(row.red, row.ir) {
+                Some(_) => Some((row.ts, row.red as i64, row.ir as i64, row.contact)),
+                None => {
+                    warnings.push(format!(
+                        "spo2_plausibility_reject: ts={} red={} ir={} (out of range [70,100]%)",
+                        row.ts, row.red, row.ir
+                    ));
+                    None
+                }
+            }
+        })
+        .collect();
+
+    // Build skin_temp tuples with plausibility gate
+    let skin_temp_tuples: Vec<(f64, i64, i64)> = args
+        .skin_temp
+        .iter()
+        .filter_map(|row| {
+            match skin_temp_celsius_from_raw(row.raw) {
+                Some(_) => Some((row.ts, row.raw as i64, row.contact)),
+                None => {
+                    warnings.push(format!(
+                        "skin_temp_plausibility_reject: ts={} raw={} (celsius outside [25,40])",
+                        row.ts, row.raw
+                    ));
+                    None
+                }
+            }
+        })
+        .collect();
+
+    // Build resp tuples (raw u16 is always <= 65535; gate is a no-op by type)
+    let resp_tuples: Vec<(f64, i64, i64)> = args
+        .resp
+        .iter()
+        .map(|row| (row.ts, row.raw as i64, row.contact))
+        .collect();
+
+    // Build sig_quality tuples (no plausibility gate — quality is a dimensionless score)
+    let sig_quality_tuples: Vec<(f64, i64, i64)> = args
+        .sig_quality
+        .iter()
+        .map(|row| (row.ts, row.quality as i64, row.contact))
+        .collect();
+
+    let batch = V24BiometricBatch {
+        spo2: spo2_tuples,
+        skin_temp: skin_temp_tuples,
+        resp: resp_tuples,
+        sig_quality: sig_quality_tuples,
+    };
+
+    store.insert_v24_biometric_batch(&args.device_id, &batch)?;
+
+    Ok(json!({"inserted": true, "warnings": warnings}))
+}
+
+fn v24_biometric_samples_between_bridge(
+    args: V24BetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let window =
+        store.v24_biometric_samples_between(&args.device_id, args.start_ts, args.end_ts)?;
+
+    let spo2: Vec<serde_json::Value> = window
+        .spo2
+        .iter()
+        .map(|r| json!({"ts": r.ts, "red": r.red, "ir": r.ir, "contact": r.contact}))
+        .collect();
+    let skin_temp: Vec<serde_json::Value> = window
+        .skin_temp
+        .iter()
+        .map(|r| json!({"ts": r.ts, "raw": r.raw, "contact": r.contact}))
+        .collect();
+    let resp: Vec<serde_json::Value> = window
+        .resp
+        .iter()
+        .map(|r| json!({"ts": r.ts, "raw": r.raw, "contact": r.contact}))
+        .collect();
+    let sig_quality: Vec<serde_json::Value> = window
+        .sig_quality
+        .iter()
+        .map(|r| json!({"ts": r.ts, "quality": r.quality, "contact": r.contact}))
+        .collect();
+
+    Ok(json!({"spo2": spo2, "skin_temp": skin_temp, "resp": resp, "sig_quality": sig_quality}))
+}
+
+fn spo2_from_raw_bridge(args: Spo2FromRawArgs) -> GooseResult<serde_json::Value> {
+    match spo2_from_raw_uncalibrated(args.red, args.ir) {
+        Some(spo2_pct) => Ok(json!({"spo2_pct": spo2_pct, "quality_flag": "uncalibrated"})),
+        None => Ok(json!({"spo2_pct": null, "quality_flag": "uncalibrated", "rejected": true})),
+    }
 }
 
 // ---------------------------------------------------------------------------
