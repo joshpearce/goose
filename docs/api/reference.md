@@ -587,7 +587,7 @@ Every caller creates its own `GooseRustBridge` instance — the bridge is statel
 
 ### Method Catalogue
 
-The bridge supports 121 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
+The bridge supports 140 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
 
 #### Core / Discovery
 
@@ -627,8 +627,12 @@ The bridge supports 121 RPC methods at compile time. The full live list is avail
 | `metrics.goose_sleep_v0` | `SleepInput` fields | Run sleep scoring algorithm v0 |
 | `metrics.goose_sleep_v1` | `SleepV1Input` fields | Run sleep staging algorithm v1 |
 | `metrics.goose_strain_v0` | `StrainInput` fields | Run strain scoring algorithm v0 |
+| `metrics.goose_strain_v1` | `StrainInput` fields | Run strain scoring algorithm v1 |
 | `metrics.goose_recovery_v0` | `RecoveryInput` fields | Run recovery scoring algorithm v0 |
+| `metrics.goose_recovery_v1` | `database_path`, `device_id`, `date_key`, `hrv_rmssd_ms: f64`, `resting_hr_bpm: f64` | Run recovery scoring algorithm v1 (EWMA baseline-relative) |
 | `metrics.goose_stress_v0` | `StressInput` fields | Run stress scoring algorithm v0 |
+| `metrics.goose_readiness_v1` | `daily_strain: [(f64, f64)]` | Compute readiness level using ACWR + Foster training monotony. Requires ≥28 entries ordered chronologically (oldest first). Returns `acwr`, `acwr_zone`, `monotony`, `monotony_high`, `level`, `insufficient_data`. |
+| `metrics.fit_strain_denominator` | `FitStrainDenominatorArgs` fields | Fit the strain denominator from historical data |
 | `metrics.built_in_definitions` | _(none)_ | List all built-in algorithm definitions |
 | `metrics.reference_definitions` | _(none)_ | List all reference algorithm definitions |
 | `metrics.default_preferences` | _(none)_ | Get the default algorithm preferences |
@@ -648,6 +652,7 @@ The bridge supports 121 RPC methods at compile time. The full live list is avail
 | `metrics.window_features` | `database_path`, `start`, `end` | Compute metric window features |
 | `metrics.recovery_score_from_features` | `database_path`, `start`, `end` | Compute recovery score from stored features |
 | `metrics.sleep_score_from_features` | `database_path`, `start`, `end` | Compute sleep score from stored features |
+| `metrics.sleep_staging` | `database_path`, `device_id`, `sleep_start_ts`, `sleep_end_ts`, `hr_features?` | Run sleep staging on a completed sleep window |
 | `metrics.strain_score_from_features` | `database_path`, `start`, `end` | Compute strain score from stored features |
 | `metrics.stress_score_from_features` | `database_path`, `start`, `end` | Compute stress score from stored features |
 | `metrics.recovery_sensor_discovery` | `database_path`, `start`, `end` | Discover which recovery sensors are available |
@@ -687,6 +692,48 @@ The bridge supports 121 RPC methods at compile time. The full live list is avail
 | `metrics.respiratory_rate_capture_validation` | `database_path`, `start`, `end` | Validate respiratory rate capture quality |
 | `metrics.oxygen_saturation_capture_validation` | `database_path`, `start`, `end` | Validate SpO2 capture quality |
 | `metrics.temperature_capture_validation` | `database_path`, `start`, `end` | Validate skin temperature capture quality |
+
+#### Biometrics (v5.0)
+
+These methods operate on the V24 biometric table, which stores raw-ADC SpO2, skin temperature, respiratory rate, and signal quality samples captured from WHOOP hardware.
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `biometrics.insert_v24_batch` | `database_path`, `device_id`, `spo2: [{ts, red, ir, contact}]`, `skin_temp: [{ts, raw, contact}]`, `resp: [{ts, raw, contact}]`, `sig_quality: [{ts, quality, contact}]` | Insert a batch of V24 biometric samples. Each stream is optional (defaults to empty). SpO2 and skin temperature rows are passed through a plausibility gate before insertion; rejected rows are returned in `warnings`. Returns `{"inserted": true, "warnings": [...]}`. |
+| `biometrics.v24_between` | `database_path`, `device_id`, `start_ts: f64`, `end_ts: f64` | Query all V24 biometric streams for a device within a Unix-seconds time window. Returns `{"spo2": [...], "skin_temp": [...], "resp": [...], "sig_quality": [...]}`. |
+| `biometrics.spo2_from_raw` | `red: u16`, `ir: u16` | Compute uncalibrated SpO2 percentage from raw red and IR photodiode ADC counts. Returns `{"spo2_pct": float|null, "quality_flag": "uncalibrated", "rejected"?: true}`. No database access required. |
+
+#### Exercise Detection (v5.0)
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `exercise.detect_sessions` | `database_path`, `device_id`, `hr_samples: [{ts: f64, bpm: u8}]`, `gravity_rows: [{ts, x, y, z}]`, `profile: {resting_hr?, max_hr?, age?, sex?, weight_kg?, height_cm?, daily_hr_p10?}` | Detect exercise sessions from HR and gravity data using the exercise detection algorithm. Detected sessions are inserted into the database in a single transaction. Returns `{"sessions_detected": int, "sessions_inserted": int, "warnings": [...]}`. |
+| `exercise.sessions_between` | `database_path`, `device_id`, `ts_start: f64`, `ts_end: f64` | Query persisted exercise sessions for a device within a Unix-seconds time window. Returns `{"sessions": [...]}`. |
+
+#### Store — Baselines & Gravity (v5.0)
+
+Methods in the `store` namespace provide direct access to EWMA baseline state and raw gravity tables. The `gravity2` variants write to and read from the second-generation gravity schema (`gravity2` table).
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `store.ewma_baseline_fold_history` | `database_path` | Recompute the EWMA baseline (HRV + resting HR) by folding the full stored history. Returns `{"hrv": {mean, variance, night_count, trust, is_ready}, "resting_hr": {...}}`. |
+| `store.ewma_baseline_update` | `database_path`, `date_key: string`, `hrv_rmssd: f64`, `rhr_bpm: f64` | Append a nightly HRV/resting-HR observation to the EWMA baseline history. Returns `{"skipped": bool}` (skipped if a row for that date already exists). |
+| `store.insert_gravity_rows` | `database_path`, `device_id`, `rows: [{ts, x, y, z}]` | Insert gravity (v1) samples into the `gravity_rows` table. |
+| `store.gravity_rows_between` | `database_path`, `device_id`, `ts_start: f64`, `ts_end: f64` | Query gravity (v1) samples within a Unix-seconds time window. Returns `{"rows": [{ts, x, y, z}]}`. |
+| `store.insert_gravity2_batch` | `database_path`, `device_id`, `rows: [{ts, x, y, z}]` | Insert gravity second-generation triplet samples into the `gravity2` table. Uses the same `InsertGravityRowsArgs` shape as `store.insert_gravity_rows`. |
+| `store.gravity2_samples_between` | `database_path`, `device_id`, `ts_start: f64`, `ts_end: f64` | Query gravity2 samples within a Unix-seconds time window. Returns `{"rows": [{ts, x, y, z}]}`. |
+
+#### Sync (v5.0)
+
+Methods to support server upload: mark rows as uploaded, retrieve pending rows, and backfill decoded streams from raw captured frames.
+
+Stream names passed to `sync.mark_synced` and `sync.rows_pending_upload` are validated against an allowlist in the store layer.
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `sync.mark_synced` | `database_path`, `stream: string`, `row_ids: [i64]` | Mark specific rows in a stream table as `synced=1` by rowid. Returns `{"marked": int}`. |
+| `sync.rows_pending_upload` | `database_path`, `stream: string`, `limit: i64` | Return up to `limit` rows from a stream table where `synced=0`, ordered by `ts`. Returns `{"rows": [...]}`. |
+| `sync.backfill_streams` | `database_path`, `device_id`, `start_ts: f64`, `end_ts: f64` | Extract HR, RR, event, and battery rows from `decoded_frames` and insert them into the corresponding stream tables for the given device and time window. Returns `{"hr_inserted": int, "rr_inserted": int, "events_inserted": int, "battery_inserted": int}`. |
 
 #### Capture
 
@@ -744,7 +791,7 @@ The bridge supports 121 RPC methods at compile time. The full live list is avail
 | `calibration.import_labels` | `database_path`, `labels: [...]` | Import calibration labels |
 | `calibration.list_labels` | `database_path`, `start`, `end` | List stored calibration labels |
 
-#### Overnight / Sync
+#### Overnight / Upload
 
 | Method | Key Args | Description |
 |--------|----------|-------------|

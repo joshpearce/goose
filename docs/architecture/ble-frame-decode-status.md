@@ -18,7 +18,7 @@ Complete inventory of all known WHOOP BLE packet types, subtypes, and fields —
 | 38 (0x26) | PUFFIN_COMMAND_RESPONSE | RAW_ONLY | packet_type only | full response structure |
 | 40 (0x28) | REALTIME_DATA | PARTIAL | packet_k, domain, timestamp, body_summary (K10/K17/K21) | other K-values, V24 fields |
 | 43 (0x2B) | REALTIME_RAW_DATA | PARTIAL | packet_k, domain, timestamp, body_summary (K10/K17/K21) | other K-values |
-| 47 (0x2F) | HISTORICAL_DATA | PARTIAL | packet_k, domain, timestamp, hr_marker; body_summary (K9/K12/K18/K24/K10/K21/K17) | V24 biometric fields (hr, rr, spo2, gravity, temp, resp, skin_contact) |
+| 47 (0x2F) | HISTORICAL_DATA | PARTIAL | packet_k, domain, timestamp, hr_marker; body_summary (K9/K12/K18/K24/K10/K21/K17); V24 biometrics: spo2, skin_temp, resp, sig_quality, skin_contact (Phase 27, v5.0) | RR from V24 direct fields; ppg_flags; ambient/LED channels; unmapped bytes 30–32, 45–47 |
 | 48 (0x30) | EVENT | PARTIAL | event_id, event_name, timestamp_s, timestamp_subsec | all event payload structures |
 | 49 (0x31) | METADATA | RAW_ONLY | packet_type only | full metadata structure (offload control) |
 | 50 (0x32) | CONSOLE_LOGS | RAW_ONLY | packet_type only | log content parsing |
@@ -82,19 +82,19 @@ Cross-reference: `my-whoop/re/verify_v24.py::decode_v24()` · `tigercraft4/noop`
 | **gravity_y** | 37–40 | 44–47 | f32 LE | CANDIDATE | g units |
 | **gravity_z** | 41–44 | 48–51 | f32 LE | CANDIDATE | g units |
 | unmapped | 45–47 | 52–54 | ??? | NOT_DECODED | unknown |
-| **skin_contact** | 48 | 55 | u8 | NOT_DECODED | 0 = off-wrist, non-0 = on-wrist |
+| **skin_contact** | 48 | 55 | u8 | **DECODED/GATED** | 0 = off-wrist, non-0 = on-wrist; stored as `contact` column in all V24 tables; contact=0 samples stored but excluded from unit conversion |
 | **gravity2_x** | 49–52 | 56–59 | f32 LE | NOT_DECODED | second gravity triplet (noop confirmed) |
 | **gravity2_y** | 53–56 | 60–63 | f32 LE | NOT_DECODED | second gravity triplet |
 | **gravity2_z** | 57–60 | 64–67 | f32 LE | NOT_DECODED | second gravity triplet |
 | unmapped | 61–67 | 68–74 | ??? | NOT_DECODED | unknown (potential step counter per my-whoop/re/analyze_v24_steps.py) |
-| **spo2_red** | 61–62 | 68–69 | u16 LE | NOT_DECODED | SpO2 red channel raw ADC |
-| **spo2_ir** | 63–64 | 70–71 | u16 LE | NOT_DECODED | SpO2 IR channel raw ADC |
-| **skin_temp_raw** | 65–66 | 72–73 | u16 LE | CANDIDATE | thermistor raw ADC |
+| **spo2_red** | 61–62 | 68–69 | u16 LE | **DECODED** | SpO2 red channel raw ADC — `spo2_samples.red` |
+| **spo2_ir** | 63–64 | 70–71 | u16 LE | **DECODED** | SpO2 IR channel raw ADC — `spo2_samples.ir` |
+| **skin_temp_raw** | 65–66 | 72–73 | u16 LE | **DECODED** | thermistor raw ADC — `skin_temp_samples.raw` |
 | ambient | 67–68 | 74–75 | u16 LE | NOT_DECODED | ambient light raw ADC |
 | led_drive_1 | 69–70 | 76–77 | u16 LE | NOT_DECODED | LED drive current 1 |
 | led_drive_2 | 71–72 | 78–79 | u16 LE | NOT_DECODED | LED drive current 2 |
-| **resp_raw** | 73–74 | 80–81 | u16 LE | NOT_DECODED | respiratory movement raw ADC |
-| **sig_quality** | 75–76 | 82–83 | u16 LE | NOT_DECODED | firmware signal quality score |
+| **resp_raw** | 73–74 | 80–81 | u16 LE | **DECODED** | respiratory movement raw ADC — `resp_samples.raw` |
+| **sig_quality** | 75–76 | 82–83 | u16 LE | **DECODED** | firmware signal quality score — `sig_quality_samples.quality` |
 
 > **Note on gravity**: V24 gravity fields are already in **g units** (f32). No LSB conversion needed. This is different from K=10/K=21 raw motion packets (type 43), where axes are i16 raw values requiring `÷ IMU_LSB_PER_G` conversion.
 
@@ -199,11 +199,11 @@ From `openwhoop_reference.rs` — applies to Gen4 and Gen5 unless noted.
 | RR intervals | ✓ | ✓ | `r17_optical_or_labrador_filtered` | **CANDIDATE** | Treated as preliminary; Phase 22 added segment-aware RMSSD |
 | IMU | ✓ | ✓ | `raw_motion_k10`, `raw_motion_k21` | **MATCHED** | K10/K21 raw motion summaries exposed |
 | PPG | ✓ | ✓ | `r17_optical_or_labrador_filtered` | **CANDIDATE** | Optical stream kept as r17; no dedicated PPG field |
-| Raw SpO2 red/IR | ✓ | ✓ | — | **NOT_DECODED** | Phase 27 target |
-| Raw skin temp | ✓ | ✓ | `event_temperature_level` | **CANDIDATE** | metric_readiness blocks until units verified |
-| Respiratory raw | ✓ | ✓ | — | **NOT_DECODED** | metric_readiness marks as not implemented; Phase 27 target |
-| Signal quality | ✓ | ✓ | — | **NOT_DECODED** | Phase 27 target |
-| Skin contact | ✓ | ✓ | — | **NOT_DECODED** | Phase 27 target (required gate for all biometrics) |
+| Raw SpO2 red/IR | ✓ | ✓ | `spo2_samples` | **DECODED** | Phase 27 (v5.0) — `insert_v24_biometric_batch` |
+| Raw skin temp | ✓ | ✓ | `skin_temp_samples` | **DECODED** | Phase 27 (v5.0) — direct V24 field at data[65] |
+| Respiratory raw | ✓ | ✓ | `resp_samples` | **DECODED** | Phase 27 (v5.0) — data[73] |
+| Signal quality | ✓ | ✓ | `sig_quality_samples` | **DECODED** | Phase 27 (v5.0) |
+| Skin contact | ✓ | ✓ | `contact` column (all V24 tables) | **DECODED/GATED** | Phase 27 (v5.0) — gate: contact=0 rows stored but excluded from unit conversion |
 | Gravity | ✓ | ✓ | `raw_motion_k10`, `raw_motion_k21` | **CONFLICTING** | Goose exposes signed i16 axes; OpenWhoop/noop store derived f32 gravity vector |
 | Gen5 SpO2 % | ✗ | ✓ | — | **NOT_DECODED** | Gen5-only; no decoder |
 
@@ -224,11 +224,11 @@ All devices: CRC32 (poly 0xEDB88320, init 0xFFFFFFFF, final XOR 0xFFFFFFFF) over
 
 | Gap | Priority | Effort | Roadmap phase |
 |-----|----------|--------|--------------|
-| V24 biometric full extraction (spo2, skin_temp, resp, sig_quality, skin_contact, gravity2, RR from V24) | **HIGH** | Medium | Phase 27 |
-| Skin contact gate (prerequisite for all V24 biometrics) | **HIGH** | Low | Phase 27 |
+| V24 biometric full extraction (spo2, skin_temp, resp, sig_quality, skin_contact) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
+| Skin contact gate (prerequisite for all V24 biometrics) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
+| Physical unit conversions (SpO2 ratio-of-ratios, skin temp slope, resp Welch) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
 | gravity2 second triplet (data[49-60]) | HIGH | Low | Phase 31 |
 | Cole-Kripke exact weights for sleep staging | HIGH | Low | Phase 31 |
-| Physical unit conversions (SpO2 ratio-of-ratios, skin temp slope, resp Welch) | HIGH | Medium | Phase 27 |
 | EVENT 17 (TEMPERATURE_LEVEL) payload structure | MEDIUM | Low | — |
 | EXTENDED_BATTERY_INFORMATION payload (ID 63) | MEDIUM | Low | — |
 | K=25/26 pulse information packets | MEDIUM | High | — |
@@ -253,4 +253,4 @@ Fields exposed to Swift via `ParsedFrame` JSON (bridge.rs):
 | `body_summary.heart_rate` | ✓ | K10 only |
 | `body_summary.flags`, `flag_bit_9`, `flag_bit_11` | ✓ | K17 |
 | `body_summary.samples` | ✓ | K17 i16 series with stats |
-| V24 biometric fields | ✗ | not yet exposed — Phase 27 |
+| V24 biometric fields | ✓ | exposed via `biometrics.insert_v24_batch` + `biometrics.v24_between` bridge methods (Phase 27, v5.0) |
