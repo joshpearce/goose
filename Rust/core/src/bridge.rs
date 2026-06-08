@@ -96,12 +96,13 @@ use crate::{
         AlgorithmRunResult, GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION, GOOSE_RECOVERY_V0_ID,
         GOOSE_RECOVERY_V0_VERSION, GOOSE_SLEEP_V0_ID, GOOSE_SLEEP_V0_VERSION, GOOSE_SLEEP_V1_ID,
         GOOSE_SLEEP_V1_VERSION, GOOSE_STRAIN_V0_ID, GOOSE_STRAIN_V0_VERSION, GOOSE_STRESS_V0_ID,
-        GOOSE_STRESS_V0_VERSION, HrvInput, RecoveryInput, SleepInput, SleepModelStatusInput,
-        SleepNightHistoryInput, SleepStageSegment, SleepV1Input, StrainInput, StressInput,
-        algorithm_run_record, built_in_algorithm_definitions,
+        GOOSE_STRESS_V0_VERSION, HrvInput, RecoveryInput, RecoveryV1Input, SleepInput,
+        SleepModelStatusInput, SleepNightHistoryInput, SleepStageSegment, SleepV1Input,
+        StrainInput, StressInput, algorithm_run_record, built_in_algorithm_definitions,
         built_in_default_algorithm_preferences, default_algorithm_preferences_for_scope,
-        fit_strain_denominator, goose_hrv_v0, goose_recovery_v0, goose_sleep_v0, goose_sleep_v1,
-        goose_strain_v0, goose_strain_v1, goose_stress_v0, sleep_history_night_is_usable,
+        fit_strain_denominator, goose_hrv_v0, goose_recovery_v0, goose_recovery_v1,
+        goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_strain_v1, goose_stress_v0,
+        sleep_history_night_is_usable,
     },
     openwhoop_reference::{
         OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_COMMIT,
@@ -241,6 +242,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "metrics.fit_strain_denominator",
     "metrics.goose_hrv_v0",
     "metrics.goose_recovery_v0",
+    "metrics.goose_recovery_v1",
     "metrics.goose_sleep_v0",
     "metrics.goose_sleep_v1",
     "metrics.goose_strain_v0",
@@ -2191,6 +2193,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(|input| metric_result_to_value(goose_recovery_v0(&input)))
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.goose_recovery_v1" => request_args::<RecoveryV1BridgeArgs>(&request)
+            .and_then(goose_recovery_v1_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.goose_stress_v0" => request_args::<StressInput>(&request)
             .and_then(|input| metric_result_to_value(goose_stress_v0(&input)))
             .map(|value| bridge_ok(&request.request_id, value))
@@ -3358,6 +3364,33 @@ fn ewma_state_to_json(
         "trust": trust.as_str(),
         "is_ready": state.is_ready(),
     })
+}
+
+// ---------------------------------------------------------------------------
+// Recovery V1 bridge (metrics.goose_recovery_v1)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct RecoveryV1BridgeArgs {
+    database_path: String,
+    device_id: String,
+    date_key: String,
+    hrv_rmssd_ms: f64,
+    resting_hr_bpm: f64,
+}
+
+fn goose_recovery_v1_bridge(args: RecoveryV1BridgeArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let baseline = EwmaBaseline::fold_history(&store)?;
+    let input = RecoveryV1Input {
+        device_id: args.device_id,
+        date_key: args.date_key,
+        hrv_rmssd_ms: args.hrv_rmssd_ms,
+        resting_hr_bpm: args.resting_hr_bpm,
+    };
+    let output = goose_recovery_v1(&input, &baseline);
+    serde_json::to_value(output)
+        .map_err(|e| GooseError::message(format!("cannot serialize recovery_v1 output: {e}")))
 }
 
 fn ewma_baseline_fold_history_bridge(
@@ -9156,6 +9189,115 @@ mod tests {
         assert!(
             !response.ok || response.result.is_some(),
             "bridge must respond (either error or valid result) for NaN hrv"
+        );
+    }
+
+    // ---- metrics.goose_recovery_v1 bridge tests ---------------------------
+
+    #[test]
+    fn goose_recovery_v1_bridge_cold_start_no_rows() {
+        let (_dir, db_path) = make_temp_db();
+
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-recovery-v1-cold".to_string(),
+            method: "metrics.goose_recovery_v1".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "device_id": "dev-001",
+                "date_key": "2024-01-05",
+                "hrv_rmssd_ms": 60.0,
+                "resting_hr_bpm": 55.0
+            }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(
+            response.ok,
+            "cold-start call must succeed: {:?}",
+            response.error
+        );
+        let result = response.result.expect("result must be present");
+        assert_eq!(
+            result["score_0_to_100"],
+            serde_json::Value::Null,
+            "cold-start: score must be null"
+        );
+        assert_eq!(
+            result["trust_level"],
+            "calibrating",
+            "cold-start: trust_level must be 'calibrating'"
+        );
+        assert!(
+            result.get("colour_band").is_some(),
+            "cold-start: colour_band must be present"
+        );
+    }
+
+    #[test]
+    fn goose_recovery_v1_bridge_round_trip_with_4_nights() {
+        let (_dir, db_path) = make_temp_db();
+
+        // Insert 4 nights via ewma_baseline_update to seed the baseline.
+        let dates = ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"];
+        for date in &dates {
+            let req = BridgeRequest {
+                schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+                request_id: format!("test-seed-{}", date),
+                method: "store.ewma_baseline_update".to_string(),
+                args: json!({
+                    "database_path": db_path,
+                    "date_key": date,
+                    "hrv_rmssd": 60.0,
+                    "rhr_bpm": 55.0
+                }),
+            };
+            let resp = handle_bridge_request(req);
+            assert!(
+                resp.ok,
+                "seed night {} must succeed: {:?}",
+                date,
+                resp.error
+            );
+        }
+
+        // Now call goose_recovery_v1 — should have a score (≥4 nights seeded).
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-recovery-v1-round-trip".to_string(),
+            method: "metrics.goose_recovery_v1".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "device_id": "dev-001",
+                "date_key": "2024-01-05",
+                "hrv_rmssd_ms": 60.0,
+                "resting_hr_bpm": 55.0
+            }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(
+            response.ok,
+            "round-trip call must succeed: {:?}",
+            response.error
+        );
+        let result = response.result.expect("result must be present");
+
+        assert!(
+            !result["score_0_to_100"].is_null(),
+            "after 4 seeded nights: score must not be null"
+        );
+        assert!(
+            result["trust_level"].as_str().is_some(),
+            "trust_level must be a string"
+        );
+        assert!(
+            result["colour_band"].as_str().is_some(),
+            "colour_band must be a string"
+        );
+        // Trust must be provisional (exactly 4 nights) not calibrating.
+        assert_ne!(
+            result["trust_level"],
+            "calibrating",
+            "after 4 nights: trust must not be calibrating"
         );
     }
 }
