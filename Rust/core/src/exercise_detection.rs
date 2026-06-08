@@ -87,22 +87,26 @@ pub fn detect_exercise_sessions(
     return Vec::new();
   }
 
-  // Step 3 — Smooth gravity: compute magnitude and rolling mean over MOTION_SMOOTH_S window
-  let half_window = MOTION_SMOOTH_S / 2.0;
-  let smoothed_gravity: Vec<(f64, f64)> = gravity.iter().map(|g| {
-    let mag = (g.x * g.x + g.y * g.y + g.z * g.z).sqrt() - 1.0;
-    // Rolling mean: collect all gravity rows within [ts - half_window, ts + half_window]
-    let window_mags: Vec<f64> = gravity.iter()
-      .filter(|other| (other.ts - g.ts).abs() <= half_window)
-      .map(|other| (other.x * other.x + other.y * other.y + other.z * other.z).sqrt() - 1.0)
-      .collect();
-    let mean_mag = if window_mags.is_empty() {
-      mag
-    } else {
-      window_mags.iter().sum::<f64>() / window_mags.len() as f64
-    };
-    (g.ts, mean_mag.abs())
-  }).collect();
+  // Step 3 — Smooth gravity: O(n) causal rolling mean over a [ts-MOTION_SMOOTH_S, ts] window.
+  // Sort by ts, then use a two-pointer sliding window to avoid the O(n²) inner scan.
+  let mut sorted_gravity = gravity.to_vec();
+  sorted_gravity.sort_by(|a, b| a.ts.partial_cmp(&b.ts).unwrap_or(std::cmp::Ordering::Equal));
+  let mags: Vec<f64> = sorted_gravity
+    .iter()
+    .map(|g| (g.x * g.x + g.y * g.y + g.z * g.z).sqrt() - 1.0)
+    .collect();
+  let mut smoothed_gravity: Vec<(f64, f64)> = Vec::with_capacity(sorted_gravity.len());
+  let mut left = 0usize;
+  let mut window_sum = 0.0f64;
+  for right in 0..sorted_gravity.len() {
+    window_sum += mags[right];
+    while sorted_gravity[right].ts - sorted_gravity[left].ts > MOTION_SMOOTH_S {
+      window_sum -= mags[left];
+      left += 1;
+    }
+    let window_len = right - left + 1;
+    smoothed_gravity.push((sorted_gravity[right].ts, (window_sum / window_len as f64).abs()));
+  }
 
   // Step 4 — Align HR and smoothed gravity via nearest-neighbor within ALIGN_TOLERANCE_S
   let mut aligned: Vec<AlignedPair> = Vec::new();

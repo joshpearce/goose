@@ -149,8 +149,12 @@ pub fn stage_sleep(input: &SleepStagingInput, rows: &[(f64, f64, f64, f64)]) -> 
     let n = activity_counts.len();
     let mut epochs: Vec<SleepEpoch> = Vec::with_capacity(n);
 
+    // Build lookup once for all epochs (PERF-02: avoid O(N²) HashMap rebuild per call).
+    let ck_lookup: std::collections::HashMap<i64, f64> =
+        activity_counts.iter().map(|&(idx, cnt)| (idx, cnt)).collect();
+
     for i in 0..n {
-        let d = cole_kripke_d_score(i, &activity_counts);
+        let d = cole_kripke_d_score(i, &activity_counts, &ck_lookup);
         let stage = if d >= COLE_KRIPKE_WAKE_THRESHOLD { "wake" } else { "sleep" };
         let (epoch_idx, count) = activity_counts[i];
         let ts = input.sleep_start_ts + epoch_idx as f64 * (COLE_KRIPKE_EPOCH_MINUTES * 60.0);
@@ -237,10 +241,14 @@ pub fn stage_sleep_four_class(
     // Step 2: compute HR statistics for classification (p25 and median).
     let (hr_p25, hr_median) = hr_percentiles(hr_features);
 
+    // Build lookup once for all epochs (PERF-02: avoid O(N²) HashMap rebuild per call).
+    let ck_lookup: std::collections::HashMap<i64, f64> =
+        activity_counts.iter().map(|&(idx, cnt)| (idx, cnt)).collect();
+
     // Step 3: per-epoch 4-class assignment.
     let mut epochs: Vec<SleepEpoch> = Vec::with_capacity(n);
     for i in 0..n {
-        let d = cole_kripke_d_score(i, &activity_counts);
+        let d = cole_kripke_d_score(i, &activity_counts, &ck_lookup);
         let (epoch_idx, count) = activity_counts[i];
         let ts = input.sleep_start_ts + epoch_idx as f64 * (COLE_KRIPKE_EPOCH_MINUTES * 60.0);
 
@@ -611,13 +619,17 @@ fn compute_activity_counts(sleep_start_ts: f64, rows: &[(f64, f64, f64, f64)]) -
 /// D = (1/100) * Σ_k ( COEFFS[k] * scaled_count(i + OFFSETS[k]) )
 ///
 /// Out-of-range neighbours contribute 0.
-fn cole_kripke_d_score(i: usize, activity_counts: &[(i64, f64)]) -> f64 {
-    // CR-01 fix: look up neighbours by epoch_idx (temporal index) via a HashMap,
-    // not by array position. Gaps in the gravity table produce holes in the array;
-    // array[i+1] does NOT mean the temporally-adjacent minute when data is sparse.
-    use std::collections::HashMap;
-    let lookup: HashMap<i64, f64> =
-        activity_counts.iter().map(|&(idx, cnt)| (idx, cnt)).collect();
+/// Compute the Cole-Kripke D-score for epoch `i`.
+/// `lookup` must be a pre-built map of epoch_idx → activity_count, built once
+/// by the caller before the epoch loop (PERF-02: avoids O(N²) per-call rebuild).
+fn cole_kripke_d_score(
+    i: usize,
+    activity_counts: &[(i64, f64)],
+    lookup: &std::collections::HashMap<i64, f64>,
+) -> f64 {
+    // CR-01 fix: look up neighbours by epoch_idx (temporal index) via the pre-built
+    // HashMap, not by array position. Gaps in the gravity table produce holes in the
+    // array; array[i+1] does NOT mean the temporally-adjacent minute when data is sparse.
     let current_epoch_idx = activity_counts[i].0;
     let mut d = 0.0_f64;
     for (coeff, &offset) in COLE_KRIPKE_COEFFS.iter().zip(COLE_KRIPKE_OFFSETS.iter()) {

@@ -1190,7 +1190,7 @@ pub fn rmr_mifflin_st_jeor(weight_kg: f64, height_cm: f64, age: f64, sex: Option
 /// Keytel (2005) active energy expenditure (kcal/min).
 /// `hr` is capped at `hrmax`; result is clamped `>= 0.0`.
 /// sex: `"male"` → male formula; `"female"` → female formula; otherwise mean of the two.
-/// Divisor 251.04 converts VO2 (Keytel) to kcal/min (Ghidra-confirmed).
+/// The Keytel formulas produce kJ/min; dividing by 4.1868 converts to kcal/min (1 kcal = 4.1868 kJ).
 pub fn keytel_active_kcal_per_min(
     hr: f64,
     weight_kg: f64,
@@ -1212,7 +1212,8 @@ pub fn keytel_active_kcal_per_min(
             (male_raw + female_raw) / 2.0
         }
     };
-    (raw / 251.04).max(0.0)
+    // Keytel formulas produce kJ/min; divide by 4.1868 to get kcal/min.
+    (raw / 4.1868_f64).max(0.0)
 }
 
 /// Harris-Benedict resting metabolic rate (kcal/day).

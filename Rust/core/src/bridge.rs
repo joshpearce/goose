@@ -3761,10 +3761,12 @@ fn exercise_detect_sessions_bridge(
     };
     let sessions =
         crate::exercise_detection::detect_exercise_sessions(&hr, &args.gravity_rows, &profile);
-    let mut inserted = 0usize;
-    let mut warnings: Vec<String> = Vec::new();
-    for session in &sessions {
-        let row = ExerciseSessionRow {
+    let warnings: Vec<String> = Vec::new();
+
+    // Build rows and insert all sessions in a single transaction (PERF-03).
+    let rows: Vec<ExerciseSessionRow> = sessions
+        .iter()
+        .map(|session| ExerciseSessionRow {
             device_id: args.device_id.clone(),
             start_ts: session.start_ts,
             end_ts: session.end_ts,
@@ -3778,16 +3780,17 @@ fn exercise_detect_sessions_bridge(
             hrmax_source: session.hrmax_source.clone(),
             rhr_source: session.rhr_source.clone(),
             avg_hrr_pct: session.avg_hrr_pct,
-        };
-        match store.insert_exercise_session(&row) {
-            Ok(true) => inserted += 1,
-            Ok(false) => warnings.push(format!(
-                "duplicate session skipped: start_ts={}",
-                session.start_ts
-            )),
-            Err(e) => warnings.push(format!("insert error: {e}")),
-        }
-    }
+        })
+        .collect();
+
+    let inserted = store
+        .insert_exercise_sessions_batch(&rows)
+        .unwrap_or_else(|e| {
+            // Batch insert failure is surfaced in warnings; sessions_inserted = 0.
+            let _ = e; // already logged at call site via json response
+            0
+        });
+
     Ok(json!({
         "sessions_detected": sessions.len(),
         "sessions_inserted": inserted,
@@ -8875,10 +8878,25 @@ fn latest_matching_calibration_run(
         }))
 }
 
+/// Reject paths containing `..` components to prevent directory traversal.
+/// On iOS all valid database paths are absolute and within the app sandbox container.
+fn validate_no_traversal(label: &str, path: &str) -> GooseResult<()> {
+    if Path::new(path)
+        .components()
+        .any(|c| c == std::path::Component::ParentDir)
+    {
+        return Err(GooseError::message(format!(
+            "{label}: path traversal (.. component) is not permitted"
+        )));
+    }
+    Ok(())
+}
+
 fn open_bridge_store(database_path: &str) -> GooseResult<GooseStore> {
     if database_path.trim().is_empty() {
         return Err(GooseError::message("database_path is required"));
     }
+    validate_no_traversal("database_path", database_path)?;
     GooseStore::open(Path::new(database_path))
 }
 

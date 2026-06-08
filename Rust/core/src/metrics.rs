@@ -2473,6 +2473,9 @@ fn sample_sd(values: &[f64], mean_value: f64) -> f64 {
 }
 
 fn pnn50(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
     let above_threshold = values
         .windows(2)
         .filter(|pair| (pair[1] - pair[0]).abs() > 50.0)
@@ -4623,7 +4626,7 @@ pub fn goose_readiness_v1(input: &ReadinessInput) -> ReadinessOutput {
     let acute_load = window7.iter().sum::<f64>() / 7.0;
     let chronic_load = window28.iter().sum::<f64>() / 28.0;
 
-    let acwr = if chronic_load == 0.0 {
+    let acwr = if !chronic_load.is_finite() || chronic_load == 0.0 {
         None
     } else {
         Some((acute_load / chronic_load).clamp(0.0, 3.0))
