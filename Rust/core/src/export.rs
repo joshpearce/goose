@@ -2388,6 +2388,10 @@ fn export_sensor_samples(
                     )?;
                 }
             }
+            DataPacketBodySummary::V24History { .. } => {
+                // V24 biometric data is exported via dedicated v24 tables (Phase 27).
+                // Sensor sample export path does not handle V24 — skip gracefully.
+            }
         }
     }
     Ok(rows)

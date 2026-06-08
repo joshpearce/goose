@@ -2997,6 +2997,7 @@ fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
         }
         Some(DataPacketBodySummary::RawMotionK10 { .. }) => "raw_motion_k10",
         Some(DataPacketBodySummary::RawMotionK21 { .. }) => "raw_motion_k21",
+        Some(DataPacketBodySummary::V24History { .. }) => "v24_history",
         None => "none",
     }
 }
@@ -3267,6 +3268,11 @@ fn upload_get_recent_decoded_streams_bridge(
                             // axis naming). Only K10 accel axes (accelerometer_x/y/z) are
                             // converted in this phase (IMU-03). K21 will be handled once
                             // empirical K21 payload data is available to confirm the mapping.
+                        }
+                        DataPacketBodySummary::V24History { .. } => {
+                            // V24 biometric fields (SpO2, skin temp, RR, PPG, gravity) are
+                            // stored via the v24 tables (Phase 27). Streaming extraction
+                            // is not yet wired here — handled by insert_v24_biometric_batch.
                         }
                     }
                 }
