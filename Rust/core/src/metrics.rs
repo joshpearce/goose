@@ -4022,3 +4022,148 @@ fn require_bounded(name: &str, value: f64, min: f64, max: f64, errors: &mut Vec<
         errors.push(format!("{name}_must_be_between_{min}_and_{max}"));
     }
 }
+
+// ---------------------------------------------------------------------------
+// ALG-SLP-01: HR-threshold sleep metric helpers
+// ---------------------------------------------------------------------------
+// Series elements are (timestamp_minutes, hr_bpm) tuples.
+// The 1.05 factor is the wake-detection threshold per ALG-SLP-01.
+
+/// Compute the rolling 5-minute minimum HR over the in-bed window and return
+/// the nocturnal heart rate dip as a percentage of the baseline awake HR.
+///
+/// `dip = (baseline_awake_hr - rolling_5min_min) / baseline_awake_hr * 100`
+///
+/// Returns `None` when `baseline_awake_hr` is <= 0 or the series is empty.
+/// Clamps negative dip (minimum above baseline) to 0.0.
+/// Non-finite HR samples are ignored per T-24-01.
+pub fn heart_rate_dip_pct(sleep_hr_series: &[(f64, f64)], baseline_awake_hr: f64) -> Option<f64> {
+    if !baseline_awake_hr.is_finite() || baseline_awake_hr <= 0.0 {
+        return None;
+    }
+    let finite_series: Vec<(f64, f64)> = sleep_hr_series
+        .iter()
+        .copied()
+        .filter(|(ts, hr)| ts.is_finite() && hr.is_finite())
+        .collect();
+    if finite_series.is_empty() {
+        return None;
+    }
+    let window_size_minutes = 5.0_f64;
+    // Compute rolling 5-minute minimum: for each sample, find all samples
+    // whose timestamp is within [sample.ts, sample.ts + 5), take the minimum.
+    let rolling_min = finite_series
+        .iter()
+        .map(|(ts, _)| {
+            finite_series
+                .iter()
+                .filter(|(other_ts, _)| *other_ts >= *ts && *other_ts < *ts + window_size_minutes)
+                .map(|(_, hr)| *hr)
+                .fold(f64::INFINITY, f64::min)
+        })
+        .fold(f64::INFINITY, f64::min);
+
+    if rolling_min.is_infinite() {
+        return None;
+    }
+    let dip = (baseline_awake_hr - rolling_min) / baseline_awake_hr * 100.0;
+    Some(dip.max(0.0))
+}
+
+/// Sum minutes where HR exceeds `resting_hr * 1.05`, counting only samples
+/// strictly after `onset_ts` (minutes since window start).
+///
+/// Each sample contributes 1 minute to WASO. Non-finite samples are skipped.
+pub fn waso_from_hr(hr_series: &[(f64, f64)], resting_hr: f64, onset_ts: f64) -> f64 {
+    let threshold = resting_hr * 1.05;
+    hr_series
+        .iter()
+        .filter(|(ts, hr)| ts.is_finite() && hr.is_finite() && *ts > onset_ts && *hr > threshold)
+        .count() as f64
+}
+
+/// Return the time from window start to the first sustained low-HR period of
+/// >= `sustained_minutes` consecutive minutes where all HR samples are <=
+/// `resting_hr * 1.05`.
+///
+/// "Consecutive" means no sample above the threshold interrupts the run.
+/// Returns `None` when no such sustained period exists.
+/// Non-finite samples are treated as above threshold (wake).
+pub fn sol_from_hr(
+    hr_series: &[(f64, f64)],
+    resting_hr: f64,
+    sustained_minutes: f64,
+) -> Option<f64> {
+    let threshold = resting_hr * 1.05;
+    // Sort by timestamp
+    let mut sorted: Vec<(f64, f64)> = hr_series
+        .iter()
+        .copied()
+        .filter(|(ts, _)| ts.is_finite())
+        .collect();
+    sorted.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    if sorted.is_empty() {
+        return None;
+    }
+    let window_start = sorted[0].0;
+
+    // Walk through samples; maintain a run of consecutive below-threshold
+    // samples. A run starts when a sample is <= threshold and ends when a
+    // sample > threshold or when there is a gap with no samples.
+    let mut run_start: Option<f64> = None;
+    let mut run_last: Option<f64> = None;
+
+    for (ts, hr) in &sorted {
+        let below = *hr <= threshold;
+        if below {
+            if run_start.is_none() {
+                run_start = Some(*ts);
+            }
+            run_last = Some(*ts);
+        } else {
+            // Broke the run
+            run_start = None;
+            run_last = None;
+        }
+        // Check if current run meets the duration requirement.
+        // Duration = run_last - run_start (end inclusive of the last sample).
+        if let (Some(start), Some(last)) = (run_start, run_last) {
+            if last - start >= sustained_minutes - 1.0 {
+                // SOL is the time from window start to run_start
+                return Some((start - window_start).max(0.0));
+            }
+        }
+    }
+    None
+}
+
+/// Count distinct post-onset runs of samples crossing above `resting_hr * 1.05`.
+///
+/// A run begins on the first sample above the threshold and ends when a sample
+/// at or below the threshold is encountered. Only samples strictly after
+/// `onset_ts` are considered. Non-finite samples are skipped.
+pub fn hr_disturbance_count(hr_series: &[(f64, f64)], resting_hr: f64, onset_ts: f64) -> u32 {
+    let threshold = resting_hr * 1.05;
+    let mut count = 0u32;
+    let mut in_wake_run = false;
+    // Sort by timestamp to ensure correct run detection
+    let mut sorted: Vec<(f64, f64)> = hr_series
+        .iter()
+        .copied()
+        .filter(|(ts, hr)| ts.is_finite() && hr.is_finite() && *ts > onset_ts)
+        .collect();
+    sorted.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    for (_, hr) in &sorted {
+        if *hr > threshold {
+            if !in_wake_run {
+                count += 1;
+                in_wake_run = true;
+            }
+        } else {
+            in_wake_run = false;
+        }
+    }
+    count
+}

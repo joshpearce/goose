@@ -10,7 +10,8 @@ use goose_core::{
         built_in_default_algorithm_preferences, estimate_hrmax_from_history,
         evaluate_sleep_model_status, fit_strain_denominator, goose_hrv_v0, goose_recovery_v0,
         goose_sleep_v0, goose_sleep_v1, goose_strain_v0, goose_strain_v1, goose_stress_v0,
-        hrv_run_record, resolve_effective_hrmax, sleep_baseline_from_history, tanaka_hrmax,
+        heart_rate_dip_pct, hr_disturbance_count, hrv_run_record, resolve_effective_hrmax,
+        sleep_baseline_from_history, sol_from_hr, tanaka_hrmax, waso_from_hr,
     },
     store::GooseStore,
 };
@@ -3096,4 +3097,172 @@ fn goose_strain_v1_uses_resolve_effective_hrmax_and_records_hrmax_source() {
         provenance["hrmax_source"].as_str().unwrap_or(""),
         "tanaka"
     );
+}
+
+// ALG-SLP-01: HR-threshold sleep metric helper tests
+
+#[test]
+fn heart_rate_dip_pct_returns_hand_computed_dip() {
+    // Baseline awake HR = 70 bpm, nadir at minute 30 = 56 bpm (5-min min will pick it)
+    // Expected dip = (70 - 56) / 70 * 100 = 20.0%
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 68.0),
+        (5.0, 65.0),
+        (10.0, 62.0),
+        (15.0, 58.0),
+        (20.0, 57.0),
+        (25.0, 56.0), // nadir in a 5-min window
+        (30.0, 57.0),
+        (35.0, 58.0),
+        (40.0, 60.0),
+        (45.0, 62.0),
+    ];
+    let result = heart_rate_dip_pct(&series, 70.0);
+    let dip = result.expect("should return a dip value for this series");
+    // nadir is 56.0 → dip = (70 - 56) / 70 * 100 = 20.0%
+    assert!(
+        (dip - 20.0).abs() < 0.01,
+        "expected ~20.0%, got {dip}"
+    );
+}
+
+#[test]
+fn heart_rate_dip_pct_flat_series_at_baseline_returns_zero() {
+    // All HR equal to baseline → no dip, clamped to 0.0
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 65.0),
+        (5.0, 65.0),
+        (10.0, 65.0),
+        (15.0, 65.0),
+    ];
+    let result = heart_rate_dip_pct(&series, 65.0);
+    let dip = result.expect("should return a value for flat series");
+    assert_eq!(dip, 0.0, "flat series at baseline should return 0.0");
+}
+
+#[test]
+fn heart_rate_dip_pct_empty_series_returns_none() {
+    let result = heart_rate_dip_pct(&[], 70.0);
+    assert!(result.is_none(), "empty series should return None");
+}
+
+#[test]
+fn heart_rate_dip_pct_zero_baseline_returns_none() {
+    let series: Vec<(f64, f64)> = vec![(0.0, 60.0), (5.0, 58.0)];
+    let result = heart_rate_dip_pct(&series, 0.0);
+    assert!(result.is_none(), "zero baseline should return None");
+}
+
+#[test]
+fn waso_from_hr_returns_zero_when_no_post_onset_wake() {
+    // All HR below threshold after onset_ts=0
+    let resting_hr = 60.0;
+    let threshold = resting_hr * 1.05; // 63.0
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 62.0), // below threshold
+        (1.0, 61.0),
+        (2.0, 60.0),
+    ];
+    let waso = waso_from_hr(&series, resting_hr, 0.0);
+    assert_eq!(waso, 0.0, "WASO should be 0 when all post-onset HR below threshold");
+}
+
+#[test]
+fn waso_from_hr_counts_post_onset_wake_samples() {
+    // onset at minute 5; samples at min 6 and 7 are above threshold (resting=60, threshold=63)
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (3.0, 70.0), // pre-onset wake — must be excluded
+        (4.0, 70.0), // pre-onset wake — must be excluded
+        (5.0, 70.0), // onset boundary — excluded (strict after)
+        (6.0, 70.0), // post-onset, above threshold — counts as 1 minute
+        (7.0, 70.0), // post-onset, above threshold — counts as 1 minute
+        (8.0, 58.0), // post-onset, below threshold
+    ];
+    let waso = waso_from_hr(&series, resting_hr, 5.0);
+    // Two post-onset wake samples, each 1 minute apart → 2 minutes
+    assert!(
+        (waso - 2.0).abs() < 0.01,
+        "expected WASO ~2.0 minutes, got {waso}"
+    );
+}
+
+#[test]
+fn waso_from_hr_excludes_pre_onset_wake_samples() {
+    // All samples before onset_ts=10; post-onset HR is below threshold
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (2.0, 80.0), // pre-onset, above threshold — must be excluded
+        (5.0, 75.0), // pre-onset, above threshold — must be excluded
+        (10.0, 58.0), // onset boundary, below threshold
+        (11.0, 57.0), // post-onset, below threshold
+    ];
+    let waso = waso_from_hr(&series, resting_hr, 10.0);
+    assert_eq!(waso, 0.0, "pre-onset samples must not contribute to WASO");
+}
+
+#[test]
+fn sol_from_hr_returns_latency_to_first_sustained_low_hr_period() {
+    // resting=60, threshold=63; sustained window = 3 min
+    // Minutes 0-2: above threshold (awake), minute 3 onward: below threshold for >=3 min
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 70.0), // awake
+        (1.0, 68.0), // awake
+        (2.0, 65.0), // awake
+        (3.0, 58.0), // sleep onset start
+        (4.0, 57.0),
+        (5.0, 56.0), // 3 consecutive minutes below threshold → SOL = 3.0
+        (6.0, 55.0),
+    ];
+    let sol = sol_from_hr(&series, resting_hr, 3.0);
+    let latency = sol.expect("should find a sustained low-HR period");
+    assert!(
+        (latency - 3.0).abs() < 0.01,
+        "expected SOL ~3.0 minutes, got {latency}"
+    );
+}
+
+#[test]
+fn sol_from_hr_returns_none_when_no_sustained_period() {
+    // HR never stays below threshold for 3 consecutive minutes
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 70.0),
+        (1.0, 58.0), // low
+        (2.0, 70.0), // back up — break
+        (3.0, 58.0), // low again
+        (4.0, 70.0), // back up — break again (never 3 in a row)
+    ];
+    let sol = sol_from_hr(&series, resting_hr, 3.0);
+    assert!(sol.is_none(), "should return None when no sustained low-HR period exists");
+}
+
+#[test]
+fn hr_disturbance_count_counts_contiguous_wake_runs_once() {
+    // One contiguous run above threshold → count = 1
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 55.0), // onset/sleep
+        (1.0, 70.0), // wake — start of run
+        (2.0, 68.0), // wake — continuation (same run)
+        (3.0, 55.0), // back to sleep
+    ];
+    let count = hr_disturbance_count(&series, resting_hr, 0.0);
+    assert_eq!(count, 1, "one contiguous wake run should count as 1 disturbance");
+}
+
+#[test]
+fn hr_disturbance_count_counts_two_separated_runs_as_two() {
+    // Two separated wake runs → count = 2
+    let resting_hr = 60.0;
+    let series: Vec<(f64, f64)> = vec![
+        (0.0, 55.0),  // sleep
+        (1.0, 70.0),  // wake run 1 start
+        (2.0, 55.0),  // sleep
+        (3.0, 68.0),  // wake run 2 start
+        (4.0, 55.0),  // sleep
+    ];
+    let count = hr_disturbance_count(&series, resting_hr, 0.0);
+    assert_eq!(count, 2, "two separated wake runs should count as 2 disturbances");
 }
