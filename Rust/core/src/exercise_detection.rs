@@ -11,7 +11,7 @@ use crate::energy_rollup::keytel_active_kcal_per_min;
 pub const MIN_EXERCISE_MIN: f64 = 10.0;
 pub const MERGE_GAP_S: f64 = 60.0;
 pub const HR_MARGIN_BPM: f64 = 30.0;
-pub const MOTION_THRESHOLD: f64 = 0.01;
+pub const MOTION_THRESHOLD: f64 = 0.20; // g/sample — matches my-whoop exercise.py; 0.01 was below MEMS quantisation noise
 pub const MOTION_SMOOTH_S: f64 = 3.0;
 pub const ALIGN_TOLERANCE_S: f64 = 5.0;
 pub const MIN_INTENSITY_Z2PLUS: f64 = 0.50;
@@ -453,7 +453,7 @@ mod tests {
     hr.sort_by(|a, b| a.ts.partial_cmp(&b.ts).unwrap());
 
     // Gravity: all samples active (> threshold)
-    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.05)).collect();
+    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.30)).collect();
 
     detect_exercise_sessions(&hr, &gravity, &profile)
   }
@@ -480,7 +480,7 @@ mod tests {
     for ts in 945i64..=1844 {
       hr_45gap.push(HrSample { ts: ts as f64, bpm: z2_bpm });
     }
-    let gravity_45: Vec<GravityRow> = hr_45gap.iter().map(|s| make_gravity(s.ts, 0.05)).collect();
+    let gravity_45: Vec<GravityRow> = hr_45gap.iter().map(|s| make_gravity(s.ts, 0.30)).collect();
     let sessions_45 = detect_exercise_sessions(&hr_45gap, &gravity_45, &profile);
     assert_eq!(sessions_45.len(), 1, "45s gap should merge into 1 session");
 
@@ -493,7 +493,7 @@ mod tests {
     for ts in 965i64..=1864 {
       hr_65gap.push(HrSample { ts: ts as f64, bpm: z2_bpm });
     }
-    let gravity_65: Vec<GravityRow> = hr_65gap.iter().map(|s| make_gravity(s.ts, 0.05)).collect();
+    let gravity_65: Vec<GravityRow> = hr_65gap.iter().map(|s| make_gravity(s.ts, 0.30)).collect();
     let sessions_65 = detect_exercise_sessions(&hr_65gap, &gravity_65, &profile);
     assert_eq!(sessions_65.len(), 2, "65s gap should produce 2 separate sessions");
   }
@@ -553,7 +553,7 @@ mod tests {
     let hr: Vec<HrSample> = (0..n_samples)
       .map(|i| HrSample { ts: i as f64, bpm: target_bpm })
       .collect();
-    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.05)).collect();
+    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.30)).collect();
     let sessions = detect_exercise_sessions(&hr, &gravity, &profile);
     assert!(!sessions.is_empty(), "Expected at least one session for 30-min workout");
     assert!(
@@ -582,7 +582,7 @@ mod tests {
     let hr: Vec<HrSample> = (0..n_samples)
       .map(|i| HrSample { ts: i as f64, bpm: z2_bpm })
       .collect();
-    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.05)).collect();
+    let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.30)).collect();
     let sessions = detect_exercise_sessions(&hr, &gravity, &profile);
     assert!(!sessions.is_empty(), "Expected a session when daily_hr_p10 is used as RHR");
     assert_eq!(sessions[0].rhr_source, "daily_p10", "rhr_source should be 'daily_p10'");
