@@ -10,7 +10,7 @@
   "schema": "goose.payload.hex.v1",
   "consent": "user-owned-capture",
   "sensitivity": "user-owned-capture",
-  "notes": "Owned Android btsnoop-derived K24 normal-history payload from captures/android/live-identity-check-20260528T2002Z/hci-analysis/data-packets/K24.full.bin.",
+  "notes": "Owned Android btsnoop-derived K24 V24-biometric payload from captures/android/live-identity-check-20260528T2002Z/hci-analysis/data-packets/K24.full.bin. Reclassified from normal_history to v24_history by Phase 27 (V24 Biometric Decode).",
   "expected": {
     "device_type": "GOOSE",
     "packet_type": 47,
@@ -22,13 +22,8 @@
     "parsed_payload": {
       "kind": "data_packet",
       "packet_k": 24,
-      "domain": "normal_history_with_hr_marker",
-      "hr_present_marker": 151,
       "body_summary": {
-        "kind": "normal_history",
-        "hr_present": true,
-        "marker_offset": 17,
-        "marker_value": 151
+        "kind": "v24_history"
       }
     }
   }

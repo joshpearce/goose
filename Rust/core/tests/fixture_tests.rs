@@ -1060,9 +1060,10 @@ fn parser_runner_validates_indexed_frame_fixture_expectations() {
         Some("HISTORICAL_DATA")
     );
 
-    for (fixture_id, marker_value) in [
-        ("owned.live_identity.k24_normal_history_payload", 151),
-        ("owned.history_complete.k24_normal_history_payload", 51),
+    // Phase 27: packet_k==24 now correctly classified as v24_history (not normal_history)
+    for fixture_id in [
+        "owned.live_identity.k24_normal_history_payload",
+        "owned.history_complete.k24_normal_history_payload",
     ] {
         let owned_history = report
             .fixtures
@@ -1084,11 +1085,7 @@ fn parser_runner_validates_indexed_frame_fixture_expectations() {
             serde_json::to_value(&owned_history.parsed.as_ref().unwrap().parsed_payload).unwrap();
         assert_eq!(
             owned_history_payload["body_summary"]["kind"],
-            "normal_history"
-        );
-        assert_eq!(
-            owned_history_payload["body_summary"]["marker_value"],
-            marker_value
+            "v24_history"
         );
     }
 
