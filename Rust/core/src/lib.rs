@@ -16,6 +16,7 @@
 )]
 
 pub mod activity_candidates;
+pub mod baselines;
 pub mod activity_identity;
 pub mod activity_sessions;
 pub mod algorithm_compare;
