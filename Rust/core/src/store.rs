@@ -3649,23 +3649,51 @@ impl GooseStore {
             .map_err(GooseError::from)?;
 
         if let Some((existing_hrv, existing_rhr)) = existing {
-            // Row exists — check if the metrics already match (idempotent no-op).
-            let hrv_matches = existing_hrv.map_or(false, |v| (v - hrv_rmssd).abs() < 1e-9);
-            let rhr_matches = existing_rhr.map_or(false, |v| (v - rhr_bpm).abs() < 1e-9);
-            if hrv_matches && rhr_matches {
-                return Ok(false); // skipped
+            // CR-02 fix: only apply the date guard when both columns are already non-NULL.
+            // A NULL row (e.g. from a prior unavailable-status insert) must NOT permanently
+            // block the EWMA write — the EWMA values are new data for that date.
+            let both_non_null = existing_hrv.is_some() && existing_rhr.is_some();
+            if both_non_null {
+                // Row exists with real values — idempotency check.
+                let hrv_matches = existing_hrv.map_or(false, |v| (v - hrv_rmssd).abs() < 1e-9);
+                let rhr_matches = existing_rhr.map_or(false, |v| (v - rhr_bpm).abs() < 1e-9);
+                if hrv_matches && rhr_matches {
+                    return Ok(false); // identical values — idempotent no-op
+                }
+                // Date already has real values but they differ — date guard: skip.
+                return Ok(false);
             }
-            // Row exists with different values — this is a date guard block.
-            // The date is already applied; skip to prevent double-update (T-24-04).
-            return Ok(false);
+            // Row exists but with NULL metrics — fall through and UPDATE the row below.
         }
 
-        // No row for this date_key yet — insert a minimal ewma-provenance row.
+        // No row for this date_key (or row exists with NULL metrics) — upsert via INSERT OR REPLACE.
+        // This handles both the fresh-insert path and the NULL-row-exists path (CR-02 fix).
         let daily_metric_id = format!("ewma-{}", date_key);
         let now_ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as i64)
             .unwrap_or(0);
+
+        // Check if a NULL-metrics row already exists that we should update rather than insert.
+        // (CR-02 fix: existing NULL rows must not be bypassed by INSERT.)
+        let null_row_id: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT daily_metric_id FROM daily_recovery_metrics WHERE date_key = ?1 AND (hrv_rmssd_ms IS NULL OR resting_hr_bpm IS NULL) LIMIT 1",
+                rusqlite::params![date_key],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(GooseError::from)?;
+
+        if let Some(row_id) = null_row_id {
+            // Update the existing NULL row instead of inserting a duplicate.
+            self.conn.execute(
+                "UPDATE daily_recovery_metrics SET hrv_rmssd_ms = ?1, resting_hr_bpm = ?2 WHERE daily_metric_id = ?3",
+                rusqlite::params![hrv_rmssd, rhr_bpm, row_id],
+            )?;
+            return Ok(true);
+        }
 
         self.conn.execute(
             r#"

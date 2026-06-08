@@ -4137,10 +4137,16 @@ pub fn sol_from_hr(
     for (ts, hr) in &sorted {
         let below = *hr <= threshold;
         if below {
+            // WR-02 fix: also filter non-finite HR (ts is already filtered above).
+            if !hr.is_finite() {
+                run_start = None;
+                continue;
+            }
             let start = *run_start.get_or_insert(*ts);
             // Check if current run meets the duration requirement.
-            // Duration = current_ts - run_start (end inclusive of the last sample).
-            if *ts - start >= sustained_minutes - 1.0 {
+            // CR-01 fix: use >= sustained_minutes directly (no -1.0 sample-spacing assumption).
+            // The run spans [run_start, current_ts]; duration = current_ts - run_start.
+            if *ts - start >= sustained_minutes {
                 // SOL is the time from window start to run_start
                 return Some((start - window_start).max(0.0));
             }
