@@ -741,6 +741,8 @@ struct EnergyDailyRollupArgs {
     #[serde(default)]
     profile_sex: Option<String>,
     #[serde(default)]
+    profile_height_cm: Option<f64>,
+    #[serde(default)]
     resting_hr_bpm: Option<f64>,
     #[serde(default)]
     max_hr_bpm: Option<f64>,
@@ -798,6 +800,8 @@ struct EnergyCaptureValidationArgs {
     profile_age_years: Option<u32>,
     #[serde(default)]
     profile_sex: Option<String>,
+    #[serde(default)]
+    profile_height_cm: Option<f64>,
     #[serde(default)]
     resting_hr_bpm: Option<f64>,
     #[serde(default)]
@@ -4454,6 +4458,7 @@ fn energy_daily_rollup_bridge(args: EnergyDailyRollupArgs) -> GooseResult<serde_
             profile_weight_kg: args.profile_weight_kg,
             profile_age_years: args.profile_age_years,
             profile_sex: args.profile_sex.as_deref(),
+            profile_height_cm: args.profile_height_cm,
             resting_hr_bpm: args.resting_hr_bpm,
             max_hr_bpm: args.max_hr_bpm,
             min_heart_rate_samples: args.min_heart_rate_samples.unwrap_or(2),
@@ -4486,6 +4491,7 @@ fn energy_unavailable_daily_status_bridge(
             profile_weight_kg: args.profile_weight_kg,
             profile_age_years: args.profile_age_years,
             profile_sex: args.profile_sex.as_deref(),
+            profile_height_cm: args.profile_height_cm,
             resting_hr_bpm: args.resting_hr_bpm,
             max_hr_bpm: args.max_hr_bpm,
             min_heart_rate_samples: args.min_heart_rate_samples.unwrap_or(2),
@@ -4549,6 +4555,7 @@ fn energy_capture_validation_bridge(
                 profile_weight_kg: args.profile_weight_kg,
                 profile_age_years: args.profile_age_years,
                 profile_sex: args.profile_sex.as_deref(),
+                profile_height_cm: args.profile_height_cm,
                 resting_hr_bpm: args.resting_hr_bpm,
                 max_hr_bpm: args.max_hr_bpm,
                 min_heart_rate_samples: args.min_heart_rate_samples.unwrap_or(2),
