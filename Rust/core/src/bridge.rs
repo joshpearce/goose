@@ -151,7 +151,7 @@ use crate::{
         ActivityIntervalInput, ActivityMetricInput, ActivityMetricRow, ActivitySessionInput,
         ActivitySessionRow, AlgorithmPreferenceRecord, AlgorithmRunRecord, CURRENT_SCHEMA_VERSION,
         CalibrationLabelInput, CalibrationLabelRow, CaptureSessionInput, CaptureSessionRow,
-        CommandValidationRecord, DecodedFrameRow, ExternalSleepSessionInput,
+        CommandValidationRecord, DecodedFrameRow, ExerciseSessionRow, ExternalSleepSessionInput,
         ExternalSleepSessionRow, ExternalSleepStageInput, ExternalSleepStageRow, GooseStore,
         GravityRow, OvernightHistoricalRangePollInput, OvernightRawNotificationInput,
         OvernightSyncSessionInput, SleepCorrectionLabelInput,
@@ -227,6 +227,8 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "debug.start_session",
     "diagnostics.perf_budget",
     "diagnostics.property_suite",
+    "exercise.detect_sessions",
+    "exercise.sessions_between",
     "export.raw_timeframe",
     "export.validate_bundle",
     "health_sync.activity_dry_run",
@@ -2402,6 +2404,14 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(export_validate_bundle_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "exercise.detect_sessions" => request_args::<DetectExerciseSessionsArgs>(&request)
+            .and_then(exercise_detect_sessions_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "exercise.sessions_between" => request_args::<ExerciseSessionsBetweenArgs>(&request)
+            .and_then(exercise_sessions_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "validation.local_health_manifest_scaffold"
         | "local_health.validation_manifest_scaffold" => {
             request_args::<LocalHealthValidationManifestScaffoldArgs>(&request)
@@ -3582,6 +3592,106 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
         .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
         .collect();
     Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
+// Exercise detection bridge (exercise.detect_sessions / exercise.sessions_between)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct HrSampleArg {
+    ts: f64,
+    bpm: u8,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExerciseProfileArg {
+    resting_hr: Option<f64>,
+    max_hr: Option<f64>,
+    age: Option<u8>,
+    sex: Option<String>,
+    weight_kg: Option<f64>,
+    height_cm: Option<f64>,
+    daily_hr_p10: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DetectExerciseSessionsArgs {
+    database_path: String,
+    device_id: String,
+    hr_samples: Vec<HrSampleArg>,
+    gravity_rows: Vec<GravityRow>,
+    profile: ExerciseProfileArg,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExerciseSessionsBetweenArgs {
+    database_path: String,
+    device_id: String,
+    ts_start: f64,
+    ts_end: f64,
+}
+
+fn exercise_detect_sessions_bridge(
+    args: DetectExerciseSessionsArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let hr: Vec<crate::exercise_detection::HrSample> = args
+        .hr_samples
+        .iter()
+        .map(|s| crate::exercise_detection::HrSample { ts: s.ts, bpm: s.bpm })
+        .collect();
+    let profile = crate::exercise_detection::ExerciseProfile {
+        resting_hr: args.profile.resting_hr,
+        max_hr: args.profile.max_hr,
+        age: args.profile.age,
+        sex: args.profile.sex.clone(),
+        weight_kg: args.profile.weight_kg,
+        height_cm: args.profile.height_cm,
+        daily_hr_p10: args.profile.daily_hr_p10,
+    };
+    let sessions =
+        crate::exercise_detection::detect_exercise_sessions(&hr, &args.gravity_rows, &profile);
+    let mut inserted = 0usize;
+    let mut warnings: Vec<String> = Vec::new();
+    for session in &sessions {
+        let row = ExerciseSessionRow {
+            device_id: args.device_id.clone(),
+            start_ts: session.start_ts,
+            end_ts: session.end_ts,
+            duration_s: session.duration_s,
+            avg_hr: session.avg_hr,
+            peak_hr: session.peak_hr,
+            strain: session.strain,
+            calories_kcal: session.calories_kcal,
+            zone_time_pct_json: serde_json::to_string(&session.zone_time_pct)
+                .unwrap_or_default(),
+            hrmax_source: session.hrmax_source.clone(),
+            rhr_source: session.rhr_source.clone(),
+            avg_hrr_pct: session.avg_hrr_pct,
+        };
+        match store.insert_exercise_session(&row) {
+            Ok(true) => inserted += 1,
+            Ok(false) => warnings.push(format!(
+                "duplicate session skipped: start_ts={}",
+                session.start_ts
+            )),
+            Err(e) => warnings.push(format!("insert error: {e}")),
+        }
+    }
+    Ok(json!({
+        "sessions_detected": sessions.len(),
+        "sessions_inserted": inserted,
+        "warnings": warnings,
+    }))
+}
+
+fn exercise_sessions_between_bridge(
+    args: ExerciseSessionsBetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let rows = store.exercise_sessions_between(&args.device_id, args.ts_start, args.ts_end)?;
+    Ok(json!({ "sessions": rows }))
 }
 
 // ---------------------------------------------------------------------------
