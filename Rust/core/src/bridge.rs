@@ -3201,6 +3201,7 @@ fn skin_temp_celsius_from_raw(raw: u16) -> Option<f64> {
 /// Respiratory rate estimate (uncalibrated) using zero-crossing count on a
 /// raw window sampled at 1 Hz. Returns None if window_len < 10 or if the
 /// computed rate is outside the plausible range (0, 60] breaths/min.
+#[allow(dead_code)] // deferred to Phase 31/33 (zero-crossing rate not yet wired into insert path)
 fn resp_rate_bpm_zero_crossing(window: &[u16]) -> Option<f64> {
     if window.len() < 10 {
         return None;
