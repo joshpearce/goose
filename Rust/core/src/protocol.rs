@@ -67,7 +67,7 @@ impl DeviceType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ParsedFrame {
     pub device_type: DeviceType,
     pub raw_len: usize,
@@ -85,7 +85,7 @@ pub struct ParsedFrame {
     pub warnings: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ParsedPayload {
     Command {
@@ -134,7 +134,7 @@ pub enum ParsedPayload {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DataPacketBodySummary {
     NormalHistory {
@@ -161,6 +161,25 @@ pub enum DataPacketBodySummary {
         group_1_count: Option<u16>,
         group_2_count: Option<u16>,
         axes: Vec<I16SeriesSummary>,
+        warnings: Vec<String>,
+    },
+    V24History {
+        hr: Option<u8>,
+        rr_intervals_ms: Vec<u16>,
+        ppg_green: Option<u16>,
+        ppg_red_ir: Option<u16>,
+        gravity_x: Option<f32>,
+        gravity_y: Option<f32>,
+        gravity_z: Option<f32>,
+        skin_contact: Option<u8>,
+        spo2_red: Option<u16>,
+        spo2_ir: Option<u16>,
+        skin_temp_raw: Option<u16>,
+        ambient: Option<u16>,
+        led1: Option<u16>,
+        led2: Option<u16>,
+        resp_raw: Option<u16>,
+        sig_quality: Option<u16>,
         warnings: Vec<String>,
     },
 }
@@ -507,7 +526,7 @@ fn parse_data_packet_payload(payload: &[u8]) -> ParsedPayload {
     // the structured body_summary already carries all useful motion data,
     // and the large hex dump roughly doubles the stored JSON for these types.
     // body_hex remains populated for all other packet_k values.
-    let body_hex = if matches!(packet_k, Some(10) | Some(21)) {
+    let body_hex = if matches!(packet_k, Some(10) | Some(21) | Some(24)) {
         String::new()
     } else {
         hex::encode(&payload[13.min(payload.len())..])
@@ -539,7 +558,7 @@ fn parse_data_packet_body_summary(
     };
 
     match packet_k {
-        7 | 9 | 12 | 18 | 24 => (
+        7 | 9 | 12 | 18 => (
             Some(DataPacketBodySummary::NormalHistory {
                 hr_present: hr_present_marker.map(|marker| marker != 0),
                 marker_offset: hr_marker_offset,
@@ -550,6 +569,7 @@ fn parse_data_packet_body_summary(
         17 => parse_r17_body_summary(payload),
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),
+        24 => parse_v24_body_summary(payload),
         _ => (None, Vec::new()),
     }
 }
@@ -644,6 +664,99 @@ fn parse_k21_raw_motion_summary(payload: &[u8]) -> (Option<DataPacketBodySummary
         }),
         warnings,
     )
+}
+
+fn read_f32_le(data: &[u8], offset: usize) -> Option<f32> {
+    let bytes = data.get(offset..offset + 4)?;
+    Some(f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+}
+
+fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    if payload.len() < 3 {
+        return (None, vec!["v24_payload_too_short".to_string()]);
+    }
+    let data = &payload[3..];
+    let mut warnings = Vec::new();
+
+    if data.len() < 77 {
+        warnings.push("v24_payload_too_short".to_string());
+        return (
+            Some(DataPacketBodySummary::V24History {
+                hr: None,
+                rr_intervals_ms: Vec::new(),
+                ppg_green: None,
+                ppg_red_ir: None,
+                gravity_x: None,
+                gravity_y: None,
+                gravity_z: None,
+                skin_contact: None,
+                spo2_red: None,
+                spo2_ir: None,
+                skin_temp_raw: None,
+                ambient: None,
+                led1: None,
+                led2: None,
+                resp_raw: None,
+                sig_quality: None,
+                warnings,
+            }),
+            vec!["v24_payload_too_short".to_string()],
+        );
+    }
+
+    let hr = data.get(14).copied();
+    let rr_count = data.get(15).copied().unwrap_or(0) as usize;
+    let rr_count = rr_count.min(4);
+    let rr_intervals_ms = (0..rr_count)
+        .filter_map(|i| {
+            let o = 16 + 2 * i;
+            read_u16_le(data, o)
+        })
+        .filter(|&v| v != 0)
+        .collect::<Vec<u16>>();
+
+    let ppg_green = read_u16_le(data, 26);
+    let ppg_red_ir = read_u16_le(data, 28);
+    let gravity_x = read_f32_le(data, 33);
+    let gravity_y = read_f32_le(data, 37);
+    let gravity_z = read_f32_le(data, 41);
+    let skin_contact = data.get(48).copied();
+    let spo2_red = read_u16_le(data, 61);
+    let spo2_ir = read_u16_le(data, 63);
+    let skin_temp_raw = read_u16_le(data, 65);
+    let ambient = read_u16_le(data, 67);
+    let led1 = read_u16_le(data, 69);
+    let led2 = read_u16_le(data, 71);
+    let resp_raw = read_u16_le(data, 73);
+    let sig_quality = read_u16_le(data, 75);
+
+    (
+        Some(DataPacketBodySummary::V24History {
+            hr,
+            rr_intervals_ms,
+            ppg_green,
+            ppg_red_ir,
+            gravity_x,
+            gravity_y,
+            gravity_z,
+            skin_contact,
+            spo2_red,
+            spo2_ir,
+            skin_temp_raw,
+            ambient,
+            led1,
+            led2,
+            resp_raw,
+            sig_quality,
+            warnings: warnings.clone(),
+        }),
+        warnings,
+    )
+}
+
+#[cfg(test)]
+pub fn parse_v24_body_for_test(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    parse_v24_body_summary(payload)
 }
 
 fn summarize_i16_series(
