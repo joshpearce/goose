@@ -3682,7 +3682,7 @@ impl GooseStore {
                 inputs_json,
                 quality_flags_json,
                 provenance_json
-            ) VALUES (?1, ?2, 'UTC', ?3, ?3, ?4, ?5, 'ewma_baseline', 1.0, '{}', '[]', '{}')
+            ) VALUES (?1, ?2, 'UTC', ?3, ?3, ?4, ?5, 'local_estimate', 1.0, '{}', '[]', '{}')
             "#,
             rusqlite::params![daily_metric_id, date_key, now_ms, hrv_rmssd, rhr_bpm],
         )?;
