@@ -58,6 +58,10 @@ final class HealthDataStore {
   // properties are not allowed inside Swift extensions).
   var sevenDayStrainCache: (value: Double?, computedAt: Date)?
 
+  // Recovery V1 result from metrics.goose_recovery_v1 (personal-baseline EWMA score).
+  // Stored here because Swift extensions cannot add stored properties to @Observable classes.
+  var recoveryV1Result: RecoveryV1Result?
+
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
   static let liveHRVRMSSDSampleCountDefaultsKey = "goose.swift.liveHRVRMSSDSampleCount"

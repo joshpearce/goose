@@ -1,0 +1,139 @@
+import Foundation
+import SwiftUI
+
+// MARK: - RecoveryV1Result
+
+struct RecoveryV1Result {
+  let score: Int?
+  let trustLevel: String
+  let colourBand: String
+  let zHRV: Double?
+  let zRHR: Double?
+}
+
+extension RecoveryV1Result {
+  var bandColor: Color {
+    switch colourBand {
+    case "Verde": return .green
+    case "Amarelo": return .orange
+    case "Vermelho": return .red
+    default: return .orange
+    }
+  }
+}
+
+// MARK: - HealthDataStore+Recovery
+
+extension HealthDataStore {
+  // Published via @Observable — stored property declared in the base class body
+  // (extensions cannot add stored properties in Swift). The backing variable
+  // `recoveryV1Result` is declared here as a computed shim that reads/writes the
+  // stored backing ivar on the base class. However, since HealthDataStore uses
+  // @Observable macro, we add the stored property to the class directly through
+  // the extension's init trick is not possible — instead we use a workaround:
+  // declare the state in the base class. This extension adds behaviour only.
+  //
+  // The @Published var recoveryV1Result: RecoveryV1Result? is declared in
+  // HealthDataStore.swift (base class body) following the existing pattern for
+  // properties like `sevenDayStrainCache`. The extension wires the logic.
+
+  var recoveryV1IsCalibrating: Bool {
+    recoveryV1Result?.trustLevel == "calibrating"
+  }
+
+  var recoveryV1TrustLabel: String? {
+    switch recoveryV1Result?.trustLevel {
+    case "calibrating": return "A calibrar"
+    case "provisional": return "Provisório"
+    default: return nil
+    }
+  }
+
+  // Reads HRV and RHR from the existing recovery metric stores (same sources used
+  // by recoveryHRVDisplayText / recoveryRestingHRDisplayText) and calls the bridge.
+  // Must be called from a background context; result is published on @MainActor.
+  func runRecoveryV1() {
+    let dateKey = Self.metricDateKey(for: Date())
+
+    // Resolve numeric HRV (ms) — prefer stored daily recovery metric, fall back to packet report
+    let hrvRmssdMs: Double? = {
+      if let metric = preferredDailyRecoveryMetric(valueKey: "hrv_rmssd_ms", for: Date()),
+         let v = Self.doubleValue(metric["hrv_rmssd_ms"]) {
+        return v
+      }
+      if let report = packetInputReports["hrv"],
+         Self.boolValue(report["pass"]) == true {
+        let output = Self.map(report, "score_result", "output")
+        if let v = Self.doubleValue(output?["rmssd_ms"]) { return v }
+        if let v = Self.array(report["daily"]).last.flatMap({ Self.doubleValue($0["rmssd_ms"]) }) {
+          return v
+        }
+      }
+      return hkHRVSDNNMs
+    }()
+
+    // Resolve numeric RHR (bpm) — prefer stored daily recovery metric, fall back to packet report
+    let restingHrBpm: Double? = {
+      if let metric = preferredDailyRecoveryMetricWithRestingHR(),
+         let v = Self.doubleValue(metric["resting_hr_bpm"]) {
+        return v
+      }
+      if let rollup = packetInputReports["resting_hr_rollup"],
+         Self.boolValue(rollup["pass"]) == true,
+         let v = Self.doubleValue(rollup["resting_hr_bpm"]) {
+        return v
+      }
+      return hkRestingHR
+    }()
+
+    guard let hrv = hrvRmssdMs, hrv > 0 else {
+      DispatchQueue.main.async { [weak self] in
+        self?.recoveryV1Result = nil
+      }
+      return
+    }
+
+    let rhr = restingHrBpm ?? 55.0
+    let db = databasePath
+    // device_id is not strictly required by the bridge (baselines are keyed by date),
+    // but we pass a stable sentinel so the Rust side can log it if needed.
+    let deviceID = "goose.swift.recovery.v1"
+    let bridge = self.bridge
+
+    packetInputQueue.async { [weak self] in
+      guard let self else { return }
+      do {
+        let report = try bridge.request(
+          method: "metrics.goose_recovery_v1",
+          args: [
+            "database_path": db,
+            "device_id": deviceID,
+            "date_key": dateKey,
+            "hrv_rmssd_ms": hrv,
+            "resting_hr_bpm": rhr,
+          ]
+        )
+        let scoreRaw = Self.doubleValue(report["score_0_to_100"])
+        let score = scoreRaw.map { Int($0.rounded()) }
+        let trustLevel = report["trust_level"] as? String ?? "calibrating"
+        let colourBand = report["colour_band"] as? String ?? "Amarelo"
+        let zHRV = Self.doubleValue(report["z_hrv"])
+        let zRHR = Self.doubleValue(report["z_rhr"])
+        let result = RecoveryV1Result(
+          score: score,
+          trustLevel: trustLevel,
+          colourBand: colourBand,
+          zHRV: zHRV,
+          zRHR: zRHR
+        )
+        DispatchQueue.main.async { [weak self] in
+          self?.recoveryV1Result = result
+        }
+      } catch {
+        DispatchQueue.main.async { [weak self] in
+          self?.recoveryV1Result = nil
+        }
+      }
+    }
+  }
+}
