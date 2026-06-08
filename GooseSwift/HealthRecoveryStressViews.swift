@@ -41,15 +41,39 @@ struct RecoveryV2OverviewPage: View {
               ProgressView()
                 .tint(palette.accent)
                 .frame(height: heroHeight)
-            } else {
-              SleepV2Hero(
+            } else if store.recoveryV1IsCalibrating {
+              RecoveryV2CalibratingHero(
                 palette: palette,
-                title: "Recovery",
                 dateLabel: dateLabel,
-                score: recoveryScore,
-                gaugeLabel: "Recovery",
                 onDateTap: { showingDatePicker = true }
               )
+              .frame(height: heroHeight)
+            } else {
+              VStack(spacing: 0) {
+                SleepV2Hero(
+                  palette: palette,
+                  title: "Recovery",
+                  dateLabel: dateLabel,
+                  score: recoveryScore,
+                  gaugeLabel: "Recovery",
+                  onDateTap: { showingDatePicker = true }
+                )
+                if let trustLabel = store.recoveryV1TrustLabel {
+                  Text(trustLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.secondaryText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.thinMaterial, in: Capsule())
+                    .padding(.top, 6)
+                }
+                if let bandColor = store.recoveryV1Result?.bandColor {
+                  Capsule()
+                    .fill(bandColor.opacity(0.82))
+                    .frame(width: 48, height: 6)
+                    .padding(.top, 8)
+                }
+              }
               .frame(height: heroHeight)
             }
 
@@ -170,9 +194,11 @@ struct RecoveryV2OverviewPage: View {
     .onAppear {
       store.loadBridgeCatalogsIfNeeded()
       store.runPacketScores()
+      store.runRecoveryV1()
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       store.runPacketScores()
+      store.runRecoveryV1()
     }
   }
 
@@ -213,6 +239,59 @@ struct RecoveryV2OverviewPage: View {
   private func openCoachTip() {
     router.openCoach(prompt: coachTip.prompt)
     model.recordUIAction("coach.opened", detail: "recovery v2 inline tip")
+  }
+}
+
+struct RecoveryV2CalibratingHero: View {
+  let palette: SleepV2Palette
+  let dateLabel: String
+  let onDateTap: () -> Void
+
+  var body: some View {
+    VStack(spacing: 0) {
+      Spacer().frame(height: 32)
+
+      ZStack {
+        Circle()
+          .fill(palette.surface.opacity(palette.light ? 0.94 : 0.84))
+          .shadow(color: palette.shadow.opacity(0.48), radius: 18, x: 0, y: 8)
+
+        Circle()
+          .stroke(.white.opacity(palette.light ? 0.88 : 0.12), lineWidth: 10)
+          .padding(6)
+
+        VStack(spacing: 6) {
+          Image(systemName: "hourglass")
+            .font(.system(size: 32, weight: .semibold))
+            .foregroundStyle(palette.secondaryText)
+          Text("A calibrar")
+            .font(.system(size: 20, weight: .semibold, design: .rounded))
+            .foregroundStyle(palette.text)
+        }
+      }
+      .frame(width: 188, height: 188)
+
+      Button(action: onDateTap) {
+        HStack(spacing: 6) {
+          Text(dateLabel)
+          Image(systemName: "chevron.down")
+            .font(.caption.weight(.semibold))
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(palette.secondaryText)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.thinMaterial, in: Capsule())
+      }
+      .buttonStyle(.plain)
+      .padding(.top, 16)
+
+      Text("< 4 noites de dados")
+        .font(.caption.weight(.medium))
+        .foregroundStyle(palette.mutedText)
+        .padding(.top, 6)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
   }
 }
 
