@@ -259,7 +259,7 @@ Plans:
 | 21. IMU Data Foundation | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 22. HRV Accuracy | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
-| 24. Sleep Metrics Without Staging + Baselines | v5.0 | 0/0 | Not started | — |
+| 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 0/0 | Not started | — |
 | 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
@@ -445,8 +445,8 @@ Plans:
 
 Plans:
 
-- [ ] 24-01-PLAN.md — Wave 1: HR-threshold sleep metric helpers (heart_rate_dip_pct, waso_from_hr, sol_from_hr, hr_disturbance_count) in metrics.rs + SleepScoreOutput fields + sleep_window_feature wiring + Sleep V2 dashboard surfacing (ALG-SLP-01)
-- [ ] 24-02-PLAN.md — Wave 1: baselines.rs EWMA engine (alpha 0.10, cold-start, trust levels) + fold_history from daily_recovery_metrics + idempotent BEGIN EXCLUSIVE update + store.ewma_baseline_* bridge methods (ALG-SLP-02)
+- [x] 24-01-PLAN.md — Wave 1: HR-threshold sleep metric helpers (heart_rate_dip_pct, waso_from_hr, sol_from_hr, hr_disturbance_count) in metrics.rs + SleepScoreOutput fields + sleep_window_feature wiring + Sleep V2 dashboard surfacing (ALG-SLP-01)
+- [x] 24-02-PLAN.md — Wave 1: baselines.rs EWMA engine (alpha 0.10, cold-start, trust levels) + fold_history from daily_recovery_metrics + idempotent BEGIN EXCLUSIVE update + store.ewma_baseline_* bridge methods (ALG-SLP-02)
 
 **UI hint**: yes
 
@@ -456,7 +456,6 @@ Plans:
 > deviation spread, METRIC_CFG table, resp metric, stale flag) are additive refinements not
 > present in the ALG-SLP-02 requirement text; surface to the developer if they should be
 > pulled into this phase rather than Phase 25 (Recovery) where the σ-spread is consumed.
-
 
 ---
 
