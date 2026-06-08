@@ -159,6 +159,24 @@ struct PrimarySleepDetailSheet: View {
           .background(palette.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
           .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(palette.separator.opacity(0.70), lineWidth: 1))
 
+          // ALG-SLP-01: HR-threshold sleep quality stat group
+          VStack(alignment: .leading, spacing: 16) {
+            Text("Sleep quality")
+              .font(.headline.weight(.semibold))
+              .foregroundStyle(palette.text)
+            HStack(spacing: 10) {
+              SleepV2SleepDetailStat(palette: palette, label: "HR dip", value: sleep.heartRateDipText, systemImage: "heart.fill")
+              SleepV2SleepDetailStat(palette: palette, label: "WASO", value: sleep.wasoText, systemImage: "moon.zzz")
+            }
+            HStack(spacing: 10) {
+              SleepV2SleepDetailStat(palette: palette, label: "Sleep onset", value: sleep.solText, systemImage: "timer")
+              SleepV2SleepDetailStat(palette: palette, label: "Disturbances", value: sleep.disturbanceText, systemImage: "waveform.path.ecg")
+            }
+          }
+          .padding(20)
+          .background(palette.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+          .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(palette.separator.opacity(0.70), lineWidth: 1))
+
           VStack(alignment: .leading, spacing: 16) {
             Text("Stages")
               .font(.headline.weight(.semibold))

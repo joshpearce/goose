@@ -32,6 +32,13 @@ extension HealthDataStore {
     let stages = sleepStageSegments(from: output)
     let idSuffix = start.map { "\(Int($0.timeIntervalSince1970))" } ?? "latest"
 
+    // ALG-SLP-01: HR-threshold sleep quality metrics from score output
+    let heartRateDipText = numberText(output["heart_rate_dip_percent"], fractionDigits: 1)
+      .map { $0 + "%" } ?? "--"
+    let wasoText = doubleValue(output["waso_minutes"]).map { minutesText($0) } ?? "--"
+    let solText = doubleValue(output["sol_minutes"]).map { minutesText($0) } ?? "--"
+    let disturbanceText = intValue(output["disturbance_count"]).map { "\($0)" } ?? "--"
+
     return PrimarySleepDetail(
       id: "primary-sleep-\(idSuffix)",
       dateLabel: start.map(dateLabel) ?? "Latest",
@@ -42,7 +49,11 @@ extension HealthDataStore {
       scoreText: score,
       qualityText: sleepQualityLabel(score: doubleValue(output["score_0_to_100"])),
       source: .bridge("metrics.sleep_score_from_features"),
-      stages: stages
+      stages: stages,
+      heartRateDipText: heartRateDipText,
+      wasoText: wasoText,
+      solText: solText,
+      disturbanceText: disturbanceText
     )
   }
 

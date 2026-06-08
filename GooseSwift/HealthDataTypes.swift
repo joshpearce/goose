@@ -149,6 +149,11 @@ struct PrimarySleepDetail: Identifiable {
   let qualityText: String
   let source: HealthDataSource
   let stages: [HealthSleepStageSegment]
+  // ALG-SLP-01: HR-threshold sleep quality metrics
+  let heartRateDipText: String
+  let wasoText: String
+  let solText: String
+  let disturbanceText: String
 
   var scoreDisplayText: String {
     scoreText == "--" ? "--" : "\(scoreText)%"

@@ -204,7 +204,11 @@ enum HealthKitSleepImporter {
       scoreText: "--",
       qualityText: qualityLabel(totalMinutes: asleepMinutes),
       source: .local("apple.health.sleep"),
-      stages: stages
+      stages: stages,
+      heartRateDipText: "--",
+      wasoText: "--",
+      solText: "--",
+      disturbanceText: "--"
     )
   }
 
