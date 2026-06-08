@@ -149,12 +149,12 @@ use crate::{
     storage_check::{StorageCheckOptions, check_storage_database},
     store::{
         ActivityIntervalInput, ActivityMetricInput, ActivityMetricRow, ActivitySessionInput,
-        ActivitySessionRow, AlgorithmPreferenceRecord, AlgorithmRunRecord, CURRENT_SCHEMA_VERSION,
-        CalibrationLabelInput, CalibrationLabelRow, CaptureSessionInput, CaptureSessionRow,
-        CommandValidationRecord, DecodedFrameRow, ExerciseSessionRow, ExternalSleepSessionInput,
-        ExternalSleepSessionRow, ExternalSleepStageInput, ExternalSleepStageRow, GooseStore,
-        GravityRow, OvernightHistoricalRangePollInput, OvernightRawNotificationInput,
-        OvernightSyncSessionInput, SleepCorrectionLabelInput,
+        ActivitySessionRow, AlgorithmPreferenceRecord, AlgorithmRunRecord, BackfillReport,
+        CURRENT_SCHEMA_VERSION, CalibrationLabelInput, CalibrationLabelRow, CaptureSessionInput,
+        CaptureSessionRow, CommandValidationRecord, DecodedFrameRow, ExerciseSessionRow,
+        ExternalSleepSessionInput, ExternalSleepSessionRow, ExternalSleepStageInput,
+        ExternalSleepStageRow, GooseStore, GravityRow, OvernightHistoricalRangePollInput,
+        OvernightRawNotificationInput, OvernightSyncSessionInput, SleepCorrectionLabelInput,
     },
     timeline::{
         observability_timeline_from_rows, packet_timeline_between,
@@ -308,6 +308,9 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "store.ewma_baseline_update",
     "store.gravity_rows_between",
     "store.insert_gravity_rows",
+    "sync.backfill_streams",
+    "sync.mark_synced",
+    "sync.rows_pending_upload",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",
     "upload.get_recent_decoded_streams",
@@ -2720,6 +2723,18 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(insert_gravity_rows_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sync.mark_synced" => request_args::<SyncMarkSyncedArgs>(&request)
+            .and_then(sync_mark_synced_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sync.rows_pending_upload" => request_args::<SyncRowsPendingUploadArgs>(&request)
+            .and_then(sync_rows_pending_upload_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sync.backfill_streams" => request_args::<SyncBackfillStreamsArgs>(&request)
+            .and_then(sync_backfill_streams_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "storage.check" => request_args::<StorageCheckArgs>(&request)
             .and_then(storage_check_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -3592,6 +3607,63 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
         .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
         .collect();
     Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
+// Sync bridge (sync.mark_synced / sync.rows_pending_upload / sync.backfill_streams)
+// ---------------------------------------------------------------------------
+
+/// Mark specific rows in a stream table as synced=1 by rowid.
+/// Stream name is validated against STREAM_ALLOWLIST in store.mark_synced_rows (T-29-03).
+#[derive(Debug, Deserialize)]
+struct SyncMarkSyncedArgs {
+    database_path: String,
+    stream: String,
+    row_ids: Vec<i64>,
+}
+
+/// Return rows from a stream table where synced=0, ordered by ts.
+/// Stream name is validated against STREAM_ALLOWLIST in store.rows_pending_upload.
+#[derive(Debug, Deserialize)]
+struct SyncRowsPendingUploadArgs {
+    database_path: String,
+    stream: String,
+    limit: i64,
+}
+
+/// Populate hr_samples and rr_intervals from decoded_frames for the given device and time window.
+#[derive(Debug, Deserialize)]
+struct SyncBackfillStreamsArgs {
+    database_path: String,
+    device_id: String,
+    start_ts: f64,
+    end_ts: f64,
+}
+
+fn sync_mark_synced_bridge(args: SyncMarkSyncedArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let count = store.mark_synced_rows(&args.stream, &args.row_ids)?;
+    Ok(json!({"marked": count}))
+}
+
+fn sync_rows_pending_upload_bridge(
+    args: SyncRowsPendingUploadArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let rows = store.rows_pending_upload(&args.stream, args.limit)?;
+    Ok(json!({"rows": rows}))
+}
+
+fn sync_backfill_streams_bridge(args: SyncBackfillStreamsArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let report: BackfillReport =
+        store.backfill_streams_from_decoded_frames(&args.device_id, args.start_ts, args.end_ts)?;
+    Ok(json!({
+        "hr_inserted": report.hr_inserted,
+        "rr_inserted": report.rr_inserted,
+        "events_inserted": report.events_inserted,
+        "battery_inserted": report.battery_inserted,
+    }))
 }
 
 // ---------------------------------------------------------------------------

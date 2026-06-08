@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     GooseError, GooseResult,
-    protocol::{DeviceType, ParsedFrame},
+    protocol::{DataPacketBodySummary, DeviceType, ParsedFrame, ParsedPayload},
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
@@ -687,6 +687,28 @@ pub struct BatteryRow {
     pub ts: f64,
     pub level_pct: i64,
     pub synced: i64,
+}
+
+/// Stream tables that accept synced-flag operations (mark_synced_rows, rows_pending_upload,
+/// prune_synced_stream_rows). Any stream name not in this list is rejected to prevent SQL injection.
+const STREAM_ALLOWLIST: &[&str] = &[
+    "battery",
+    "events",
+    "gravity",
+    "hr_samples",
+    "resp_samples",
+    "rr_intervals",
+    "skin_temp_samples",
+    "spo2_samples",
+];
+
+/// Summary returned by backfill_streams_from_decoded_frames.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackfillReport {
+    pub hr_inserted: usize,
+    pub rr_inserted: usize,
+    pub events_inserted: usize,
+    pub battery_inserted: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -6971,11 +6993,239 @@ impl GooseStore {
             .optional()
             .map_err(GooseError::from)
     }
+
+    /// Mark specific rows in a stream table as synced=1 by rowid.
+    /// The stream name must be in STREAM_ALLOWLIST to prevent SQL injection via table name
+    /// interpolation (T-29-03 mitigation). row_ids are fully parameterised.
+    pub fn mark_synced_rows(&self, stream: &str, row_ids: &[i64]) -> GooseResult<usize> {
+        if !STREAM_ALLOWLIST.contains(&stream) {
+            return Err(GooseError::message(format!("unknown stream: {stream}")));
+        }
+        if row_ids.is_empty() {
+            return Ok(0);
+        }
+        let placeholders = (1..=row_ids.len())
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!("UPDATE {stream} SET synced=1 WHERE rowid IN ({placeholders})");
+        let count = self
+            .conn
+            .execute(&sql, params_from_iter(row_ids.iter()))?;
+        Ok(count)
+    }
+
+    /// Return up to `limit` rows from a stream table where synced=0, ordered by ts.
+    /// Each row is returned as a JSON object including the "rowid" key so callers can
+    /// pass rowids back to mark_synced_rows.
+    /// The stream name must be in STREAM_ALLOWLIST.
+    pub fn rows_pending_upload(
+        &self,
+        stream: &str,
+        limit: i64,
+    ) -> GooseResult<Vec<serde_json::Value>> {
+        if !STREAM_ALLOWLIST.contains(&stream) {
+            return Err(GooseError::message(format!("unknown stream: {stream}")));
+        }
+        let sql =
+            format!("SELECT rowid, * FROM {stream} WHERE synced=0 ORDER BY ts LIMIT ?1");
+        let mut statement = self.conn.prepare(&sql)?;
+        let col_names: Vec<String> = statement
+            .column_names()
+            .into_iter()
+            .map(String::from)
+            .collect();
+        let rows = statement.query_map(params![limit], |row| {
+            let mut obj = serde_json::Map::new();
+            for (i, name) in col_names.iter().enumerate() {
+                let val = match row.get_ref(i)? {
+                    rusqlite::types::ValueRef::Null => serde_json::Value::Null,
+                    rusqlite::types::ValueRef::Integer(v) => {
+                        serde_json::Value::Number(v.into())
+                    }
+                    rusqlite::types::ValueRef::Real(v) => serde_json::Value::Number(
+                        serde_json::Number::from_f64(v)
+                            .unwrap_or_else(|| serde_json::Number::from(0)),
+                    ),
+                    rusqlite::types::ValueRef::Text(v) => {
+                        serde_json::Value::String(
+                            std::str::from_utf8(v)
+                                .unwrap_or("")
+                                .to_string(),
+                        )
+                    }
+                    rusqlite::types::ValueRef::Blob(_) => serde_json::Value::Null,
+                };
+                obj.insert(name.clone(), val);
+            }
+            Ok(serde_json::Value::Object(obj))
+        })?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(GooseError::from)
+    }
+
+    /// Populate hr_samples and rr_intervals from decoded_frames within the given time window.
+    /// Uses INSERT OR IGNORE to be idempotent (UNIQUE(device_id, ts) prevents duplicates).
+    /// Backfilled rows have synced=0 (the default) so they appear in rows_pending_upload
+    /// without being stranded by any highwater cursor — rows_pending_upload uses WHERE synced=0,
+    /// not ts > highwater.
+    /// All inserts are wrapped in a single immediate_transaction for atomicity.
+    pub fn backfill_streams_from_decoded_frames(
+        &self,
+        device_id: &str,
+        start_ts: f64,
+        end_ts: f64,
+    ) -> GooseResult<BackfillReport> {
+        let start_iso = unix_f64_to_iso8601(start_ts);
+        let end_iso = unix_f64_to_iso8601(end_ts);
+        let frames = self.decoded_frames_between(&start_iso, &end_iso)?;
+
+        let mut hr_rows: Vec<(f64, i64)> = Vec::new();
+        let mut rr_rows: Vec<(f64, i64)> = Vec::new();
+
+        for frame in &frames {
+            if !frame.header_crc_valid || !frame.payload_crc_valid {
+                continue;
+            }
+            let parsed: Option<ParsedPayload> =
+                serde_json::from_str(&frame.parsed_payload_json).unwrap_or(None);
+            let Some(ParsedPayload::DataPacket {
+                timestamp_seconds,
+                body_summary,
+                ..
+            }) = parsed
+            else {
+                continue;
+            };
+            let ts_unix: Option<f64> = timestamp_seconds.map(|s| s as f64);
+            let Some(ref summary) = body_summary else {
+                continue;
+            };
+            match summary {
+                DataPacketBodySummary::NormalHistory {
+                    hr_present,
+                    marker_value,
+                    ..
+                } => {
+                    if hr_present.unwrap_or(false) {
+                        if let (Some(ts), Some(bpm)) = (ts_unix, marker_value) {
+                            hr_rows.push((ts, *bpm as i64));
+                        }
+                    }
+                }
+                DataPacketBodySummary::RawMotionK10 { heart_rate, .. } => {
+                    if let (Some(ts), Some(bpm)) = (ts_unix, heart_rate) {
+                        hr_rows.push((ts, *bpm as i64));
+                    }
+                }
+                DataPacketBodySummary::V24History {
+                    hr: v24_hr,
+                    rr_intervals_ms,
+                    skin_contact,
+                    ..
+                } => {
+                    let contact = skin_contact.unwrap_or(0) == 1;
+                    if contact {
+                        if let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
+                            hr_rows.push((ts, bpm as i64));
+                        }
+                    }
+                    if let Some(ts_base) = ts_unix {
+                        let mut t = ts_base;
+                        for &ms in rr_intervals_ms.iter() {
+                            rr_rows.push((t, ms as i64));
+                            t += ms as f64 / 1000.0;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let hr_to_insert = hr_rows.clone();
+        let rr_to_insert = rr_rows.clone();
+        let device_id_owned = device_id.to_string();
+
+        self.immediate_transaction(|store| {
+            let mut hr_inserted = 0usize;
+            for (ts, bpm) in &hr_to_insert {
+                hr_inserted += store.conn.execute(
+                    "INSERT OR IGNORE INTO hr_samples (device_id, ts, bpm) VALUES (?1, ?2, ?3)",
+                    params![device_id_owned, ts, bpm],
+                )?;
+            }
+            let mut rr_inserted = 0usize;
+            for (ts, interval_ms) in &rr_to_insert {
+                rr_inserted += store.conn.execute(
+                    "INSERT OR IGNORE INTO rr_intervals (device_id, ts, interval_ms) VALUES (?1, ?2, ?3)",
+                    params![device_id_owned, ts, interval_ms],
+                )?;
+            }
+            Ok(BackfillReport {
+                hr_inserted,
+                rr_inserted,
+                events_inserted: 0,
+                battery_inserted: 0,
+            })
+        })
+    }
+
+    /// Delete synced rows (synced=1) older than older_than_ts from a stream table.
+    /// Stream table pruning only removes rows with synced=1 — unsynced rows (synced=0)
+    /// are structurally protected regardless of age. Same allowlist as mark_synced_rows.
+    ///
+    /// Stream table pruning (DELETE FROM {stream} WHERE synced=1 AND ...) is intentionally
+    /// NOT performed in compact_raw_evidence_payloads_to_limit — the invariant is enforced
+    /// at the call site by the upload pipeline which checks synced=1 before any stream
+    /// table DELETE.
+    pub fn prune_synced_stream_rows(
+        &self,
+        stream: &str,
+        older_than_ts: f64,
+    ) -> GooseResult<usize> {
+        if !STREAM_ALLOWLIST.contains(&stream) {
+            return Err(GooseError::message(format!("unknown stream: {stream}")));
+        }
+        let sql = format!("DELETE FROM {stream} WHERE synced=1 AND ts < ?1");
+        let count = self.conn.execute(&sql, params![older_than_ts])?;
+        Ok(count)
+    }
 }
 
 fn finite_json_number(value: &Value) -> Option<f64> {
     let value = value.as_f64()?;
     value.is_finite().then_some(value)
+}
+
+/// Convert a Unix timestamp (f64 seconds since epoch) to an ISO-8601 string
+/// compatible with the format used in decoded_frames captured_at column.
+/// Mirrors the chrono_from_unix helper in bridge.rs without adding a chrono dependency.
+fn unix_f64_to_iso8601(ts: f64) -> String {
+    let secs = ts as u64;
+    let ms = ((ts - secs as f64) * 1000.0) as u64;
+    let h = (secs / 3600) % 24;
+    let m = (secs % 3600) / 60;
+    let s = secs % 60;
+    let days = secs / 86400;
+    let (year, month, day) = days_to_ymd_store(days as u32);
+    format!("{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}.{ms:03}Z")
+}
+
+/// Gregorian date from days-since-epoch (1970-01-01 = day 0).
+/// Matches the logic used in the bridge-side days_to_ymd helper.
+fn days_to_ymd_store(days: u32) -> (u32, u32, u32) {
+    let days = days as i64;
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as u32, m as u32, d as u32)
 }
 
 fn metric_output_unit(name: &str) -> &'static str {
@@ -8645,5 +8895,175 @@ mod sync_schema_tests {
 
         assert_eq!(hw.as_deref(), Some("1000.0"));
         assert_eq!(rd.as_deref(), Some("500.0"));
+    }
+}
+
+#[cfg(test)]
+mod sync_methods_tests {
+    use super::*;
+
+    fn make_store() -> GooseStore {
+        GooseStore::open_in_memory().expect("failed to open in-memory store")
+    }
+
+    /// Insert a minimal decoded frame row (with a NormalHistory HR packet) for backfill tests.
+    /// Uses the raw SQL path because the store's public API requires evidence rows too.
+    fn insert_test_hr_frame(store: &GooseStore, device_id: &str, ts_unix: u32, bpm: u8) {
+        // Insert a synthetic raw_evidence row — all NOT NULL columns must be provided
+        let evidence_id = format!("evidence-{ts_unix}");
+        let captured_at = format!("1970-01-01T00:{:02}:{:02}.000Z", ts_unix / 60, ts_unix % 60);
+        store.conn.execute(
+            "INSERT OR IGNORE INTO raw_evidence \
+             (evidence_id, source, captured_at, device_model, payload_hex, sha256, sensitivity) \
+             VALUES (?1, 'test', ?2, 'test-device', '', '', 'standard')",
+            params![evidence_id, captured_at],
+        ).unwrap();
+        // Build the ParsedPayload JSON for a NormalHistory DataPacket.
+        // ParsedPayload uses #[serde(tag = "kind", rename_all = "snake_case")], so
+        // DataPacket serialises as {"kind":"data_packet", <fields flat>} (internally tagged).
+        let payload_json = format!(
+            r#"{{"kind":"data_packet","packet_k":40,"domain":null,"status_or_stream":null,"counter_or_page":null,"timestamp_seconds":{ts_unix},"timestamp_subseconds":null,"hr_marker_offset":null,"hr_present_marker":null,"body_offset":0,"body_hex":"","body_summary":{{"kind":"normal_history","hr_present":true,"marker_offset":null,"marker_value":{bpm}}},"warnings":[]}}"#
+        );
+        let frame_id = format!("frame-{ts_unix}");
+        store.conn.execute(
+            "INSERT OR IGNORE INTO decoded_frames \
+             (frame_id, evidence_id, device_type, raw_len, header_len, declared_len, \
+              payload_hex, payload_crc_hex, header_crc_valid, payload_crc_valid, \
+              packet_type, packet_type_name, sequence, command_or_event, \
+              parsed_payload_json, parser_version, warnings_json) \
+             VALUES (?1, ?2, 'whoop5', 0, 0, 0, '', '', 1, 1, 40, 'REALTIME_DATA', 0, 0, ?3, 'test', '[]')",
+            params![frame_id, evidence_id, payload_json],
+        ).unwrap();
+    }
+
+    #[test]
+    fn test_mark_synced_sets_flag() {
+        let store = make_store();
+        store.conn.execute(
+            "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-1', 1000.0, 75)",
+            [],
+        ).unwrap();
+        let rowid: i64 = store.conn.query_row(
+            "SELECT rowid FROM hr_samples WHERE device_id='dev-1' AND ts=1000.0",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        let affected = store.mark_synced_rows("hr_samples", &[rowid]).unwrap();
+        assert_eq!(affected, 1);
+        let synced: i64 = store.conn.query_row(
+            "SELECT synced FROM hr_samples WHERE rowid=?1",
+            params![rowid],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(synced, 1, "synced should be 1 after mark_synced_rows");
+    }
+
+    #[test]
+    fn test_mark_synced_unknown_table_rejected() {
+        let store = make_store();
+        let result = store.mark_synced_rows("nonexistent_table", &[1]);
+        assert!(result.is_err(), "unknown stream should return Err");
+        let msg = format!("{:?}", result.unwrap_err());
+        assert!(msg.contains("unknown stream"), "error should mention unknown stream");
+    }
+
+    #[test]
+    fn test_rows_pending_upload_returns_unsynced() {
+        let store = make_store();
+        store.conn.execute("INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 1.0, 60, 0)", []).unwrap();
+        store.conn.execute("INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 2.0, 61, 0)", []).unwrap();
+        store.conn.execute("INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 3.0, 62, 1)", []).unwrap();
+        let rows = store.rows_pending_upload("hr_samples", 10).unwrap();
+        assert_eq!(rows.len(), 2, "only synced=0 rows should be returned");
+    }
+
+    #[test]
+    fn test_rows_pending_upload_respects_limit() {
+        let store = make_store();
+        for i in 0..5i64 {
+            store.conn.execute(
+                "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', ?1, 70, 0)",
+                params![i as f64],
+            ).unwrap();
+        }
+        let rows = store.rows_pending_upload("hr_samples", 3).unwrap();
+        assert_eq!(rows.len(), 3, "limit=3 should return exactly 3 rows");
+    }
+
+    #[test]
+    fn test_sync_backfill_creates_hr_rows() {
+        let store = make_store();
+        insert_test_hr_frame(&store, "dev-1", 1000, 75);
+        let report = store
+            .backfill_streams_from_decoded_frames("dev-1", 900.0, 1100.0)
+            .unwrap();
+        assert_eq!(report.hr_inserted, 1, "one HR row should be inserted");
+        let count: i64 = store.conn.query_row(
+            "SELECT COUNT(*) FROM hr_samples WHERE synced=0",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(count, 1, "backfilled row must have synced=0 (not stranded)");
+    }
+
+    #[test]
+    fn test_sync_backfill_is_idempotent() {
+        let store = make_store();
+        insert_test_hr_frame(&store, "dev-1", 2000, 80);
+        let r1 = store.backfill_streams_from_decoded_frames("dev-1", 1900.0, 2100.0).unwrap();
+        let r2 = store.backfill_streams_from_decoded_frames("dev-1", 1900.0, 2100.0).unwrap();
+        assert_eq!(r1.hr_inserted, 1);
+        assert_eq!(r2.hr_inserted, 0, "second backfill should insert 0 rows (idempotent via INSERT OR IGNORE)");
+        let count: i64 = store.conn.query_row("SELECT COUNT(*) FROM hr_samples", [], |r| r.get(0)).unwrap();
+        assert_eq!(count, 1, "exactly one row after two backfill calls");
+    }
+
+    #[test]
+    fn test_sync_prune_respects_synced_flag() {
+        let store = make_store();
+        // Insert one synced=0 row and one synced=1 row
+        store.conn.execute(
+            "INSERT INTO gravity (device_id, ts, x, y, z, synced) VALUES ('d', 500.0, 0.0, 0.0, 1.0, 0)",
+            [],
+        ).unwrap();
+        store.conn.execute(
+            "INSERT INTO gravity (device_id, ts, x, y, z, synced) VALUES ('d', 600.0, 0.0, 0.0, 1.0, 1)",
+            [],
+        ).unwrap();
+        // Prune all synced=1 rows older than ts=10000
+        let pruned = store.prune_synced_stream_rows("gravity", 10000.0).unwrap();
+        assert_eq!(pruned, 1, "should prune exactly 1 synced=1 row");
+        let remaining: i64 = store.conn.query_row(
+            "SELECT COUNT(*) FROM gravity",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(remaining, 1, "synced=0 row must survive prune");
+        let synced: i64 = store.conn.query_row(
+            "SELECT synced FROM gravity WHERE ts=500.0",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(synced, 0, "surviving row should still be synced=0");
+    }
+
+    #[test]
+    fn test_sync_invalid_stream_rejected() {
+        let store = make_store();
+        // All three stream methods must reject unknown table names
+        assert!(store.mark_synced_rows("'; DROP TABLE hr_samples; --", &[1]).is_err());
+        assert!(store.rows_pending_upload("malicious_table", 10).is_err());
+        assert!(store.prune_synced_stream_rows("notastream", 0.0).is_err());
+    }
+
+    #[test]
+    fn test_sync_cursor_namespace_isolation() {
+        let store = make_store();
+        store.upsert_upload_cursor("highwater", "hr_samples", "1000").unwrap();
+        store.upsert_upload_cursor("read", "hr_samples", "2000").unwrap();
+        let hw = store.get_upload_cursor("highwater", "hr_samples").unwrap();
+        let rd = store.get_upload_cursor("read", "hr_samples").unwrap();
+        assert_eq!(hw.as_deref(), Some("1000"), "highwater cursor should return 1000");
+        assert_eq!(rd.as_deref(), Some("2000"), "read cursor should return 2000");
     }
 }
