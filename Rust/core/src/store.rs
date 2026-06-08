@@ -1634,6 +1634,7 @@ impl GooseStore {
             );
 
             CREATE INDEX IF NOT EXISTS idx_hr_samples_device_ts ON hr_samples(device_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_hr_samples_synced_ts ON hr_samples(synced, ts);
 
             CREATE TABLE IF NOT EXISTS rr_intervals (
                 device_id TEXT NOT NULL,
@@ -1645,6 +1646,7 @@ impl GooseStore {
             );
 
             CREATE INDEX IF NOT EXISTS idx_rr_intervals_device_ts ON rr_intervals(device_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_rr_intervals_synced_ts ON rr_intervals(synced, ts);
 
             CREATE TABLE IF NOT EXISTS events (
                 device_id TEXT NOT NULL,
@@ -1657,6 +1659,7 @@ impl GooseStore {
             );
 
             CREATE INDEX IF NOT EXISTS idx_events_device_ts ON events(device_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_events_synced_ts ON events(synced, ts);
 
             CREATE TABLE IF NOT EXISTS battery (
                 device_id TEXT NOT NULL,
@@ -1668,6 +1671,7 @@ impl GooseStore {
             );
 
             CREATE INDEX IF NOT EXISTS idx_battery_device_ts ON battery(device_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_battery_synced_ts ON battery(synced, ts);
 
             CREATE TABLE IF NOT EXISTS upload_cursors (
                 namespace TEXT NOT NULL,
@@ -6621,6 +6625,47 @@ impl GooseStore {
         })
     }
 
+    /// Insert multiple exercise sessions in a single atomic transaction (PERF-03).
+    /// Returns the count of newly inserted rows (duplicates skipped via INSERT OR IGNORE).
+    pub fn insert_exercise_sessions_batch(
+        &self,
+        rows: &[ExerciseSessionRow],
+    ) -> GooseResult<usize> {
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        self.immediate_transaction(|store| {
+            let mut inserted = 0usize;
+            for row in rows {
+                validate_required("device_id", &row.device_id)?;
+                let changed = store.conn.execute(
+                    "INSERT OR IGNORE INTO exercise_sessions \
+                     (device_id, start_ts, end_ts, duration_s, avg_hr, peak_hr, strain, \
+                      calories_kcal, zone_time_pct_json, hrmax_source, rhr_source, avg_hrr_pct) \
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    params![
+                        row.device_id,
+                        row.start_ts,
+                        row.end_ts,
+                        row.duration_s,
+                        row.avg_hr,
+                        row.peak_hr,
+                        row.strain,
+                        row.calories_kcal,
+                        row.zone_time_pct_json,
+                        row.hrmax_source,
+                        row.rhr_source,
+                        row.avg_hrr_pct
+                    ],
+                )?;
+                if changed > 0 {
+                    inserted += 1;
+                }
+            }
+            Ok(inserted)
+        })
+    }
+
     pub fn exercise_sessions_between(
         &self,
         device_id: &str,
@@ -7116,6 +7161,9 @@ impl GooseStore {
     ) -> GooseResult<Vec<serde_json::Value>> {
         if !STREAM_ALLOWLIST.contains(&stream) {
             return Err(GooseError::message(format!("unknown stream: {stream}")));
+        }
+        if limit <= 0 {
+            return Err(GooseError::message("limit must be a positive integer"));
         }
         let sql =
             format!("SELECT rowid, * FROM {stream} WHERE synced=0 ORDER BY ts LIMIT ?1");
