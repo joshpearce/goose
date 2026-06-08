@@ -38,8 +38,8 @@
 
 ## Sleep Metrics (Without Staging)
 
-- [ ] **ALG-SLP-01**: HR dip %, WASO (HR threshold method), SOL (first sustained low-HR/low-motion ≥ 3 consecutive min), REM latency (from stage_segments when available), disturbance count — all computed and exposed in `SleepScoreOutput`; dashboard Sleep V2 updated
-- [ ] **ALG-SLP-02**: `baselines.rs` module implemented — EWMA state struct; `fold_history()` rebuilds from `daily_recovery_metrics` rows; cold-start guard (baseline inactive until 7 nights of valid data); `BEGIN EXCLUSIVE` transaction guards write; double-update prevented via date guard (`WHERE last_updated_date < ?`)
+- [x] **ALG-SLP-01**: HR dip %, WASO (HR threshold method), SOL (first sustained low-HR/low-motion ≥ 3 consecutive min), REM latency (from stage_segments when available), disturbance count — all computed and exposed in `SleepScoreOutput`; dashboard Sleep V2 updated *(completed: 24-01, 2026-06-08 — rem_latency deferred to Phase 26)*
+- [x] **ALG-SLP-02**: `baselines.rs` module implemented — EWMA state struct; `fold_history()` rebuilds from `daily_recovery_metrics` rows; cold-start guard (baseline inactive until 7 nights of valid data); `BEGIN EXCLUSIVE` transaction guards write; double-update prevented via date guard (`WHERE last_updated_date < ?`) *(completed: 24-02, 2026-06-08)*
 
 ## Recovery Score v1
 

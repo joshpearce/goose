@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: verifying
+status: executing
 stopped_at: Checkpoint 24-01 Task 3 — Swift UI wiring done, awaiting human verification of Sleep V2 detail sheet
-last_updated: "2026-06-08T10:10:42.215Z"
-last_activity: 2026-06-08 -- Phase 24 Plan 01 complete (ALG-SLP-01 HR sleep metrics)
+last_updated: "2026-06-08T10:10:46.062Z"
+last_activity: 2026-06-08 -- Phase 25 execution started
 progress:
   total_phases: 9
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 12
-  percent: 48
+  completed_phases: 5
+  total_plans: 15
+  completed_plans: 13
+  percent: 56
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 24 — Sleep Metrics Without Staging + Baselines
+**Current focus:** Phase 25 — Recovery Score v1
 
 ## Current Position
 
-Phase: 24 (Sleep Metrics Without Staging + Baselines) — EXECUTING
-Plan: Both plans (01 and 02) complete; 24-01 at checkpoint awaiting human UI verification
-Status: Checkpoint — human verification of Sleep V2 detail sheet required before advancing
-Last activity: 2026-06-08 -- Phase 24 Plan 01 complete (ALG-SLP-01 HR sleep metrics)
+Phase: 25 (Recovery Score v1) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 25
+Last activity: 2026-06-08 -- Phase 25 execution started
 
 Progress: [██████░░░░] 65%
 
