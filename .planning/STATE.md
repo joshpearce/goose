@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: executing
-stopped_at: Checkpoint 24-01 Task 3 awaiting human UI verification
-last_updated: "2026-06-08T10:02:00.000Z"
+status: verifying
+stopped_at: Checkpoint 24-01 Task 3 — Swift UI wiring done, awaiting human verification of Sleep V2 detail sheet
+last_updated: "2026-06-08T10:10:42.215Z"
 last_activity: 2026-06-08 -- Phase 24 Plan 01 complete (ALG-SLP-01 HR sleep metrics)
 progress:
   total_phases: 9

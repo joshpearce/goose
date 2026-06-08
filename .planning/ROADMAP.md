@@ -260,7 +260,7 @@ Plans:
 | 22. HRV Accuracy | v5.0 | 3/3 | Complete   | 2026-06-06 |
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 25. Recovery Score v1 | v5.0 | 0/0 | Not started | — |
+| 25. Recovery Score v1 | v5.0 | 0/2 | Planned | — |
 | 26. Sleep Staging | v5.0 | 0/0 | Not started | — |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
@@ -474,7 +474,16 @@ Plans:
   5. Colour bands: Verde >= 67, Amarelo 34–66, Vermelho < 34; dashboard reflects correct band colour for any given score
   6. `cargo test -p goose-core` green; tests cover: Z=0 produces ~58%, Z_RHR inversion, weight renormalisation with one missing term, cold-start null, trust level transitions at exact night thresholds, all three colour bands
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Wave 1**
+
+  - [ ] 25-01-PLAN.md — Rust: RecoveryV1Input/Output + ColourBand + goose_recovery_v1 (Z-score + logistic squash, cold-start None) + metrics.goose_recovery_v1 bridge method (ALG-REC-01, ALG-REC-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+  - [ ] 25-02-PLAN.md — Swift: HealthDataStore+Recovery.swift + RecoveryV2OverviewPage "A calibrar" state + colour band indicator (ALG-REC-03)
+
 **UI hint**: yes
 
 ---
