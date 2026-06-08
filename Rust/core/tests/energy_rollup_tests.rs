@@ -3,7 +3,7 @@ use goose_core::{
         EnergyDailyRollupOptions, GOOSE_ENERGY_UNAVAILABLE_STATUS_V0_ID,
         GOOSE_ENERGY_UNAVAILABLE_STATUS_V0_VERSION,
         harris_benedict_rmr_kcal_day, keytel_active_kcal_per_min, rmr_mifflin_st_jeor,
-        rollup_energy_unavailable_daily_status_for_store,
+        rollup_energy_day_for_store, rollup_energy_unavailable_daily_status_for_store,
     },
     store::{DailyActivityMetricInput, GooseStore},
 };
@@ -246,4 +246,125 @@ fn energy_unavailable_status_skips_calories_when_available_metric_exists() {
     assert_eq!(report.written_metric_count, 0);
     assert!(report.statuses.is_empty());
     assert_eq!(store.table_count("daily_activity_metrics").unwrap(), 1);
+}
+
+// ── Task 2 tests: profile_height_cm field + quality flag + Mifflin/Keytel wiring ──
+
+#[test]
+fn rollup_with_height_absent_emits_mifflin_height_absent_flag() {
+    // When profile_height_cm is absent (None), the rollup should emit
+    // "resting_kcal_mifflin_height_absent" to signal the proxy was used.
+    let store = GooseStore::open_in_memory().unwrap();
+    let report = rollup_energy_day_for_store(
+        &store,
+        "synthetic.sqlite",
+        EnergyDailyRollupOptions {
+            date_key: "2026-06-02",
+            timezone: "Europe/London",
+            start: "2026-06-02T00:00:00Z",
+            end: "2026-06-03T00:00:00Z",
+            min_owned_captures_per_summary: 1,
+            require_trusted_evidence: false,
+            profile_weight_kg: Some(80.0),
+            profile_age_years: Some(30),
+            profile_sex: Some("male"),
+            profile_height_cm: None,
+            resting_hr_bpm: Some(60.0),
+            max_hr_bpm: Some(180.0),
+            min_heart_rate_samples: 2,
+            write_metric: false,
+        },
+    )
+    .unwrap();
+    assert!(
+        report.quality_flags.contains(&"resting_kcal_mifflin_height_absent".to_string()),
+        "quality_flags must include resting_kcal_mifflin_height_absent when height absent; got: {:?}",
+        report.quality_flags
+    );
+}
+
+#[test]
+fn rollup_with_height_present_does_not_emit_mifflin_height_absent_flag() {
+    // When profile_height_cm is present together with age, Mifflin is used and
+    // the height-absent flag must NOT appear.
+    let store = GooseStore::open_in_memory().unwrap();
+    let report = rollup_energy_day_for_store(
+        &store,
+        "synthetic.sqlite",
+        EnergyDailyRollupOptions {
+            date_key: "2026-06-02",
+            timezone: "Europe/London",
+            start: "2026-06-02T00:00:00Z",
+            end: "2026-06-03T00:00:00Z",
+            min_owned_captures_per_summary: 1,
+            require_trusted_evidence: false,
+            profile_weight_kg: Some(80.0),
+            profile_age_years: Some(30),
+            profile_sex: Some("male"),
+            profile_height_cm: Some(175.0),
+            resting_hr_bpm: Some(60.0),
+            max_hr_bpm: Some(180.0),
+            min_heart_rate_samples: 2,
+            write_metric: false,
+        },
+    )
+    .unwrap();
+    assert!(
+        !report.quality_flags.contains(&"resting_kcal_mifflin_height_absent".to_string()),
+        "quality_flags must NOT include resting_kcal_mifflin_height_absent when height present; got: {:?}",
+        report.quality_flags
+    );
+}
+
+#[test]
+fn mifflin_resting_differs_from_proxy_for_same_inputs() {
+    // Confirms that Mifflin RMR (per-day) differs from the weight*22.0 proxy.
+    // weight=80, height=175, age=30, male
+    // Mifflin: 10*80 + 6.25*175 - 5*30 + 5 = 1748.75 kcal/day
+    // Proxy:   80 * 22.0 = 1760.0 kcal/day
+    let mifflin = rmr_mifflin_st_jeor(80.0, 175.0, 30.0, Some("male"));
+    let proxy = 80.0_f64 * 22.0;
+    assert_ne!(
+        mifflin, proxy,
+        "Mifflin ({mifflin}) must differ from weight*22 proxy ({proxy})"
+    );
+    // Mifflin = 1748.75, proxy = 1760.0 — verify direction
+    assert!(
+        mifflin < proxy,
+        "For this test case, Mifflin should be less than the crude proxy"
+    );
+}
+
+#[test]
+fn keytel_exceeds_zero_above_hrr_threshold() {
+    // HR above 30% HRR threshold (resting=60, max=180 → threshold=60+0.3*(180-60)=96 bpm)
+    // HR=140 should produce positive Keytel kcal/min
+    let kcal_per_min = keytel_active_kcal_per_min(140.0, 80.0, 30.0, Some("male"), 180.0);
+    assert!(
+        kcal_per_min > 0.0,
+        "Keytel above HRR threshold should produce positive kcal/min, got {kcal_per_min}"
+    );
+}
+
+#[test]
+fn energy_daily_rollup_options_has_profile_height_cm_field() {
+    // Structural test: EnergyDailyRollupOptions must accept profile_height_cm: Option<f64>
+    // This test will not compile if the field is absent.
+    let opts = EnergyDailyRollupOptions {
+        date_key: "2026-06-02",
+        timezone: "UTC",
+        start: "2026-06-02T00:00:00Z",
+        end: "2026-06-03T00:00:00Z",
+        min_owned_captures_per_summary: 1,
+        require_trusted_evidence: false,
+        profile_weight_kg: Some(70.0),
+        profile_age_years: Some(25),
+        profile_sex: None,
+        profile_height_cm: Some(170.0),
+        resting_hr_bpm: None,
+        max_hr_bpm: None,
+        min_heart_rate_samples: 2,
+        write_metric: false,
+    };
+    assert!(opts.profile_height_cm.is_some());
 }
