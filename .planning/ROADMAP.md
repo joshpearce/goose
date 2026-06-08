@@ -6,7 +6,7 @@
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
 - ✅ **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-15 (shipped 2026-06-05)
 - ✅ **v4.0 Security, Performance & Coach Expansion** — Phases 16-19 (shipped 2026-06-06)
-- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-35 (backlog)
+- ✅ **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-35 (shipped 2026-06-08)
 
 ## Phases
 
@@ -68,24 +68,13 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 </details>
 
 <details>
-<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-35) — BACKLOG</summary>
+<summary>✅ v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-35) — SHIPPED 2026-06-08</summary>
 
-- [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
-- [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
-- [x] **Phase 22: HRV Accuracy** (3/3 plans) — ALG-HRV-01 ✓, ALG-HRV-02 ✓, ALG-HRV-03 ✓ (ALG-HRV-04 manual gate → Phase 32)
-- [x] **Phase 23: Strain & Calories** (3/3 plans) — ALG-STR-01 ✓, ALG-STR-02 ✓, ALG-STR-03 ✓, ALG-CAL-01 ✓, ALG-CAL-02 ✓
-- [x] **Phase 24: Sleep Metrics Without Staging + Baselines** (2/2 plans) — ALG-SLP-01 ✓, ALG-SLP-02 ✓
-- [x] **Phase 25: Recovery Score v1** (2/2 plans) — ALG-REC-01 ✓, ALG-REC-02 ✓, ALG-REC-03 ✓
-- [x] **Phase 26: Sleep Staging** (2/2 plans) — ALG-SLP-03 ✓ (ALG-SLP-04 manual gate → Phase 32)
-- [ ] **Phase 27: V24 Biometric Decode** (3 plans) — BIO-01, BIO-02, BIO-03, BIO-04
-- [ ] **Phase 28: Exercise Detection** — EX-01, EX-02, EX-03, EX-04
-- [ ] **Phase 29: Upload Sync Infrastructure** — SYNC-UP-01, SYNC-UP-02, SYNC-UP-03
-- [ ] **Phase 30: Readiness Engine** — RDY-01, RDY-02, RDY-03
-- [ ] **Phase 31: Protocol Corrections (noop)** — PROTO-01, PROTO-02, PROTO-03
-- [ ] **Phase 32: HRV Parity Validation** — VAL-01
-- [ ] **Phase 33: Ghidra Algorithm Audit** — GHIDRA-01, GHIDRA-02, GHIDRA-03
-- [ ] **Phase 34: Codebase Audit** — AUDIT-01, AUDIT-02, AUDIT-03
-- [ ] **Phase 35: Cross-Project Review** — REVIEW-01, REVIEW-02, REVIEW-03
+Full details: `.planning/milestones/v5.0-ROADMAP.md`
+
+Key: HRV accuracy, Sleep staging (Cole-Kripke + 4-class), Strain/Calories (Ghidra-confirmed coefficients), V24 biometric decode, Exercise detection, Upload sync infrastructure, Readiness engine, Protocol corrections, Codebase audit (9 HIGH fixed), Cross-project review.
+
+Known deferred: ALG-HRV-04, ALG-SLP-04, VAL-01 (human gates — require real WHOOP device data)
 
 </details>
 
@@ -272,7 +261,7 @@ Plans:
 | 27. V24 Biometric Decode | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 | 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
-| 30. Readiness Engine | v5.0 | 0/0 | Not started | — |
+| 30. Readiness Engine | v5.0 | 0/2 | Not started | — |
 | 31. Protocol Corrections (noop) | v5.0 | 0/0 | Not started | — |
 | 32. HRV Parity Validation | v5.0 | 0/0 | Not started | — |
 | 33. Ghidra Algorithm Audit | v5.0 | 0/0 | Not started | — |
@@ -610,7 +599,15 @@ Plans:
   4. ACWR injury-risk zones documented in output: < 0.8 (under-training), 0.8–1.3 (optimal), 1.3–1.5 (caution), ≥ 1.5 (danger); `acwr_zone` field present in `ReadinessOutput`
   5. `cargo test -p goose-core` green; tests cover: ACWR zone boundaries, monotony flag at exactly 2.0, rundown rule, primed rule, unknown when < 28 days
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Wave 1**
+
+- [ ] 30-01-PLAN.md — goose_readiness_v1() algorithm: ReadinessInput/Output/Level structs, ACWR + Foster monotony + level synthesis, inline unit tests (RDY-01, RDY-02, RDY-03)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 30-02-PLAN.md — Bridge dispatch arm and BRIDGE_METHODS entry for metrics.goose_readiness_v1; integration round-trip tests (RDY-01, RDY-02, RDY-03)
 
 ---
 

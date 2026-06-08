@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: At human checkpoint (ALG-SLP-04 cross-validation gate)
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-06-08T13:46:56.002Z"
-last_activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
+status: SHIPPED
+stopped_at: Milestone v5.0 complete — archived 2026-06-08
+last_updated: "2026-06-08T20:00:00Z"
+last_activity: 2026-06-08 -- v5.0 milestone archived; 128 Rust tests green
 progress:
   total_phases: 16
-  completed_phases: 8
-  total_plans: 20
-  completed_plans: 20
-  percent: 50
+  completed_phases: 15
+  total_plans: 34
+  completed_plans: 34
+  percent: 100
 ---
 
 # Project State
@@ -78,6 +78,9 @@ Progress: [██████░░░░] 65%
 | Phase 26-sleep-staging P02 | 27min | 2 tasks (Task 3 human) | 2 files |
 | Phase 27 P01 | 15 | 2 tasks | 5 files |
 | Phase 27 P03 | 20 | 2 tasks | 2 files |
+| Phase 28 P03 | 25 | 2 tasks | 2 files |
+| Phase 29 P01 | 15 | 1 task | 2 files |
+| Phase 29 P02 | 15 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -114,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 27-03: Plausibility gates live at bridge layer with warning strings
 - [Phase ?]: 27-03: quality_flag='uncalibrated' mandatory on all V24 physical unit outputs
 - [Phase ?]: 27-03: sig_quality excluded from upload payload; biometrics.insert_v24_batch stores it locally
+- Phase 29 Plan 02: ParsedPayload uses #[serde(tag = "kind", rename_all = "snake_case")] — internally tagged; test fixtures must use {"kind":"data_packet",...} not {"DataPacket":{...}}
+- Phase 29 Plan 02: GooseError has no From<serde_json::Error>; use json!{} macro for infallible struct serialisation in bridge handlers
 
 ### Pending Todos
 
@@ -147,8 +152,23 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 | quick_task | 260603-s5w-add-healthkitfullimporter-swift-to-goose | missing | v2.0 close |
 | uat_gap | Phase 08 — hardware BLE tests | partial (no device) | v2.0 close |
 
+Items acknowledged and deferred at v5.0 milestone close on 2026-06-08:
+
+| Category | Item | Status | Deferred At |
+|----------|------|--------|-------------|
+| verification_gap | Phase 22 — ALG-HRV-04 RMSSD parity (≥5 real sessions) | human_needed | v5.0 close |
+| verification_gap | Phase 24 — VERIFICATION.md human_needed | human_needed | v5.0 close |
+| verification_gap | Phase 32 — VAL-01 HRV parity golden fixtures | deferred | v5.0 close |
+| verification_gap | Phase 26 — ALG-SLP-04 4-class staging validation | human_needed | v5.0 close |
+| quick_task | 260603-tqd-add-test-and-import-actions-to-remote-se | missing | v2.0 close |
+| todo | 2026-06-03-remote-server-test-and-import-actions | ui | v2.0 close |
+| todo | bt-button-open-settings | low | v2.0 close |
+| algorithm | Recovery formula alignment (linear vs Z-score+logistic) | v6.0 backlog | v5.0 close |
+| algorithm | EWMA half-life correction (14-night = 0.0483 vs 0.10) | v6.0 backlog | v5.0 close |
+| algorithm | Sleep epoch 30s resolution (currently 1 min) | v6.0 backlog | v5.0 close |
+
 ## Session Continuity
 
-Last session: 2026-06-08T13:46:51.380Z
-Stopped at: Completed 27-03-PLAN.md
-Next: Capture >= 5 real overnight WHOOP sessions, run metrics.sleep_staging, record epoch agreement in 26-02-SUMMARY.md. Resume with "validated" or "defer".
+Last session: 2026-06-08T20:00:00Z
+Status: v5.0 SHIPPED — milestone archived
+Next: /gsd-new-milestone to start v6.0
