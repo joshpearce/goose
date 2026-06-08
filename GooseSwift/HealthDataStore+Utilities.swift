@@ -387,7 +387,7 @@ extension HealthDataStore {
     return nil
   }
 
-  static func doubleValue(_ value: Any?) -> Double? {
+  nonisolated static func doubleValue(_ value: Any?) -> Double? {
     if let double = value as? Double {
       return double
     }
