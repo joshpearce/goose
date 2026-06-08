@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: At human checkpoint (ALG-SLP-04 cross-validation gate)
-stopped_at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
-last_updated: "2026-06-08T13:21:37.423Z"
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-06-08T13:46:56.002Z"
 last_activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
 progress:
   total_phases: 16
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 20
-  completed_plans: 19
-  percent: 44
+  completed_plans: 20
+  percent: 50
 ---
 
 # Project State
@@ -77,6 +77,7 @@ Progress: [██████░░░░] 65%
 | Phase 26-sleep-staging P01 | 16min | 2 tasks | 3 files |
 | Phase 26-sleep-staging P02 | 27min | 2 tasks (Task 3 human) | 2 files |
 | Phase 27 P01 | 15 | 2 tasks | 5 files |
+| Phase 27 P03 | 20 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - Phase 22 Plan 03: ALG-HRV-04 is a manual gate only (code comment above goose_hrv_v0); phase remains open until >= 5 real session deltas <= 1 ms are recorded in 22-03-SUMMARY.md
 - [Phase ?]: Activity count uses inter-sample magnitude difference; COLE_KRIPKE_SCALE_FACTOR exposed as named const for future calibration
 - Phase 26 Plan 02: 4-class classifier built on Cole-Kripke spine; HR feature alignment via nearest-timestamp; physiological reimposition runs after per-epoch classification (rule a then b, fixed-point for cascades); ALG-SLP-04 manual gate = >= 5 sessions at >= 70% epoch agreement vs WHOOP
+- [Phase ?]: 27-03: Plausibility gates live at bridge layer with warning strings
+- [Phase ?]: 27-03: quality_flag='uncalibrated' mandatory on all V24 physical unit outputs
+- [Phase ?]: 27-03: sig_quality excluded from upload payload; biometrics.insert_v24_batch stores it locally
 
 ### Pending Todos
 
@@ -145,6 +149,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-08T13:21:37.416Z
-Stopped at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
+Last session: 2026-06-08T13:46:51.380Z
+Stopped at: Completed 27-03-PLAN.md
 Next: Capture >= 5 real overnight WHOOP sessions, run metrics.sleep_staging, record epoch agreement in 26-02-SUMMARY.md. Resume with "validated" or "defer".

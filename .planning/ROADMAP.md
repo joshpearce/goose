@@ -269,7 +269,7 @@ Plans:
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 26. Sleep Staging | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 27. V24 Biometric Decode | v5.0 | 2/3 | In Progress|  |
+| 27. V24 Biometric Decode | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 | 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
 | 30. Readiness Engine | v5.0 | 0/0 | Not started | — |
@@ -527,7 +527,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-  - [ ] 27-03-PLAN.md — Bridge wiring: V24History arm in upload pipeline + two bridge dispatch methods + physical unit helpers + plausibility gates + full cargo test suite (BIO-01, BIO-02, BIO-03, BIO-04)
+  - [x] 27-03-PLAN.md — Bridge wiring: V24History arm in upload pipeline + two bridge dispatch methods + physical unit helpers + plausibility gates + full cargo test suite (BIO-01, BIO-02, BIO-03, BIO-04)
 
 ---
 
