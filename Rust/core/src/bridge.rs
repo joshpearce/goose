@@ -126,6 +126,7 @@ use crate::{
         rollup_resting_heart_rate_day_for_store, validate_resting_heart_rate_capture_for_store,
     },
     reference::reference_algorithm_definitions,
+    sleep_staging::{SleepStagingInput, SleepStagingOutput, stage_sleep},
     sleep_validation::{
         SleepStageLabelValidationOptions, SleepV1EvidenceFolderOptions,
         SleepV1ExplanationStabilityOptions, SleepV1ReleaseGateInput,
@@ -267,6 +268,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "metrics.resting_hr_daily_rollup",
     "metrics.resting_hr_features",
     "metrics.sleep_score_from_features",
+    "metrics.sleep_staging",
     "metrics.step_capture_validation",
     "metrics.step_counter_daily_rollup",
     "metrics.step_counter_hourly_rollup",
@@ -2349,6 +2351,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(sleep_feature_score_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.sleep_staging" => request_args::<SleepStagingBridgeArgs>(&request)
+            .and_then(sleep_staging_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.recovery_score_from_features" => {
             request_args::<RecoveryFeatureScoreArgs>(&request)
                 .and_then(recovery_feature_score_bridge)
@@ -3454,6 +3460,36 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
         .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
         .collect();
     Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
+// Sleep staging bridge (metrics.sleep_staging)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct SleepStagingBridgeArgs {
+    database_path: String,
+    device_id: String,
+    sleep_start_ts: f64,
+    sleep_end_ts: f64,
+}
+
+fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let gravity_rows: Vec<GravityRow> =
+        store.gravity_rows_between(&args.device_id, args.sleep_start_ts, args.sleep_end_ts)?;
+    let tuples: Vec<(f64, f64, f64, f64)> = gravity_rows
+        .iter()
+        .map(|r| (r.ts, r.x, r.y, r.z))
+        .collect();
+    let input = SleepStagingInput {
+        device_id: args.device_id,
+        sleep_start_ts: args.sleep_start_ts,
+        sleep_end_ts: args.sleep_end_ts,
+    };
+    let output: SleepStagingOutput = stage_sleep(&input, &tuples);
+    serde_json::to_value(output)
+        .map_err(|e| GooseError::message(format!("cannot serialize sleep_staging output: {e}")))
 }
 
 /// Format a Unix timestamp (seconds, f64) as an ISO-8601 UTC string for SQLite comparison.
@@ -9298,6 +9334,41 @@ mod tests {
             result["trust_level"],
             "calibrating",
             "after 4 nights: trust must not be calibrating"
+        );
+    }
+
+    // ---- metrics.sleep_staging bridge tests --------------------------------
+
+    #[test]
+    fn sleep_staging_bridge_empty_gravity_returns_no_imu_data() {
+        let (_dir, db_path) = make_temp_db();
+
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-sleep-staging-empty".to_string(),
+            method: "metrics.sleep_staging".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "device_id": "dev-001",
+                "sleep_start_ts": 1_700_000_000.0_f64,
+                "sleep_end_ts":   1_700_028_800.0_f64
+            }),
+        };
+        let response = handle_bridge_request(request);
+        assert!(
+            response.ok,
+            "empty gravity table must return ok=true: {:?}",
+            response.error
+        );
+        let result = response.result.expect("result must be present");
+        assert_eq!(
+            result["staging_method"].as_str(),
+            Some("no_imu_data"),
+            "empty gravity table must yield staging_method=no_imu_data"
+        );
+        assert!(
+            result["epochs"].as_array().map(|a| a.is_empty()).unwrap_or(false),
+            "epochs must be empty for an empty gravity table"
         );
     }
 }
