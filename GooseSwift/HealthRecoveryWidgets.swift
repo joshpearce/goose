@@ -360,6 +360,98 @@ struct RecoveryV2TrendBand: View {
 
 // MARK: - ReadinessLevelCard
 
+// MARK: - V24BiometricsCard
+
+struct V24BiometricsCard: View {
+  let palette: SleepV2Palette
+  let result: V24BiometricsResult
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 8) {
+        Image(systemName: "sensor.fill")
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(palette.accent)
+        Text("Biometria V24")
+          .font(.headline.weight(.semibold))
+          .foregroundStyle(palette.text)
+        Spacer()
+        Text("não calibrado")
+          .font(.caption2.weight(.semibold))
+          .foregroundStyle(.white)
+          .padding(.horizontal, 7)
+          .padding(.vertical, 3)
+          .background(Color.orange.opacity(0.84), in: Capsule())
+      }
+
+      HStack(spacing: 0) {
+        V24MetricCell(
+          palette: palette,
+          systemImage: "drop.fill",
+          label: "SpO₂",
+          value: result.spo2Text,
+          tint: .blue
+        )
+        Divider().frame(maxHeight: 48).background(palette.separator.opacity(0.54))
+        V24MetricCell(
+          palette: palette,
+          systemImage: "thermometer.medium",
+          label: "Temperatura",
+          value: result.skinTempText,
+          tint: .orange
+        )
+        Divider().frame(maxHeight: 48).background(palette.separator.opacity(0.54))
+        V24MetricCell(
+          palette: palette,
+          systemImage: "lungs.fill",
+          label: "Resp",
+          value: result.respRateText,
+          tint: .teal
+        )
+      }
+    }
+    .padding(14)
+    .background(
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .fill(palette.surface)
+        .shadow(color: palette.shadow.opacity(0.30), radius: 8, x: 0, y: 3)
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .stroke(palette.separator.opacity(0.54), lineWidth: 1)
+    )
+  }
+}
+
+struct V24MetricCell: View {
+  let palette: SleepV2Palette
+  let systemImage: String
+  let label: String
+  let value: String
+  let tint: Color
+
+  var body: some View {
+    VStack(spacing: 5) {
+      Image(systemName: systemImage)
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(tint)
+      Text(value)
+        .font(.subheadline.weight(.semibold))
+        .fontDesign(.rounded)
+        .foregroundStyle(value == "--" ? palette.mutedText : palette.text)
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+      Text(label)
+        .font(.caption2.weight(.medium))
+        .foregroundStyle(palette.mutedText)
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 6)
+  }
+}
+
+// MARK: - ReadinessLevelCard
+
 struct ReadinessLevelCard: View {
   let palette: SleepV2Palette
   let result: ReadinessResult?

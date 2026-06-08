@@ -70,6 +70,10 @@ final class HealthDataStore {
   // Stored here because Swift extensions cannot add stored properties to @Observable classes.
   var sleepStagingResult: SleepStagingResult?
 
+  // V24 biometrics result (SpO2, skin temp, resp) from biometrics.v24_between.
+  // Always quality_flag="uncalibrated". Stored here (extensions cannot add stored properties).
+  var v24BiometricsResult: V24BiometricsResult?
+
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
   static let liveHRVRMSSDSampleCountDefaultsKey = "goose.swift.liveHRVRMSSDSampleCount"

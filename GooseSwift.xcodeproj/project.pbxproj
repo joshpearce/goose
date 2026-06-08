@@ -74,6 +74,7 @@
 		C1000000000000000000010B /* HealthDataStore+Recovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010B /* HealthDataStore+Recovery.swift */; };
 		C1000000000000000000010C /* HealthDataStore+Readiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010C /* HealthDataStore+Readiness.swift */; };
 		C1000000000000000000010D /* HealthDataStore+StagingSleep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010D /* HealthDataStore+StagingSleep.swift */; };
+		C1000000000000000000010E /* HealthDataStore+V24Biometrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010E /* HealthDataStore+V24Biometrics.swift */; };
 		D10000000000000000000001 /* MoreRouteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* MoreRouteModels.swift */; };
 		D10000000000000000000002 /* MoreProfileViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000002 /* MoreProfileViews.swift */; };
 		D10000000000000000000003 /* MoreDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000003 /* MoreDataStore.swift */; };
@@ -277,6 +278,7 @@
 		C2000000000000000000010B /* HealthDataStore+Recovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Recovery.swift"; sourceTree = "<group>"; };
 		C2000000000000000000010C /* HealthDataStore+Readiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Readiness.swift"; sourceTree = "<group>"; };
 		C2000000000000000000010D /* HealthDataStore+StagingSleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+StagingSleep.swift"; sourceTree = "<group>"; };
+		C2000000000000000000010E /* HealthDataStore+V24Biometrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+V24Biometrics.swift"; sourceTree = "<group>"; };
 		D20000000000000000000001 /* MoreRouteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRouteModels.swift; sourceTree = "<group>"; };
 		D20000000000000000000002 /* MoreProfileViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreProfileViews.swift; sourceTree = "<group>"; };
 		D20000000000000000000003 /* MoreDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreDataStore.swift; sourceTree = "<group>"; };
@@ -533,6 +535,7 @@
 				C2000000000000000000010B /* HealthDataStore+Recovery.swift */,
 				C2000000000000000000010C /* HealthDataStore+Readiness.swift */,
 				C2000000000000000000010D /* HealthDataStore+StagingSleep.swift */,
+				C2000000000000000000010E /* HealthDataStore+V24Biometrics.swift */,
 				C20000000000000000000005 /* HealthDashboardViews.swift */,
 				C20000000000000000000006 /* HealthRecoveryStressViews.swift */,
 				C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */,
@@ -875,6 +878,7 @@
 				C1000000000000000000010B /* HealthDataStore+Recovery.swift in Sources */,
 				C1000000000000000000010C /* HealthDataStore+Readiness.swift in Sources */,
 				C1000000000000000000010D /* HealthDataStore+StagingSleep.swift in Sources */,
+				C1000000000000000000010E /* HealthDataStore+V24Biometrics.swift in Sources */,
 				C10000000000000000000005 /* HealthDashboardViews.swift in Sources */,
 				C10000000000000000000006 /* HealthRecoveryStressViews.swift in Sources */,
 				C10000000000000000000007 /* HealthMetricFamilyStrainViews.swift in Sources */,

@@ -123,6 +123,10 @@ struct RecoveryV2OverviewPage: View {
               ReadinessLevelCard(palette: palette, result: store.readinessResult)
                 .frame(height: 96)
 
+              if let v24 = store.v24BiometricsResult, !v24.isEmpty {
+                V24BiometricsCard(palette: palette, result: v24)
+              }
+
               SleepV2StatCard(
                 palette: palette,
                 systemImage: "target",
@@ -199,11 +203,13 @@ struct RecoveryV2OverviewPage: View {
       store.runPacketScores()
       store.runRecoveryV1()
       store.runReadinessV1()
+      store.runV24Biometrics()
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       store.runPacketScores()
       store.runRecoveryV1()
       store.runReadinessV1()
+      store.runV24Biometrics()
     }
   }
 
