@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
-status: executing
-stopped_at: Completed 26-02-PLAN.md (Tasks 1-2; Task 3 is ALG-SLP-04 human checkpoint)
-last_updated: "2026-06-08T12:12:17Z"
+status: At human checkpoint (ALG-SLP-04 cross-validation gate)
+stopped_at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
+last_updated: "2026-06-08T13:21:19.995Z"
 last_activity: 2026-06-08 -- Phase 26 Plan 02 executed (4-class hypnogram + AASM metrics)
 progress:
   total_phases: 16
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 16
-  percent: 38
+  completed_phases: 7
+  total_plans: 20
+  completed_plans: 19
+  percent: 44
 ---
 
 # Project State
@@ -144,6 +144,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-08T12:12:17Z
+Last session: 2026-06-08T13:21:15.372Z
 Stopped at: Completed 26-02-PLAN.md Tasks 1-2; waiting at ALG-SLP-04 human checkpoint (Task 3)
 Next: Capture >= 5 real overnight WHOOP sessions, run metrics.sleep_staging, record epoch agreement in 26-02-SUMMARY.md. Resume with "validated" or "defer".

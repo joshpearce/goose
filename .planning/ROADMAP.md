@@ -72,12 +72,12 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 
 - [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
 - [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
-- [~] **Phase 22: HRV Accuracy** (3/3 plans done) — ALG-HRV-01 ✓, ALG-HRV-02 ✓, ALG-HRV-03 ✓, ALG-HRV-04 manual gate pending
-- [~] **Phase 23: Strain & Calories** (2/3 plans) — ALG-STR-01 ✓, ALG-STR-02 ✓, ALG-STR-03 ✓, ALG-CAL-01 pending, ALG-CAL-02 pending
-- [ ] **Phase 24: Sleep Metrics Without Staging + Baselines** — ALG-SLP-01, ALG-SLP-02
-- [ ] **Phase 25: Recovery Score v1** — ALG-REC-01, ALG-REC-02, ALG-REC-03
-- [ ] **Phase 26: Sleep Staging** — ALG-SLP-03, ALG-SLP-04
-- [ ] **Phase 27: V24 Biometric Decode** — BIO-01, BIO-02, BIO-03, BIO-04
+- [x] **Phase 22: HRV Accuracy** (3/3 plans) — ALG-HRV-01 ✓, ALG-HRV-02 ✓, ALG-HRV-03 ✓ (ALG-HRV-04 manual gate → Phase 32)
+- [x] **Phase 23: Strain & Calories** (3/3 plans) — ALG-STR-01 ✓, ALG-STR-02 ✓, ALG-STR-03 ✓, ALG-CAL-01 ✓, ALG-CAL-02 ✓
+- [x] **Phase 24: Sleep Metrics Without Staging + Baselines** (2/2 plans) — ALG-SLP-01 ✓, ALG-SLP-02 ✓
+- [x] **Phase 25: Recovery Score v1** (2/2 plans) — ALG-REC-01 ✓, ALG-REC-02 ✓, ALG-REC-03 ✓
+- [x] **Phase 26: Sleep Staging** (2/2 plans) — ALG-SLP-03 ✓ (ALG-SLP-04 manual gate → Phase 32)
+- [ ] **Phase 27: V24 Biometric Decode** (3 plans) — BIO-01, BIO-02, BIO-03, BIO-04
 - [ ] **Phase 28: Exercise Detection** — EX-01, EX-02, EX-03, EX-04
 - [ ] **Phase 29: Upload Sync Infrastructure** — SYNC-UP-01, SYNC-UP-02, SYNC-UP-03
 - [ ] **Phase 30: Readiness Engine** — RDY-01, RDY-02, RDY-03
@@ -269,7 +269,7 @@ Plans:
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 26. Sleep Staging | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
+| 27. V24 Biometric Decode | v5.0 | 2/3 | In Progress|  |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 | 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
 | 30. Readiness Engine | v5.0 | 0/0 | Not started | — |
@@ -514,11 +514,20 @@ Plans:
   2. All biometrics gated on `skin_contact == 1`; samples where skin_contact == 0 are stored with a `contact=false` flag but excluded from unit conversion output and downstream HRV/sleep computations
   3. Four new SQLite tables added via schema migration: `spo2_samples(device_id TEXT, ts REAL, red INTEGER, ir INTEGER)`, `skin_temp_samples(device_id TEXT, ts REAL, raw INTEGER)`, `resp_samples(device_id TEXT, ts REAL, raw INTEGER)`, `sig_quality_samples(device_id TEXT, ts REAL, quality INTEGER, contact INTEGER)` — each with `UNIQUE(device_id, ts)` + `INSERT OR IGNORE`, index on `(device_id, ts)`
   4. Bridge methods `insert_v24_biometric_batch` and `v24_biometric_samples_between(device_id, start_ts, end_ts)` callable from Swift and covered by `cargo test` with insert + query roundtrip
-  5. Physical unit helpers with mandatory `quality_flag: "uncalibrated"` in all outputs: SpO2 ratio-of-ratios windowed (AC = MAD-based robust spread, DC = mean, R = (AC_red/DC_red)/(AC_ir/DC_ir), SpO2 = 110 − 25·R, clamp [70, 100], defaults a=110 b=25 TI SLAA655); `skin_temp_celsius` linear slope (default slope un-calibrated, reference raw≈930 → 33°C); `resp_rate_bpm` Welch spectral (0.1–0.5 Hz band, 1 Hz input, no calibration needed)
+  5. Physical unit helpers with mandatory `quality_flag: "uncalibrated"` in all outputs: SpO2 single-sample approximation `SpO2_est = 110 − 25·(red/ir)`, clamp [70, 100], quality_flag="uncalibrated" (full windowed RoR with AC=MAD deferred to Phase 33 Ghidra validation); `skin_temp_celsius` linear slope (reference raw≈930 → 33°C, quality_flag="uncalibrated"); `resp_rate_bpm` zero-crossing approach in [0.1–0.5 Hz] band (Welch spectral deferred to Phase 33)
   6. Plausibility gates reject samples before storage: SpO2 [70, 100]%, skin_temp_celsius [25, 40]°C, resp_raw within device ADC bounds [0, 65535]; gate failures logged as warnings, not hard errors
-  7. `cargo test -p goose-core` green; tests cover: all field offsets against synthetic payload, skin_contact gate, insert+query roundtrip per table, SpO2 ratio-of-ratios at known R values, uncalibrated flag always present, plausibility gate rejection
+  7. `cargo test -p goose-core` green; tests cover: all field offsets against synthetic payload, skin_contact gate, insert+query roundtrip per table, SpO2 single-sample estimate at known (red, ir) values, uncalibrated flag always present, plausibility gate rejection
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+**Wave 1** *(Plans 01 and 02 run in parallel — no shared files)*
+
+  - [x] 27-01-PLAN.md — DataPacketBodySummary::V24History variant + parse_v24_body_summary() + synthetic payload unit tests (BIO-01)
+  - [x] 27-02-PLAN.md — Schema migration v16: 4 biometric tables + insert_v24_biometric_batch + v24_biometric_samples_between (BIO-02, BIO-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+  - [ ] 27-03-PLAN.md — Bridge wiring: V24History arm in upload pipeline + two bridge dispatch methods + physical unit helpers + plausibility gates + full cargo test suite (BIO-01, BIO-02, BIO-03, BIO-04)
 
 ---
 
