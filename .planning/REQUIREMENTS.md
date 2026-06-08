@@ -49,7 +49,7 @@
 
 ## Sleep Staging (4-class, IMU-dependent)
 
-- [ ] **ALG-SLP-03**: Cole-Kripke actigraphy classifier in `sleep_staging.rs` — 1-minute aggregated epochs from `full_samples`; empirical WHOOP IMU scaling factor derived before implementation (requires research sub-phase); `staging_method_actigraphy_uncalibrated` quality flag mandatory
+- [x] **ALG-SLP-03**: Cole-Kripke actigraphy classifier in `sleep_staging.rs` — 1-minute aggregated epochs from `full_samples`; empirical WHOOP IMU scaling factor derived before implementation (requires research sub-phase); `staging_method_actigraphy_uncalibrated` quality flag mandatory
 - [ ] **ALG-SLP-04**: 4-class classifier (wake/light/deep/REM) using cardiorespiratory features per 30s epoch + physiological reimposition (minimum 5-min segment merge, forbidden-transition suppression); AASM metrics (TST, efficiency, SOL, WASO, stage_minutes) computed from hypnogram; validated on ≥ 5 overnight sessions against WHOOP stages
 
 ---

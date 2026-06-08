@@ -6,7 +6,7 @@
 - ✅ **v2.0 Multi-Device & Platform Foundations** — Phases 6-8+8.1 (shipped 2026-06-04)
 - ✅ **v3.0 Wearable UX, CI Hardening & RTC Sync** — Phases 9-15 (shipped 2026-06-05)
 - ✅ **v4.0 Security, Performance & Coach Expansion** — Phases 16-19 (shipped 2026-06-06)
-- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-32 (backlog)
+- 📋 **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-35 (backlog)
 
 ## Phases
 
@@ -68,7 +68,7 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 </details>
 
 <details>
-<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-32) — BACKLOG</summary>
+<summary>📋 v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-35) — BACKLOG</summary>
 
 - [x] **Phase 20: Upstream Fixes & Storage** (2/2 plans) — SYNC-01 ✓, SYNC-02 ✓, SYNC-03 ✓, SYNC-04 ✓, SYNC-05 ✓, PERF-05 ✓
 - [x] **Phase 21: IMU Data Foundation** (2/2 plans) — IMU-01 ✓, IMU-02 ✓ (IMU-03, IMU-04 deferred)
@@ -83,6 +83,9 @@ Known deferred: COACH-06 device migration test, 4 streaming provider runtime tes
 - [ ] **Phase 30: Readiness Engine** — RDY-01, RDY-02, RDY-03
 - [ ] **Phase 31: Protocol Corrections (noop)** — PROTO-01, PROTO-02, PROTO-03
 - [ ] **Phase 32: HRV Parity Validation** — VAL-01
+- [ ] **Phase 33: Ghidra Algorithm Audit** — GHIDRA-01, GHIDRA-02, GHIDRA-03
+- [ ] **Phase 34: Codebase Audit** — AUDIT-01, AUDIT-02, AUDIT-03
+- [ ] **Phase 35: Cross-Project Review** — REVIEW-01, REVIEW-02, REVIEW-03
 
 </details>
 
@@ -265,13 +268,16 @@ Plans:
 | 23. Strain & Calories | v5.0 | 3/3 | Complete   | 2026-06-08 |
 | 24. Sleep Metrics Without Staging + Baselines | v5.0 | 2/2 | Complete   | 2026-06-08 |
 | 25. Recovery Score v1 | v5.0 | 2/2 | Complete   | 2026-06-08 |
-| 26. Sleep Staging | v5.0 | 0/2 | Planned | — |
+| 26. Sleep Staging | v5.0 | 1/2 | In Progress|  |
 | 27. V24 Biometric Decode | v5.0 | 0/0 | Not started | — |
 | 28. Exercise Detection | v5.0 | 0/0 | Not started | — |
 | 29. Upload Sync Infrastructure | v5.0 | 0/0 | Not started | — |
 | 30. Readiness Engine | v5.0 | 0/0 | Not started | — |
 | 31. Protocol Corrections (noop) | v5.0 | 0/0 | Not started | — |
 | 32. HRV Parity Validation | v5.0 | 0/0 | Not started | — |
+| 33. Ghidra Algorithm Audit | v5.0 | 0/0 | Not started | — |
+| 34. Codebase Audit | v5.0 | 0/0 | Not started | — |
+| 35. Cross-Project Review | v5.0 | 0/0 | Not started | — |
 
 ## Backlog
 
@@ -556,7 +562,7 @@ Plans:
 
 **Wave 1**
 
-  - [ ] 26-01-PLAN.md — Cole-Kripke binary actigraphy spine: sleep_staging.rs module, activity-count computation, 1-min epochs, 7-term weighted D score, wake/sleep classification, metrics.sleep_staging bridge method (ALG-SLP-03)
+  - [x] 26-01-PLAN.md — Cole-Kripke binary actigraphy spine: sleep_staging.rs module, activity-count computation, 1-min epochs, 7-term weighted D score, wake/sleep classification, metrics.sleep_staging bridge method (ALG-SLP-03)
 
 **Wave 2** *(blocked on Wave 1 — shared sleep_staging.rs)*
 
@@ -630,5 +636,57 @@ Plans:
   4. `cargo test -p goose-core` green including the 5 parity tests
 
 **Plans**: TBD
+
+---
+
+### Phase 33: Ghidra Algorithm Audit
+
+**Goal**: Every algorithm family implemented in v5.0 (HRV/recovery, sleep staging, strain/calories) is cross-referenced against the WHOOP iOS binary via Ghidra MCP — any divergence from the binary is documented and either corrected or explicitly accepted as an intentional approximation.
+**Depends on**: Phases 22–28 (implementations complete)
+**Requirements**: GHIDRA-01, GHIDRA-02, GHIDRA-03
+**Source**: WHOOP 5.37.0 IPA (AARCH64); `FINDINGS_5.md` (prior Ghidra work for Keytel/H-B coefficients); `tigercraft4/noop` BLE_REVERSE_ENGINEERING.md
+**Execution**: 3 Ghidra agents in parallel, one per algorithm family
+**Success Criteria** (what must be TRUE):
+
+  1. **Agent 1 — Recovery / HRV** (`GHIDRA-01`): Locate and disassemble the WHOOP recovery score computation; verify logistic parameters (`k=1.6`, `z0=-0.20`), HRV weight (0.60), RHR inversion sign, and EWMA half-lives (14/21 nights) against binary constants; document any divergence in `FINDINGS_GHIDRA_RECOVERY.md`
+  2. **Agent 2 — Sleep Staging** (`GHIDRA-02`): Locate Cole-Kripke weight array in binary; verify exact values `[106, 54, 58, 76, 230, 74, 67]` and scale=0.001; verify 4-class staging thresholds (HR percentiles p25/p70, RMSSD percentile p70, RRV percentile p65); document findings in `FINDINGS_GHIDRA_SLEEP.md`
+  3. **Agent 3 — Strain / Calories / SpO2** (`GHIDRA-03`): Verify Banister TRIMP b-exponents (1.92/1.67), strain denominator (7201), SpO2 ratio-of-ratios coefficients (`a`, `b`) against binary; cross-check against Keytel/H-B findings in `FINDINGS_5.md`; document in `FINDINGS_GHIDRA_STRAIN.md`
+  4. Each finding file classifies every constant/formula as: `CONFIRMED` (binary matches), `DIVERGES` (binary differs — corrective action required), or `NOT_FOUND` (symbol not located — approximation accepted)
+
+**Plans**: TBD (3 parallel Ghidra agent runs)
+
+---
+
+### Phase 34: Codebase Audit
+
+**Goal**: After v5.0 implementation (Phases 22–31), 3 independent audit agents sweep the Rust core for correctness bugs, security issues, and performance regressions — producing a prioritised findings report before Phase 35 review.
+**Depends on**: Phases 22–31 (all implemented), Phase 33 (Ghidra findings available)
+**Requirements**: AUDIT-01, AUDIT-02, AUDIT-03
+**Execution**: 3 audit agents in parallel, each with a distinct audit lens
+**Success Criteria** (what must be TRUE):
+
+  1. **Agent 1 — Correctness** (`AUDIT-01`): Audit all algorithm implementations in `metrics.rs`, `sleep_staging.rs`, `energy_rollup.rs`, `baselines.rs` against their phase specs and Ghidra findings; flag any formula divergence, off-by-one in epoch windows, incorrect unit assumptions, or missing edge cases; output `AUDIT_CORRECTNESS.md`
+  2. **Agent 2 — Security** (`AUDIT-02`): Audit the Rust FFI bridge (`bridge.rs`), all SQL in `store.rs` (injection, schema leaks, unbound parameters), upload serialisation path, and any secret/credential handling; flag HIGH/MEDIUM/LOW severity findings; output `AUDIT_SECURITY.md`
+  3. **Agent 3 — Performance** (`AUDIT-03`): Profile SQLite query plans for all new tables (gravity, spo2, resp, skin_temp, exercise_sessions); identify missing indices, N+1 patterns in bridge methods, and allocations in hot paths (sleep staging epoch loop, EWMA fold); output `AUDIT_PERFORMANCE.md`
+  4. All HIGH severity findings from any agent are resolved before Phase 35 is started; MEDIUM findings are triaged with explicit accept/defer decisions documented
+
+**Plans**: TBD (3 parallel audit agent runs)
+
+---
+
+### Phase 35: Cross-Project Review
+
+**Goal**: 3 review agents compare the completed Goose v5.0 implementation against `tigercraft4/noop` and `my-whoop` to surface functional gaps, algorithmic divergences, and schema/API surface issues — producing an actionable backlog for v6.0.
+**Depends on**: Phase 34 (audit clean), Phase 33 (Ghidra findings)
+**Requirements**: REVIEW-01, REVIEW-02, REVIEW-03
+**Execution**: 3 review agents in parallel, one per comparison axis
+**Success Criteria** (what must be TRUE):
+
+  1. **Agent 1 — Functional gaps vs noop** (`REVIEW-01`): Compare Goose feature surface against `tigercraft4/noop` feature list; for each noop capability not in Goose (e.g. Readiness Engine post-Phase 30, journal, Apple Health bidirectional, workout sport classification, ACWR injury zones), classify as: `IN_ROADMAP` (phase X), `BACKLOG` (candidate for v6.0), or `OUT_OF_SCOPE`; output `REVIEW_NOOP_GAPS.md`
+  2. **Agent 2 — Algorithmic divergences vs my-whoop** (`REVIEW-02`): For each algorithm in `my-whoop/server/ingest/app/analysis/`, verify Goose Rust produces equivalent output within tolerance (HRV ≤ 1 ms, recovery ≤ 0.5%, strain ≤ 0.1 units, resp ≤ 0.5 BrPM) on shared test fixtures; flag any divergence with root-cause analysis; output `REVIEW_MYWHOOP_DIVERGENCES.md`
+  3. **Agent 3 — Schema & API surface** (`REVIEW-03`): Compare Goose SQLite schema (all tables, indices, constraints) against noop WhoopStore schema and my-whoop TimescaleDB schema; identify missing tables (`metricSeries` EAV, `journal`, `appleDaily`), column gaps (`synced` flag coverage, `stagesJSON` format parity), and bridge method surface completeness; output `REVIEW_SCHEMA.md`
+  4. Each output file ends with a prioritised v6.0 candidate list; combined output drives the v6.0 milestone planning session
+
+**Plans**: TBD (3 parallel review agent runs)
 
 ---

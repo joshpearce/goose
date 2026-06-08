@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Metrics Accuracy, IMU & Upstream Fixes
 status: executing
-stopped_at: Checkpoint 24-01 Task 3 — Swift UI wiring done, awaiting human verification of Sleep V2 detail sheet
-last_updated: "2026-06-08T11:44:29.816Z"
-last_activity: 2026-06-08 -- Phase 25 execution started
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-06-08T12:02:37.839Z"
+last_activity: 2026-06-08 -- Phase 26 execution started
 progress:
-  total_phases: 9
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 13
-  percent: 56
+  total_phases: 16
+  completed_phases: 6
+  total_plans: 17
+  completed_plans: 16
+  percent: 38
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure.
-**Current focus:** Phase 25 — Recovery Score v1
+**Current focus:** Phase 26 — Sleep Staging
 
 ## Current Position
 
-Phase: 25 (Recovery Score v1) — EXECUTING
-Plan: 1 of 2
+Phase: 26 (Sleep Staging) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-06-08 -- Phase 25 execution started
+Last activity: 2026-06-08 -- Phase 26 execution started
 
 Progress: [██████░░░░] 65%
 
@@ -74,6 +74,7 @@ Progress: [██████░░░░] 65%
 | Phase 23-strain-calories P03 | 14 | 2 tasks | 3 files |
 | Phase 24-sleep-metrics-baselines P01 | 32 | 3 tasks (TDD+UI) | 10 files |
 | Phase 24-sleep-metrics-baselines P02 | 45 | 3 tasks (TDD) | 4 files |
+| Phase 26-sleep-staging P01 | 16min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,7 @@ Recent decisions affecting current work:
 - Phase 24 Plan 01: baseline_awake_hr_bpm used as resting_hr proxy for HR-threshold helpers; sol_from_hr requires first_hr_offset correction when window_hr_series doesn't start at minute 0; rem_latency_minutes deferred to Phase 26; bridge tests updated for new HR-threshold scores
 - Phase 22 Plan 03: SWS window selection: select_sws_window returns (tier, Vec<usize>) indices into stage_segments; index-proportional mapping when rr_timestamps_s absent; Tier 2 recency = chronological concat; SWS runs before 300-2000 ms gate
 - Phase 22 Plan 03: ALG-HRV-04 is a manual gate only (code comment above goose_hrv_v0); phase remains open until >= 5 real session deltas <= 1 ms are recorded in 22-03-SUMMARY.md
+- [Phase ?]: Activity count uses inter-sample magnitude difference; COLE_KRIPKE_SCALE_FACTOR exposed as named const for future calibration
 
 ### Pending Todos
 
@@ -140,6 +142,6 @@ Items carried forward from v3.0 milestone close (2026-06-05):
 
 ## Session Continuity
 
-Last session: 2026-06-08T10:02:00.000Z
-Stopped at: Checkpoint 24-01 Task 3 — Swift UI wiring done, awaiting human verification of Sleep V2 detail sheet
+Last session: 2026-06-08T12:02:37.832Z
+Stopped at: Completed 26-01-PLAN.md
 Next: Human verifies Sleep V2 detail sheet in simulator, then advance to Phase 25 (Recovery Score v1)
