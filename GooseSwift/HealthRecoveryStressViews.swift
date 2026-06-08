@@ -120,6 +120,9 @@ struct RecoveryV2OverviewPage: View {
               )
               .frame(height: 96)
 
+              ReadinessLevelCard(palette: palette, result: store.readinessResult)
+                .frame(height: 96)
+
               SleepV2StatCard(
                 palette: palette,
                 systemImage: "target",
@@ -195,10 +198,12 @@ struct RecoveryV2OverviewPage: View {
       store.loadBridgeCatalogsIfNeeded()
       store.runPacketScores()
       store.runRecoveryV1()
+      store.runReadinessV1()
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       store.runPacketScores()
       store.runRecoveryV1()
+      store.runReadinessV1()
     }
   }
 

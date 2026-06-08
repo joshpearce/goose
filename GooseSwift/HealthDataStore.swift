@@ -62,6 +62,10 @@ final class HealthDataStore {
   // Stored here because Swift extensions cannot add stored properties to @Observable classes.
   var recoveryV1Result: RecoveryV1Result?
 
+  // Readiness Engine result from metrics.goose_readiness_v1 (ACWR + Foster monotony).
+  // Stored here because Swift extensions cannot add stored properties to @Observable classes.
+  var readinessResult: ReadinessResult?
+
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
   static let liveHRVRMSSDSampleCountDefaultsKey = "goose.swift.liveHRVRMSSDSampleCount"

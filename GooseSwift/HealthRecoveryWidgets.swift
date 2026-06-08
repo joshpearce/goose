@@ -357,3 +357,65 @@ struct RecoveryV2TrendBand: View {
     return CGPoint(x: x, y: y)
   }
 }
+
+// MARK: - ReadinessLevelCard
+
+struct ReadinessLevelCard: View {
+  let palette: SleepV2Palette
+  let result: ReadinessResult?
+
+  var body: some View {
+    HStack(spacing: 14) {
+      Image(systemName: result?.levelIcon ?? "questionmark.circle")
+        .font(.title2.weight(.semibold))
+        .foregroundStyle(result?.levelColor ?? palette.mutedText)
+        .frame(width: 36)
+
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Prontidão")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(palette.mutedText)
+        Text(result?.levelLabel ?? "Insuficiente")
+          .font(.headline.weight(.semibold))
+          .foregroundStyle(result != nil ? (result?.levelColor ?? palette.text) : palette.secondaryText)
+          .lineLimit(1)
+          .minimumScaleFactor(0.80)
+      }
+
+      Spacer(minLength: 8)
+
+      if let r = result, !r.insufficientData {
+        VStack(alignment: .trailing, spacing: 4) {
+          Text(r.acwrZoneLabel)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(palette.secondaryText)
+          if let acwr = r.acwr {
+            Text(String(format: "ACWR %.2f", acwr))
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(palette.mutedText)
+          }
+        }
+      } else {
+        Text("< 28 dias de dados")
+          .font(.caption.weight(.medium))
+          .foregroundStyle(palette.mutedText)
+          .lineLimit(2)
+          .multilineTextAlignment(.trailing)
+      }
+    }
+    .padding(.horizontal, 14)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    .background(
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .fill(palette.surface)
+        .shadow(color: palette.shadow.opacity(0.30), radius: 8, x: 0, y: 3)
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .stroke(
+          (result?.levelColor ?? palette.separator).opacity(result != nil && !(result?.insufficientData ?? true) ? 0.54 : 0.28),
+          lineWidth: 1
+        )
+    )
+  }
+}
