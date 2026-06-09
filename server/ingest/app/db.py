@@ -26,7 +26,21 @@ def connect(dsn: str) -> psycopg.Connection:
     return psycopg.connect(dsn)
 
 
+_BOOTSTRAP_LOCK_KEY = 1_234_567_890  # arbitrary fixed key for pg_advisory_lock
+
+
 def bootstrap_schema(dsn: str) -> None:
-    """Apply init.sql idempotently (CREATE ... IF NOT EXISTS / create_hypertable if_not_exists)."""
+    """Apply init.sql idempotently (CREATE ... IF NOT EXISTS / create_hypertable if_not_exists).
+
+    A session-level advisory lock serialises concurrent bootstraps (e.g. two replicas
+    starting at the same time) so that concurrent CREATE EXTENSION / CREATE TABLE IF NOT
+    EXISTS calls do not race into a deadlock or duplicate_object error.
+    The lock is released automatically when the connection closes, but we release it
+    explicitly after the apply to keep the window as short as possible.
+    """
     with psycopg.connect(dsn, autocommit=True) as conn:
-        conn.execute(_schema_sql())
+        conn.execute("SELECT pg_advisory_lock(%s)", (_BOOTSTRAP_LOCK_KEY,))
+        try:
+            conn.execute(_schema_sql())
+        finally:
+            conn.execute("SELECT pg_advisory_unlock(%s)", (_BOOTSTRAP_LOCK_KEY,))
