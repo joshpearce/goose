@@ -119,14 +119,15 @@ final class GooseUploadService: @unchecked Sendable {
     }
 
     if uploadSucceeded {
-      lastUploadTimestamp = Date()
-      lastSyncedCount = syncedCount
       // Mark hr_samples rows as synced using the rowids from the recent decoded streams.
       // We use sync.rows_pending_upload to get the rowids of hr_samples rows that were just uploaded.
       markHrSamplesSynced(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
       // Upload raw BLE frames alongside decoded streams. This enables a fresh iOS
       // install to reconstruct the trust chain via capture.import_frame_batch.
       await uploadRawFrames(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
+      // Advance the checkpoint only after both decoded and raw uploads have been attempted.
+      lastUploadTimestamp = Date()
+      lastSyncedCount = syncedCount
     } else {
       logger.warning("upload failed after 3 attempts — discarding batch")
     }
