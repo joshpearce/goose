@@ -184,7 +184,7 @@ def get_devices():
 
 
 @app.get("/v1/batches", dependencies=[Depends(require_auth)])
-def get_batches(device: str, limit: int = 100):
+def get_batches(device: str, limit: int = Query(100, ge=1, le=10000)):
     with psycopg.connect(cfg.db_dsn) as conn:
         return read.list_batches(conn, device_id=device, limit=limit)
 
@@ -202,7 +202,7 @@ def get_summary(device: str,
 def get_stream(kind: str, device: str,
                from_: int = Query(0, alias="from"),
                to: int = Query(2_000_000_000, alias="to"),
-               limit: int = 5000,
+               limit: int = Query(5000, ge=1, le=10000),
                max_points: int | None = None):
     try:
         with psycopg.connect(cfg.db_dsn) as conn:
