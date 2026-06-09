@@ -17,7 +17,7 @@ All iOS configuration is done at runtime through the app UI. There is no build-t
 
 | Field | Storage | Key / Service | Description |
 |---|---|---|---|
-| Server URL | `UserDefaults` | `goose.remote.serverURL` | Base URL of your self-hosted server. Must use `https://` or `http://` with a hostname (not a bare IP address). Example: `https://goose.example.com` |
+| Server URL | `UserDefaults` | `goose.remote.serverURL` | Base URL of your self-hosted server. Must use `https://` or `http://`. Private-range and loopback IP addresses are accepted over `http://`; public addresses require `https://`. Example: `https://goose.example.com` or `http://192.168.1.10:8770` |
 | Bearer token | iOS Keychain | service `goose.remote`, account `apiKey` | The `GOOSE_API_KEY` value configured on the server. Stored with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. |
 | Enable Upload | `UserDefaults` | `goose.remote.uploadEnabled` | Toggle that gates all outbound uploads. Upload is only attempted when this is `true`, the URL is non-empty, and a token is present. |
 
