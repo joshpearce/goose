@@ -2565,7 +2565,7 @@ fn lipponen_tarvainen_filter(segment: &[f64]) -> Vec<f64> {
             result.push(segment[i]);
             continue;
         }
-        window.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        window.sort_by(|a, b| a.total_cmp(b));
         let median = window[window.len() / 2];
         if (segment[i] - median).abs() <= ECTOPIC_THRESHOLD * median {
             result.push(segment[i]);
