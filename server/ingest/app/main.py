@@ -99,17 +99,68 @@ class DecodedDevice(BaseModel):
     name: str | None = None
 
 
+# Typed sub-models for each stream kind.  Pydantic validates and rejects
+# out-of-range or missing-key payloads with a 422 BEFORE they reach
+# store.upsert_streams, eliminating the unhandled psycopg 500 that would
+# otherwise occur (e.g. bpm=99999 overflows the SMALLINT column).
+
+class HrSample(BaseModel):
+    ts: float
+    bpm: int = Field(..., ge=0, le=300)
+
+
+class RrSample(BaseModel):
+    ts: float
+    rr_ms: int = Field(..., ge=1, le=5000)
+
+
+class EventSample(BaseModel):
+    ts: float
+    kind: str
+    payload: dict | None = None
+
+
+class BatterySample(BaseModel):
+    ts: float
+    soc: float | None = Field(default=None, ge=0.0, le=100.0)
+    mv: int | None = Field(default=None, ge=0, le=10000)
+    charging: bool | None = None
+
+
+class Spo2Sample(BaseModel):
+    ts: float
+    red: int = Field(..., ge=0)
+    ir: int = Field(..., ge=0)
+
+
+class SkinTempSample(BaseModel):
+    ts: float
+    raw: int | float
+
+
+class RespSample(BaseModel):
+    ts: float
+    raw: int | float
+
+
+class GravitySample(BaseModel):
+    ts: float
+    x: float
+    y: float
+    z: float
+
+
 class DecodedStreams(BaseModel):
-    hr: list[dict] = []
-    rr: list[dict] = []
-    events: list[dict] = []
-    battery: list[dict] = []
+    hr: list[HrSample] = []
+    rr: list[RrSample] = []
+    events: list[EventSample] = []
+    battery: list[BatterySample] = []
     # Type-47 V24 biometric history (optional; older clients omit these). Values are
     # raw ADC for spo2/skin_temp/resp; gravity is the accel-derived vector in g.
-    spo2: list[dict] = []
-    skin_temp: list[dict] = []
-    resp: list[dict] = []
-    gravity: list[dict] = []
+    spo2: list[Spo2Sample] = []
+    skin_temp: list[SkinTempSample] = []
+    resp: list[RespSample] = []
+    gravity: list[GravitySample] = []
 
 
 class DecodedBatch(BaseModel):
