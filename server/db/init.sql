@@ -105,9 +105,18 @@ CREATE TABLE IF NOT EXISTS gravity_samples (
 SELECT create_hypertable('gravity_samples', 'ts', if_not_exists => TRUE);
 
 -- ── Raw frames uploaded directly from iOS (POST /v1/ingest-frames) ──────────
--- Table created in an earlier deployment with column `captured_at` (not `ts`).
--- We keep the existing schema intact; only add the dedup unique index needed for
--- ON CONFLICT idempotent upserts, if it doesn't exist yet.
+CREATE TABLE IF NOT EXISTS raw_frames (
+    device_id    TEXT NOT NULL REFERENCES devices(device_id),
+    captured_at  TIMESTAMPTZ NOT NULL,
+    frame_hex    TEXT NOT NULL,
+    source       TEXT NOT NULL DEFAULT 'ios.corebluetooth.notification',
+    device_type  TEXT NOT NULL DEFAULT 'GOOSE',
+    device_model TEXT NOT NULL DEFAULT 'WHOOP 5.0 Goose',
+    sensitivity  TEXT NOT NULL DEFAULT 'user-owned-capture'
+);
+SELECT create_hypertable('raw_frames', 'captured_at', if_not_exists => TRUE);
+CREATE INDEX IF NOT EXISTS raw_frames_device_time ON raw_frames (device_id, captured_at);
+-- Unique index enables ON CONFLICT (device_id, captured_at, frame_hex) DO NOTHING for idempotent upserts.
 CREATE UNIQUE INDEX IF NOT EXISTS raw_frames_dedup
     ON raw_frames (device_id, captured_at, frame_hex);
 

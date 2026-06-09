@@ -437,7 +437,7 @@ class IngestFramesDevice(BaseModel):
 
 class IngestFrame(BaseModel):
     captured_at_unix: float
-    frame_hex: str = Field(..., pattern=r"^[0-9a-fA-F]*$")
+    frame_hex: str = Field(..., pattern=r"^[0-9a-fA-F]+$")
     source: str | None = None
     device_type: str | None = None
     device_model: str | None = None
@@ -446,7 +446,7 @@ class IngestFrame(BaseModel):
 
 class IngestFramesBatch(BaseModel):
     device: IngestFramesDevice
-    frames: list[IngestFrame]
+    frames: list[IngestFrame] = Field(..., max_length=5000)
 
 
 @app.post("/v1/ingest-frames", dependencies=[Depends(require_auth)])

@@ -354,6 +354,7 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
     # Also include frames uploaded directly via POST /v1/ingest-frames (raw_frames table).
     # These carry the exact iOS shape already; NULL columns fall back to the same defaults
     # as the archive path above so the iOS importer sees a uniform dict format.
+    remaining = max(0, limit - len(out))
     db_rows = conn.execute(
         """SELECT extract(epoch FROM captured_at)::float AS captured_at_unix,
                   frame_hex,
@@ -365,8 +366,9 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
            WHERE device_id = %s
              AND extract(epoch FROM captured_at) >= %s
              AND extract(epoch FROM captured_at) <= %s
-           ORDER BY captured_at""",
-        (device_id, from_ts, to_ts),
+           ORDER BY captured_at
+           LIMIT %s""",
+        (device_id, from_ts, to_ts, remaining),
     ).fetchall()
     for row in db_rows:
         out.append({
