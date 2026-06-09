@@ -7312,6 +7312,25 @@ impl GooseStore {
         })
     }
 
+    /// Return all rr_intervals rows with ts in [start_ts, end_ts).
+    pub fn rr_intervals_between(&self, start_ts: f64, end_ts: f64) -> GooseResult<Vec<RrIntervalRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT device_id, ts, interval_ms, synced FROM rr_intervals \
+             WHERE ts >= ?1 AND ts < ?2 ORDER BY ts",
+        )?;
+        let rows = stmt
+            .query_map(params![start_ts, end_ts], |row| {
+                Ok(RrIntervalRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    interval_ms: row.get(2)?,
+                    synced: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    }
+
     /// Delete synced rows (synced=1) older than older_than_ts from a stream table.
     /// Stream table pruning only removes rows with synced=1 — unsynced rows (synced=0)
     /// are structurally protected regardless of age. Same allowlist as mark_synced_rows.

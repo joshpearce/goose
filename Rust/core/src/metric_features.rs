@@ -19,7 +19,7 @@ use crate::{
     protocol::{
         DataPacketBodySummary, I16SeriesSummary, ParsedPayload, decode_hex_with_whitespace,
     },
-    store::{DecodedFrameRow, GooseStore},
+    store::{DecodedFrameRow, GooseStore, RrIntervalRow},
     validation_labels::{
         OFFICIAL_WHOOP_LABEL_POLICY, official_label_policy_issue_action,
         official_label_policy_issues,
@@ -1669,7 +1669,110 @@ pub fn run_hrv_feature_report_for_store(
             require_owned_captures: options.require_trusted_evidence,
         },
     )?;
-    run_hrv_feature_report(&decoded_rows, &correlation, start, end, options)
+    let report = run_hrv_feature_report(&decoded_rows, &correlation, start, end, options)?;
+
+    // When no HRV data came from decoded_frames, fall back to the rr_intervals table.
+    // This covers simulator testing and fresh-install scenarios where HR/RR data
+    // was imported directly (store.insert_hr_rr_batch) without the BLE trust chain.
+    if report.hrv_input.is_none() {
+        if let Ok(fallback) = hrv_report_from_rr_table(store, start, end, options) {
+            if fallback.hrv_input.is_some() {
+                return Ok(fallback);
+            }
+        }
+    }
+
+    Ok(report)
+}
+
+/// Parse a "YYYY-MM-DDTHH:MM:SS..." ISO-8601 UTC string to a Unix timestamp (seconds).
+/// Returns None if the string cannot be parsed.
+fn iso8601_to_unix_approx(s: &str) -> Option<f64> {
+    let s = s.trim_end_matches('Z');
+    let (date_str, time_str) = s.split_once('T')?;
+    let mut date_parts = date_str.splitn(3, '-');
+    let year: i64 = date_parts.next()?.parse().ok()?;
+    let month: i64 = date_parts.next()?.parse().ok()?;
+    let day: i64 = date_parts.next()?.parse().ok()?;
+    let time_str = time_str.split('.').next().unwrap_or(time_str);
+    let mut hms = time_str.splitn(3, ':');
+    let hour: i64 = hms.next()?.parse().ok()?;
+    let minute: i64 = hms.next()?.parse().ok()?;
+    let second: i64 = hms.next().and_then(|s| s.parse().ok()).unwrap_or(0);
+    // Days since 1970-01-01 using a simple Gregorian calculation.
+    let y = if month <= 2 { year - 1 } else { year };
+    let m = if month <= 2 { month + 9 } else { month - 3 };
+    let jdn: i64 = 365 * y + y / 4 - y / 100 + y / 400
+        + (153 * m + 2) / 5 + day - 719469;
+    let unix = jdn * 86400 + hour * 3600 + minute * 60 + second;
+    Some(unix as f64)
+}
+
+/// Build an HrvFeatureReport directly from the rr_intervals table when the
+/// standard decoded_frames path has no data (e.g. imported data without trust chain).
+fn hrv_report_from_rr_table(
+    store: &GooseStore,
+    start: &str,
+    end: &str,
+    options: HrvFeatureOptions,
+) -> GooseResult<HrvFeatureReport> {
+    let start_ts = iso8601_to_unix_approx(start).unwrap_or(0.0);
+    let end_ts = iso8601_to_unix_approx(end).unwrap_or(f64::MAX);
+    let rows: Vec<RrIntervalRow> = store.rr_intervals_between(start_ts, end_ts)?;
+
+    let rr_ms: Vec<f64> = rows
+        .iter()
+        .map(|r| r.interval_ms as f64)
+        .filter(|&ms| ms > 200.0 && ms < 3000.0)
+        .collect();
+
+    let mut issues = Vec::new();
+    let hrv_input = if rr_ms.len() >= options.min_rr_intervals_to_compute {
+        Some(HrvInput {
+            start_time: start.to_string(),
+            end_time: end.to_string(),
+            rr_intervals_ms: rr_ms.clone(),
+            input_ids: vec!["rr_intervals_table".to_string()],
+            rr_timestamps_s: None,
+            stage_segments: None,
+        })
+    } else {
+        issues.push("not_enough_rr_intervals".to_string());
+        None
+    };
+    let score_result = hrv_input.as_ref().map(goose_hrv_v0);
+    if score_result
+        .as_ref()
+        .is_some_and(|r| !r.errors.is_empty())
+    {
+        issues.push("hrv_score_errors".to_string());
+    }
+
+    Ok(HrvFeatureReport {
+        schema: HRV_FEATURE_REPORT_SCHEMA.to_string(),
+        generated_by: "goose-hrv-features".to_string(),
+        pass: issues.is_empty(),
+        require_trusted_evidence: false,
+        capture_correlation_pass: true,
+        start_time: start.to_string(),
+        end_time: end.to_string(),
+        candidate_frame_count: rows.len(),
+        feature_count: if hrv_input.is_some() { 1 } else { 0 },
+        trusted_feature_count: if hrv_input.is_some() { 1 } else { 0 },
+        rr_interval_count: rr_ms.len(),
+        trusted_rr_interval_count: rr_ms.len(),
+        min_rr_intervals_to_compute: options.min_rr_intervals_to_compute,
+        require_baseline: options.require_baseline,
+        baseline_min_days: options.baseline_min_days,
+        daily_count: 0,
+        hrv_input,
+        score_result,
+        baseline: None,
+        daily: Vec::new(),
+        features: Vec::new(),
+        issues,
+        next_actions: Vec::new(),
+    })
 }
 
 pub fn run_hrv_capture_validation_for_store(
