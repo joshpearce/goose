@@ -255,7 +255,9 @@ final class GooseUploadService: @unchecked Sendable {
         // Only mark rows from this device and in the upload window.
         guard let rowid = (row["rowid"] as? NSNumber)?.intValue ?? (row["rowid"] as? Int),
               let ts = (row["ts"] as? NSNumber)?.doubleValue ?? (row["ts"] as? Double),
-              ts >= sinceTs else {
+              let deviceIdStr = row["device_id"] as? String,
+              ts >= sinceTs,
+              deviceIdStr == deviceID.uuidString else {
           return nil
         }
         return rowid
