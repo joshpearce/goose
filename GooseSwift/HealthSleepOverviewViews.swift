@@ -295,7 +295,7 @@ struct SleepStagingCard: View {
           SleepStagingMetricCell(palette: palette, label: "Acordado após início", value: r.wasoText)
         }
 
-        if !result!.respAvailable {
+        if !r.respAvailable {
           HStack(spacing: 6) {
             Image(systemName: "info.circle")
               .font(.caption.weight(.semibold))
