@@ -351,7 +351,36 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
             if len(out) >= limit:
                 break
 
-    return out
+    # Also include frames uploaded directly via POST /v1/ingest-frames (raw_frames table).
+    # These carry the exact iOS shape already; NULL columns fall back to the same defaults
+    # as the archive path above so the iOS importer sees a uniform dict format.
+    db_rows = conn.execute(
+        """SELECT extract(epoch FROM ts)::float AS captured_at_unix,
+                  frame_hex,
+                  source,
+                  device_model,
+                  device_type,
+                  sensitivity
+           FROM raw_frames
+           WHERE device_id = %s
+             AND extract(epoch FROM ts) >= %s
+             AND extract(epoch FROM ts) <= %s
+           ORDER BY ts""",
+        (device_id, from_ts, to_ts),
+    ).fetchall()
+    for row in db_rows:
+        out.append({
+            "captured_at_unix": row[0],
+            "frame_hex": row[1],
+            "source": row[2] if row[2] is not None else "ios.corebluetooth.notification",
+            "device_model": row[3] if row[3] is not None else device_name,
+            "device_type": row[4] if row[4] is not None else "GOOSE",
+            "sensitivity": row[5] if row[5] is not None else "user-owned-capture",
+        })
+
+    # Merge both sources, sort ascending by timestamp, then truncate to limit.
+    out.sort(key=lambda r: r["captured_at_unix"])
+    return out[:limit]
 
 
 from whoop_protocol import parse_frame

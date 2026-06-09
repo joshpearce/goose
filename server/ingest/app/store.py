@@ -33,6 +33,38 @@ def insert_raw_batch(conn: psycopg.Connection, b: dict) -> None:
     )
 
 
+def insert_raw_frames_batch(conn: psycopg.Connection, device_id: str, frames: list) -> dict:
+    """Insert a batch of raw BLE frames uploaded directly from iOS.
+
+    Returns {"inserted": N, "skipped": M}. ON CONFLICT DO NOTHING makes
+    re-posting the same frame a no-op (idempotent). The caller is responsible
+    for committing the transaction."""
+    inserted = 0
+    skipped = 0
+    with conn.cursor() as cur:
+        for f in frames:
+            cur.execute(
+                """INSERT INTO raw_frames
+                   (device_id, ts, frame_hex, source, device_type, device_model, sensitivity)
+                   VALUES (%s, to_timestamp(%s), %s, %s, %s, %s, %s)
+                   ON CONFLICT (device_id, ts, frame_hex) DO NOTHING""",
+                (
+                    device_id,
+                    f.get("captured_at_unix"),
+                    f.get("frame_hex"),
+                    f.get("source"),
+                    f.get("device_type"),
+                    f.get("device_model"),
+                    f.get("sensitivity"),
+                ),
+            )
+            if cur.rowcount == 1:
+                inserted += 1
+            else:
+                skipped += 1
+    return {"inserted": inserted, "skipped": skipped}
+
+
 def upsert_streams(conn: psycopg.Connection, device_id: str, streams: dict) -> dict:
     counts = {"hr": 0, "rr": 0, "events": 0, "battery": 0,
               "spo2": 0, "skin_temp": 0, "resp": 0, "gravity": 0}

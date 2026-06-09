@@ -424,6 +424,48 @@ def backfill_workouts(body: BackfillWorkouts):
     return {"recomputed": len(results), "days": results}
 
 
+# ── iOS raw-frame upload models (POST /v1/ingest-frames) ────────────────────
+# The iOS GooseUploadService.uploadRawFrames posts:
+#   {"device": {"id": ..., "mac": ..., "name": ...}, "frames": [{captured_at_unix, frame_hex, ...}]}
+# and reads json["inserted"] from the response (GooseUploadService.swift:182).
+
+class IngestFramesDevice(BaseModel):
+    id: str
+    mac: str | None = None
+    name: str | None = None
+
+
+class IngestFrame(BaseModel):
+    captured_at_unix: float
+    frame_hex: str = Field(..., pattern=r"^[0-9a-fA-F]*$")
+    source: str | None = None
+    device_type: str | None = None
+    device_model: str | None = None
+    sensitivity: str | None = None
+
+
+class IngestFramesBatch(BaseModel):
+    device: IngestFramesDevice
+    frames: list[IngestFrame]
+
+
+@app.post("/v1/ingest-frames", dependencies=[Depends(require_auth)])
+def ingest_frames(batch: IngestFramesBatch):
+    """Accept a batch of raw BLE frames from iOS and persist to raw_frames.
+
+    Returns {"inserted": N, "skipped": M}. Idempotent: re-posting the same
+    frames (same device_id + captured_at_unix + frame_hex) increments skipped."""
+    payload = batch.model_dump()
+    device_id = payload["device"]["id"]
+    with psycopg.connect(cfg.db_dsn) as conn:
+        store.ensure_device(conn, device_id,
+                            mac=payload["device"].get("mac"),
+                            name=payload["device"].get("name"))
+        result = store.insert_raw_frames_batch(conn, device_id, payload["frames"])
+        conn.commit()
+    return result
+
+
 @app.get("/v1/export/frames/{device_id}", dependencies=[Depends(require_auth)])
 def export_device_frames(
     device_id: str,
