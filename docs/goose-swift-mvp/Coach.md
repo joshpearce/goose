@@ -6,7 +6,7 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 ## Parent View Contract
 
-- [x] Create a dedicated `CoachView.swift` or split `CoachPlaceholderView` out of `AppShellView.swift`.
+- [x] Create a dedicated `CoachView.swift` — implemented (`CoachPlaceholderView` was never created; `CoachView.swift` is the implementation).
 - [x] Keep this tab behind the Swift `Coach` tab item.
 - [ ] Define child routes: Today Recommendation, Journal, Sleep Coach, Recovery Insights, Strain Guidance, Stress Guidance, Data Gaps.
 - [x] Define a `CoachSnapshot` value type with readiness, next actions, metric highlights, missing data, and provenance.
@@ -27,11 +27,11 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 ## Metric Highlights
 
-- [x] Add Sleep highlight from `todaySleepScoreSummary()`.
-- [x] Add Recovery highlight from `todayRecoveryScoreSummary()`.
-- [x] Add Strain highlight from `todayStrainScoreSummary()`.
-- [x] Add Stress highlight from `todayStressScoreSummary()`.
-- [x] Add HRV highlight from `todayHrvScoreSummary()` / `hrvFeatureSummary()`.
+- [ ] Add Sleep highlight (no `todaySleepScoreSummary()` yet — function not implemented).
+- [ ] Add Recovery highlight (no `todayRecoveryScoreSummary()` yet — function not implemented).
+- [ ] Add Strain highlight (no `todayStrainScoreSummary()` yet — function not implemented).
+- [ ] Add Stress highlight (no `todayStressScoreSummary()` yet — function not implemented).
+- [x] Add HRV highlight from `hrvFeatureSummary()` (exists in `HealthDataStore+CoachSummaries.swift`).
 - [x] Add live HR highlight from `latestHeartRateSummary()` or BLE live HR.
 - [x] Each highlight should show value, status, freshness, and provenance.
 - [x] Hide or mark highlights whose data is sample/untrusted.

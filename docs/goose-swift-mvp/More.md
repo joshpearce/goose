@@ -6,7 +6,7 @@ MVP rule: More owns operational surfaces: device, connection lab, capture/import
 
 ## Parent View Contract
 
-- [ ] Create a dedicated `MoreView.swift` or split `MorePlaceholderView` out of `AppShellView.swift`.
+- [x] Create a dedicated `MoreView.swift` — implemented.
 - [ ] Keep this tab behind the Swift `More` tab item.
 - [ ] Define child routes: Device, Connection Lab, Capture, Debug, Local Store, Health Sync, Raw Export, Algorithms, Privacy, Support/About.
 - [ ] Keep operational rows compact and list-based.

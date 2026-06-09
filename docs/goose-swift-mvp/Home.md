@@ -45,7 +45,7 @@ MVP rule: Home is the daily command center. It should show today's live state fi
 - [ ] Tapping Sleep opens Health > Sleep detail.
 - [ ] Tapping Recovery opens Health > Recovery detail.
 - [ ] Tapping Strain opens Health > Strain detail.
-- [ ] Include provenance badges when `todayScoreProvenanceSummary(family)` is available.
+- [ ] Include provenance badges per metric family when a provenance summary function is available (not yet implemented).
 
 ## Daily Outlook / Coach Teaser
 

@@ -96,7 +96,7 @@ beginHistoricalSync
 | Gen4 `historyEnd` handler | `GooseBLEClient+HistoricalHandlers.swift` | Increments `gen4HistoricalPageSeq`, builds next page request |
 | Gen4 retry-skip | `GooseBLEClient+DebugAndSync.swift` | Skips transfer retry when `historyCompleteReceived` is true |
 | Gen4 hello frame | `GooseBLEClient+UserActions.swift` | Sends `GET_HELLO` (cmd 145) in Gen4 framing instead of the Gen5 client hello |
-| Reset on disconnect | `GooseBLEClient+Parsing.swift` | `activeDeviceGeneration = .gen5` in `resetConnectionState()` |
+| Reset on disconnect | `GooseBLEClient+Parsing.swift` | `activeDeviceGeneration = .gen5` in `resetLiveDeviceFieldsIfNeeded(for:)` |
 
 ## Known limitations
 

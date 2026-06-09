@@ -207,13 +207,13 @@ CBPeripheralDelegate.didUpdateValue
 GooseAppModel.handleNotification  [GooseAppModel+NotificationPipeline.swift]
   │  notificationIngestQueue.async
   ▼
-notificationIngestResult  [Rust bridge: notification.ingest_frames]
-  │  Rust reassembles multi-packet frames, returns NotificationFrame[]
+notificationIngestResult  [Swift-side frame reassembly — no Rust bridge call at this stage]
+  │  Reassembles multi-packet frames in Swift, returns NotificationFrame[]
   │  main.async
   ▼
 handleNotificationIngestResult
-  ├── importCapturedFrames  → CaptureFrameWriteQueue → Rust bridge: capture.write_frames
-  └── parseNotificationFrames → NotificationFrameParser → Rust bridge: notification.parse_frames
+  ├── importCapturedFrames  → CaptureFrameWriteQueue → Rust bridge: capture.import_frame_batch
+  └── parseNotificationFrames → NotificationFrameParser → Rust bridge: protocol.parse_frame_hex_batch
                                                             │
                                                             ▼
                                                         HealthDataStore

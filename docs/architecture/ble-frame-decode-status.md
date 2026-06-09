@@ -83,9 +83,9 @@ Offsets verified against real V24 captures. See `Rust/core/tests/v24_biometric_p
 | **gravity_z** | 41–44 | 48–51 | f32 LE | CANDIDATE | g units |
 | unmapped | 45–47 | 52–54 | ??? | NOT_DECODED | unknown |
 | **skin_contact** | 48 | 55 | u8 | **DECODED/GATED** | 0 = off-wrist, non-0 = on-wrist; stored as `contact` column in all V24 tables; contact=0 samples stored but excluded from unit conversion |
-| **gravity2_x** | 49–52 | 56–59 | f32 LE | NOT_DECODED | second gravity triplet — `gravity2_samples` table exists but not yet extracted |
-| **gravity2_y** | 53–56 | 60–63 | f32 LE | NOT_DECODED | second gravity triplet |
-| **gravity2_z** | 57–60 | 64–67 | f32 LE | NOT_DECODED | second gravity triplet |
+| **gravity2_x** | 49–52 | 56–59 | f32 LE | **DECODED** | second gravity triplet — extracted via `protocol.rs` offsets 49/53/57; written to `gravity2_samples` via `store.insert_gravity2_batch` |
+| **gravity2_y** | 53–56 | 60–63 | f32 LE | **DECODED** | second gravity triplet |
+| **gravity2_z** | 57–60 | 64–67 | f32 LE | **DECODED** | second gravity triplet |
 | unmapped | 61–67 | 68–74 | ??? | NOT_DECODED | unknown |
 | **spo2_red** | 61–62 | 68–69 | u16 LE | **DECODED** | SpO2 red channel raw ADC — `spo2_samples.red` |
 | **spo2_ir** | 63–64 | 70–71 | u16 LE | **DECODED** | SpO2 IR channel raw ADC — `spo2_samples.ir` |
@@ -227,8 +227,8 @@ All devices: CRC32 (poly 0xEDB88320, init 0xFFFFFFFF, final XOR 0xFFFFFFFF) over
 | V24 biometric full extraction (spo2, skin_temp, resp, sig_quality, skin_contact) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
 | Skin contact gate (prerequisite for all V24 biometrics) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
 | Physical unit conversions (SpO2 ratio-of-ratios, skin temp slope, resp Welch) | ~~HIGH~~ **COMPLETE** | — | Phase 27 (v5.0) — shipped |
-| gravity2 second triplet (data[49-60]) | HIGH | Low | Phase 31 |
-| gravity2 second triplet full extraction into gravity2_samples | MEDIUM | Low | — |
+| gravity2 second triplet (data[49-60]) | ~~HIGH~~ **COMPLETE** | — | Shipped — `store.insert_gravity2_batch`, `store.gravity2_samples_between` |
+| gravity2 second triplet full extraction into gravity2_samples | ~~MEDIUM~~ **COMPLETE** | — | Shipped — fully extracted via `protocol.rs` + `store.rs` |
 | EVENT 17 (TEMPERATURE_LEVEL) payload structure | MEDIUM | Low | — |
 | EXTENDED_BATTERY_INFORMATION payload (ID 63) | MEDIUM | Low | — |
 | K=25/26 pulse information packets | MEDIUM | High | — |

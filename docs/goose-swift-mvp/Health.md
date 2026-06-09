@@ -8,7 +8,7 @@ Swift evidence 2026-06-01: `HealthView.swift`, `AppRouter.swift`, `xcodebuildmcp
 
 ## Parent View Contract
 
-- [x] Create a dedicated `HealthView.swift` or split `PlaceholderSectionListView(title: "Health")` out of `AppShellView.swift`.
+- [x] Create a dedicated `HealthView.swift` — implemented (`PlaceholderSectionListView` was never created; `HealthView.swift` is the implementation).
 - [x] Keep this tab behind the Swift `Health` tab item.
 - [x] Define child routes: Health Monitor, Sleep, Recovery, Strain, Stress, Cardio Load, Energy Bank, Packet Inputs, Algorithms, Reference Comparisons, Calibration.
 - [x] Define a typed `HealthMetricSnapshot` model shared by cards, trend rows, and detail sheets.
@@ -139,10 +139,10 @@ Swift evidence 2026-06-01: `HealthView.swift`, `AppRouter.swift`, `xcodebuildmcp
 
 ## Algorithms And References
 
-- [x] List algorithm definitions from `algorithmDefinitions`.
-- [x] Show primary selection from `algorithmPreferences`.
+- [x] List algorithm definitions from `algorithmDefinitions` (exists in `HealthDataStore`).
+- [ ] Show primary selection from algorithm preferences (`algorithmPreferences` property not yet implemented).
 - [x] Add algorithm preference picker per metric family.
-- [x] List reference definitions from `referenceAlgorithmDefinitions`.
+- [ ] List reference definitions (`referenceAlgorithmDefinitions` property not yet implemented).
 - [x] Add reference comparison rows for HRV, Sleep, Strain, Stress.
 - [x] Add run action for reference comparisons after Swift bridge support.
 - [x] Show pass/fail/benchmark-only policy clearly.

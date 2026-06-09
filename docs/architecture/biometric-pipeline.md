@@ -2,7 +2,7 @@
 
 This document describes how raw BLE bytes from the WHOOP device are transformed into biometric metrics (HRV, recovery, strain, sleep staging). It covers every layer from packet decode to the final scores shown in the UI.
 
-**Reference implementation**: `my-whoop/server/ingest/app/analysis/` — a validated Python pipeline used as the algorithm source for the Goose Rust port. Formulas marked **UNCALIBRATED** are approximations until device-specific calibration data is collected.
+**Reference implementation**: `server/ingest/app/analysis/` — a validated Python pipeline used as the algorithm source for the Goose Rust port. Formulas marked **UNCALIBRATED** are approximations until device-specific calibration data is collected.
 
 ---
 
@@ -10,7 +10,7 @@ This document describes how raw BLE bytes from the WHOOP device are transformed 
 
 The WHOOP transmits historical biometric data as type-47 (`HISTORICAL_DATA`) BLE packets. The V24 variant (second byte = 24) is the primary source for all per-second biometrics.
 
-**Source**: `my-whoop/re/verify_v24.py` — layout verified against 762 real device records.
+**Layout verification**: verified against 762 real device records captured from WHOOP devices.
 
 ### Field Layout
 
@@ -49,7 +49,7 @@ Phase 27 (V24 Biometric Decode) — shipped (v5.0). Rust: `protocol.rs` `DataPac
 
 Raw ADC values from the V24 packet are converted to physical units. All conversions are **UNCALIBRATED** until device-specific fitting is performed.
 
-**Source**: `my-whoop/server/ingest/app/analysis/units.py`
+**Source**: `server/ingest/app/analysis/units.py`
 
 ### 2.1 SpO2 (Blood Oxygen Saturation)
 
@@ -119,7 +119,7 @@ Values outside physiological ranges are flagged and excluded from downstream ana
 
 ## 3. HRV (Heart Rate Variability)
 
-**Source**: `my-whoop/server/ingest/app/analysis/hrv.py`
+**Source**: `server/ingest/app/analysis/hrv.py`
 
 ### 3.1 RR Interval Cleaning
 
@@ -165,13 +165,13 @@ Overnight HRV is more representative when computed during slow-wave sleep (deepe
 
 ### 3.5 Goose Implementation
 
-Phase 22 (HRV Accuracy). Rust: `metrics.rs` `rmssd_segment_aware()`, `lipponen_tarvainen_filter()`, `hrv_frequency()`. **Decision required before Phase 22 start**: the ectopic filter must be reimplemented in Rust (no neurokit2 FFI); use local median ± 20% threshold directly.
+Phase 22 (HRV Accuracy). Rust: `metrics.rs` `rmssd_segmented()`, `lipponen_tarvainen_filter()`. HRV frequency analysis is implemented via Welch periodogram in Rust (no neurokit2 FFI; local median ± 20% Malik threshold used for ectopic filtering).
 
 ---
 
 ## 4. EWMA Personal Baselines
 
-**Source**: `my-whoop/server/ingest/app/analysis/baselines.py`
+**Source**: `server/ingest/app/analysis/baselines.py`
 
 All scoring is relative to a personal baseline — not a population mean. The baseline uses Exponential Weighted Moving Averages that "forget" old nights gradually, giving more weight to recent history.
 
@@ -231,7 +231,7 @@ Phase 24 (Sleep Metrics + Baselines). Rust: `baselines.rs`. Write safety: `BEGIN
 
 ## 5. Recovery Score
 
-**Source**: `my-whoop/server/ingest/app/analysis/recovery.py`
+**Source**: `server/ingest/app/analysis/recovery.py`
 
 ### 5.1 Composite Z-Score
 
@@ -274,7 +274,7 @@ Phase 25 (Recovery Score v1). Rust: `metrics.rs` `goose_recovery_v1()`. Bridge: 
 
 ## 6. Sleep Analysis
 
-**Source**: `my-whoop/server/ingest/app/analysis/sleep.py`, `sleep_features.py`
+**Source**: `server/ingest/app/analysis/sleep.py`, `sleep_features.py`
 
 ### 6.1 Sleep/Wake Detection (Cole-Kripke Actigraphy)
 
@@ -341,7 +341,7 @@ Phase 24 (metrics without staging); Phase 26 (4-class staging). Rust: `sleep_sta
 
 ## 7. Strain & Calories
 
-**Source**: `my-whoop/server/ingest/app/analysis/strain.py`, `calories.py`
+**Source**: `server/ingest/app/analysis/strain.py`, `calories.py`
 
 ### 7.1 HRmax
 
@@ -426,7 +426,7 @@ Phase 23 (Strain & Calories). Rust: `energy_rollup.rs`, `metrics.rs`. Phase 28 (
 
 ## 8. Exercise Detection
 
-**Source**: `my-whoop/server/ingest/app/analysis/exercise.py`
+**Source**: `server/ingest/app/analysis/exercise.py`
 
 ### 8.1 Detection Algorithm
 
@@ -511,7 +511,7 @@ The following conversions are **approximate until calibration data is available*
 | Skin temperature | `fit_skin_temp(pairs)` — slope/offset fit | WHOOP app skin temp export paired with raw ADC |
 | Strain denominator D | `fit_strain_denominator(pairs)` — least-squares | WHOOP app strain values paired with recorded sessions |
 
-Cross-validation harness: `leave_one_night_out()` in `my-whoop/server/ingest/app/analysis/units.py`.
+Cross-validation harness: `leave_one_night_out()` in `server/ingest/app/analysis/units.py`.
 
 ---
 
