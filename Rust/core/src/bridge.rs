@@ -9028,6 +9028,7 @@ fn open_bridge_store_hot(database_path: &str) -> GooseResult<GooseStore> {
     if database_path.trim().is_empty() {
         return Err(GooseError::message("database_path is required"));
     }
+    validate_no_traversal("database_path", database_path)?;
     let path = Path::new(database_path);
     GooseStore::open_existing_current(path).or_else(|_| GooseStore::open(path))
 }
