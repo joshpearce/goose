@@ -1019,22 +1019,59 @@ pub struct DebugEventRow {
     pub data_json: String,
 }
 
+fn configure_read_write_connection(conn: &Connection) -> GooseResult<()> {
+    conn.execute_batch(
+        r#"
+        PRAGMA foreign_keys = ON;
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA busy_timeout = 5000;
+        "#,
+    )?;
+    Ok(())
+}
+
+fn configure_read_only_connection(conn: &Connection) -> GooseResult<()> {
+    conn.execute_batch(
+        r#"
+        PRAGMA foreign_keys = ON;
+        PRAGMA busy_timeout = 5000;
+        "#,
+    )?;
+    Ok(())
+}
+
 impl GooseStore {
     pub fn open(path: &Path) -> GooseResult<Self> {
         let conn = Connection::open(path)?;
+        configure_read_write_connection(&conn)?;
         let store = Self { conn };
         store.migrate()?;
         Ok(store)
     }
 
+    pub fn open_existing_current(path: &Path) -> GooseResult<Self> {
+        let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        configure_read_write_connection(&conn)?;
+        let store = Self { conn };
+        let schema_version = store.schema_version()?;
+        if schema_version != CURRENT_SCHEMA_VERSION {
+            return Err(GooseError::message(format!(
+                "database schema version {schema_version} is not current {CURRENT_SCHEMA_VERSION}"
+            )));
+        }
+        Ok(store)
+    }
+
     pub fn open_read_only(path: &Path) -> GooseResult<Self> {
         let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
-        conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+        configure_read_only_connection(&conn)?;
         Ok(Self { conn })
     }
 
     pub fn open_in_memory() -> GooseResult<Self> {
         let conn = Connection::open_in_memory()?;
+        configure_read_write_connection(&conn)?;
         let store = Self { conn };
         store.migrate()?;
         Ok(store)
@@ -1100,6 +1137,12 @@ impl GooseStore {
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
             );
 
+            CREATE INDEX IF NOT EXISTS idx_raw_evidence_by_captured_at
+                ON raw_evidence(captured_at, evidence_id);
+
+            CREATE INDEX IF NOT EXISTS idx_decoded_frames_by_evidence
+                ON decoded_frames(evidence_id);
+
             CREATE TABLE IF NOT EXISTS algorithm_definitions (
                 algorithm_id TEXT NOT NULL,
                 version TEXT NOT NULL,
@@ -1152,6 +1195,9 @@ impl GooseStore {
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
                 updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
             );
+
+            CREATE INDEX IF NOT EXISTS idx_capture_sessions_by_started_at
+                ON capture_sessions(started_at_unix_ms);
 
             CREATE TABLE IF NOT EXISTS activity_sessions (
                 session_id TEXT PRIMARY KEY,

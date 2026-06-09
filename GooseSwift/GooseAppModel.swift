@@ -94,7 +94,8 @@ final class GooseAppModel {
   let captureFrameWriteQueue = CaptureFrameWriteQueue(
     databasePath: HealthDataStore.defaultDatabasePath(),
     maxQueuedRows: GooseAppModel.captureFrameWriteQueueMaxRows,
-    maxBatchRows: GooseAppModel.captureFrameWriteBatchMaxRows
+    maxBatchRows: GooseAppModel.captureFrameWriteBatchMaxRows,
+    coalesceDelay: GooseAppModel.captureFrameWriteCoalesceDelay
   )
   let uploadService = GooseUploadService(databasePath: HealthDataStore.defaultDatabasePath())
   let captureFrameEnqueueAggregator = CaptureFrameEnqueueAggregator(
@@ -262,6 +263,7 @@ final class GooseAppModel {
   static let restingHeartRateFrameWriteInterval: TimeInterval = 0.1
   static let captureFrameWriteQueueMaxRows = 2048
   static let captureFrameWriteBatchMaxRows = 128
+  static let captureFrameWriteCoalesceDelay: TimeInterval = 0.05
   static let passiveActivityCaptureDuration: TimeInterval = 12 * 60 * 60
   static let movementPacketStatusInterval: TimeInterval = 1
   static let movementPacketLogInterval: TimeInterval = 5
