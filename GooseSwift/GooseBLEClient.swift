@@ -547,6 +547,7 @@ import OSLog
     static let startMovementHeartRateCapture = [
       SensorStreamCommandKind(commandNumber: 3, payload: [1], name: "TOGGLE_REALTIME_HR_ON"),
       SensorStreamCommandKind(commandNumber: 63, payload: [1], name: "SEND_R10_R11_REALTIME_ON"),
+      SensorStreamCommandKind(commandNumber: 106, payload: revisionBoolean(true), name: "TOGGLE_IMU_MODE_ON"),
     ]
 
     static let stopPhysiologyCapture = [
@@ -560,6 +561,7 @@ import OSLog
     ]
 
     static let stopMovementHeartRateCapture = [
+      SensorStreamCommandKind(commandNumber: 106, payload: revisionBoolean(false), name: "TOGGLE_IMU_MODE_OFF"),
       SensorStreamCommandKind(commandNumber: 63, payload: [0], name: "SEND_R10_R11_REALTIME_OFF"),
       SensorStreamCommandKind(commandNumber: 3, payload: [0], name: "TOGGLE_REALTIME_HR_OFF"),
     ]
