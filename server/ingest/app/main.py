@@ -122,7 +122,7 @@ def healthz():
             conn.execute("SELECT 1")
         return {"status": "ok"}
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"db unavailable: {e}")
+        raise HTTPException(status_code=503, detail="db unavailable")
 
 
 @app.post("/v1/ingest", dependencies=[Depends(require_auth)])
