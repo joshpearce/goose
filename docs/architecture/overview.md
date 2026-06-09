@@ -98,7 +98,7 @@ When `POST /v1/ingest-decoded` is received, the server calls `daily.compute_day`
 | `CaptureFrameWriteQueue` | `GooseSwift/CaptureFrameWriteQueue.swift` | Batches parsed BLE frames and writes them to SQLite via Rust bridge `capture.import_frame_batch`. |
 | `NotificationFrameParser` | `GooseSwift/NotificationFrameParsing.swift` | Delegates raw BLE bytes to Rust for frame reassembly and compact summary extraction. |
 | `OvernightSQLiteMirrorQueue` | `GooseSwift/OvernightSQLiteMirrorQueue.swift` | During overnight guard mode, queues raw notification rows for Rust bridge SQLite insert. |
-| Rust core (`libgoose_core.a`) | `Rust/core/src/bridge.rs` | 128+ dispatched methods: protocol parsing, SQLite persistence, metric algorithms, BLE frame import, exercise detection, upload sync, export. Entry point: `bridge.rs`. |
+| Rust core (`libgoose_core.a`) | `Rust/core/src/bridge.rs` | 142 dispatched methods: protocol parsing, SQLite persistence, metric algorithms, BLE frame import, exercise detection, upload sync, export. Entry point: `bridge.rs`. |
 | FastAPI ingest service | `server/ingest/app/main.py` | Bearer-gated REST API: `POST /v1/ingest-decoded`, read endpoints, daily compute. No OpenAPI schema exposed publicly (`docs_url=None`). |
 
 ---
@@ -109,7 +109,7 @@ The Rust library (`Rust/core/src/`) is compiled to `libgoose_core.a` and linked 
 
 | Module | File | Responsibility |
 |---|---|---|
-| `bridge` | `bridge.rs` | FFI dispatch table; routes JSON `method` strings to internal functions; 128+ methods |
+| `bridge` | `bridge.rs` | FFI dispatch table; routes JSON `method` strings to internal functions; 142 methods |
 | `protocol` | `protocol.rs` | WHOOP BLE frame parsing; packet reassembly; V24 biometric decode tables |
 | `store` | `store.rs` | SQLite schema (v19); all persistence helpers; `synced` flag management; `V24BiometricBatch` decode |
 | `metrics` | `metrics.rs` | Health algorithm implementations (HRV, recovery, strain scores) |
@@ -177,7 +177,7 @@ goose/
 ├── GooseWorkoutLiveActivityExtension/
 │   └── GooseWorkoutLiveActivityWidget.swift  ActivityKit / Dynamic Island
 ├── Rust/core/src/              Rust library (libgoose_core)
-│   ├── bridge.rs               FFI dispatch table (128+ methods)
+│   ├── bridge.rs               FFI dispatch table (142 methods)
 │   ├── protocol.rs             WHOOP BLE frame parsing + V24 decode tables
 │   ├── store.rs                SQLite schema v19 + synced-flag helpers
 │   ├── metrics.rs              Health algorithm implementations
