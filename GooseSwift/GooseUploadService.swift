@@ -128,7 +128,7 @@ final class GooseUploadService: @unchecked Sendable {
       // install to reconstruct the trust chain via capture.import_frame_batch.
       await uploadRawFrames(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
     } else {
-      logger.debug("upload failed after 3 attempts — discarding batch silently")
+      logger.warning("upload failed after 3 attempts — discarding batch")
     }
     pendingBatchCount = max(0, pendingBatchCount - 1)
     refreshPendingRowCount()
