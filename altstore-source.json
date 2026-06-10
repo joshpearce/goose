@@ -9,7 +9,15 @@
       "subtitle": "WHOOP biometric tracker",
       "localizedDescription": "iOS app that reads biometric data from WHOOP devices via BLE and persists it to a self-hosted FastAPI+TimescaleDB server.",
       "iconURL": "https://raw.githubusercontent.com/tigercraft4/goose/main/GooseSwift/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
-      "versions": []
+      "versions": [
+        {
+          "version": "1.0",
+          "date": "2026-06-10",
+          "localizedDescription": "Release v1.0",
+          "downloadURL": "https://github.com/tigercraft4/goose/releases/download/v1.0/GooseSwift-v1.0-unsigned.ipa",
+          "size": 11966532
+        }
+      ]
     }
   ],
   "news": []
