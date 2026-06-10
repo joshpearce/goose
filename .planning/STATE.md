@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Sync Correctness, Async & Sleep Sync
 status: executing
-last_updated: "2026-06-10T00:14:30.154Z"
-last_activity: 2026-06-09 -- Phase 46 execution started
+last_updated: "2026-06-10T01:00:04.667Z"
+last_activity: 2026-06-10 -- Phase 47 Plan 01 complete
 progress:
   total_phases: 12
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 4
   percent: 8
 ---
 
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-09)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** Phase 46 — upload-route-alignment
+**Current focus:** Phase 47 — Device ID Namespace Resolution
 
 ## Current Position
 
 Milestone: v7.0 — Sync Correctness, Async & Sleep Sync
-Phase: 46 (upload-route-alignment) — EXECUTING
-Plan: 1 of 2
+Phase: 47 (Device ID Namespace Resolution) — EXECUTING
+Plan: 3 of 3
 Status: Ready to execute
-Last activity: 2026-06-09 -- Phase 46 execution started
+Last activity: 2026-06-10 -- Phase 47 Plan 01 complete
 
 ## Performance Metrics
 
@@ -79,6 +79,8 @@ Last activity: 2026-06-09 -- Phase 46 execution started
 | Phase 28 P03 | 25 | 2 tasks | 2 files |
 | Phase 29 P01 | 15 | 1 task | 2 files |
 | Phase 29 P02 | 15 | 2 tasks | 2 files |
+| Phase 47 P01 | 55 | 2 tasks (TDD) | 19 files |
+| Phase 47 P03 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -117,6 +119,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 27-03: sig_quality excluded from upload payload; biometrics.insert_v24_batch stores it locally
 - Phase 29 Plan 02: ParsedPayload uses #[serde(tag = "kind", rename_all = "snake_case")] — internally tagged; test fixtures must use {"kind":"data_packet",...} not {"DataPacket":{...}}
 - Phase 29 Plan 02: GooseError has no From<serde_json::Error>; use json!{} macro for infallible struct serialisation in bridge handlers
+- Phase 47 Plan 01: device_uuid uses Option<&'a str> on RawEvidenceInput (not Option<String>); index references captured_at (not ts — raw_evidence has no ts column); PRAGMA user_version not bumped; existing callsites use device_uuid: None (backward compatible)
 
 ### Pending Todos
 
@@ -167,6 +170,6 @@ Items acknowledged and deferred at v5.0 milestone close on 2026-06-08:
 
 ## Session Continuity
 
-Last session: 2026-06-09T23:55:19.511Z
+Last session: 2026-06-10T01:00:04.661Z
 Status: v7.0 STARTED — REQUIREMENTS.md (12 requisitos) + ROADMAP.md (Phases 46-51) criados
 Next: /gsd-discuss-phase 46 ou /gsd-plan-phase 46 — Upload Route Alignment
