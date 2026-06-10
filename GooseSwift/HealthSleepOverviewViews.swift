@@ -144,7 +144,7 @@ struct SleepV2OverviewPage: View {
     .onAppear {
       store.loadBridgeCatalogsIfNeeded()
       startBandSleepSyncIfReady()
-      store.runSleepStaging()
+      Task { await store.runSleepStaging() }
     }
     .onChange(of: ble.canSyncHistorical) { _, _ in
       startBandSleepSyncIfReady()
