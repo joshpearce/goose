@@ -67,7 +67,7 @@ Known deferred: ALG-HRV-04 real overnight cross-validation (v7.0), ALG-SLP-04 re
 ### 🚧 v7.0 Sync Correctness, Async & Sleep Sync (In Progress)
 
 - [x] Phase 46: Upload Route Alignment (completed 2026-06-09)
-- [ ] Phase 47: Device ID Namespace Resolution
+- [x] Phase 47: Device ID Namespace Resolution (completed 2026-06-10)
 - [ ] Phase 48: Upload Sync Race Fix
 - [ ] Phase 49: HealthDataStore Async Migration
 - [ ] Phase 50: Morning Band Sleep Sync
@@ -113,7 +113,7 @@ Known deferred: ALG-HRV-04 real overnight cross-validation (v7.0), ALG-SLP-04 re
 Plans:
 
 - [x] 47-01-PLAN.md — Rust storage layer: device_uuid migration, structs, insert/read, capture-import, upload bridge response (+ 5 tests) — DONE 2026-06-10
-- [ ] 47-02-PLAN.md — iOS wiring: BLE connectedPeripheralUUID, UserDefaults UUID↔model map, CaptureFrameWriteQueue, upload payload (checkpoint)
+- [x] 47-02-PLAN.md — iOS wiring: BLE connectedPeripheralUUID, UserDefaults UUID↔model map, CaptureFrameWriteQueue, upload payload (checkpoint)
 - [x] 47-03-PLAN.md — Server: raw_frames device_uuid migration, IngestFrame model, bidirectional export lookup (+ tests)
 
 ---
@@ -193,7 +193,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
 | 46. Upload Route Alignment | v7.0 | 2/2 | Complete   | 2026-06-09 |
-| 47. Device ID Namespace | v7.0 | 2/3 | In Progress|  |
+| 47. Device ID Namespace | v7.0 | 3/3 | Complete   | 2026-06-10 |
 | 48. Upload Sync Race Fix | v7.0 | 0/TBD | Not started | — |
 | 49. HealthDataStore Async | v7.0 | 0/TBD | Not started | — |
 | 50. Morning Band Sleep Sync | v7.0 | 0/TBD | Not started | — |
