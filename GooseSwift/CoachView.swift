@@ -435,6 +435,8 @@ private struct CoachOverviewScreen: View {
   let openHealth: (HealthRoute?) -> Void
   let openMore: (MoreRoute?) -> Void
   let openChatPrompt: (String) -> Void
+  @State private var showingJournal = false
+  @State private var todayEntry: DailyJournalEntry? = DailyJournalStore.today()
 
   var body: some View {
     ScrollView {
@@ -448,6 +450,10 @@ private struct CoachOverviewScreen: View {
           status: chatStatus,
           action: openChat
         )
+
+        CoachJournalCard(entry: todayEntry) {
+          showingJournal = true
+        }
 
         CoachOverviewSectionTitle("Metric Highlights")
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -476,6 +482,11 @@ private struct CoachOverviewScreen: View {
       .padding(.vertical, 18)
     }
     .scrollClipDisabled()
+    .sheet(isPresented: $showingJournal, onDismiss: {
+      todayEntry = DailyJournalStore.today()
+    }) {
+      DailyJournalSheet(existing: todayEntry)
+    }
   }
 
   private func handle(_ action: CoachOverviewAction) {
@@ -712,6 +723,189 @@ private struct CoachProfileMenu: View {
       Image(systemName: "person.crop.circle")
     }
     .accessibilityLabel("Coach account")
+  }
+}
+
+// MARK: - COACH-08: Daily Journal
+
+struct DailyJournalEntry: Codable, Identifiable {
+  let id: String
+  let dateKey: String
+  var text: String
+  var tags: [String]
+  var savedAt: Double
+
+  init(dateKey: String, text: String, tags: [String]) {
+    self.id = dateKey
+    self.dateKey = dateKey
+    self.text = text
+    self.tags = tags
+    self.savedAt = Date().timeIntervalSince1970
+  }
+
+  static let allTags = ["sleep", "recovery", "strain", "stress", "mood", "nutrition", "notes"]
+}
+
+enum DailyJournalStore {
+  private static let key = "goose.coach.journal.entries"
+
+  static func todayKey() -> String {
+    let fmt = DateFormatter()
+    fmt.dateFormat = "yyyy-MM-dd"
+    return fmt.string(from: Date())
+  }
+
+  static func load() -> [String: DailyJournalEntry] {
+    guard let data = UserDefaults.standard.data(forKey: key),
+          let entries = try? JSONDecoder().decode([String: DailyJournalEntry].self, from: data) else {
+      return [:]
+    }
+    return entries
+  }
+
+  static func save(_ entry: DailyJournalEntry) {
+    var all = load()
+    all[entry.dateKey] = entry
+    if let data = try? JSONEncoder().encode(all) {
+      UserDefaults.standard.set(data, forKey: key)
+    }
+  }
+
+  static func today() -> DailyJournalEntry? {
+    load()[todayKey()]
+  }
+}
+
+struct DailyJournalSheet: View {
+  @Environment(\.dismiss) private var dismiss
+  @State private var text: String
+  @State private var selectedTags: Set<String>
+  private let dateKey: String
+
+  init(existing: DailyJournalEntry?) {
+    let key = DailyJournalStore.todayKey()
+    self.dateKey = key
+    _text = State(initialValue: existing?.text ?? "")
+    _selectedTags = State(initialValue: Set(existing?.tags ?? []))
+  }
+
+  var body: some View {
+    NavigationStack {
+      VStack(alignment: .leading, spacing: 16) {
+        Text(formattedDate)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .padding(.horizontal, 16)
+
+        TextEditor(text: $text)
+          .font(.body)
+          .frame(minHeight: 140)
+          .padding(12)
+          .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
+          .padding(.horizontal, 16)
+
+        VStack(alignment: .leading, spacing: 8) {
+          Text("TAGS")
+            .font(.system(size: 11, weight: .black))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+              ForEach(DailyJournalEntry.allTags, id: \.self) { tag in
+                let selected = selectedTags.contains(tag)
+                Button {
+                  if selected { selectedTags.remove(tag) } else { selectedTags.insert(tag) }
+                } label: {
+                  Text(tag)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(selected ? Color.accentColor : Color.secondary.opacity(0.15), in: Capsule())
+                    .foregroundStyle(selected ? .white : .primary)
+                }
+                .buttonStyle(.plain)
+              }
+            }
+            .padding(.horizontal, 16)
+          }
+        }
+
+        Spacer()
+      }
+      .padding(.top, 8)
+      .navigationTitle("Diário")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button("Cancelar") { dismiss() }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("Guardar") { save() }
+            .font(.subheadline.weight(.semibold))
+            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+      }
+    }
+    .presentationDetents([.medium, .large])
+    .presentationDragIndicator(.visible)
+  }
+
+  private var formattedDate: String {
+    let fmt = DateFormatter()
+    fmt.dateStyle = .full
+    return fmt.string(from: Date())
+  }
+
+  private func save() {
+    let entry = DailyJournalEntry(
+      dateKey: dateKey,
+      text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+      tags: Array(selectedTags).sorted()
+    )
+    DailyJournalStore.save(entry)
+    dismiss()
+  }
+}
+
+private struct CoachJournalCard: View {
+  let entry: DailyJournalEntry?
+  let onOpen: () -> Void
+
+  var body: some View {
+    Button(action: onOpen) {
+      HStack(spacing: 12) {
+        let iconTint: Color = entry == nil ? .secondary : .orange
+        Image(systemName: entry == nil ? "book.pages" : "book.pages.fill")
+          .font(.system(size: 17, weight: .semibold))
+          .foregroundStyle(iconTint)
+          .frame(width: 36, height: 36)
+          .background(iconTint.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+        VStack(alignment: .leading, spacing: 3) {
+          Text(entry == nil ? "Diário de Hoje" : "Diário de Hoje")
+            .font(.headline)
+          if let entry {
+            Text(entry.text.prefix(60))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          } else {
+            Text("Escrever nota do dia")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+        }
+
+        Spacer(minLength: 8)
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.tertiary)
+      }
+      .padding(14)
+      .coachCardSurface(tint: .orange)
+    }
+    .buttonStyle(.plain)
   }
 }
 
