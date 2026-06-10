@@ -401,6 +401,7 @@ fn stores_raw_evidence_and_decoded_frame_with_provenance_link() {
             evidence_id: "synthetic-frame-1",
             parsed: &parsed,
             parser_version: "goose-core/0.1.0",
+            device_uuid: None,
         })
         .unwrap();
     assert!(frame_inserted);
@@ -506,6 +507,7 @@ fn raw_evidence_payload_compaction_keeps_decoded_rows() {
                 evidence_id,
                 parsed: &parsed,
                 parser_version: "goose-core/0.1.0",
+                device_uuid: None,
             })
             .unwrap();
     }
@@ -711,6 +713,7 @@ fn decoded_frame_requires_existing_raw_evidence() {
             evidence_id: "missing-evidence",
             parsed: &parsed,
             parser_version: "goose-core/0.1.0",
+            device_uuid: None,
         })
         .unwrap_err();
 

@@ -1581,6 +1581,7 @@ fn bridge_derives_packet_timeline_from_decoded_rows() {
             evidence_id: "bridge-frame-1",
             parsed: &parsed,
             parser_version: "bridge-test",
+            device_uuid: None,
         })
         .unwrap();
     let rows: Vec<DecodedFrameRow> = store

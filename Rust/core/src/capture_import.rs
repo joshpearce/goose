@@ -688,6 +688,7 @@ fn import_captured_frame_timed(
             evidence_id: &frame.evidence_id,
             parsed: &hr_pseudo_frame,
             parser_version,
+            device_uuid: frame.device_uuid.as_deref(),
         }) {
             Ok(imported) => imported,
             Err(error) => {
@@ -748,6 +749,7 @@ fn import_captured_frame_timed(
         evidence_id: &frame.evidence_id,
         parsed: &parsed,
         parser_version,
+        device_uuid: frame.device_uuid.as_deref(),
     }) {
         Ok(imported) => imported,
         Err(error) => {
@@ -872,6 +874,7 @@ fn import_frame_fixture(
         evidence_id: &fixture.id,
         parsed: &parsed,
         parser_version: options.parser_version,
+        device_uuid: None,
     }) {
         Ok(imported) => imported,
         Err(error) => {

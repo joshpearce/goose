@@ -228,6 +228,7 @@ pub struct DecodedFrameInput<'a> {
     pub evidence_id: &'a str,
     pub parsed: &'a ParsedFrame,
     pub parser_version: &'a str,
+    pub device_uuid: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -2270,8 +2271,9 @@ impl GooseStore {
                 command_or_event,
                 parsed_payload_json,
                 parser_version,
-                warnings_json
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+                warnings_json,
+                device_uuid
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
             "#,
         )?;
         let changed = statement.execute(params![
@@ -2291,7 +2293,8 @@ impl GooseStore {
             input.parsed.command_or_event.map(i64::from),
             parsed_payload_json,
             input.parser_version,
-            warnings_json
+            warnings_json,
+            input.device_uuid
         ])?;
         Ok(changed > 0)
     }
@@ -5292,7 +5295,8 @@ impl GooseStore {
                     decoded_frames.command_or_event,
                     decoded_frames.parsed_payload_json,
                     decoded_frames.parser_version,
-                    decoded_frames.warnings_json
+                    decoded_frames.warnings_json,
+                    decoded_frames.device_uuid
                 FROM decoded_frames
                 INNER JOIN raw_evidence
                     ON raw_evidence.evidence_id = decoded_frames.evidence_id
@@ -8377,7 +8381,7 @@ fn decoded_frame_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DecodedFr
         parsed_payload_json: row.get(15)?,
         parser_version: row.get(16)?,
         warnings_json: row.get(17)?,
-        device_uuid: None,
+        device_uuid: row.get(18)?,
     })
 }
 

@@ -1020,4 +1020,14 @@ fn test_capture_import_propagates_device_uuid() {
         Some("uuid-from-swift"),
         "device_uuid must propagate from CapturedFrameInput through import_captured_frame_batch to raw_evidence"
     );
+
+    let decoded = store
+        .decoded_frame("devid-import-propagate.frame.0")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        decoded.device_uuid.as_deref(),
+        Some("uuid-from-swift"),
+        "device_uuid must propagate from CapturedFrameInput through insert_decoded_frame to decoded_frames"
+    );
 }

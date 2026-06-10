@@ -276,6 +276,7 @@ fn run_storage_self_test(store: &GooseStore) -> StorageSelfTestReport {
         evidence_id: "goose.storage-check.raw",
         parsed: &parsed,
         parser_version: "goose-storage-check",
+        device_uuid: None,
     }) {
         Ok(inserted) => inserted,
         Err(error) => {
@@ -305,6 +306,7 @@ fn run_storage_self_test(store: &GooseStore) -> StorageSelfTestReport {
         evidence_id: "goose.storage-check.missing-evidence",
         parsed: &parsed,
         parser_version: "goose-storage-check",
+        device_uuid: None,
     }) {
         Ok(_) => {
             issues.push("decoded frame insert unexpectedly accepted missing evidence".to_string());
