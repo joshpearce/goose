@@ -61,7 +61,7 @@ extension GooseAppModel {
     // (GooseRustBridge is @unchecked Sendable with unguarded mutable state).
     let localRust = GooseRustBridge()
     let store = healthStore
-    await store?.markBandSleepSyncRequested(
+    store?.markBandSleepSyncRequested(
       automatic: true,
       canSync: ble.canSyncHistorical,
       detail: ""
@@ -71,7 +71,7 @@ extension GooseAppModel {
 
     let deviceId = ble.activeDeviceIdentifier?.uuidString ?? ""
     guard !deviceId.isEmpty else {
-      await store?.markBandSleepSyncFailed("No active device")
+      store?.markBandSleepSyncFailed("No active device")
       return
     }
 
@@ -97,7 +97,7 @@ extension GooseAppModel {
         // (RESEARCH.md Pitfall #3: onHistoricalSyncCompleted is a single slot
         // owned by AppShellView; overwriting it breaks manual sync in AppShellView).
         guard ble.canSyncHistorical else {
-          await store?.markBandSleepSyncFailed(
+          store?.markBandSleepSyncFailed(
             "BLE sync unavailable: \(ble.historicalSyncStatus)"
           )
           return
@@ -112,13 +112,13 @@ extension GooseAppModel {
             break
           }
           if status == "failed" {
-            await store?.markBandSleepSyncFailed("BLE historical sync failed")
+            store?.markBandSleepSyncFailed("BLE historical sync failed")
             return
           }
           attempts += 1
         }
         if attempts >= 120 {
-          await store?.markBandSleepSyncFailed("BLE historical sync timed out")
+          store?.markBandSleepSyncFailed("BLE historical sync timed out")
           return
         }
       }
@@ -175,7 +175,7 @@ extension GooseAppModel {
       store?.bandSleepImportStatus = "Sincronizado da pulseira"
 
     } catch {
-      await store?.markBandSleepSyncFailed("Sleep sync error: \(error)")
+      store?.markBandSleepSyncFailed("Sleep sync error: \(error)")
     }
   }
 }
