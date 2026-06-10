@@ -31,6 +31,11 @@ final class GooseUploadService: @unchecked Sendable {
     self.session = URLSession(configuration: config)
   }
 
+  init(databasePath: String, session: URLSession) {
+    self.databasePath = databasePath
+    self.session = session
+  }
+
   func upload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) {
     pendingBatchCount += 1
     Task.detached(priority: .utility) { [weak self] in
