@@ -195,6 +195,14 @@ None — this is a pure Swift Concurrency refactoring with no new network endpoi
 - `MoreDataStore` sync bridge callers (18+) are a candidate for a future async migration phase if main-thread bridge calls in the More tab become a performance concern
 - ASYNC-01 and ASYNC-02 requirements are closed
 
+## Self-Check: PASSED
+
+- FOUND: 49-07-SUMMARY.md at .planning/phases/49-healthdatastore-async-migration/49-07-SUMMARY.md
+- FOUND: commit efda3fe (Task 1 — GCD queue removal + async methods)
+- FOUND: commit 55c500d (Task 2 — external callers wrapped)
+- FOUND: commit edf5295 (metadata — SUMMARY.md + STATE.md + ROADMAP.md)
+- All acceptance criteria verified by grep (0 queues, 0 DispatchWorkItem, 1 async refreshBridgeCatalogs, 1 Task debounce, 0 HealthDataStore sync bridge callers)
+
 ---
 *Phase: 49-healthdatastore-async-migration*
 *Completed: 2026-06-10*
