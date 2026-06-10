@@ -3321,6 +3321,7 @@ fn upload_get_recent_decoded_streams_bridge(
     let mut skin_temp: Vec<serde_json::Value> = Vec::new();
     let mut resp: Vec<serde_json::Value> = Vec::new();
     let mut gravity: Vec<serde_json::Value> = Vec::new();
+    let mut gravity2: Vec<serde_json::Value> = Vec::new();
 
     for frame in &frames {
         // Skip CRC-failed frames (matches server-side rule)
@@ -3417,6 +3418,12 @@ fn upload_get_recent_decoded_streams_bridge(
                             spo2_ir,
                             skin_temp_raw,
                             resp_raw,
+                            gravity_x,
+                            gravity_y,
+                            gravity_z,
+                            gravity2_x,
+                            gravity2_y,
+                            gravity2_z,
                             ..
                         } => {
                             // V24 biometric fields: wire into the same upload streams as
@@ -3459,6 +3466,33 @@ fn upload_get_recent_decoded_streams_bridge(
                                 if let (Some(ts), Some(raw)) = (ts_unix, *resp_raw) {
                                     resp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
                                 }
+                            }
+
+                            // Primary gravity triplet (bytes 33–44 in V24 body, f32 LE, already in g units).
+                            // Single sample per V24 frame — no loop needed unlike K10 (50 Hz array).
+                            // No IMU_LSB_PER_G conversion: protocol.rs already parses as f32 in g units.
+                            if let (Some(ts), Some(x), Some(y), Some(z)) =
+                                (ts_unix, *gravity_x, *gravity_y, *gravity_z)
+                            {
+                                gravity.push(json!({
+                                    "ts": ts,
+                                    "x": x as f64,
+                                    "y": y as f64,
+                                    "z": z as f64,
+                                }));
+                            }
+
+                            // Secondary gravity triplet (bytes 49–60 in V24 body). Present only when
+                            // frame body length >= 60 (parsed as Option<f32> in protocol.rs).
+                            if let (Some(ts), Some(x2), Some(y2), Some(z2)) =
+                                (ts_unix, *gravity2_x, *gravity2_y, *gravity2_z)
+                            {
+                                gravity2.push(json!({
+                                    "ts": ts,
+                                    "x": x2 as f64,
+                                    "y": y2 as f64,
+                                    "z": z2 as f64,
+                                }));
                             }
                         }
                     }
@@ -3516,6 +3550,38 @@ fn upload_get_recent_decoded_streams_bridge(
         }
     }
 
+    // Persist gravity rows extracted from V24History frames into the gravity table.
+    // device_id from args is required by insert_gravity_rows (validated inside store).
+    // On empty vec, store returns Ok(0) immediately — no-op.
+    if !gravity.is_empty() {
+        let gravity_tuples: Vec<(f64, f64, f64, f64)> = gravity
+            .iter()
+            .filter_map(|v| {
+                let ts = v["ts"].as_f64()?;
+                let x = v["x"].as_f64()?;
+                let y = v["y"].as_f64()?;
+                let z = v["z"].as_f64()?;
+                Some((ts, x, y, z))
+            })
+            .collect();
+        let _ = store.insert_gravity_rows(&args.device_id, &gravity_tuples);
+    }
+
+    // Persist secondary gravity (gravity2) rows when present.
+    if !gravity2.is_empty() {
+        let gravity2_tuples: Vec<(f64, f64, f64, f64)> = gravity2
+            .iter()
+            .filter_map(|v| {
+                let ts = v["ts"].as_f64()?;
+                let x = v["x"].as_f64()?;
+                let y = v["y"].as_f64()?;
+                let z = v["z"].as_f64()?;
+                Some((ts, x, y, z))
+            })
+            .collect();
+        let _ = store.insert_gravity2_batch(&args.device_id, &gravity2_tuples);
+    }
+
     let result = json!({
         "hr": hr,
         "rr": rr,
@@ -3525,6 +3591,7 @@ fn upload_get_recent_decoded_streams_bridge(
         "skin_temp": skin_temp,
         "resp": resp,
         "gravity": gravity,
+        "gravity2": gravity2,
         "frame_count": frames.len(),
     });
 
