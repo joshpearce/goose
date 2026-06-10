@@ -126,6 +126,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS raw_frames_dedup
 -- (this is a 5.0-only deployment); ADD COLUMN IF NOT EXISTS keeps the startup
 -- re-apply (bootstrap_schema) a no-op once the column exists. Backward-compatible:
 -- clients that omit device_generation get the '5.0' default at ingest time.
+-- Phase 47: CoreBluetooth peripheral UUID on raw_frames. Idempotent.
+ALTER TABLE raw_frames ADD COLUMN IF NOT EXISTS device_uuid TEXT;
+CREATE INDEX IF NOT EXISTS raw_frames_device_uuid ON raw_frames (device_uuid, captured_at);
+
+-- ── WHOOP 5.0 generation tag (Phase 05, D-09 / SRV-04) ────────────────────────
+-- Idempotent migration: tag every decoded-stream hypertable with the device
+-- generation that produced the row. DEFAULT '5.0' classifies existing rows as 5.0
+-- (this is a 5.0-only deployment); ADD COLUMN IF NOT EXISTS keeps the startup
+-- re-apply (bootstrap_schema) a no-op once the column exists. Backward-compatible:
+-- clients that omit device_generation get the '5.0' default at ingest time.
 ALTER TABLE hr_samples        ADD COLUMN IF NOT EXISTS device_generation TEXT DEFAULT '5.0';
 ALTER TABLE rr_intervals      ADD COLUMN IF NOT EXISTS device_generation TEXT DEFAULT '5.0';
 ALTER TABLE events            ADD COLUMN IF NOT EXISTS device_generation TEXT DEFAULT '5.0';

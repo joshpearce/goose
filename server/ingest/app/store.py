@@ -45,8 +45,8 @@ def insert_raw_frames_batch(conn: psycopg.Connection, device_id: str, frames: li
         for f in frames:
             cur.execute(
                 """INSERT INTO raw_frames
-                   (device_id, captured_at, frame_hex, source, device_type, device_model, sensitivity)
-                   VALUES (%s, to_timestamp(%s), %s, %s, %s, %s, %s)
+                   (device_id, captured_at, frame_hex, source, device_type, device_model, sensitivity, device_uuid)
+                   VALUES (%s, to_timestamp(%s), %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (device_id, captured_at, frame_hex) DO NOTHING""",
                 (
                     device_id,
@@ -56,6 +56,7 @@ def insert_raw_frames_batch(conn: psycopg.Connection, device_id: str, frames: li
                     f.get("device_type"),
                     f.get("device_model"),
                     f.get("sensitivity"),
+                    f.get("device_uuid"),
                 ),
             )
             if cur.rowcount == 1:

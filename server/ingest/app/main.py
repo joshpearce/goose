@@ -442,6 +442,7 @@ class IngestFrame(BaseModel):
     device_type: str | None = None
     device_model: str | None = None
     sensitivity: str | None = None
+    device_uuid: str | None = None
 
 
 class IngestFramesBatch(BaseModel):
