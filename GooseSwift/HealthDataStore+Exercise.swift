@@ -66,79 +66,68 @@ extension ExerciseSessionDisplayItem {
 extension HealthDataStore {
   // Fetches exercise sessions from the last 7 days via exercise.sessions_between.
   // Result is published on @MainActor.
-  func runExerciseSessions() {
+  func runExerciseSessions() async {
     let db = databasePath
-    let bridge = self.bridge
     let now = Date().timeIntervalSince1970
     let windowStart = now - 7 * 24 * 3600
     let deviceID = "goose.swift.exercise.sessions.v1"
 
-    packetInputQueue.async { [weak self] in
-      guard let self else { return }
-
-      let asDouble: (Any?) -> Double? = { value in
-        switch value {
-        case let d as Double: return d
-        case let f as Float: return Double(f)
-        case let i as Int: return Double(i)
-        case let n as NSNumber: return n.doubleValue
-        default: return nil
-        }
-      }
-
-      let report: [String: Any]
-      do {
-        report = try bridge.request(
-          method: "exercise.sessions_between",
-          args: [
-            "database_path": db,
-            "device_id": deviceID,
-            "ts_start": windowStart,
-            "ts_end": now,
-          ]
-        )
-      } catch {
-        Task { @MainActor [weak self] in
-          self?.exerciseSessions = []
-        }
-        return
-      }
-
-      let sessionRows = report["sessions"] as? [[String: Any]] ?? []
-      let sessions: [ExerciseSessionDisplayItem] = sessionRows.enumerated().compactMap { index, row in
-        guard let startTs = asDouble(row["start_ts"]),
-              let endTs = asDouble(row["end_ts"]) else {
-          return nil
-        }
-        // Decode zone_time_pct from JSON string (stored as serialized JSON).
-        let zoneTimePct: [String: Double] = {
-          if let jsonStr = row["zone_time_pct_json"] as? String,
-             let data = jsonStr.data(using: .utf8),
-             let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: Double] {
-            return decoded
-          }
-          return [:]
-        }()
-        return ExerciseSessionDisplayItem(
-          id: "exercise-\(Int(startTs))-\(index)",
-          startTs: startTs,
-          endTs: endTs,
-          durationSeconds: asDouble(row["duration_s"]) ?? endTs - startTs,
-          avgHR: asDouble(row["avg_hr"]) ?? 0,
-          peakHR: asDouble(row["peak_hr"]) ?? 0,
-          strain: asDouble(row["strain"]) ?? 0,
-          caloriesKcal: asDouble(row["calories_kcal"]) ?? 0,
-          zoneTimePct: zoneTimePct,
-          hmaxSource: row["hrmax_source"] as? String ?? "--",
-          rhrSource: row["rhr_source"] as? String ?? "--"
-        )
-      }
-      // Sort newest-first.
-      let sorted = sessions.sorted { $0.startTs > $1.startTs }
-
-      Task { @MainActor [weak self] in
-        self?.exerciseSessions = sorted
+    let asDouble: (Any?) -> Double? = { value in
+      switch value {
+      case let d as Double: return d
+      case let f as Float: return Double(f)
+      case let i as Int: return Double(i)
+      case let n as NSNumber: return n.doubleValue
+      default: return nil
       }
     }
+
+    let report: [String: Any]
+    do {
+      report = try await bridge.requestAsync(
+        method: "exercise.sessions_between",
+        args: [
+          "database_path": db,
+          "device_id": deviceID,
+          "ts_start": windowStart,
+          "ts_end": now,
+        ]
+      )
+    } catch {
+      exerciseSessions = []
+      return
+    }
+
+    let sessionRows = report["sessions"] as? [[String: Any]] ?? []
+    let sessions: [ExerciseSessionDisplayItem] = sessionRows.enumerated().compactMap { index, row in
+      guard let startTs = asDouble(row["start_ts"]),
+            let endTs = asDouble(row["end_ts"]) else {
+        return nil
+      }
+      // Decode zone_time_pct from JSON string (stored as serialized JSON).
+      let zoneTimePct: [String: Double] = {
+        if let jsonStr = row["zone_time_pct_json"] as? String,
+           let data = jsonStr.data(using: .utf8),
+           let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: Double] {
+          return decoded
+        }
+        return [:]
+      }()
+      return ExerciseSessionDisplayItem(
+        id: "exercise-\(Int(startTs))-\(index)",
+        startTs: startTs,
+        endTs: endTs,
+        durationSeconds: asDouble(row["duration_s"]) ?? endTs - startTs,
+        avgHR: asDouble(row["avg_hr"]) ?? 0,
+        peakHR: asDouble(row["peak_hr"]) ?? 0,
+        strain: asDouble(row["strain"]) ?? 0,
+        caloriesKcal: asDouble(row["calories_kcal"]) ?? 0,
+        zoneTimePct: zoneTimePct,
+        hmaxSource: row["hrmax_source"] as? String ?? "--",
+        rhrSource: row["rhr_source"] as? String ?? "--"
+      )
+    }
+    // Sort newest-first.
+    exerciseSessions = sessions.sorted { $0.startTs > $1.startTs }
   }
 }
