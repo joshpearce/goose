@@ -17,7 +17,7 @@ permissions:
 jobs:
   build-ipa:
     name: Build unsigned IPA
-    runs-on: macos-latest
+    runs-on: macos-15
     outputs:
       ipa-name: ${{ steps.package.outputs.ipa-name }}
       ipa-size: ${{ steps.package.outputs.ipa-size }}
@@ -38,6 +38,9 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Select Xcode 26.3
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
       - name: Install Rust and iOS target
         run: |
           rustup toolchain install stable --profile minimal
@@ -56,7 +59,6 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            SWIFT_VERSION=6.0 \
             -derivedDataPath build/DerivedData \
             build
 
