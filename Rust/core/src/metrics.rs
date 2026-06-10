@@ -533,10 +533,11 @@ pub fn built_in_algorithm_definitions() -> Vec<AlgorithmDefinitionRecord> {
 pub fn built_in_default_algorithm_preferences() -> Vec<AlgorithmPreferenceRecord> {
     vec![
         default_algorithm_preference("hrv", GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION),
-        default_algorithm_preference("sleep", GOOSE_SLEEP_V0_ID, GOOSE_SLEEP_V0_VERSION),
-        default_algorithm_preference("strain", GOOSE_STRAIN_V0_ID, GOOSE_STRAIN_V0_VERSION),
-        default_algorithm_preference("recovery", GOOSE_RECOVERY_V0_ID, GOOSE_RECOVERY_V0_VERSION),
+        default_algorithm_preference("sleep", GOOSE_SLEEP_V1_ID, GOOSE_SLEEP_V1_VERSION),
+        default_algorithm_preference("strain", GOOSE_STRAIN_V1_ID, GOOSE_STRAIN_V1_VERSION),
+        default_algorithm_preference("recovery", GOOSE_RECOVERY_V1_ID, GOOSE_RECOVERY_V1_VERSION),
         default_algorithm_preference("stress", GOOSE_STRESS_V0_ID, GOOSE_STRESS_V0_VERSION),
+        default_algorithm_preference("readiness", GOOSE_READINESS_V1_ID, GOOSE_READINESS_V1_VERSION),
     ]
 }
 
