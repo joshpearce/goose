@@ -93,25 +93,25 @@ Auditar o código recente para bugs, limpar quick tasks acumuladas, e completar 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUDIT-01 | — | Pending |
-| QT-01 | — | Pending |
-| QT-02 | — | Pending |
-| QT-03 | — | Pending |
-| HOME-01 | — | Pending |
-| HOME-02 | — | Pending |
-| HOME-03 | — | Pending |
-| COACH-07 | — | Pending |
-| COACH-08 | — | Pending |
-| COACH-09 | — | Pending |
-| COACH-10 | — | Pending |
-| COACH-11 | — | Pending |
-| COACH-12 | — | Pending |
-| BIO-05 | — | Pending |
-| ACT-01 | — | Pending |
-| ENB-01 | — | Pending |
-| CAL-01 | — | Pending |
-| SURF-01 | — | Pending |
-| MORE-01 | — | Pending |
-| PREV-01 | — | Pending |
-| HALG-01 | — | Pending |
-| BAND-01 | — | Pending |
+| AUDIT-01 | Phase 51 | Pending |
+| QT-01 | Phase 52 | Pending |
+| QT-02 | Phase 52 | Pending |
+| QT-03 | Phase 52 | Pending |
+| SURF-01 | Phase 52 | Pending |
+| HOME-01 | Phase 53 | Pending |
+| HOME-02 | Phase 53 | Pending |
+| HOME-03 | Phase 53 | Pending |
+| COACH-07 | Phase 54 | Pending |
+| COACH-08 | Phase 54 | Pending |
+| COACH-09 | Phase 55 | Pending |
+| COACH-10 | Phase 55 | Pending |
+| COACH-11 | Phase 55 | Pending |
+| COACH-12 | Phase 55 | Pending |
+| BIO-05 | Phase 56 | Pending |
+| ACT-01 | Phase 56 | Pending |
+| ENB-01 | Phase 57 | Pending |
+| CAL-01 | Phase 57 | Pending |
+| MORE-01 | Phase 58 | Pending |
+| PREV-01 | Phase 58 | Pending |
+| HALG-01 | Phase 58 | Pending |
+| BAND-01 | Phase 59 | Pending |

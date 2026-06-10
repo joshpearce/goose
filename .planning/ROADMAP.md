@@ -9,6 +9,7 @@
 - ✅ **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-35 (shipped 2026-06-08)
 - ✅ **v6.0 UI Wiring, Algorithm Alignment & Parity Validation** — Phases 36-45 (shipped 2026-06-09)
 - ✅ **v7.0 Sync Correctness, Async & Sleep Sync** — Phases 46-50 (shipped 2026-06-10)
+- 🚧 **v8.0 Quality, Completeness & Backlog Clearance** — Phases 51-59 (in progress)
 
 ## Phases
 
@@ -75,13 +76,136 @@ Known deferred: Phase 51 (VAL-HRV-01, VAL-SLP-01, SLP-SYNC real-device validatio
 
 </details>
 
+### v8.0 Quality, Completeness & Backlog Clearance (In Progress)
+
+**Milestone Goal:** Audit recent code for bugs, clear accumulated quick tasks, and complete all missing UI surfaces that accumulated in the backlog since v6.0.
+
+- [ ] **Phase 51: Bug Audit** - Code review of v6.0–v7.0 (phases 36–50) to find and fix correctness bugs, data races, and edge cases
+- [ ] **Phase 52: Quick Tasks & Surface Cleanup** - Bluetooth Settings shortcut, CodeQL CI, HealthKit importer, and debug-only preview gating
+- [ ] **Phase 53: Home Dashboard Completion** - Device Status Card, Tools Grid, and Evidence Footer in HomeDashboardView
+- [ ] **Phase 54: Coach Score Summaries & Journal** - Score summary functions for all four metrics and daily journal with local persistence
+- [ ] **Phase 55: Coach Routes** - Dedicated child views for Sleep Coach, Recovery Insights, Strain Guidance, and Stress Guidance
+- [ ] **Phase 56: Biometrics & Activity** - Real z_rhr from V24 packet data and activity-masked non-activity stress computation
+- [ ] **Phase 57: Persistence & Calibration** - SQLite persistence for stress history/Energy Bank and a real train/holdout calibration pipeline
+- [ ] **Phase 58: More Tab, Previews & Health Algorithms** - Complete More tab actions, app-wide SwiftUI previews, and algorithm preference properties
+- [ ] **Phase 59: Band Sleep Import** - Direct sleep record ingestion from BLE band packets
+
+## Phase Details
+
+### Phase 51: Bug Audit
+**Goal**: Known bugs and correctness issues from v6.0–v7.0 (phases 36–50) are identified, documented, and fixed
+**Depends on**: Phase 50
+**Requirements**: AUDIT-01
+**Success Criteria** (what must be TRUE):
+  1. Every phase 36–50 is reviewed and a written audit report lists findings by severity (HIGH / MEDIUM / LOW)
+  2. All HIGH findings are fixed and verified before this phase closes
+  3. No data race or crash-class finding remains open
+  4. MEDIUM findings are either fixed or explicitly deferred with a rationale
+**Plans**: TBD
+
+### Phase 52: Quick Tasks & Surface Cleanup
+**Goal**: Three long-deferred quick tasks ship and debug-only preview strings are removed from production builds
+**Depends on**: Phase 51
+**Requirements**: QT-01, QT-02, QT-03, SURF-01
+**Success Criteria** (what must be TRUE):
+  1. Tapping the BT button in the app opens iOS Bluetooth Settings directly
+  2. A CodeQL workflow runs automatically on every PR and push via GitHub Actions and reports findings
+  3. The user can trigger a HealthKit full import from the app and data appears in local storage
+  4. A production build contains no fabricated preview values visible to the user (previewMissingData is #if DEBUG-gated)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 53: Home Dashboard Completion
+**Goal**: HomeDashboardView shows a complete live Device Status Card, a Tools Grid of shortcuts, and an Evidence Footer
+**Depends on**: Phase 52
+**Requirements**: HOME-01, HOME-02, HOME-03
+**Success Criteria** (what must be TRUE):
+  1. The Home tab shows a Device Status Card with live device name, connection state, battery percent, current HR, last sync time, and a reconnect action when disconnected — never static text
+  2. The Home tab shows a Tools Grid with shortcuts to Sleep Coach, Activity, Journal, and Calibration, each reflecting its bridge readiness state
+  3. The Home tab shows an Evidence Footer with Rust core version, local store path, data mode, and provenance per metric family — tapping opens More > Debug
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 54: Coach Score Summaries & Journal
+**Goal**: Coach tab shows score summaries for all four metrics and users can write and persist a daily journal entry
+**Depends on**: Phase 53
+**Requirements**: COACH-07, COACH-08
+**Success Criteria** (what must be TRUE):
+  1. The Coach tab displays score summaries for sleep, recovery, strain, and stress — each populated from live bridge data
+  2. The user can open a daily journal entry, write a text note, add optional tags, and save it — the entry persists across app restarts
+  3. The most recent journal entry for a given date is recoverable after relaunching the app
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 55: Coach Routes
+**Goal**: Coach tab has four dedicated child route views — Sleep Coach, Recovery Insights, Strain Guidance, and Stress Guidance — each populated from bridge data
+**Depends on**: Phase 54
+**Requirements**: COACH-09, COACH-10, COACH-11, COACH-12
+**Success Criteria** (what must be TRUE):
+  1. Sleep Coach route shows wind-down time, target bedtime, wake time, and sleep debt/fulfillment from local data
+  2. Recovery Insights route shows recovery score, HRV, RHR, respiratory rate, skin temp delta, and a deterministic recommendation
+  3. Strain Guidance route shows strain score, target strain, exercise duration, daytime HR, and under/in/over-target guidance
+  4. Stress Guidance route shows stress score, last HRV/HR, breakdown by level, and non-activity stress when available
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 56: Biometrics & Activity
+**Goal**: Recovery score uses real resting HR derived from V24 packet data, and non-activity stress only uses HR samples outside detected exercise sessions
+**Depends on**: Phase 51
+**Requirements**: BIO-05, ACT-01
+**Success Criteria** (what must be TRUE):
+  1. The recovery score computation uses z_rhr calculated from real SpO2/resp/wrist-temp V24 packet data — the fabricated 55.0 bpm baseline is removed
+  2. Non-activity stress is computed and displayed (no longer shows "non-activity stress requires HR samples and activity masks")
+  3. Stress windows exclude HR samples that fall within detected exercise session boundaries
+**Plans**: TBD
+
+### Phase 57: Persistence & Calibration
+**Goal**: Daily stress history and Energy Bank state are persisted in SQLite, and the calibration pipeline runs real train/holdout splits from local metric history
+**Depends on**: Phase 56
+**Requirements**: ENB-01, CAL-01
+**Success Criteria** (what must be TRUE):
+  1. Daily stress windows and Energy Bank state are written to SQLite and survive app restarts — long-range trend data is available after multiple days
+  2. The calibration pipeline runs against local historical metrics, producing real train/holdout split results
+  3. Calibration output values are derived from actual data — the hardcoded "4 train / 2 holdout | improved" string is removed
+  4. Calibration results are gated on a completed run; no results are shown if calibration has not run
+**Plans**: TBD
+
+### Phase 58: More Tab, Previews & Health Algorithms
+**Goal**: More tab actions are fully backed by Swift bridge, SwiftUI previews exist for Home/Coach/More with simulator screenshots, and algorithm preference properties are wired in HealthDataStore
+**Depends on**: Phase 55
+**Requirements**: MORE-01, PREV-01, HALG-01
+**Success Criteria** (what must be TRUE):
+  1. More tab capture import, backfill, raw export, and privacy actions are enabled and functional
+  2. SwiftUI previews exist for HomeDashboardView, CoachView, and More views covering connected/populated, disconnected, and no-data states — each verified with a simulator screenshot
+  3. HealthDataStore exposes algorithmPreferences and referenceAlgorithmDefinitions properties wired to the bridge catalog — the Health > Algorithms section can display primary algorithm selection and reference definitions
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 59: Band Sleep Import
+**Goal**: Sleep records are ingested directly from BLE band packets — the "band sleep import not available" message is gone and real sleep data appears
+**Depends on**: Phase 57
+**Requirements**: BAND-01
+**Success Criteria** (what must be TRUE):
+  1. After a BLE connection, sleep records from band packets are persisted locally via the band sleep import path
+  2. The Sleep tab no longer shows "band sleep import not available" when band data is present
+  3. Sleep data imported via band packets is consistent with data imported via the server path for the same session
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
 | 46–50 | v7.0 | 18/18 | Complete | 2026-06-10 |
-| 51. Validation Gates (human) | v7.0 | 0/TBD | Blocked (human gate) | — |
+| 51. Bug Audit | v8.0 | 0/TBD | Not started | - |
+| 52. Quick Tasks & Surface Cleanup | v8.0 | 0/TBD | Not started | - |
+| 53. Home Dashboard Completion | v8.0 | 0/TBD | Not started | - |
+| 54. Coach Score Summaries & Journal | v8.0 | 0/TBD | Not started | - |
+| 55. Coach Routes | v8.0 | 0/TBD | Not started | - |
+| 56. Biometrics & Activity | v8.0 | 0/TBD | Not started | - |
+| 57. Persistence & Calibration | v8.0 | 0/TBD | Not started | - |
+| 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Not started | - |
+| 59. Band Sleep Import | v8.0 | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -118,109 +242,3 @@ Promoted to Phase 18: Coach Multi-Provider.
 ### Phase 999.6: body_hex Storage Optimization (absorbed into Phase 20 — v5.0)
 
 Absorbed into Phase 20: Upstream Fixes & Storage (as PERF-05).
-
----
-
-### Phase 999.7: Band Sleep Import
-
-Primary sleep import directly from band packets — nightly sleep records persisted locally from BLE, not HealthKit fallback. UI explicitly shows `"band sleep import not available"` (`HealthDataStore+Sleep.swift`). Sleep stage timeline already works via bridge (`sleep_v1`); the missing piece is the band→SQLite ingestion path.
-
----
-
-### Phase 999.8: SpO2 / Resp Rate / Wrist Temperature Packet Semantics
-
-Recovery score currently falls back to `z_hrv`-only because `z_rhr`, SpO2, respiratory rate, and wrist temperature are absent or unresolved from band packets. Comment in `HealthDataStore+Recovery.swift:95` confirms the fabricated `55.0` baseline biases `z_rhr`. Requires resolving V24 packet field semantics for these three streams and wiring them into the recovery computation.
-
----
-
-### Phase 999.9: Activity Masking for Stress
-
-Non-activity stress is explicitly `.unavailable("non-activity stress requires HR samples and activity masks")` (`HealthDataStore+StaticSnapshots.swift:61`). Requires splitting stress windows by activity session boundaries so the non-activity stress trend is computed from non-exercise HR only.
-
----
-
-### Phase 999.10: Energy Bank and Stress History Persistence
-
-Daily stress windows and Energy Bank state are currently computed in memory only — no SQLite persistence. Long-range Energy Bank trends and charge/drain rate calibration against stored recovery, sleep, and activity history require persisted daily rows.
-
----
-
-### Phase 999.11: Real Calibration Pipeline
-
-`calibrationRunComplete` is a static boolean; `"4 train / 2 holdout | improved"` is a hardcoded string in `HealthDataStore+CoachSummaries.swift:728`. Holdout is explicitly `.unavailable("calibration holdout not computed")`. Requires implementing actual calibration runs with train/holdout splits from local metric history, and gating calibration outputs on a completed run.
-
----
-
-### Phase 999.12: Runtime Surface Cleanup
-
-`previewMissingData` is evaluated at runtime in `HealthDataStore+Snapshots.swift` and affects snapshot provenance strings. Debug preview-only strings must be removed or gated behind `#if DEBUG` before TestFlight builds. Verify no fabricated values surface to users.
-
----
-
-### Phase 999.13: Home — Missing Surfaces
-
-`HomeDashboardView` is missing three sections present in the Flutter original and the Home spec:
-
-**Device Status Card** (inline on Home, not DeviceView): show active device name (`ble.activeDeviceName`), connection state, reconnect state, battery percent, live HR, last sync, and a scan/reconnect quick action when disconnected. Copy must be live — never static "Connected" text.
-
-**Tools Grid**: Sleep Coach shortcut, Activity shortcut, Journal shortcut, Calibration shortcut. Each row should surface its readiness state from the underlying bridge.
-
-**Evidence Footer**: Rust core version (`model.rustStatus`), local store path, data mode (local / live device / imported / unavailable), provenance summary for HR, sleep, recovery, strain. Tapping opens More > Debug.
-
-**Supporting gaps**: `HomeSnapshot` value type is not defined — the view uses `HealthMetricSnapshot` directly. Strain denominator semantics (Flutter normalises from 21-point scale to percent) not preserved. Provenance badges per metric family not shown. Busy/sync indicator missing during device or metric refresh. Shared relative-time formatter (`HomeFormatting.swift` exists but the unified formatter is absent). Energy Bank specific data points (total charged, total drained, primary sleep contribution, usage window) not confirmed surfaced.
-
----
-
-### Phase 999.14: Coach — Content Routes and Score Summaries
-
-`CoachView.swift` implements Today Recommendation and Metric Highlights but has no dedicated child route views for the remaining Coach sections.
-
-**Score summary functions missing** (block Metric Highlights completion): `todaySleepScoreSummary()`, `todayRecoveryScoreSummary()`, `todayStrainScoreSummary()`, `todayStressScoreSummary()` — none implemented in `HealthDataStore+CoachSummaries.swift`.
-
-**Journal**: daily journal prompt from score/action summary; optional tags (stressors, training, sleep quality, symptoms, recovery blockers); text note entry; local persistence; last saved entry per date; expose to Sleep/Recovery insight surfaces.
-
-**Sleep Coach route**: wind-down time, target bedtime, wake time, sleep need fulfillment/debt. `sleepV1ScheduleSummary()` and `sleepV1DebtSummary()` exist in `CoachSummaries` and are used in `CoachTips.swift` but not wired into a dedicated child view.
-
-**Recovery Insights route**: recovery score/status, resting HRV, resting HR, respiratory rate/baseline, skin temp delta, missing vitals explicit, deterministic recommendation, links to Health > Recovery and Health > Calibration.
-
-**Strain Guidance route**: strain score, target strain, exercise duration, daytime HR, total energy, step count, under/in/over-target guidance, link to Health > Strain.
-
-**Stress Guidance route**: stress score, last HRV/HR, breakdown (High/Medium/Low), non-activity stress and sleep stress when available, link to Health > Stress.
-
-**Data Gaps completion**: `unavailableHealthSyncMetricSummary()` exists in `MoreDataStore` but is not wired into `CoachView`. Capture requirement and one-action-per-gap routing incomplete.
-
-**Resources**: deterministic native resource cards for Sleep, Recovery, Strain, Stress, Cardio Load — no marketing copy.
-
-**Future Chat Boundary**: placeholder protocol for future chat messages; "Ask Coach" input disabled or routed to deterministic suggested questions until a backend, privacy policy, and persistence strategy exist.
-
----
-
-### Phase 999.15: More — Remaining Gaps
-
-**Capture imports**: import capture file, import command evidence file, import emulator log, and validated sample/read command actions are present as rows but marked disabled. Requires Swift bridge backing for each action.
-
-**Health Sync**: editable backfill start/end fields not implemented. Existing Goose records count not surfaced.
-
-**Raw Export**: editable fields for capture sessions, packet types, sensor signals, metric families, algorithm IDs, algorithm versions not confirmed. Named data family chip UI (`raw_evidence`, `decoded_frames`, `packet_timeline`, `metric_inputs`, `algorithm_runs`, `calibration_labels`, `calibration_runs`, `sqlite`) not confirmed — `selectedRawFamilies` exists. Recent capture sessions as shortcut rows not implemented. Bundle validation, zip validation, and sanitised privacy status rows absent.
-
-**Debug**: frame parse status and payload not explicitly surfaced (only CRC and warnings shown). UI coverage status, deferred surfaces, property suite/perf budget rows, and command evidence import/gate sweep/capture plan absent.
-
-**Privacy**: data deletion and export links not implemented.
-
----
-
-### Phase 999.16: App-wide Previews and Simulator Screenshots
-
-No SwiftUI `#Preview` blocks exist for `HomeDashboardView`, `CoachView` (beyond "Signed out"), or any `More*View`. Required states:
-
-- **Home**: connected + populated, disconnected, no-data first-run
-- **Coach**: no-data, capture-needed, populated
-- **More**: default, connected device, debug-heavy
-
-Each preview must be verified with a simulator screenshot via XcodeBuildMCP before TestFlight builds. `HealthPreviews.swift` exists for Health — same pattern needed for other tabs.
-
----
-
-### Phase 999.17: Health — Algorithm Preference Properties
-
-`algorithmPreferences` and `referenceAlgorithmDefinitions` properties are not yet implemented in `HealthDataStore` (referenced in `health.md` spec). The Algorithms section in Health cannot show primary algorithm selection or list reference definitions until these properties are wired from the bridge catalog.
