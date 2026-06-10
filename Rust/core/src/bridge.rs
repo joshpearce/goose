@@ -3613,6 +3613,7 @@ fn upload_get_raw_frames_for_upload_bridge(
                 "device_type": "GOOSE",
                 "device_model": r.device_model,
                 "sensitivity": r.sensitivity,
+                "device_uuid": r.device_uuid,
             })
         })
         .collect();

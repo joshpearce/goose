@@ -2202,8 +2202,9 @@ impl GooseStore {
                 payload_hex,
                 sha256,
                 sensitivity,
-                capture_session_id
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                capture_session_id,
+                device_uuid
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
             "#,
         )?;
         let changed = statement.execute(params![
@@ -2214,7 +2215,8 @@ impl GooseStore {
             payload_hex,
             sha256,
             input.sensitivity,
-            input.capture_session_id
+            input.capture_session_id,
+            input.device_uuid
         ])?;
         if changed > 0 {
             return Ok(true);
@@ -5093,7 +5095,8 @@ impl GooseStore {
                     payload_hex,
                     sha256,
                     sensitivity,
-                    capture_session_id
+                    capture_session_id,
+                    device_uuid
                 FROM raw_evidence
                 WHERE evidence_id = ?1
                 "#,
@@ -5108,7 +5111,7 @@ impl GooseStore {
                         sha256: row.get(5)?,
                         sensitivity: row.get(6)?,
                         capture_session_id: row.get(7)?,
-                        device_uuid: None,
+                        device_uuid: row.get(8)?,
                     })
                 },
             )
@@ -5130,7 +5133,8 @@ impl GooseStore {
                 payload_hex,
                 sha256,
                 sensitivity,
-                capture_session_id
+                capture_session_id,
+                device_uuid
             FROM raw_evidence
             WHERE captured_at >= ?1 AND captured_at < ?2
             ORDER BY captured_at, evidence_id
@@ -5146,7 +5150,7 @@ impl GooseStore {
                 sha256: row.get(5)?,
                 sensitivity: row.get(6)?,
                 capture_session_id: row.get(7)?,
-                device_uuid: None,
+                device_uuid: row.get(8)?,
             })
         })?;
 
