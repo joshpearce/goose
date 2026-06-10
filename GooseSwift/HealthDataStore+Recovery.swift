@@ -52,8 +52,7 @@ extension HealthDataStore {
 
   // Reads HRV and RHR from the existing recovery metric stores (same sources used
   // by recoveryHRVDisplayText / recoveryRestingHRDisplayText) and calls the bridge.
-  // Must be called from a background context; result is published on @MainActor.
-  func runRecoveryV1() {
+  func runRecoveryV1() async {
     let dateKey = Self.metricDateKey(for: Date())
 
     // Resolve numeric HRV (ms) — prefer stored daily recovery metric, fall back to packet report
@@ -88,9 +87,7 @@ extension HealthDataStore {
     }()
 
     guard let hrv = hrvRmssdMs, hrv > 0 else {
-      Task { @MainActor [weak self] in
-        self?.recoveryV1Result = nil
-      }
+      self.recoveryV1Result = nil
       return
     }
 
@@ -98,45 +95,37 @@ extension HealthDataStore {
     // Rust handles absence via z_hrv-only fallback; a fabricated 55.0 biases z_rhr.
     let db = databasePath
     let deviceID = "goose.swift.recovery.v1"
-    let bridge = self.bridge
 
-    packetInputQueue.async { [weak self] in
-      guard let self else { return }
-      do {
-        var bridgeArgs: [String: Any] = [
-          "database_path": db,
-          "device_id": deviceID,
-          "date_key": dateKey,
-          "hrv_rmssd_ms": hrv,
-        ]
-        if let rhr = restingHrBpm, rhr > 0 {
-          bridgeArgs["resting_hr_bpm"] = rhr
-        }
-        let report = try bridge.request(
-          method: "metrics.goose_recovery_v1",
-          args: bridgeArgs
-        )
-        let scoreRaw = Self.doubleValue(report["score_0_to_100"])
-        let score = scoreRaw.map { Int($0.rounded()) }
-        let trustLevel = report["trust_level"] as? String ?? "calibrating"
-        let colourBand = report["colour_band"] as? String ?? "amarelo"
-        let zHRV = Self.doubleValue(report["z_hrv"])
-        let zRHR = Self.doubleValue(report["z_rhr"])
-        let result = RecoveryV1Result(
-          score: score,
-          trustLevel: trustLevel,
-          colourBand: colourBand,
-          zHRV: zHRV,
-          zRHR: zRHR
-        )
-        Task { @MainActor [weak self] in
-          self?.recoveryV1Result = result
-        }
-      } catch {
-        Task { @MainActor [weak self] in
-          self?.recoveryV1Result = nil
-        }
-      }
+    var bridgeArgs: [String: Any] = [
+      "database_path": db,
+      "device_id": deviceID,
+      "date_key": dateKey,
+      "hrv_rmssd_ms": hrv,
+    ]
+    if let rhr = restingHrBpm, rhr > 0 {
+      bridgeArgs["resting_hr_bpm"] = rhr
+    }
+
+    do {
+      let report = try await bridge.requestAsync(
+        method: "metrics.goose_recovery_v1",
+        args: bridgeArgs
+      )
+      let scoreRaw = Self.doubleValue(report["score_0_to_100"])
+      let score = scoreRaw.map { Int($0.rounded()) }
+      let trustLevel = report["trust_level"] as? String ?? "calibrating"
+      let colourBand = report["colour_band"] as? String ?? "amarelo"
+      let zHRV = Self.doubleValue(report["z_hrv"])
+      let zRHR = Self.doubleValue(report["z_rhr"])
+      self.recoveryV1Result = RecoveryV1Result(
+        score: score,
+        trustLevel: trustLevel,
+        colourBand: colourBand,
+        zHRV: zHRV,
+        zRHR: zRHR
+      )
+    } catch {
+      self.recoveryV1Result = nil
     }
   }
 }
