@@ -7324,9 +7324,10 @@ impl GooseStore {
                     ..
                 } => {
                     if hr_present.unwrap_or(false)
-                        && let (Some(ts), Some(bpm)) = (ts_unix, marker_value) {
-                            hr_rows.push((ts, *bpm as i64));
-                        }
+                        && let (Some(ts), Some(bpm)) = (ts_unix, marker_value)
+                    {
+                        hr_rows.push((ts, *bpm as i64));
+                    }
                 }
                 DataPacketBodySummary::RawMotionK10 { heart_rate, .. } => {
                     if let (Some(ts), Some(bpm)) = (ts_unix, heart_rate) {
@@ -7340,10 +7341,9 @@ impl GooseStore {
                     ..
                 } => {
                     let contact = skin_contact.unwrap_or(0) == 1;
-                    if contact
-                        && let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
-                            hr_rows.push((ts, bpm as i64));
-                        }
+                    if contact && let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
+                        hr_rows.push((ts, bpm as i64));
+                    }
                     if let Some(ts_base) = ts_unix {
                         let mut t = ts_base;
                         for &ms in rr_intervals_ms.iter() {

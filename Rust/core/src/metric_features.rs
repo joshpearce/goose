@@ -1676,9 +1676,10 @@ pub fn run_hrv_feature_report_for_store(
     // was imported directly (store.insert_hr_rr_batch) without the BLE trust chain.
     if report.hrv_input.is_none()
         && let Ok(fallback) = hrv_report_from_rr_table(store, start, end, options)
-            && fallback.hrv_input.is_some() {
-                return Ok(fallback);
-            }
+        && fallback.hrv_input.is_some()
+    {
+        return Ok(fallback);
+    }
 
     Ok(report)
 }

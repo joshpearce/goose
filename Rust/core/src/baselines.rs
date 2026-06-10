@@ -135,13 +135,11 @@ impl EwmaState {
 
 /// Per-device EWMA baseline, holding independent state for HRV RMSSD and
 /// resting heart rate.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct EwmaBaseline {
     pub hrv: EwmaState,
     pub resting_hr: EwmaState,
 }
-
 
 impl EwmaBaseline {
     /// Reconstruct EWMA state by replaying all `daily_recovery_metrics` rows
@@ -155,13 +153,15 @@ impl EwmaBaseline {
         let mut baseline = Self::default();
         for row in &rows {
             if let Some(hrv) = row.hrv_rmssd_ms
-                && hrv.is_finite() {
-                    baseline.hrv.fold(hrv);
-                }
+                && hrv.is_finite()
+            {
+                baseline.hrv.fold(hrv);
+            }
             if let Some(rhr) = row.resting_hr_bpm
-                && rhr.is_finite() {
-                    baseline.resting_hr.fold(rhr);
-                }
+                && rhr.is_finite()
+            {
+                baseline.resting_hr.fold(rhr);
+            }
         }
         Ok(baseline)
     }

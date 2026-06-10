@@ -3440,10 +3440,9 @@ fn upload_get_recent_decoded_streams_bridge(
                             let contact = skin_contact.unwrap_or(0) == 1;
 
                             // HR — only when skin contact is established
-                            if contact
-                                && let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
-                                    hr.push(json!({"ts": ts, "bpm": bpm}));
-                                }
+                            if contact && let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
+                                hr.push(json!({"ts": ts, "bpm": bpm}));
+                            }
 
                             // RR intervals — accumulate with per-interval timestamps
                             if let Some(ts_base) = ts_unix {

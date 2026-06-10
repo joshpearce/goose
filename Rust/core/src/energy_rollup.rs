@@ -1261,14 +1261,15 @@ fn active_kcal(
     // and age is available. Otherwise retain the existing MET-based path.
     if let (Some(avg_hr), Some(resting_hr), Some(hrmax), Some(age)) =
         (average_hr_bpm, resting_hr_bpm, max_hr_bpm, profile_age)
-        && hrmax > resting_hr {
-            let threshold = resting_hr + 0.30 * (hrmax - resting_hr);
-            if avg_hr >= threshold {
-                let kcal_per_min =
-                    keytel_active_kcal_per_min(avg_hr, weight_kg, age, profile_sex, hrmax);
-                return kcal_per_min * covered_minutes.max(0.0);
-            }
+        && hrmax > resting_hr
+    {
+        let threshold = resting_hr + 0.30 * (hrmax - resting_hr);
+        if avg_hr >= threshold {
+            let kcal_per_min =
+                keytel_active_kcal_per_min(avg_hr, weight_kg, age, profile_sex, hrmax);
+            return kcal_per_min * covered_minutes.max(0.0);
         }
+    }
 
     // Original MET-based path (below threshold or missing inputs).
     let kcal_per_met_minute = 3.5 * weight_kg / 200.0;
