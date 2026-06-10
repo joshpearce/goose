@@ -3,7 +3,7 @@ import MapKit
 import SwiftUI
 import UIKit
 
-@MainActor final class ActivityLocationTracker: NSObject, ObservableObject, CLLocationManagerDelegate {
+@MainActor final class ActivityLocationTracker: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate {
   @Published private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
   @Published private(set) var locations: [CLLocation] = []
   @Published private(set) var routePointCount = 0
