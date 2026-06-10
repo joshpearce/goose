@@ -28,7 +28,15 @@ extension GooseAppModel {
   func triggerBackfillAndUpload() {
     let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-7 * 24 * 3600)
     if let whoopID = ble.activeDeviceIdentifier {
-      uploadService.triggerBackfill(deviceID: whoopID, sinceTimestamp: sinceTimestamp)
+      // Derive device type from the active descriptor's command characteristic prefix,
+      // matching the same logic used in triggerManualUpload.
+      let whoopType: String
+      if let desc = ble.activeDescriptor {
+        whoopType = desc.commandCharacteristicPrefix.hasPrefix("610800") ? "GEN4" : "GOOSE"
+      } else {
+        whoopType = "GOOSE"
+      }
+      uploadService.triggerBackfill(deviceID: whoopID, deviceType: whoopType, sinceTimestamp: sinceTimestamp)
     }
   }
 
