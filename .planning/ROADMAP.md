@@ -194,8 +194,8 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 50-01-PLAN.md — Rust: V24History gravity extraction + gravity2 vec + store.insert_gravity_rows + 4 cargo tests
-- [ ] 50-02-PLAN.md — Swift: GooseAppModel+SleepSync.swift + morning trigger + pt-PT initial status string
+- [x] 50-01-PLAN.md — Rust: V24History gravity extraction + gravity2 vec + store.insert_gravity_rows + 4 cargo tests
+- [x] 50-02-PLAN.md — Swift: GooseAppModel+SleepSync.swift + morning trigger + pt-PT initial status string
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -234,7 +234,7 @@ Plans:
 | 47. Device ID Namespace | v7.0 | 3/3 | Complete   | 2026-06-10 |
 | 48. Upload Sync Race Fix | v7.0 | 3/3 | Complete   | 2026-06-10 |
 | 49. HealthDataStore Async | v7.0 | 7/7 | Complete   | 2026-06-10 |
-| 50. Morning Band Sleep Sync | v7.0 | 0/3 | Not started | — |
+| 50. Morning Band Sleep Sync | v7.0 | 2/3 | In Progress|  |
 | 51. Validation Gates (human) | v7.0 | 0/TBD | Blocked (human gate) | — |
 
 ## Backlog
