@@ -1,10 +1,11 @@
 ---
 phase: 47
 slug: device-id-namespace-resolution
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-10
+validated: 2026-06-10
 ---
 
 # Phase 47 — Validation Strategy
@@ -38,11 +39,11 @@ created: 2026-06-10
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 47-01-01 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test -p goose-core test_migration_adds_device_uuid` | ❌ W0 | ⬜ pending |
-| 47-01-02 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test -p goose-core test_insert_raw_evidence_with_uuid` | ❌ W0 | ⬜ pending |
-| 47-01-03 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test -p goose-core test_query_raw_evidence_by_uuid` | ❌ W0 | ⬜ pending |
-| 47-01-04 | 01 | 1 | DEVID-02 | — | N/A | unit | `cargo test -p goose-core test_query_raw_evidence_by_device_model` | ❌ W0 | ⬜ pending |
-| 47-01-05 | 01 | 1 | DEVID-02 | — | N/A | unit | `cargo test -p goose-core test_capture_import_propagates_device_uuid` | ❌ W0 | ⬜ pending |
+| 47-01-01 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test --test capture_import_tests test_migration_adds_device_uuid` | ✅ | ✅ green |
+| 47-01-02 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test --test capture_import_tests test_insert_raw_evidence_with_uuid` | ✅ | ✅ green |
+| 47-01-03 | 01 | 1 | DEVID-01 | — | N/A | unit | `cargo test --test capture_import_tests test_query_raw_evidence_by_uuid` | ✅ | ✅ green |
+| 47-01-04 | 01 | 1 | DEVID-02 | — | N/A | unit | `cargo test --test capture_import_tests test_query_raw_evidence_by_device_model` | ✅ | ✅ green |
+| 47-01-05 | 01 | 1 | DEVID-02 | — | N/A | unit | `cargo test --test capture_import_tests test_capture_import_propagates_device_uuid` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -50,7 +51,7 @@ created: 2026-06-10
 
 ## Wave 0 Requirements
 
-- [ ] `Rust/core/tests/capture_import_tests.rs` — 5 new test functions for DEVID-01/02 (add to existing file)
+- [x] `Rust/core/tests/capture_import_tests.rs` — 5 new test functions for DEVID-01/02 (add to existing file)
 
 *Framework install: none — Rust test infrastructure already present.*
 
@@ -67,11 +68,11 @@ created: 2026-06-10
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** 2026-06-10 — all 5 cargo tests pass (17/17 in capture_import_tests suite)
