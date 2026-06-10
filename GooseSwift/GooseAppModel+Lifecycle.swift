@@ -163,6 +163,7 @@ extension GooseAppModel {
       ble.writeClockCommand(.get, syncIfNeeded: true)
       ble.record(source: "ble.clock", title: "clock.auto_sync.triggered", body: "state=ready")
     }
+    maybeScheduleMorningSleepSync()
   }
 
   func schedulePassiveActivityCapture(reason: String) {
