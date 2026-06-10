@@ -142,17 +142,14 @@ struct HealthActivityOverviewSection: View {
         }
         .buttonStyle(.plain)
 
-        NavigationLink(value: HealthRoute.healthMonitor) {
-          HealthDashboardMetricCard(
-            title: "Heart Rate",
-            value: heartRateValue,
-            subtitle: heartRateStatus,
-            systemImage: "heart.fill",
-            tint: .red,
-            source: heartRateSource
-          )
-        }
-        .buttonStyle(.plain)
+        HealthDashboardMetricCard(
+          title: "Heart Rate",
+          value: heartRateValue,
+          subtitle: heartRateStatus,
+          systemImage: "heart.fill",
+          tint: .red,
+          source: heartRateSource
+        )
       }
     }
   }
@@ -211,25 +208,11 @@ struct HealthVitalsPreviewSection: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      HStack {
-        HealthSectionTitle("Vitals")
-        NavigationLink(value: HealthRoute.healthMonitor) {
-          Image(systemName: "chevron.right")
-            .font(.caption.weight(.bold))
-            .foregroundStyle(.secondary)
-            .frame(width: 30, height: 30)
-            .background(Color(.tertiarySystemGroupedBackground), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Open Health Monitor")
-      }
+      HealthSectionTitle("Vitals")
 
       LazyVGrid(columns: columns, spacing: 12) {
         ForEach(snapshots) { snapshot in
-          NavigationLink(value: HealthRoute.healthMonitor) {
-            HealthVitalsPreviewCard(snapshot: snapshot)
-          }
-          .buttonStyle(.plain)
+          HealthVitalsPreviewCard(snapshot: snapshot)
         }
       }
     }

@@ -99,7 +99,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     }
   }
 
-  static let deviceRoutes: [MoreRoute] = [.device, .hrMonitor]
+  static let deviceRoutes: [MoreRoute] = [.device]
   static let appRoutes: [MoreRoute] = [.healthSync]
   static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer]
   static let supportRoutes: [MoreRoute] = [.support, .about]

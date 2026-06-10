@@ -46,6 +46,30 @@ private struct DeviceContentView: View {
           } else {
             DeviceAdvancedPanel(model: model, packetMonitor: packetMonitor, ble: ble)
           }
+
+          NavigationLink(value: MoreRoute.hrMonitor) {
+            HStack(spacing: 12) {
+              Image(systemName: "heart.circle")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 32)
+              VStack(alignment: .leading, spacing: 2) {
+                Text("HR Monitor")
+                  .font(.subheadline.weight(.medium))
+                  .foregroundStyle(.primary)
+                Text("Connect a Bluetooth HR monitor")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              Spacer()
+              Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 10)
+          }
+          .buttonStyle(.plain)
+          .padding(.top, 24)
         }
         .padding(.horizontal, 22)
         .padding(.top, 36)

@@ -33,12 +33,7 @@ struct HealthView: View {
 
         HealthRouteShortcutSection(
           title: "Explore Health",
-          snapshots: snapshots(for: [.sleep, .recovery, .strain, .stress, .cardioLoad, .energyBank])
-        )
-
-        HealthRouteShortcutSection(
-          title: "Data & Algorithms",
-          snapshots: snapshots(for: [.packetInputs, .algorithms, .calibration])
+          snapshots: snapshots(for: [.stress, .cardioLoad, .energyBank])
         )
       }
       .padding(.horizontal, 16)
