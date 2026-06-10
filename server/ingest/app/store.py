@@ -43,6 +43,10 @@ def insert_raw_frames_batch(conn: psycopg.Connection, device_id: str, frames: li
     skipped = 0
     with conn.cursor() as cur:
         for f in frames:
+            source = f.get("source") or "ios.corebluetooth.notification"
+            device_type = f.get("device_type") or "GOOSE"
+            device_model = f.get("device_model") or "WHOOP 5.0 Goose"
+            sensitivity = f.get("sensitivity") or "user-owned-capture"
             cur.execute(
                 """INSERT INTO raw_frames
                    (device_id, captured_at, frame_hex, source, device_type, device_model, sensitivity, device_uuid)
@@ -52,14 +56,14 @@ def insert_raw_frames_batch(conn: psycopg.Connection, device_id: str, frames: li
                     device_id,
                     f.get("captured_at_unix"),
                     f.get("frame_hex"),
-                    f.get("source"),
-                    f.get("device_type"),
-                    f.get("device_model"),
-                    f.get("sensitivity"),
+                    source,
+                    device_type,
+                    device_model,
+                    sensitivity,
                     f.get("device_uuid"),
                 ),
             )
-            if cur.rowcount == 1:
+            if cur.rowcount > 0:
                 inserted += 1
             else:
                 skipped += 1
