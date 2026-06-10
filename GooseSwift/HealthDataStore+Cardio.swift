@@ -92,14 +92,17 @@ extension HealthDataStore {
     )
   }
 
-  func cardioLoadActivitySessions(from start: Date, to end: Date) -> [[String: Any]] {
+  func cardioLoadActivitySessions(from start: Date, to end: Date) async -> [[String: Any]] {
+    let path = databasePath
+    let startMs = Self.unixMilliseconds(start)
+    let endMs = Self.unixMilliseconds(end)
     do {
-      let report = try bridge.request(
+      let report = try await bridge.requestAsync(
         method: "activity.list_sessions",
         args: [
-          "database_path": databasePath,
-          "start_time_unix_ms": Self.unixMilliseconds(start),
-          "end_time_unix_ms": Self.unixMilliseconds(end),
+          "database_path": path,
+          "start_time_unix_ms": startMs,
+          "end_time_unix_ms": endMs,
         ]
       )
       return report["sessions"] as? [[String: Any]] ?? []
@@ -108,15 +111,16 @@ extension HealthDataStore {
     }
   }
 
-  func cardioLoadActivityMetricsByName(sessionID: String?) -> [String: [String: Any]] {
+  func cardioLoadActivityMetricsByName(sessionID: String?) async -> [String: [String: Any]] {
     guard let sessionID else {
       return [:]
     }
+    let path = databasePath
     do {
-      let report = try bridge.request(
+      let report = try await bridge.requestAsync(
         method: "activity.list_metrics",
         args: [
-          "database_path": databasePath,
+          "database_path": path,
           "activity_session_id": sessionID,
         ]
       )
