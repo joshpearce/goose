@@ -125,3 +125,42 @@ def test_auth_required(client):
         headers={"Authorization": ""},
     )
     assert r.status_code == 401
+
+
+_UUID_DEVICE_ID = "test-device-uuid-01"
+_TEST_UUID = "12345678-1234-5678-1234-567812345678"
+
+
+@requires_docker
+def test_device_uuid_persisted(client, clean_db):
+    """POST /v1/ingest-frames with device_uuid — row stored with that device_uuid."""
+    payload = {
+        "device": {
+            "id": _UUID_DEVICE_ID,
+            "mac": "AA:BB:CC:DD:EE:01",
+            "name": "WHOOP UUID Test",
+        },
+        "frames": [
+            {
+                "captured_at_unix": 1700001000.0,
+                "frame_hex": _FRAME_A,
+                "source": "ios.corebluetooth.notification",
+                "device_type": "GOOSE",
+                "device_model": "WHOOP 5.0 Goose",
+                "sensitivity": "user-owned-capture",
+                "device_uuid": _TEST_UUID,
+            }
+        ],
+    }
+    r = client.post("/v1/ingest-frames", json=payload)
+    assert r.status_code == 200, r.text
+    assert r.json() == {"inserted": 1, "skipped": 0}
+
+    # Verify the row was stored with the expected device_uuid.
+    with psycopg.connect(clean_db) as conn:
+        row = conn.execute(
+            "SELECT device_uuid FROM raw_frames WHERE device_id = %s",
+            (_UUID_DEVICE_ID,),
+        ).fetchone()
+    assert row is not None, "Row not found in raw_frames"
+    assert row[0] == _TEST_UUID, f"Expected device_uuid={_TEST_UUID!r}, got {row[0]!r}"

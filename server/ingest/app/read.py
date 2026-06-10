@@ -2,6 +2,7 @@
 no HTTP. Timestamps are returned as ISO-8601 strings (psycopg gives tz-aware datetimes;
 FastAPI serialises them)."""
 import math
+import uuid as _uuid
 
 import zstandard
 
@@ -17,6 +18,15 @@ from .analysis.units import (
 # reflects the local AC/DC ratio. Falls back to the single-sample estimate when
 # there are too few neighbours.
 _SPO2_WINDOW_RADIUS = 8
+
+
+def _is_uuid(s: str) -> bool:
+    """Return True when s is a valid UUID string (any variant), False otherwise."""
+    try:
+        _uuid.UUID(s)
+        return True
+    except ValueError:
+        return False
 
 # kind -> (table, value columns) for the decoded stream endpoints.
 _STREAMS = {
@@ -354,16 +364,20 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
     # Also include frames uploaded directly via POST /v1/ingest-frames (raw_frames table).
     # These carry the exact iOS shape already; NULL columns fall back to the same defaults
     # as the archive path above so the iOS importer sees a uniform dict format.
+    # Bidirectional lookup: if device_id is a UUID, query by device_uuid column;
+    # otherwise query by device_model. Both branches are fully parameterised (%s).
     remaining = max(0, limit - len(out))
+    is_uuid = _is_uuid(device_id)
+    device_clause = "device_uuid = %s" if is_uuid else "device_model = %s"
     db_rows = conn.execute(
-        """SELECT extract(epoch FROM captured_at)::float AS captured_at_unix,
+        f"""SELECT extract(epoch FROM captured_at)::float AS captured_at_unix,
                   frame_hex,
                   source,
                   device_model,
                   device_type,
                   sensitivity
            FROM raw_frames
-           WHERE device_id = %s
+           WHERE {device_clause}
              AND extract(epoch FROM captured_at) >= %s
              AND extract(epoch FROM captured_at) <= %s
            ORDER BY captured_at

@@ -142,6 +142,70 @@ def test_batch_frames(client):
     assert frames[0]["parsed"]["heart_rate"] == 60
 
 
+_EXPORT_FRAME_HEX = "aa1800ff28020f3de10128663c00000000000000000001010d844ead"
+_EXPORT_UUID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+_EXPORT_MODEL = "WHOOP 5.0 Export Test"
+_EXPORT_DEVICE_ID = "export-dev-uuid-01"
+_EXPORT_DEVICE_MODEL_ID = "export-dev-model-01"
+_FROM_TS = 1700009999.0
+_TO_TS = 1700010001.0
+
+
+@requires_docker
+def test_export_frames_by_device_uuid(client, clean_db):
+    """GET /v1/export/frames/{uuid} returns the frame via device_uuid column."""
+    with psycopg.connect(clean_db) as conn:
+        store.ensure_device(conn, _EXPORT_DEVICE_ID)
+        conn.execute(
+            """INSERT INTO raw_frames
+               (device_id, captured_at, frame_hex, source, device_type, device_model, sensitivity, device_uuid)
+               VALUES (%s, to_timestamp(%s), %s, %s, %s, %s, %s, %s)""",
+            (
+                _EXPORT_DEVICE_ID, 1700010000.0, _EXPORT_FRAME_HEX,
+                "ios.corebluetooth.notification", "GOOSE",
+                _EXPORT_MODEL, "user-owned-capture", _EXPORT_UUID,
+            ),
+        )
+        conn.commit()
+
+    r = client.get(
+        f"/v1/export/frames/{_EXPORT_UUID}",
+        params={"from": _FROM_TS, "to": _TO_TS},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["count"] == 1, f"Expected 1 frame via device_uuid branch, got {body['count']}"
+    assert body["frames"][0]["frame_hex"] == _EXPORT_FRAME_HEX
+
+
+@requires_docker
+def test_export_frames_by_device_model(client, clean_db):
+    """GET /v1/export/frames/{device_model} returns the frame via device_model column (non-UUID path)."""
+    with psycopg.connect(clean_db) as conn:
+        store.ensure_device(conn, _EXPORT_DEVICE_MODEL_ID)
+        conn.execute(
+            """INSERT INTO raw_frames
+               (device_id, captured_at, frame_hex, source, device_type, device_model, sensitivity)
+               VALUES (%s, to_timestamp(%s), %s, %s, %s, %s, %s)""",
+            (
+                _EXPORT_DEVICE_MODEL_ID, 1700010000.0, _EXPORT_FRAME_HEX,
+                "ios.corebluetooth.notification", "GOOSE",
+                _EXPORT_MODEL, "user-owned-capture",
+            ),
+        )
+        conn.commit()
+
+    # Query by device_model string (not a UUID) — must hit the device_model branch.
+    r = client.get(
+        f"/v1/export/frames/{_EXPORT_MODEL}",
+        params={"from": _FROM_TS, "to": _TO_TS},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["count"] == 1, f"Expected 1 frame via device_model branch, got {body['count']}"
+    assert body["frames"][0]["frame_hex"] == _EXPORT_FRAME_HEX
+
+
 # ---------------------------------------------------------------------------
 # BackfillWorkouts model: alias binding (pure — no DB required)
 # ---------------------------------------------------------------------------
