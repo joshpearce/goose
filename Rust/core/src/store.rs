@@ -5258,7 +5258,8 @@ impl GooseStore {
                 decoded_frames.command_or_event,
                 decoded_frames.parsed_payload_json,
                 decoded_frames.parser_version,
-                decoded_frames.warnings_json
+                decoded_frames.warnings_json,
+                decoded_frames.device_uuid
             FROM decoded_frames
             INNER JOIN raw_evidence
                 ON raw_evidence.evidence_id = decoded_frames.evidence_id
