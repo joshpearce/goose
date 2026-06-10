@@ -8,11 +8,11 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 - [x] Create a dedicated `CoachView.swift` — implemented (`CoachPlaceholderView` was never created; `CoachView.swift` is the implementation).
 - [x] Keep this tab behind the Swift `Coach` tab item.
-- [ ] Define child routes: Today Recommendation, Journal, Sleep Coach, Recovery Insights, Strain Guidance, Stress Guidance, Data Gaps.
+- [ ] Define child routes: Today Recommendation, Journal, Sleep Coach, Recovery Insights, Strain Guidance, Stress Guidance, Data Gaps — `CoachView.swift` has a `NavigationStack` but no dedicated child route views for these sections.
 - [x] Define a `CoachSnapshot` value type with readiness, next actions, metric highlights, missing data, and provenance.
 - [x] Separate generated coaching copy from deterministic/local rule copy.
 - [x] Add explicit empty state when no trusted metrics are available.
-- [ ] Add previews for no-data, capture-needed, and populated days.
+- [ ] Add previews for no-data, capture-needed, and populated days — only a "Signed out" preview exists.
 
 ## Today Recommendation
 
@@ -27,11 +27,11 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 ## Metric Highlights
 
-- [ ] Add Sleep highlight (no `todaySleepScoreSummary()` yet — function not implemented).
-- [ ] Add Recovery highlight (no `todayRecoveryScoreSummary()` yet — function not implemented).
-- [ ] Add Strain highlight (no `todayStrainScoreSummary()` yet — function not implemented).
-- [ ] Add Stress highlight (no `todayStressScoreSummary()` yet — function not implemented).
-- [x] Add HRV highlight from `hrvFeatureSummary()` (exists in `HealthDataStore+CoachSummaries.swift`).
+- [ ] Add Sleep highlight — `todaySleepScoreSummary()` not implemented in `HealthDataStore+CoachSummaries.swift`.
+- [ ] Add Recovery highlight — `todayRecoveryScoreSummary()` not implemented.
+- [ ] Add Strain highlight — `todayStrainScoreSummary()` not implemented.
+- [ ] Add Stress highlight — `todayStressScoreSummary()` not implemented.
+- [x] Add HRV highlight from `hrvFeatureSummary()`.
 - [x] Add live HR highlight from `latestHeartRateSummary()` or BLE live HR.
 - [x] Each highlight should show value, status, freshness, and provenance.
 - [x] Hide or mark highlights whose data is sample/untrusted.
@@ -51,8 +51,8 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 - [ ] Show target bedtime.
 - [ ] Show target wake time.
 - [ ] Show sleep need fulfillment / sleep debt when available.
-- [ ] Show sleep schedule from `sleepV1ScheduleSummary()`.
-- [ ] Show sleep debt from `sleepV1DebtSummary()`.
+- [ ] Show sleep schedule from `sleepV1ScheduleSummary()` — function exists in `HealthDataStore+CoachSummaries.swift` and is used in `CoachTips.swift` but not in a dedicated Sleep Coach route.
+- [ ] Show sleep debt from `sleepV1DebtSummary()` — same.
 - [ ] Link to Health > Sleep.
 - [ ] Link to local sleep capture guidance when trusted band sleep history is needed.
 
@@ -90,7 +90,7 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 - [x] Show packet input gaps from `packetDerivedFeatureNextActionSummary()`.
 - [x] Show score gaps from `packetDerivedScoreNextActionSummary()`.
-- [ ] Show unavailable health sync metrics from `unavailableHealthSyncMetricSummary()`.
+- [ ] Show unavailable health sync metrics from `unavailableHealthSyncMetricSummary()` — function exists in `MoreDataStore.swift` but not wired into `CoachView`.
 - [ ] Show capture requirement from capture/session summaries where applicable.
 - [ ] Provide one action per gap: Capture, Sync Health, Calibrate, Import Labels, Open Debug.
 
@@ -125,8 +125,8 @@ MVP rule: Coach should not pretend to be an LLM until the app has a real chat ba
 
 ## Acceptance Checks
 
-- [ ] Coach never shows invented metrics.
-- [ ] Every recommendation cites the local metric or gap that caused it.
-- [ ] Empty state tells the user the next concrete action.
-- [ ] Journal can be used without a connected device.
-- [ ] Coach links back to Health/Home/More without circular navigation bugs.
+- [x] Coach never shows invented metrics.
+- [x] Every recommendation cites the local metric or gap that caused it.
+- [x] Empty state tells the user the next concrete action.
+- [ ] Journal can be used without a connected device — Journal not yet implemented.
+- [x] Coach links back to Health/Home/More without circular navigation bugs — router-based navigation.
