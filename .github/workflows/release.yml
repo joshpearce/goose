@@ -38,7 +38,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Build (no code signing, use pre-built Rust libs)
+      - name: Install Rust and iOS target
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-apple-ios
+
+      - name: Build (no code signing)
         run: |
           xcodebuild \
             -project GooseSwift.xcodeproj \
@@ -50,7 +56,6 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            GOOSE_SKIP_RUST_CORE_BUILD=1 \
             -derivedDataPath build/DerivedData \
             build
 
