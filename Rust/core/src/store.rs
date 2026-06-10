@@ -111,8 +111,8 @@ const ALLOWED_ACTIVITY_METRIC_UNITS: [&str; 25] = [
     "percent", "ratio", "load", "joule", "w", "kg", "m/s2", "c", "f", "degrees", "n/a",
 ];
 
-const ALLOWED_EXTERNAL_SLEEP_PLATFORMS: [&str; 4] =
-    ["healthkit", "health_connect", "manual", "import"];
+const ALLOWED_EXTERNAL_SLEEP_PLATFORMS: [&str; 5] =
+    ["healthkit", "health_connect", "manual", "import", "goose_ble"];
 
 const ALLOWED_EXTERNAL_SLEEP_STAGE_KINDS: [&str; 8] = [
     "in_bed",

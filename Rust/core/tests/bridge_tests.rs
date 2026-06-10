@@ -483,7 +483,7 @@ fn bridge_gen4_upload_device_generation_field_is_set_correctly() {
                     "device_model": "WHOOP 4.0",
                     "frame_hex": GET_HELLO_FRAME,
                     "sensitivity": "user-owned-capture",
-                    "device_type": "GEN4"
+                    "device_type": "GOOSE"
                 }
             ]
         }
@@ -9404,4 +9404,304 @@ fn bridge_gravity_insert_query_roundtrip() {
         .expect("rows must be array")
         .len();
     assert_eq!(all_rows, 3, "full window should return all 3 rows");
+}
+
+// ---------------------------------------------------------------------------
+// Phase 50-01: V24History gravity extraction tests
+// ---------------------------------------------------------------------------
+
+/// Build a synthetic K24 (PACKET_TYPE_HISTORICAL_DATA, packet_k=24) frame
+/// with the given gravity_x/y/z values encoded as f32 LE at data offsets 33/37/41.
+/// The timestamp_seconds field (payload[7..11]) is left at zero — ts_unix = Some(0.0)
+/// is sufficient for the gravity if-let gate in upload_get_recent_decoded_streams_bridge.
+fn historical_k24_frame_hex_with_gravity(gx: f32, gy: f32, gz: f32) -> String {
+    // Frame layout: [0]=packet_type(47), [1]=packet_k(24), [2]=version(1), [3..]=body data
+    // V24 body requires data.len() >= 77 → total payload >= 80 bytes.
+    // Use 82 bytes (3 header + 79 data) matching the canonical make_82_byte_payload size.
+    let mut payload = vec![0u8; 82];
+    payload[0] = PACKET_TYPE_HISTORICAL_DATA; // 47
+    payload[1] = 24u8; // packet_k = 24
+    payload[2] = 1u8; // version
+
+    // timestamp_seconds at payload[7..11] (DataPacket header, u32 LE).
+    // Leave as zero — bridge produces ts_unix = Some(0.0), which passes the gravity if-let.
+
+    // gravity_x at data offset 33 = payload offset 3+33 = 36
+    let gx_bytes = gx.to_le_bytes();
+    payload[3 + 33..3 + 37].copy_from_slice(&gx_bytes);
+
+    // gravity_y at data offset 37 = payload offset 3+37 = 40
+    let gy_bytes = gy.to_le_bytes();
+    payload[3 + 37..3 + 41].copy_from_slice(&gy_bytes);
+
+    // gravity_z at data offset 41 = payload offset 3+41 = 44
+    let gz_bytes = gz.to_le_bytes();
+    payload[3 + 41..3 + 45].copy_from_slice(&gz_bytes);
+
+    // skin_contact = 1 at data offset 48 (so HR/SpO2 contact gates pass)
+    payload[3 + 48] = 1u8;
+
+    hex::encode(build_v5_payload_frame(&payload))
+}
+
+/// Test 1: import a K24 frame with gravity_x=0.98, then call
+/// upload.get_recent_decoded_streams and assert the gravity array contains 1
+/// entry with x ≈ 0.98.
+#[test]
+fn bridge_v24_gravity_extraction() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let frame_hex = historical_k24_frame_hex_with_gravity(0.98, 0.01, 0.05);
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "v24-grav-import-1",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-v24-grav",
+            "frames": [{
+                "evidence_id": "v24-grav-ev-1",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-10T04:00:00.000Z",
+                "device_model": "WHOOP-Test",
+                "frame_hex": frame_hex,
+                "sensitivity": "user-owned-capture",
+                "device_type": "GOOSE"
+            }]
+        }
+    }));
+    assert!(
+        import_resp.ok,
+        "K24 import should succeed: {:?}",
+        import_resp.error
+    );
+
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "v24-grav-streams-1",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": "test-device-01"
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams should succeed: {:?}",
+        streams_resp.error
+    );
+    let result = streams_resp.result.unwrap();
+    let gravity = result["gravity"].as_array().expect("gravity must be an array");
+    assert_eq!(
+        gravity.len(),
+        1,
+        "V24 K24 frame should produce 1 gravity entry, got: {}",
+        gravity.len()
+    );
+    let x = gravity[0]["x"].as_f64().expect("x must be f64");
+    assert!(
+        (x - 0.98f64).abs() < 0.001,
+        "gravity x should be ≈ 0.98, got {x}"
+    );
+}
+
+/// Test 2: same import as Test 1, then call store.gravity_rows_between to verify
+/// the gravity row was persisted to SQLite (not just returned in JSON).
+#[test]
+fn bridge_v24_gravity_insert_roundtrip() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let frame_hex = historical_k24_frame_hex_with_gravity(0.98, 0.01, 0.05);
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "v24-grav-roundtrip-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-v24-roundtrip",
+            "frames": [{
+                "evidence_id": "v24-grav-roundtrip-ev",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-10T04:00:00.000Z",
+                "device_model": "WHOOP-Test",
+                "frame_hex": frame_hex,
+                "sensitivity": "user-owned-capture",
+                "device_type": "GOOSE"
+            }]
+        }
+    }));
+    assert!(
+        import_resp.ok,
+        "K24 import (roundtrip) should succeed: {:?}",
+        import_resp.error
+    );
+
+    // Trigger gravity persistence into the gravity table via upload bridge
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "v24-grav-roundtrip-streams",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": "test-device-01"
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams (roundtrip) should succeed: {:?}",
+        streams_resp.error
+    );
+
+    // Now query the gravity table directly via store.gravity_rows_between
+    let query_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "v24-grav-roundtrip-query",
+        "method": "store.gravity_rows_between",
+        "args": {
+            "database_path": db_path,
+            "device_id": "test-device-01",
+            "ts_start": 0.0,
+            "ts_end": 9_999_999_999.0
+        }
+    }));
+    assert!(
+        query_resp.ok,
+        "store.gravity_rows_between should succeed: {:?}",
+        query_resp.error
+    );
+    let query_result = query_resp.result.unwrap();
+    let rows = query_result["rows"]
+        .as_array()
+        .expect("rows must be array")
+        .len();
+    assert_eq!(
+        rows, 1,
+        "gravity table should contain 1 row after K24 import+upload, got: {rows}"
+    );
+
+    // Verify the persisted x value
+    let x = query_result["rows"][0]["x"].as_f64().expect("x must be f64");
+    assert!(
+        (x - 0.98f64).abs() < 0.001,
+        "persisted gravity x should be ≈ 0.98, got {x}"
+    );
+}
+
+/// Test 3: insert an external_sleep_session with source="band_ble" and assert
+/// the bridge returns inserted_session_count == 1.
+#[test]
+fn bridge_band_sleep_external_session_insert() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "band-sleep-insert-1",
+        "method": "sleep.import_external_history",
+        "args": {
+            "database_path": db_path,
+            "sessions": [{
+                "sleep_id": "band_ble.test-device-01.2026-06-10",
+                "source": "band_ble",
+                "platform": "goose_ble",
+                "platform_record_id": "band_ble.test-device-01.2026-06-10",
+                "start_time_unix_ms": 1_718_000_000_000i64,
+                "end_time_unix_ms": 1_718_029_200_000i64,
+                "confidence": 0.7,
+                "stage_summary": {},
+                "provenance": {"source": "band_ble", "auto_sync": true}
+            }],
+            "stages": []
+        }
+    }));
+    assert!(
+        resp.ok,
+        "sleep.import_external_history should succeed: {:?}",
+        resp.error
+    );
+    let result = resp.result.unwrap();
+    assert_eq!(
+        result["inserted_session_count"],
+        1,
+        "should insert 1 session, got: {:?}",
+        result
+    );
+}
+
+/// Test 4: call sleep.import_external_history twice with identical args and assert
+/// the second call returns inserted_session_count == 0 (idempotent re-insert).
+#[test]
+fn bridge_band_sleep_no_duplicate() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let args = serde_json::json!({
+        "database_path": db_path,
+        "sessions": [{
+            "sleep_id": "band_ble.test-device-01.2026-06-10",
+            "source": "band_ble",
+            "platform": "goose_ble",
+            "platform_record_id": "band_ble.test-device-01.2026-06-10",
+            "start_time_unix_ms": 1_718_000_000_000i64,
+            "end_time_unix_ms": 1_718_029_200_000i64,
+            "confidence": 0.7,
+            "stage_summary": {},
+            "provenance": {"source": "band_ble", "auto_sync": true}
+        }],
+        "stages": []
+    });
+
+    // First insert
+    let resp1 = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "band-sleep-dedup-1",
+        "method": "sleep.import_external_history",
+        "args": args
+    }));
+    assert!(
+        resp1.ok,
+        "first insert should succeed: {:?}",
+        resp1.error
+    );
+    assert_eq!(
+        resp1.result.as_ref().unwrap()["inserted_session_count"],
+        1,
+        "first insert should produce inserted_session_count=1"
+    );
+
+    // Second insert — identical args, must be idempotent (not an error)
+    let resp2 = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "band-sleep-dedup-2",
+        "method": "sleep.import_external_history",
+        "args": args
+    }));
+    assert!(
+        resp2.ok,
+        "second insert should not return an error: {:?}",
+        resp2.error
+    );
+    let result2 = resp2.result.unwrap();
+    assert_eq!(
+        result2["inserted_session_count"],
+        0,
+        "second insert should have inserted_session_count=0 (idempotent), got: {:?}",
+        result2
+    );
+    assert_eq!(
+        result2["unchanged_session_count"],
+        1,
+        "second insert should have unchanged_session_count=1, got: {:?}",
+        result2
+    );
 }
