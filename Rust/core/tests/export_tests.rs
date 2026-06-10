@@ -936,6 +936,7 @@ fn raw_export_sensor_samples_store_sample_time_separate_from_capture_time() {
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let import_report = import_captured_frame_batch(
         &store,
@@ -999,6 +1000,7 @@ fn raw_export_sensor_samples_reject_invalid_device_timestamp_subseconds() {
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let import_report = import_captured_frame_batch(
         &store,
@@ -2942,6 +2944,7 @@ fn raw_export_filters_capture_session_rows() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: Some("capture-session-a".to_string()),
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
         CapturedFrameInput {
             evidence_id: "capture-b-k10".to_string(),
@@ -2953,6 +2956,7 @@ fn raw_export_filters_capture_session_rows() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: Some("capture-session-b".to_string()),
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
     ];
     let import_report = import_captured_frame_batch(
@@ -3047,6 +3051,7 @@ fn raw_export_filters_packet_type_and_sensor_source_rows() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
         CapturedFrameInput {
             evidence_id: "motion-k10-frame".to_string(),
@@ -3058,6 +3063,7 @@ fn raw_export_filters_packet_type_and_sensor_source_rows() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
     ];
     let import_report = import_captured_frame_batch(
@@ -3157,6 +3163,7 @@ fn raw_export_can_omit_raw_bytes_but_keep_hashes_and_decoded_samples() {
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let import_report = import_captured_frame_batch(
         &store,

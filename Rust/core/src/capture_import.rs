@@ -75,6 +75,8 @@ pub struct CapturedFrameInput {
     pub capture_session_id: Option<String>,
     #[serde(default = "default_device_type")]
     pub device_type: DeviceType,
+    #[serde(default)]
+    pub device_uuid: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -611,6 +613,7 @@ fn import_captured_frame_timed(
         payload: &raw_bytes,
         sensitivity: &frame.sensitivity,
         capture_session_id: frame.capture_session_id.as_deref(),
+        device_uuid: frame.device_uuid.as_deref(),
     }) {
         Ok(imported) => imported,
         Err(error) => {
@@ -624,6 +627,7 @@ fn import_captured_frame_timed(
                     payload: &raw_bytes,
                     sensitivity: &frame.sensitivity,
                     capture_session_id: None,
+                    device_uuid: frame.device_uuid.as_deref(),
                 }) {
                     Ok(imported) => {
                         issues.push(
@@ -828,6 +832,7 @@ fn import_frame_fixture(
         payload: &raw_bytes,
         sensitivity: &fixture.sensitivity,
         capture_session_id: None,
+        device_uuid: None,
     }) {
         Ok(imported) => imported,
         Err(error) => {
@@ -1191,6 +1196,7 @@ fn capture_sqlite_frame_input(
         sensitivity: options.sensitivity.to_string(),
         capture_session_id: Some(options.session_id.to_string()),
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }
 }
 

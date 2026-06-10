@@ -1076,6 +1076,7 @@ fn import_motion_frame(store: &GooseStore) {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,

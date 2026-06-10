@@ -352,6 +352,7 @@ fn store_correlation_counts_owned_app_imports() {
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let import = import_captured_frame_batch(
         &store,

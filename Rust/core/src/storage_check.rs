@@ -253,6 +253,7 @@ fn run_storage_self_test(store: &GooseStore) -> StorageSelfTestReport {
         payload: &raw,
         sensitivity: "synthetic-self-test",
         capture_session_id: None,
+        device_uuid: None,
     };
 
     let raw_inserted = match store.insert_raw_evidence(raw_input.clone()) {

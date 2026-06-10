@@ -354,5 +354,6 @@ fn decoded_frame_row(
         parsed_payload_json: parsed_payload.to_string(),
         parser_version: "goose-core/step-discovery-test".to_string(),
         warnings_json: "[]".to_string(),
+        device_uuid: None,
     }
 }

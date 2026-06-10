@@ -6135,6 +6135,7 @@ fn seed_sleep_window_motion(store: &GooseStore) {
             sensitivity: "user-owned-capture".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         }];
         let report = import_captured_frame_batch(
             store,
@@ -6171,6 +6172,7 @@ fn seed_sleep_window_heart_rate(store: &GooseStore) {
             sensitivity: "user-owned-capture".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         }];
         let report = import_captured_frame_batch(
             store,

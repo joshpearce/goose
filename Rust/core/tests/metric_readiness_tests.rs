@@ -32,6 +32,7 @@ fn metric_input_readiness_marks_motion_ready_after_trusted_extraction_exists() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
         CapturedFrameInput {
             evidence_id: "app.owned.k18".to_string(),
@@ -43,6 +44,7 @@ fn metric_input_readiness_marks_motion_ready_after_trusted_extraction_exists() {
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
     ];
     let import = import_captured_frame_batch(
@@ -216,6 +218,7 @@ fn metric_input_readiness_keeps_hrv_blocked_until_r17_interval_scale_is_validate
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let import = import_captured_frame_batch(
         &store,
@@ -600,6 +603,7 @@ fn trusted_motion_correlation() -> goose_core::capture_correlation::CaptureCorre
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
         CapturedFrameInput {
             evidence_id: "app.owned.k18".to_string(),
@@ -611,6 +615,7 @@ fn trusted_motion_correlation() -> goose_core::capture_correlation::CaptureCorre
             sensitivity: "user-owned-live-notification".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         },
     ];
     let import = import_captured_frame_batch(

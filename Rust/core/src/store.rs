@@ -171,6 +171,7 @@ pub struct RawEvidenceInput<'a> {
     pub payload: &'a [u8],
     pub sensitivity: &'a str,
     pub capture_session_id: Option<&'a str>,
+    pub device_uuid: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -184,6 +185,8 @@ pub struct RawEvidenceRow {
     pub sensitivity: String,
     #[serde(default)]
     pub capture_session_id: Option<String>,
+    #[serde(default)]
+    pub device_uuid: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -215,6 +218,8 @@ pub struct DecodedFrameRow {
     pub parsed_payload_json: String,
     pub parser_version: String,
     pub warnings_json: String,
+    #[serde(default)]
+    pub device_uuid: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -5103,6 +5108,7 @@ impl GooseStore {
                         sha256: row.get(5)?,
                         sensitivity: row.get(6)?,
                         capture_session_id: row.get(7)?,
+                        device_uuid: None,
                     })
                 },
             )
@@ -5140,6 +5146,7 @@ impl GooseStore {
                 sha256: row.get(5)?,
                 sensitivity: row.get(6)?,
                 capture_session_id: row.get(7)?,
+                device_uuid: None,
             })
         })?;
 
@@ -6860,15 +6867,23 @@ impl GooseStore {
 impl GooseStore {
     fn ensure_raw_evidence_columns(&self) -> GooseResult<()> {
         let columns = self.table_columns_unchecked("raw_evidence")?;
-        for (column, ddl) in [(
-            "capture_session_id",
-            "capture_session_id TEXT REFERENCES capture_sessions(session_id) ON DELETE SET NULL",
-        )] {
+        for (column, ddl) in [
+            (
+                "capture_session_id",
+                "capture_session_id TEXT REFERENCES capture_sessions(session_id) ON DELETE SET NULL",
+            ),
+            ("device_uuid", "device_uuid TEXT"),
+        ] {
             if !columns.contains(column) {
                 self.conn
                     .execute(&format!("ALTER TABLE raw_evidence ADD COLUMN {ddl}"), [])?;
             }
         }
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_raw_evidence_by_device_uuid \
+             ON raw_evidence(device_uuid, captured_at)",
+            [],
+        )?;
         Ok(())
     }
 
@@ -6880,6 +6895,7 @@ impl GooseStore {
                 "parsed_payload_json",
                 "parsed_payload_json TEXT NOT NULL DEFAULT 'null'",
             ),
+            ("device_uuid", "device_uuid TEXT"),
         ] {
             if !columns.contains(column) {
                 self.conn
@@ -8357,6 +8373,7 @@ fn decoded_frame_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DecodedFr
         parsed_payload_json: row.get(15)?,
         parser_version: row.get(16)?,
         warnings_json: row.get(17)?,
+        device_uuid: None,
     })
 }
 

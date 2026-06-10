@@ -313,6 +313,7 @@ fn local_health_validation_suite_scaffolds_manifest_from_raw_export_bundle() {
                 payload: &[packet_k as u8, sequence as u8],
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some("walk-capture-session"),
+                device_uuid: None,
             })
             .unwrap();
         let connection = Connection::open(&db).unwrap();
@@ -659,6 +660,7 @@ fn local_health_validation_scaffold_leaves_multi_session_cases_unbound() {
                 payload: &[packet_k as u8, sequence as u8],
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some(capture_session_id),
+                device_uuid: None,
             })
             .unwrap();
         let connection = Connection::open(&db).unwrap();
@@ -1360,6 +1362,7 @@ fn local_health_validation_suite_flags_raw_export_capture_case_without_case_wind
             payload: &[0x10, 0x01],
             sensitivity: "public-test-fixture",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap();
     drop(store);
@@ -1522,6 +1525,7 @@ fn local_health_validation_suite_reports_raw_export_case_capture_session_mismatc
             payload: &[0x10, 0x01],
             sensitivity: "public-test-fixture",
             capture_session_id: Some("actual-session"),
+            device_uuid: None,
         })
         .unwrap();
     drop(store);
@@ -1925,6 +1929,7 @@ fn local_health_validation_suite_flags_raw_export_case_with_unrelated_packet_fam
                 payload: &[0x18, sequence],
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some("history-only-session"),
+                device_uuid: None,
             })
             .unwrap();
     }
@@ -3142,6 +3147,7 @@ fn local_health_validation_suite_reports_capture_session_evidence_readiness() {
             payload: &[0x01, 0x02, 0x03],
             sensitivity: "public-test-fixture",
             capture_session_id: Some("capture-session-1"),
+            device_uuid: None,
         })
         .unwrap();
     for (evidence_id, captured_at, payload, step_count) in [
@@ -3167,6 +3173,7 @@ fn local_health_validation_suite_reports_capture_session_evidence_readiness() {
                 payload: &payload,
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some("unrelated-session"),
+                device_uuid: None,
             })
             .unwrap();
         let connection = Connection::open(&db).unwrap();
@@ -3220,6 +3227,7 @@ fn local_health_validation_suite_reports_capture_session_evidence_readiness() {
                 payload: &[0x18, sequence],
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some("wrong-family-session"),
+                device_uuid: None,
             })
             .unwrap();
         let connection = Connection::open(&db).unwrap();
@@ -4182,6 +4190,7 @@ fn local_health_validation_suite_reports_step_discovery_without_labels() {
             payload: &[0x10, 0x01],
             sensitivity: "public-test-fixture",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap();
     store
@@ -4193,6 +4202,7 @@ fn local_health_validation_suite_reports_step_discovery_without_labels() {
             payload: &[0x10, 0x02],
             sensitivity: "public-test-fixture",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap();
     let connection = Connection::open(&db).unwrap();
@@ -4438,6 +4448,7 @@ fn local_health_validation_suite_keeps_hidden_step_counter_candidate_unavailable
                 payload,
                 sensitivity: "public-test-fixture",
                 capture_session_id: None,
+                device_uuid: None,
             })
             .unwrap();
     }
@@ -4632,6 +4643,7 @@ fn local_health_validation_suite_reports_rhr_rollup_without_labels() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     })
     .collect::<Vec<_>>();
     let import_report = import_captured_frame_batch(
@@ -4772,6 +4784,7 @@ fn local_health_validation_suite_reports_energy_rollup_without_labels() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     })
     .collect::<Vec<_>>();
     let import_report = import_captured_frame_batch(

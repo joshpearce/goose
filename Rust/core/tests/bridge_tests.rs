@@ -1572,6 +1572,7 @@ fn bridge_derives_packet_timeline_from_decoded_rows() {
             payload: &raw,
             sensitivity: "synthetic",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap();
     store
@@ -8190,6 +8191,7 @@ fn bridge_scaffolds_local_health_validation_manifest_from_database() {
                 payload: &payload,
                 sensitivity: "public-test-fixture",
                 capture_session_id: Some("bridge-walk-capture-session"),
+                device_uuid: None,
             })
             .unwrap();
         let connection = Connection::open(&db).unwrap();
@@ -8593,6 +8595,7 @@ fn bridge_compact_raw_evidence_reduces_storage_and_is_noop_when_already_below_li
                 payload: &vec![0xaa_u8; 16],
                 sensitivity: "synthetic",
                 capture_session_id: None,
+                device_uuid: None,
             })
             .unwrap();
     }

@@ -390,6 +390,7 @@ fn stores_raw_evidence_and_decoded_frame_with_provenance_link() {
             payload: &raw,
             sensitivity: "public-test-fixture",
             capture_session_id: Some("capture-test-session"),
+            device_uuid: None,
         })
         .unwrap();
     assert!(inserted);
@@ -434,6 +435,7 @@ fn raw_evidence_insert_is_idempotent_for_same_checksum() {
         payload: &raw,
         sensitivity: "public-test-fixture",
         capture_session_id: None,
+        device_uuid: None,
     };
 
     assert!(store.insert_raw_evidence(input.clone()).unwrap());
@@ -455,6 +457,7 @@ fn raw_evidence_rejects_same_id_with_different_payload() {
             payload: &raw,
             sensitivity: "public-test-fixture",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap();
 
@@ -467,6 +470,7 @@ fn raw_evidence_rejects_same_id_with_different_payload() {
             payload: b"different",
             sensitivity: "public-test-fixture",
             capture_session_id: None,
+            device_uuid: None,
         })
         .unwrap_err();
 
@@ -493,6 +497,7 @@ fn raw_evidence_payload_compaction_keeps_decoded_rows() {
                 payload: &raw,
                 sensitivity: "public-test-fixture",
                 capture_session_id: None,
+                device_uuid: None,
             })
             .unwrap();
         store

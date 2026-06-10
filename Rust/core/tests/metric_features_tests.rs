@@ -2717,6 +2717,7 @@ fn import_motion_frame_with_hex(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,
@@ -2750,6 +2751,7 @@ fn import_historical_k21_motion_frame_at_with_device_timestamp(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,
@@ -2818,6 +2820,7 @@ fn import_history_frame_with_hex(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,
@@ -2852,6 +2855,7 @@ fn import_r17_frame_at(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,
@@ -2879,6 +2883,7 @@ fn import_temperature_event(store: &GooseStore, sensitivity: &str, body: &[u8]) 
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,

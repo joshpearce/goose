@@ -390,6 +390,7 @@ fn export_workload(scale: usize, budgets: &PerfBudgets) -> GooseResult<PerfWorkl
             sensitivity: "synthetic-no-user-data".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         })
         .collect::<Vec<_>>();
     let import_report = import_captured_frame_batch(

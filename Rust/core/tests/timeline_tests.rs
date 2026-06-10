@@ -98,6 +98,7 @@ fn observability_timeline_links_raw_packets_feature_windows_candidates_promotion
         sha256: "sha256-raw-1".to_string(),
         sensitivity: "public-test-fixture".to_string(),
         capture_session_id: Some("capture-session-1".to_string()),
+        device_uuid: None,
     };
     let packet_row = PacketTimelineRow {
         timeline_id: "synthetic.frame-1.timeline".to_string(),
@@ -356,6 +357,7 @@ fn observability_timeline_threads_capture_session_story_and_imports() {
         sha256: "sha256-raw-2".to_string(),
         sensitivity: "user-owned-live-notification".to_string(),
         capture_session_id: Some("capture-live-1".to_string()),
+        device_uuid: None,
     };
     let packet_row = PacketTimelineRow {
         timeline_id: "synthetic.frame.capture-live-1.timeline".to_string(),
@@ -531,6 +533,7 @@ fn timeline_reports_malformed_decoded_payload_json() {
         parsed_payload_json: "{not-json".to_string(),
         parser_version: "test".to_string(),
         warnings_json: "[]".to_string(),
+        device_uuid: None,
     }];
 
     let error = packet_timeline_from_decoded_frames(&rows).unwrap_err();

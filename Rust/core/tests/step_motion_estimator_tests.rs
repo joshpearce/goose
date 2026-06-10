@@ -319,6 +319,7 @@ fn import_raw_motion_step_frame(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,
@@ -350,6 +351,7 @@ fn import_partial_axis_raw_motion_step_frame(
         sensitivity: sensitivity.to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
     let report = import_captured_frame_batch(
         store,

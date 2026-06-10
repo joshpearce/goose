@@ -8,7 +8,7 @@ use goose_core::{
     },
     fixtures::build_fixture_index,
     protocol::DeviceType,
-    store::{CaptureSessionInput, GooseStore},
+    store::{CaptureSessionInput, GooseStore, RawEvidenceInput},
 };
 use rusqlite::{Connection, params};
 
@@ -172,6 +172,7 @@ fn imports_app_captured_frame_batch_and_returns_timeline_rows() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: Some("capture-import-session".to_string()),
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     let report = import_captured_frame_batch(
@@ -216,6 +217,7 @@ fn captured_frame_batch_preserves_raw_bytes_when_session_reference_is_broken() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: Some("missing-capture-session".to_string()),
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     let report = import_captured_frame_batch(
@@ -264,6 +266,7 @@ fn captured_frame_batch_preserves_raw_bytes_when_parse_fails() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     let report = import_captured_frame_batch(
@@ -322,6 +325,7 @@ fn repeated_captured_frame_batch_import_is_idempotent() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     let first = import_captured_frame_batch(
@@ -368,6 +372,7 @@ fn captured_frame_batch_reports_next_actions_for_invalid_hex_and_empty_input() {
             sensitivity: "user-owned-capture".to_string(),
             capture_session_id: None,
             device_type: DeviceType::Goose,
+            device_uuid: None,
         }],
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
@@ -543,6 +548,7 @@ fn upload_device_type_filter_hr_frames_are_stored_separate_from_goose_frames() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::HrMonitor,
+        device_uuid: None,
     }];
 
     // Insert a Goose BLE frame (WHOOP protocol)
@@ -556,6 +562,7 @@ fn upload_device_type_filter_hr_frames_are_stored_separate_from_goose_frames() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: None,
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     // Import both batches
@@ -653,6 +660,7 @@ fn batch_import_with_active_device_id_stores_non_null_device_id_in_capture_sessi
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: Some("device-id-test-session".to_string()),
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     // Act: import with active_device_id supplied in batch options.
@@ -708,6 +716,7 @@ fn batch_import_without_active_device_id_leaves_session_device_id_null() {
         sensitivity: "user-owned-capture".to_string(),
         capture_session_id: Some("device-id-null-session".to_string()),
         device_type: DeviceType::Goose,
+        device_uuid: None,
     }];
 
     // Act: import WITHOUT active_device_id (backward-compatible path).
@@ -815,4 +824,200 @@ fn seed_processed_capture_sqlite_with_hex(path: &Path, rows: &[(&str, i64, &str)
             )
             .unwrap();
     }
+}
+
+// ── Phase 47 Device ID Namespace Resolution — DEVID-01 / DEVID-02 tests ─────
+
+#[test]
+fn test_migration_adds_device_uuid() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db_path = tempdir.path().join("goose.sqlite");
+    let _store = GooseStore::open(&db_path).unwrap();
+
+    // Verify device_uuid column exists on raw_evidence
+    let conn = rusqlite::Connection::open(&db_path).unwrap();
+    let raw_cols: Vec<String> = conn
+        .prepare("PRAGMA table_info(raw_evidence)")
+        .unwrap()
+        .query_map([], |row| row.get::<_, String>(1))
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+    assert!(
+        raw_cols.iter().any(|c| c == "device_uuid"),
+        "raw_evidence must have device_uuid column; got: {raw_cols:?}"
+    );
+
+    // Verify device_uuid column exists on decoded_frames
+    let decoded_cols: Vec<String> = conn
+        .prepare("PRAGMA table_info(decoded_frames)")
+        .unwrap()
+        .query_map([], |row| row.get::<_, String>(1))
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+    assert!(
+        decoded_cols.iter().any(|c| c == "device_uuid"),
+        "decoded_frames must have device_uuid column; got: {decoded_cols:?}"
+    );
+
+    // Verify the index exists on raw_evidence(device_uuid, captured_at)
+    let index_exists: bool = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_raw_evidence_by_device_uuid'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .unwrap()
+        > 0;
+    assert!(
+        index_exists,
+        "idx_raw_evidence_by_device_uuid index must exist on raw_evidence"
+    );
+}
+
+#[test]
+fn test_insert_raw_evidence_with_uuid() {
+    let store = GooseStore::open_in_memory().unwrap();
+    let raw = hex::decode(GET_HELLO_FRAME).unwrap();
+
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "devid-01-evidence",
+            source: "ios.corebluetooth.notification",
+            captured_at: "2026-06-10T00:00:00Z",
+            device_model: "WHOOP 5.0 Goose",
+            payload: &raw,
+            sensitivity: "user-owned-capture",
+            capture_session_id: None,
+            device_uuid: Some("test-uuid-1234"),
+        })
+        .unwrap();
+
+    let row = store.raw_evidence("devid-01-evidence").unwrap().unwrap();
+    assert_eq!(
+        row.device_uuid.as_deref(),
+        Some("test-uuid-1234"),
+        "device_uuid must be persisted and returned from raw_evidence read path"
+    );
+}
+
+#[test]
+fn test_query_raw_evidence_by_uuid() {
+    let store = GooseStore::open_in_memory().unwrap();
+    let raw = hex::decode(GET_HELLO_FRAME).unwrap();
+
+    // Insert two rows with different device_uuid values
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "devid-uuid-row-a",
+            source: "ios.corebluetooth.notification",
+            captured_at: "2026-06-10T00:00:00Z",
+            device_model: "WHOOP 5.0 Goose",
+            payload: &raw,
+            sensitivity: "user-owned-capture",
+            capture_session_id: None,
+            device_uuid: Some("uuid-device-alpha"),
+        })
+        .unwrap();
+
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "devid-uuid-row-b",
+            source: "ios.corebluetooth.notification",
+            captured_at: "2026-06-10T00:01:00Z",
+            device_model: "WHOOP 5.0 Goose",
+            payload: &raw,
+            sensitivity: "user-owned-capture",
+            capture_session_id: None,
+            device_uuid: Some("uuid-device-beta"),
+        })
+        .unwrap();
+
+    let row_a = store.raw_evidence("devid-uuid-row-a").unwrap().unwrap();
+    assert_eq!(
+        row_a.device_uuid.as_deref(),
+        Some("uuid-device-alpha"),
+        "Row A must carry uuid-device-alpha"
+    );
+
+    let row_b = store.raw_evidence("devid-uuid-row-b").unwrap().unwrap();
+    assert_eq!(
+        row_b.device_uuid.as_deref(),
+        Some("uuid-device-beta"),
+        "Row B must carry uuid-device-beta"
+    );
+}
+
+#[test]
+fn test_query_raw_evidence_by_device_model() {
+    // Regression guard: device_model still returns correctly alongside device_uuid.
+    let store = GooseStore::open_in_memory().unwrap();
+    let raw = hex::decode(GET_HELLO_FRAME).unwrap();
+
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "devid-model-check",
+            source: "ios.corebluetooth.notification",
+            captured_at: "2026-06-10T00:00:00Z",
+            device_model: "WHOOP 5.0 Goose",
+            payload: &raw,
+            sensitivity: "user-owned-capture",
+            capture_session_id: None,
+            device_uuid: Some("model-check-uuid"),
+        })
+        .unwrap();
+
+    let row = store.raw_evidence("devid-model-check").unwrap().unwrap();
+    assert_eq!(
+        row.device_model, "WHOOP 5.0 Goose",
+        "device_model must be unaffected by the addition of device_uuid"
+    );
+    assert_eq!(
+        row.device_uuid.as_deref(),
+        Some("model-check-uuid"),
+        "device_uuid must also be returned alongside device_model"
+    );
+}
+
+#[test]
+fn test_capture_import_propagates_device_uuid() {
+    // Verify that device_uuid from CapturedFrameInput reaches the raw_evidence row.
+    let store = GooseStore::open_in_memory().unwrap();
+
+    let frames = vec![CapturedFrameInput {
+        evidence_id: "devid-import-propagate".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-06-10T00:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::Goose,
+        device_uuid: Some("uuid-from-swift".to_string()),
+    }];
+
+    let report = import_captured_frame_batch(
+        &store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+    assert_eq!(report.raw_inserted, 1);
+
+    let row = store
+        .raw_evidence("devid-import-propagate")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        row.device_uuid.as_deref(),
+        Some("uuid-from-swift"),
+        "device_uuid must propagate from CapturedFrameInput through import_captured_frame_batch to raw_evidence"
+    );
 }
