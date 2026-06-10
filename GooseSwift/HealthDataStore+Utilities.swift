@@ -121,8 +121,8 @@ extension HealthDataStore {
     ]
   }
 
-  func sleepScoreReport(baseArgs: [String: Any]) throws -> [String: Any] {
-    try bridge.request(
+  func sleepScoreReport(baseArgs: [String: Any]) async throws -> [String: Any] {
+    try await bridge.requestAsync(
       method: "metrics.sleep_score_from_features",
       args: baseArgs.merging([
         "sleep_need_minutes": 480.0,
