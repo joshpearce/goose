@@ -305,7 +305,7 @@ final class HealthDataStore {
     Task { [weak self] in
       guard let self else { return }
       await self.runPacketInputs()
-      self.runSleepScore()
+      await self.runSleepScore()
       self.runSleepStaging()
       self.bandSleepImportStatus = "Band sync captured \(packetCount) packets | \(self.packetScoreStatus)"
     }

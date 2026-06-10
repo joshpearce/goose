@@ -200,14 +200,18 @@ struct RecoveryV2OverviewPage: View {
     }
     .onAppear {
       store.loadBridgeCatalogsIfNeeded()
-      store.runPacketScores()
-      store.runRecoveryV1()
+      Task {
+        await store.runPacketScores()
+        await store.runRecoveryV1()
+      }
       store.runReadinessV1()
       store.runV24Biometrics()
     }
     .onChange(of: model.packetImportRevision) { _, _ in
-      store.runPacketScores()
-      store.runRecoveryV1()
+      Task {
+        await store.runPacketScores()
+        await store.runRecoveryV1()
+      }
       store.runReadinessV1()
       store.runV24Biometrics()
     }

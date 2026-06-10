@@ -566,7 +566,9 @@ struct PacketHealthView: View {
     List {
       Section {
         Button {
-          store.runPacketInputs()
+          Task {
+            await store.runPacketInputs()
+          }
         } label: {
           Label("Extract Packet-Derived Inputs", systemImage: "square.stack.3d.up")
         }
@@ -615,7 +617,9 @@ struct PacketHealthView: View {
 
       Section {
         Button {
-          store.runPacketScores()
+          Task {
+            await store.runPacketScores()
+          }
         } label: {
           Label("Run Packet-Derived Scores", systemImage: "chart.xyaxis.line")
         }

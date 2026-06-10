@@ -19,7 +19,9 @@ struct AppShellView: View {
     }
     .onAppear {
       model.onHistoricalSyncCompleted = {
-        healthStore.runPacketInputs()
+        Task {
+          await healthStore.runPacketInputs()
+        }
       }
     }
     .onDisappear {
