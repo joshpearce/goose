@@ -9274,4 +9274,58 @@ mod sync_methods_tests {
         assert_eq!(hw.as_deref(), Some("1000"), "highwater cursor should return 1000");
         assert_eq!(rd.as_deref(), Some("2000"), "read cursor should return 2000");
     }
+
+    /// D-06 contract test: rows inserted AFTER rows_pending_upload captures IDs must remain
+    /// synced=0 after mark_synced_rows is called with only the pre-captured IDs.
+    ///
+    /// Scenario: a BLE frame arrives during the HTTP round-trip (race window). The pre-capture
+    /// pattern used in GooseUploadService means only rows visible BEFORE the upload request are
+    /// marked. Any row arriving between pre-capture and mark_synced_rows must stay synced=0 and
+    /// be included in the next upload cycle.
+    #[test]
+    fn test_pre_capture_does_not_mark_rows_inserted_during_race_window() {
+        let store = make_store();
+
+        // Step 1: insert the "pre-upload" row — exists before the HTTP request begins.
+        store.conn.execute(
+            "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 1.0, 70)",
+            [],
+        ).unwrap();
+
+        // Step 2: pre-capture — simulates what GooseUploadService does before building the
+        // HTTP payload. rows_pending_upload returns all synced=0 rows at this moment.
+        let pending_before: Vec<serde_json::Value> =
+            store.rows_pending_upload("hr_samples", 500).unwrap();
+        let captured_ids: Vec<i64> = pending_before
+            .iter()
+            .filter_map(|r| r["rowid"].as_i64())
+            .collect();
+        assert_eq!(captured_ids.len(), 1, "exactly one row should be pending before upload");
+
+        // Step 3: race-window row — arrives while the HTTP request is in-flight, after
+        // pre-capture but before mark_synced_rows is called.
+        store.conn.execute(
+            "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 2.0, 72)",
+            [],
+        ).unwrap();
+
+        // Step 4: mark only the pre-captured IDs (simulates post-2xx mark).
+        let affected = store.mark_synced_rows("hr_samples", &captured_ids).unwrap();
+        assert_eq!(affected, 1, "exactly the pre-captured row should be marked synced");
+
+        // Assertion A: exactly one row remains pending — the race-window row (ts=2.0).
+        let pending_after: Vec<serde_json::Value> =
+            store.rows_pending_upload("hr_samples", 10).unwrap();
+        assert_eq!(pending_after.len(), 1, "race-window row must remain pending (synced=0)");
+        let ts = pending_after[0]["ts"].as_f64();
+        assert_eq!(ts, Some(2.0), "pending row must be the race-window row (ts=2.0)");
+
+        // Assertion B: the pre-captured row is now synced=1.
+        let synced_flag: i64 = store.conn.query_row(
+            "SELECT synced FROM hr_samples WHERE ts=1.0",
+            [],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(synced_flag, 1i64, "pre-captured row must be synced=1 after mark_synced_rows");
+    }
 }
