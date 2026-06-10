@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v7.0
-milestone_name: Sync Correctness, Async & Sleep Sync
-status: shipped
-last_updated: "2026-06-10T22:00:00.000Z"
-last_activity: 2026-06-10 -- v7.0 SHIPPED — Phases 46-50 complete, 18 plans; Phase 51 deferred (hardware gate)
+milestone: v8.0
+milestone_name: Quality, Completeness & Backlog Clearance
+status: planning
+last_updated: "2026-06-10T22:29:58.656Z"
+last_activity: 2026-06-10
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,11 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-09)
 
 ## Current Position
 
-Milestone: v7.0 — Sync Correctness, Async & Sleep Sync
-Phase: 50 (Morning Band Sleep Sync) — COMPLETE
-Plan: 3 of 3 complete (human visual verification approved)
-Status: Phase 50 complete — advancing to Phase 51 (human gate, requires physical WHOOP device)
-Last activity: 2026-06-10 -- Phase 50 COMPLETE — human approved "A aguardar sincronização" in SleepV2BandSyncCard; SLP-SYNC-01, SLP-SYNC-02, SLP-SYNC-03 satisfied
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-10 — Milestone v8.0 started
 
 ## Performance Metrics
 

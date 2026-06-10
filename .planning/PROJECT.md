@@ -88,12 +88,36 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - ✓ Sleep V2 "A aguardar sincronização" label confirmed in simulator — v7.0 (SLP-SYNC-03 partial)
 - ✓ Algorithm defaults promoted: sleep v1, strain v1, recovery v1; readiness v1 added — v7.0
 
-### Active (v8.0 — hardware gate)
+### Active (v8.0 — Quality & Backlog)
+
+- [ ] AUDIT-01: Code review de v6.0–v7.0 (fases 36–50) — bugs, races, edge cases
+- [ ] QT-01: bt-button → abre iOS Bluetooth Settings
+- [ ] QT-02: CodeQL no CI (GitHub Actions)
+- [ ] QT-03: HealthKit Full Importer (260603-s5w)
+- [ ] HOME-01: Device Status Card em HomeDashboardView (nome, ligação, battery, live HR, sync)
+- [ ] HOME-02: Tools Grid em HomeDashboardView (Coach, Activity, Journal, Calibration shortcuts)
+- [ ] HOME-03: Evidence Footer em HomeDashboardView (Rust version, store path, provenance)
+- [ ] COACH-07: Score summaries (sleep, recovery, strain, stress) em CoachSummaries
+- [ ] COACH-08: Journal — prompt diário, tags, nota de texto, persistência local
+- [ ] COACH-09: Sleep Coach route — bedtime, wake time, sleep debt
+- [ ] COACH-10: Recovery Insights route
+- [ ] COACH-11: Strain Guidance route
+- [ ] COACH-12: Stress Guidance route
+- [ ] BIO-05: SpO2/Resp Rate/Wrist Temp packet semantics → corrigir z_rhr no recovery score
+- [ ] ACT-01: Activity Masking — stress windows particionados por sessões de exercício
+- [ ] ENB-01: Energy Bank & Stress History persistence em SQLite
+- [ ] CAL-01: Real Calibration Pipeline (train/holdout splits de métricas locais)
+- [ ] SURF-01: Runtime Surface Cleanup — previewMissingData gated em #if DEBUG
+- [ ] MORE-01: More tab remaining gaps (capture imports, raw export, debug, privacy)
+- [ ] PREV-01: App-wide SwiftUI Previews (Home, Coach, More) com simulator screenshots
+- [ ] HALG-01: Health Algorithm Preference Properties em HealthDataStore
+- [ ] BAND-01: Band Sleep Import — ingestion de sleep records directamente de pacotes BLE
+
+### Deferred (hardware gate — sem device físico)
 
 - [ ] ALG-HRV-04 / VAL-HRV-01: RMSSD cross-validated em ≥5 sessões overnight reais vs Python ref (delta ≤1 ms) — Phase 51
 - [ ] ALG-SLP-04 / VAL-SLP-01: 4-class staging concordância ≥70% em ≥5 sessões overnight reais — Phase 51
 - [ ] SLP-SYNC real-device: gravity offsets K24 confirmados contra captura real; "Sincronizado da pulseira" e2e — Phase 51
-- [ ] BT button → abre definições iOS de Bluetooth (backlog, low priority)
 
 ### Out of Scope
 
@@ -134,14 +158,27 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current State: v6.0 SHIPPED 2026-06-09
+## Current Milestone: v8.0 Quality, Completeness & Backlog Clearance
 
-All v5.0 Rust algorithms are now wired to SwiftUI. The app shows Recovery readiness level, Sleep hypnogram, V24 biometrics, Exercise sessions, Step counter, and Upload sync status. Algorithm alignment corrected. Raw BLE frame upload/import with trust-chain reconstruction. Full pt-PT localisation.
+**Goal:** Auditar o código recente para bugs, limpar quick tasks acumuladas, e completar todas as superfícies UI em falta que ficaram no backlog.
 
-**Next milestone (v7.0):** Close the real overnight parity gates (ALG-HRV-04, ALG-SLP-04) once enough device data is collected. Define scope with `/gsd-new-milestone`.
+**Target features:**
+- Bug audit: code review de v6.0–v7.0 (fases 36–50) para bugs de correctness, races e edge cases
+- Quick tasks pendentes: bt-button → iOS Bluetooth Settings, CodeQL CI, HealthKit Full Importer
+- Home Missing Surfaces (999.13): Device Status Card, Tools Grid, Evidence Footer
+- Coach Content Routes (999.14): score summaries, Journal, Sleep Coach, Recovery/Strain/Stress guidance routes
+- Band Sleep Import (999.7): sleep records directamente de pacotes BLE
+- SpO2/Resp/Temp packet semantics (999.8): corrigir recovery score (eliminar baseline 55.0 fabricada)
+- Activity Masking para stress (999.9)
+- Energy Bank & Stress History persistence (999.10)
+- Real Calibration Pipeline (999.11)
+- Runtime Surface Cleanup (999.12): previewMissingData gating
+- More tab remaining gaps (999.15)
+- App-wide Previews & Simulator Screenshots (999.16)
+- Health Algorithm Preference Properties (999.17)
 
 ---
-*Last updated: 2026-06-09 after v6.0 milestone*
+*Last updated: 2026-06-10 after v7.0 milestone*
 
 ## Evolution
 
