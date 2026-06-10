@@ -32,10 +32,10 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check out repository at tag
+      - name: Check out repository at main
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.resolve-tag.outputs.tag }}
+          ref: main
           fetch-depth: 0
 
       - name: Build (no code signing, use pre-built Rust libs)
