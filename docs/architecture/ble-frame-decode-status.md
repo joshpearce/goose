@@ -211,12 +211,7 @@ Applies to Gen4 and Gen5 WHOOP devices unless noted.
 
 ## 7. Frame Envelope (by Device Generation)
 
-| Device | Header bytes | Length offset | CRC type | CRC position |
-|--------|-------------|--------------|----------|-------------|
-| Gen4 | 4 | @1-2 (u16 LE) | CRC8 (poly 0x07) | @3 |
-| Maverick / Puffin / Goose / HR Monitor | 8 | @2-3 (u16 LE) | CRC16-Modbus (poly 0xA001) | @6-7 |
-
-All devices: CRC32 (poly 0xEDB88320, init 0xFFFFFFFF, final XOR 0xFFFFFFFF) over inner payload, appended after payload.
+See [`protocol-reverse-engineering.md#frame-protocol`](protocol-reverse-engineering.md#frame-protocol) for the full frame layout, header bytes, CRC types, and Gen4 vs Gen5 differences.
 
 ---
 
