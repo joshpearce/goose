@@ -486,8 +486,14 @@ private struct DeviceActionGrid: View {
 
   var body: some View {
     LazyVGrid(columns: columns, spacing: 10) {
-      DeviceActionButton(title: "Bluetooth", systemName: "antenna.radiowaves.left.and.right") {
-        ble.requestBluetooth()
+      DeviceActionButton(title: "BT Settings", systemName: "antenna.radiowaves.left.and.right") {
+        let url: URL?
+        if #available(iOS 18.0, *) {
+          url = URL(string: "App-Prefs:root=Bluetooth")
+        } else {
+          url = URL(string: UIApplication.openSettingsURLString)
+        }
+        if let url { UIApplication.shared.open(url) }
       }
       DeviceActionButton(title: ble.isScanning ? "Stop Scan" : "Scan", systemName: "dot.radiowaves.left.and.right") {
         ble.isScanning ? ble.stopScan() : ble.startScan()

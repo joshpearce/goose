@@ -260,6 +260,7 @@ extension HealthDataStore {
     ]
   }
 
+  #if DEBUG
   func applyPreviewState(_ state: HealthPreviewState) {
     attemptedCatalogLoad = true
     switch state {
@@ -294,4 +295,5 @@ extension HealthDataStore {
       calibrationRunComplete = false
     }
   }
+  #endif
 }

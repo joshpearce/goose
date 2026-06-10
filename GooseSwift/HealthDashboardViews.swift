@@ -309,9 +309,11 @@ struct HealthRouteDetailView: View {
   init(route: HealthRoute, previewState: HealthPreviewState? = nil) {
     self.route = route
     let store = HealthDataStore()
+#if DEBUG
     if let previewState {
       store.applyPreviewState(previewState)
     }
+#endif
     _store = State(initialValue: store)
   }
 
