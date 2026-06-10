@@ -135,8 +135,8 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 48-01-PLAN.md — Rust TDD: test_pre_capture_does_not_mark_rows_inserted_during_race_window in sync_methods_tests
-- [ ] 48-02-PLAN.md — Swift fix: captureAllPendingRowIDs + markStreamsSynced refactor + URLSession-injectable init
+- [x] 48-01-PLAN.md — Rust TDD: test_pre_capture_does_not_mark_rows_inserted_during_race_window in sync_methods_tests
+- [x] 48-02-PLAN.md — Swift fix: captureAllPendingRowIDs + markStreamsSynced refactor + URLSession-injectable init
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -203,7 +203,7 @@ Plans:
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
 | 46. Upload Route Alignment | v7.0 | 2/2 | Complete   | 2026-06-09 |
 | 47. Device ID Namespace | v7.0 | 3/3 | Complete   | 2026-06-10 |
-| 48. Upload Sync Race Fix | v7.0 | 0/TBD | Not started | — |
+| 48. Upload Sync Race Fix | v7.0 | 2/3 | In Progress|  |
 | 49. HealthDataStore Async | v7.0 | 0/TBD | Not started | — |
 | 50. Morning Band Sleep Sync | v7.0 | 0/TBD | Not started | — |
 | 51. Validation Gates (human) | v7.0 | 0/TBD | Blocked (human gate) | — |
