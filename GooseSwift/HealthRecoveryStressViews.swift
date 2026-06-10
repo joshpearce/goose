@@ -204,16 +204,16 @@ struct RecoveryV2OverviewPage: View {
         await store.runPacketScores()
         await store.runRecoveryV1()
         await store.runReadinessV1()
+        await store.runV24Biometrics()
       }
-      store.runV24Biometrics()
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       Task {
         await store.runPacketScores()
         await store.runRecoveryV1()
         await store.runReadinessV1()
+        await store.runV24Biometrics()
       }
-      store.runV24Biometrics()
     }
   }
 

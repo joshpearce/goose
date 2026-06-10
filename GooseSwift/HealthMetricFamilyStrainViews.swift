@@ -565,12 +565,16 @@ struct StrainV2OverviewPage: View {
       SleepV2BevelTrendSheet(snapshot: snapshot)
     }
     .onAppear {
-      store.runExerciseSessions()
-      store.runIMUStepCount()
+      Task {
+        await store.runExerciseSessions()
+        await store.runIMUStepCount()
+      }
     }
     .onChange(of: model.packetImportRevision) { _, _ in
-      store.runExerciseSessions()
-      store.runIMUStepCount()
+      Task {
+        await store.runExerciseSessions()
+        await store.runIMUStepCount()
+      }
     }
   }
 
