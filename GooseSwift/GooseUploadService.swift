@@ -31,6 +31,11 @@ final class GooseUploadService: @unchecked Sendable {
     self.session = URLSession(configuration: config)
   }
 
+  init(databasePath: String, session: URLSession) {
+    self.databasePath = databasePath
+    self.session = session
+  }
+
   func upload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) {
     pendingBatchCount += 1
     Task.detached(priority: .utility) { [weak self] in
@@ -52,6 +57,10 @@ final class GooseUploadService: @unchecked Sendable {
       pendingBatchCount = max(0, pendingBatchCount - 1)
       return
     }
+
+    // Pre-capture pending rowIDs for all 8 upload streams BEFORE constructing the payload.
+    // Rows arriving after this point will not be marked synced — eliminating the race window.
+    let pendingRowIDs = captureAllPendingRowIDs(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
 
     // Fetch recent decoded streams from Rust bridge (synchronous — runs on detached task thread)
     let streamsResult: [String: Any]
@@ -119,9 +128,8 @@ final class GooseUploadService: @unchecked Sendable {
     }
 
     if uploadSucceeded {
-      // Mark hr_samples rows as synced using the rowids from the recent decoded streams.
-      // We use sync.rows_pending_upload to get the rowids of hr_samples rows that were just uploaded.
-      markHrSamplesSynced(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
+      // Mark pre-captured rowIDs as synced — only called on 2xx; rows stay synced=0 on failure.
+      markStreamsSynced(rowIDsByStream: pendingRowIDs)
       // Upload raw BLE frames alongside decoded streams. This enables a fresh iOS
       // install to reconstruct the trust chain via capture.import_frame_batch.
       await uploadRawFrames(deviceID: deviceID, sinceTimestamp: sinceTimestamp)
@@ -129,7 +137,7 @@ final class GooseUploadService: @unchecked Sendable {
       lastUploadTimestamp = Date()
       lastSyncedCount = syncedCount
     } else {
-      logger.warning("upload failed after 3 attempts — discarding batch")
+      logger.warning("upload failed — rows not marked synced, will retry")
     }
     pendingBatchCount = max(0, pendingBatchCount - 1)
     refreshPendingRowCount()
@@ -238,43 +246,71 @@ final class GooseUploadService: @unchecked Sendable {
     }
   }
 
-  // Mark the hr_samples rows that were just uploaded as synced=1.
-  // Uses sync.rows_pending_upload to get rowids, then sync.mark_synced.
-  private func markHrSamplesSynced(deviceID: UUID, sinceTimestamp: Date) {
-    do {
-      let pendingReport = try rust.request(
+  // Pre-capture rowIDs for all 8 upload streams BEFORE the HTTP request is sent.
+  // Called once per upload cycle; the returned dictionary is passed to markStreamsSynced
+  // only after the server confirms 2xx — eliminating the blind-marking race window.
+  private func captureAllPendingRowIDs(deviceID: UUID, sinceTimestamp: Date) -> [String: [Int]] {
+    // Tables included in the upload payload and their device_id column presence.
+    // Streams without device_id apply only the ts filter (no cross-device risk for gravity/spo2/etc.
+    // because those rows are written by the same device session).
+    let streams: [(table: String, hasDeviceID: Bool)] = [
+      ("hr_samples", true),
+      ("rr_intervals", true),
+      ("events", true),
+      ("battery", true),
+      ("spo2_samples", false),
+      ("skin_temp_samples", false),
+      ("resp_samples", false),
+      ("gravity", false),
+    ]
+    var result: [String: [Int]] = [:]
+    let sinceTs = sinceTimestamp.timeIntervalSince1970
+    for entry in streams {
+      guard let pendingReport = try? rust.request(
         method: "sync.rows_pending_upload",
         args: [
           "database_path": databasePath,
-          "stream": "hr_samples",
-          "limit": 500,
+          "stream": entry.table,
+          "limit": 500, // limit=500 matches upload batch cap — intentional
         ]
-      )
+      ) else {
+        result[entry.table] = []
+        continue
+      }
       let rows = pendingReport["rows"] as? [[String: Any]] ?? []
-      let sinceTs = sinceTimestamp.timeIntervalSince1970
-      let rowIds: [Int] = rows.compactMap { row in
-        // Only mark rows from this device and in the upload window.
+      result[entry.table] = rows.compactMap { row in
         guard let rowid = (row["rowid"] as? NSNumber)?.intValue ?? (row["rowid"] as? Int),
               let ts = (row["ts"] as? NSNumber)?.doubleValue ?? (row["ts"] as? Double),
-              let deviceIdStr = row["device_id"] as? String,
-              ts >= sinceTs,
-              deviceIdStr == deviceID.uuidString else {
-          return nil
+              ts >= sinceTs else { return nil }
+        // Apply device_id filter for tables that carry a device_id column.
+        if entry.hasDeviceID {
+          guard let deviceIdStr = row["device_id"] as? String,
+                deviceIdStr == deviceID.uuidString else { return nil }
         }
         return rowid
       }
-      guard !rowIds.isEmpty else { return }
-      _ = try rust.request(
-        method: "sync.mark_synced",
-        args: [
-          "database_path": databasePath,
-          "stream": "hr_samples",
-          "row_ids": rowIds,
-        ]
-      )
-      logger.debug("sync.mark_synced: marked \(rowIds.count) hr_samples rows")
-    } catch {
-      logger.debug("sync.mark_synced failed: \(error)")
+    }
+    return result
+  }
+
+  // Mark pre-captured rowIDs as synced=1 using sync.mark_synced.
+  // Only called inside the uploadSucceeded=true branch — never on failure.
+  private func markStreamsSynced(rowIDsByStream: [String: [Int]]) {
+    for (stream, rowIDs) in rowIDsByStream {
+      guard !rowIDs.isEmpty else { continue }
+      do {
+        _ = try rust.request(
+          method: "sync.mark_synced",
+          args: [
+            "database_path": databasePath,
+            "stream": stream,
+            "row_ids": rowIDs,
+          ]
+        )
+        logger.debug("sync.mark_synced: marked \(rowIDs.count) \(stream) rows")
+      } catch {
+        logger.debug("sync.mark_synced \(stream) failed: \(error)")
+      }
     }
   }
 
