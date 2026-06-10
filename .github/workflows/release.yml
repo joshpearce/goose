@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and attach IPA to (e.g. v7.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,10 +21,21 @@ jobs:
     outputs:
       ipa-name: ${{ steps.package.outputs.ipa-name }}
       ipa-size: ${{ steps.package.outputs.ipa-size }}
+      tag: ${{ steps.resolve-tag.outputs.tag }}
     steps:
-      - name: Check out repository
+      - name: Resolve tag
+        id: resolve-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out repository at tag
         uses: actions/checkout@v4
         with:
+          ref: ${{ steps.resolve-tag.outputs.tag }}
           fetch-depth: 0
 
       - name: Build (no code signing)
@@ -39,10 +56,11 @@ jobs:
       - name: Package as IPA
         id: package
         run: |
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
           APP=$(find build/DerivedData/Build/Products -name "GooseSwift.app" | head -1)
           mkdir -p Payload
           cp -r "$APP" Payload/
-          IPA_NAME="GooseSwift-${{ github.ref_name }}-unsigned.ipa"
+          IPA_NAME="GooseSwift-${TAG}-unsigned.ipa"
           zip -r "$IPA_NAME" Payload/
           IPA_SIZE=$(stat -f%z "$IPA_NAME")
           echo "ipa-name=$IPA_NAME" >> "$GITHUB_OUTPUT"
@@ -56,13 +74,14 @@ jobs:
           retention-days: 1
 
   release:
-    name: Create GitHub Release and update AltStore source
+    name: Attach IPA to release and update AltStore source
     needs: build-ipa
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out main (for altstore-source.json)
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Download IPA
@@ -73,11 +92,12 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          PREV_TAG=$(git tag --sort=-version:refname | grep -A1 "^${TAG}$" | tail -1)
+          TAG="${{ needs.build-ipa.outputs.tag }}"
+          PREV_TAG=$(git tag --sort=version:refname | grep "^v" | awk "/${TAG}/{found=1; next} found{print; exit}" | head -1)
+          PREV_TAG_BEFORE=$(git tag --sort=version:refname | grep "^v" | awk "p==1{print; exit} /${TAG}/{p=1}" | head -1)
 
-          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$TAG" ]; then
-            NOTES=$(git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s" --no-merges)
+          if [ -n "$PREV_TAG_BEFORE" ]; then
+            NOTES=$(git log "${PREV_TAG_BEFORE}..${TAG}" --pretty=format:"- %s" --no-merges)
           else
             NOTES=$(git log "${TAG}" --pretty=format:"- %s" --no-merges | head -30)
           fi
@@ -88,39 +108,71 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create release, attach IPA, and update AltStore source
+      - name: Upsert release, attach IPA, and update AltStore source
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const tag = context.ref.replace('refs/tags/', '');
+            const tag = `${{ needs.build-ipa.outputs.tag }}`;
             const notes = `${{ steps.notes.outputs.notes }}`;
             const ipaName = `${{ needs.build-ipa.outputs.ipa-name }}`;
             const ipaSize = parseInt(`${{ needs.build-ipa.outputs.ipa-size }}`);
 
-            // 1. Create the GitHub Release
-            const release = await github.rest.repos.createRelease({
+            // 1. Get or create the GitHub Release
+            let releaseId;
+            try {
+              const existing = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              releaseId = existing.data.id;
+              core.info(`Using existing release ${releaseId} for ${tag}`);
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              const created = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tag,
+                name: tag,
+                body: notes || 'No changes listed.',
+                draft: false,
+                prerelease: false,
+              });
+              releaseId = created.data.id;
+              core.info(`Created release ${releaseId} for ${tag}`);
+            }
+
+            // 2. Delete existing IPA asset if present (avoid duplicate)
+            const assets = await github.rest.repos.listReleaseAssets({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: tag,
-              name: tag,
-              body: notes || 'No changes listed.',
-              draft: false,
-              prerelease: false,
+              release_id: releaseId,
             });
+            for (const asset of assets.data) {
+              if (asset.name.endsWith('.ipa')) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: asset.id,
+                });
+                core.info(`Deleted old IPA asset: ${asset.name}`);
+              }
+            }
 
-            // 2. Attach the unsigned IPA
+            // 3. Attach the unsigned IPA
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              release_id: release.data.id,
+              release_id: releaseId,
               name: ipaName,
               data: fs.readFileSync(ipaName),
             });
+            core.info(`Uploaded ${ipaName}`);
 
             const ipaURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${tag}/${ipaName}`;
 
-            // 3. Update altstore-source.json with the new version
+            // 4. Update altstore-source.json
             const sourceFile = await github.rest.repos.getContent({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -131,10 +183,11 @@ jobs:
             const source = JSON.parse(Buffer.from(sourceFile.data.content, 'base64').toString());
             const app = source.apps[0];
 
-            // Strip leading "v" for the semver version field
             const version = tag.replace(/^v/, '');
             const today = new Date().toISOString().split('T')[0];
 
+            // Remove existing entry for this version if present
+            app.versions = (app.versions || []).filter(v => v.version !== version);
             app.versions.unshift({
               version,
               date: today,
@@ -142,6 +195,8 @@ jobs:
               downloadURL: ipaURL,
               size: ipaSize,
             });
+            // Keep sorted descending
+            app.versions.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
 
             await github.rest.repos.createOrUpdateFileContents({
               owner: context.repo.owner,
