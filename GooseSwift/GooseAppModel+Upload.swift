@@ -99,7 +99,7 @@ extension GooseAppModel {
     guard !serverURLString.isEmpty, let baseURL = URL(string: serverURLString) else { return }
     guard let token = (try? RemoteServerKeychain.loadToken()) ?? nil, !token.isEmpty else { return }
     let db = HealthDataStore.defaultDatabasePath()
-    let bridge = rust
+    let bridge = GooseRustBridge()
     serverImportInProgress = true
 
     Task.detached(priority: .utility) { [weak self] in
@@ -130,8 +130,12 @@ extension GooseAppModel {
         var fromTs: Double = 0.0
         let toTs: Double = Date().timeIntervalSince1970
         let pageSize = 5000
+        var pageCount = 0
+        let maxPages = 200
 
         repeat {
+          pageCount += 1
+          guard pageCount <= maxPages else { break }
           var components = URLComponents(
             url: baseURL.appendingPathComponent("v1/export/frames/\(deviceID)"),
             resolvingAgainstBaseURL: false

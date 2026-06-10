@@ -81,8 +81,14 @@ extension HealthDataStore {
     var spo2Percent: Double? = nil
 
     if let latest = latestSpo2,
-       let red = asDouble(latest["red"]).map({ UInt16(clamping: Int($0)) }),
-       let ir = asDouble(latest["ir"]).map({ UInt16(clamping: Int($0)) }) {
+       let red = asDouble(latest["red"]).flatMap({ d -> UInt16? in
+         guard d.isFinite, d >= 0 else { return nil }
+         return UInt16(clamping: Int(d))
+       }),
+       let ir = asDouble(latest["ir"]).flatMap({ d -> UInt16? in
+         guard d.isFinite, d >= 0 else { return nil }
+         return UInt16(clamping: Int(d))
+       }) {
       // Call spo2_from_raw to get the uncalibrated estimate.
       if let spo2Report = try? await bridge.requestAsync(
         method: "biometrics.spo2_from_raw",

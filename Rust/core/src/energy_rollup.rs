@@ -1810,8 +1810,21 @@ fn parse_rfc3339_utc_unix_ms(value: &str) -> Option<i64> {
         || !(1..=31).contains(&day)
         || hour > 23
         || minute > 59
-        || second > 60
+        || second > 59
     {
+        return None;
+    }
+    // Validate days per month to reject dates like 2024-02-31.
+    let max_day = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+            if is_leap { 29 } else { 28 }
+        }
+        _ => return None,
+    };
+    if day > max_day {
         return None;
     }
 

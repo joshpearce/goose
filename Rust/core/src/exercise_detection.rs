@@ -8,6 +8,9 @@ use crate::store::GravityRow;
 
 // ── Algorithm constants (matching exercise.py exactly) ─────────────────────
 
+// Must match the source string returned by resolve_effective_hrmax in metrics.rs.
+const HRMAX_SOURCE_FALLBACK: &str = "fallback";
+
 pub const MIN_EXERCISE_MIN: f64 = 10.0;
 pub const MERGE_GAP_S: f64 = 60.0;
 pub const HR_MARGIN_BPM: f64 = 30.0;
@@ -173,7 +176,7 @@ pub fn detect_exercise_sessions(
 
     // Step 8 + Step 9 — Intensity gate + compute per-session ExerciseSession
     let mut sessions: Vec<ExerciseSession> = Vec::new();
-    let skip_intensity_gate = hrmax_source == "fallback" && profile.age.is_none();
+    let skip_intensity_gate = hrmax_source == HRMAX_SOURCE_FALLBACK && profile.age.is_none();
 
     for seg in duration_filtered {
         if seg.is_empty() {

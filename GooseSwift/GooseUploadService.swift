@@ -60,7 +60,10 @@ final class GooseUploadService: @unchecked Sendable {
   func upload(deviceID: UUID, deviceType: String, sinceTimestamp: Date) {
     stateLock.withLock { _pendingBatchCount += 1 }
     Task.detached(priority: .utility) { [weak self] in
-      await self?.performUpload(deviceID: deviceID, deviceType: deviceType, sinceTimestamp: sinceTimestamp)
+      guard let self else {
+        return
+      }
+      await self.performUpload(deviceID: deviceID, deviceType: deviceType, sinceTimestamp: sinceTimestamp)
     }
   }
 
@@ -338,7 +341,9 @@ final class GooseUploadService: @unchecked Sendable {
   }
 
   // Query the total pending row count (hr_samples only) for the badge.
+  // Must be called off the main thread — makes a synchronous FFI call.
   func refreshPendingRowCount() {
+    assert(!Thread.isMainThread, "refreshPendingRowCount makes a synchronous FFI call — dispatch to background first")
     do {
       let report = try rust.request(
         method: "sync.rows_pending_upload",

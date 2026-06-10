@@ -20,19 +20,28 @@ struct GooseRustBridgeTiming {
 }
 
 final class GooseRustBridge: @unchecked Sendable {
+  private let lock = NSLock()
   private var counter = 0
-  private(set) var lastTiming: GooseRustBridgeTiming?
+  private var _lastTiming: GooseRustBridgeTiming?
+
+  private(set) var lastTiming: GooseRustBridgeTiming? {
+    get { lock.withLock { _lastTiming } }
+    set { lock.withLock { _lastTiming = newValue } }
+  }
 
   func request(method: String, args: [String: Any] = [:]) throws -> [String: Any] {
     try requestValue(method: method, args: args) as? [String: Any] ?? [:]
   }
 
   func requestValue(method: String, args: [String: Any] = [:]) throws -> Any {
-    lastTiming = nil
-    counter += 1
+    let requestID: String = lock.withLock {
+      _lastTiming = nil
+      counter += 1
+      return "goose-swift-\(Date().timeIntervalSince1970)-\(counter)"
+    }
     let payload: [String: Any] = [
       "schema": "goose.bridge.request.v1",
-      "request_id": "goose-swift-\(Date().timeIntervalSince1970)-\(counter)",
+      "request_id": requestID,
       "method": method,
       "args": args,
     ]

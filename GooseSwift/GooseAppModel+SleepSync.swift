@@ -48,7 +48,7 @@ extension GooseAppModel {
        Calendar.current.isDateInToday(lastSync) {
       return
     }
-    Task { await self.syncBandSleepHistory() }
+    Task { @MainActor in await self.syncBandSleepHistory() }
   }
 
   // Full morning sync flow. Runs in a detached Task context (bridge calls via
