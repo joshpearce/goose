@@ -68,7 +68,7 @@ Known deferred: ALG-HRV-04 real overnight cross-validation (v7.0), ALG-SLP-04 re
 
 - [x] Phase 46: Upload Route Alignment (completed 2026-06-09)
 - [x] Phase 47: Device ID Namespace Resolution (completed 2026-06-10)
-- [ ] Phase 48: Upload Sync Race Fix
+- [x] Phase 48: Upload Sync Race Fix (completed 2026-06-10)
 - [ ] Phase 49: HealthDataStore Async Migration
 - [ ] Phase 50: Morning Band Sleep Sync
 - [ ] Phase 51: Validation Gates (human — ALG-HRV-04 + ALG-SLP-04)
@@ -140,7 +140,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 48-03-PLAN.md — Swift unit tests: MockURLProtocol + test_upload503_leavesSynced0 + test_upload200_marksSynced1
+- [x] 48-03-PLAN.md — Swift unit tests: MockURLProtocol + test_upload503_leavesSynced0 + test_upload200_marksSynced1
 
 ---
 
@@ -203,7 +203,7 @@ Plans:
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
 | 46. Upload Route Alignment | v7.0 | 2/2 | Complete   | 2026-06-09 |
 | 47. Device ID Namespace | v7.0 | 3/3 | Complete   | 2026-06-10 |
-| 48. Upload Sync Race Fix | v7.0 | 2/3 | In Progress|  |
+| 48. Upload Sync Race Fix | v7.0 | 3/3 | Complete   | 2026-06-10 |
 | 49. HealthDataStore Async | v7.0 | 0/TBD | Not started | — |
 | 50. Morning Band Sleep Sync | v7.0 | 0/TBD | Not started | — |
 | 51. Validation Gates (human) | v7.0 | 0/TBD | Blocked (human gate) | — |
