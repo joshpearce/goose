@@ -15,7 +15,7 @@ For a production App Store iOS app, the lower-risk architecture is either a supp
 
 ## Current Evidence
 
-- `Coach.md` already sets the right boundary: the MVP Coach must not pretend to be an LLM until there is a real chat backend, privacy policy, and persistence strategy. It also requires local metric citations and no invented metrics.
+- `docs/features/overview.md` (Coach tab section) already sets the right boundary: the MVP Coach must not pretend to be an LLM until there is a real chat backend, privacy policy, and persistence strategy. It also requires local metric citations and no invented metrics.
 - Swift already has a JSON-over-C bridge into Rust via `GooseRustBridge.request(...)`, and the app model already parses live BLE frames through Rust.
 - The Swift tab shell has a fully implemented Coach tab (`CoachView.swift`, `CoachChatScreen.swift`, multiple provider files). `CoachPlaceholderView` does not exist.
 - Rust already exposes most of the needed data plane through bridge methods:

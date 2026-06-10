@@ -389,7 +389,7 @@ Sex-specific exponents reflect documented physiological differences in lactate r
 strain = 21 × ln(TRIMP + 1) / ln(D)
 ```
 
-Default D = 7201 (theoretical maximum). Calibrate D via `fit_strain_denominator()` from ≥ 2 (TRIMP, known_strain) pairs using least-squares.
+Default D = 7201 (theoretical maximum). Calibrate D via `fit_strain_denominator()` (`server/ingest/app/analysis/strain.py`, line 286) from ≥ 2 (TRIMP, known_strain) pairs using least-squares.
 
 ### 7.6 Calorie Computation
 

@@ -37,8 +37,8 @@ v5.0 is the first milestone where the full biometric pipeline is closed end to e
 
 **Upload sync infrastructure**
 
-- 10 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity`, `gravity2_samples`, `hr_samples`, `resp_samples`, `rr_intervals`, `skin_temp_samples`, `spo2_samples`.
-- Pending-upload queries and mark-synced operations are available on all 10 tables.
+- 6 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity2_samples`, `hr_samples`, `rr_intervals`.
+- Pending-upload queries and mark-synced operations are available on all 6 tables.
 
 **Rust core**
 
@@ -105,7 +105,7 @@ The current health metric UI draws heavily from [Bevel](https://www.bevel.health
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
 
-Built Rust `.a` archives are generated locally during Xcode builds and are not committed. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` only when the matching local archive already exists for the active Xcode platform.
+Built Rust `.a` archives (`Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`) are committed to the repository as pre-built artifacts. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` to skip rebuilding when the committed archives are already valid for the active Xcode platform.
 
 ## Build
 

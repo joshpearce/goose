@@ -86,7 +86,7 @@ PLATFORM_NAME=iphonesimulator CURRENT_ARCH=arm64 Scripts/build_ios_rust.sh
 PLATFORM_NAME=iphoneos CURRENT_ARCH=arm64 Scripts/build_ios_rust.sh
 ```
 
-Do not commit built `.a` archives. The paths `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` are local build outputs.
+The pre-built `.a` archives at `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` are committed to the repository so contributors can build the iOS app without needing a local Rust toolchain. Commit updated `.a` files whenever you change Rust source that affects the public FFI surface.
 
 ---
 
@@ -104,7 +104,7 @@ There are 45 integration test files in `Rust/core/tests/`, covering protocol par
 
 ### Swift unit tests
 
-The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 52 unit tests across 11 files covering upload payload construction, BLE types, HR monitor state, and coach provider logic. Run them from Xcode (Product → Test) or via `xcodebuild test`:
+The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 52 unit tests across 10 files covering upload payload construction, BLE types, HR monitor state, and coach provider logic. Run them from Xcode (Product → Test) or via `xcodebuild test`:
 
 ```bash
 xcodebuild test \

@@ -236,4 +236,4 @@ handleHistoricalSyncFrame
   └── commandResponse → handleHistoricalCommandResponse
 ```
 
-The Rust core receives raw frame bytes via `capture.write_frames` and handles protocol decoding, metric extraction, and SQLite persistence independently of the Swift BLE layer.
+The Rust core receives raw frame bytes via `capture.import_frame_batch` and handles protocol decoding, metric extraction, and SQLite persistence independently of the Swift BLE layer.

@@ -97,7 +97,7 @@ WHOOP GATT notification bytes
 **Trigger:** User taps "Start Overnight Guard" in the app. `GooseAppModel.startOvernightGuard()` is called. Requires `ble.connectionState == "ready"`.
 
 **Active components:**
-- `OvernightRawSpool` — append-only JSONL spool of every raw BLE notification, command write, historical range poll telemetry, and event log entry. Written to `ApplicationSupport/GooseSwift/overnight-guard/<sessionID>/`.
+- `OvernightRawNotificationSpool` — append-only JSONL spool of every raw BLE notification, command write, historical range poll telemetry, and event log entry. Written to `ApplicationSupport/GooseSwift/overnight-guard/<sessionID>/`.
 - `OvernightSQLiteMirrorQueue` — a dedicated `DispatchQueue(label: "com.goose.swift.overnight-sqlite-mirror", qos: .utility)` that batches rows and calls `Rust: overnight.insert_raw_notification_batch` (flush every 2 s, batch limit 256). Holds its own `GooseRustBridge` instance.
 - Physiology packet capture — `startPhysiologyPacketCapture` is called automatically when overnight guard starts (unless a health capture session is already active).
 - Heartbeat scheduler — `scheduleOvernightGuardHeartbeat()` fires on `DispatchQueue.main` every `overnightGuardHeartbeatInterval` to refresh power state and watchdog, then writes a status snapshot.
@@ -111,7 +111,7 @@ WHOOP GATT notification bytes
 BLE notification
   → GooseAppModel.handleNotification (normal parse path, as Mode 1)
   → GooseAppModel.persistOvernightRawNotificationBeforeInterpretation
-      → OvernightRawSpool.append (JSONL file append, nonisolated)
+      → OvernightRawNotificationSpool.append (JSONL file append, nonisolated)
       → OvernightSQLiteMirrorQueue.enqueueRawNotification
           → Rust: overnight.insert_raw_notification_batch (batched flush)
   → Published to @MainActor: overnightGuardRawNotificationCount updated every 50 notifications
@@ -134,7 +134,7 @@ User taps "Final Sync"
       → overnightGuardExportURL set; export available to share sheet
 ```
 
-**Crash recovery:** On next app launch, `GooseAppModel.recoverUncleanOvernightGuardSessionIfNeeded()` scans the overnight-guard directory on `rustStartupQueue`, finds the most recent unfinished session, and calls `OvernightRawSpool.resume()` to re-attach state. The session is available for export without requiring a new guard session.
+**Crash recovery:** On next app launch, `GooseAppModel.recoverUncleanOvernightGuardSessionIfNeeded()` scans the overnight-guard directory on `rustStartupQueue`, finds the most recent unfinished session, and calls `OvernightRawNotificationSpool.resume()` to re-attach state. The session is available for export without requiring a new guard session.
 
 **Termination:** Manual stop (`stopOvernightGuard(reason: "manual_stop")`), successful final sync drain, or app termination. On completion, all scheduled work items are cancelled, `overnightGuardActive` is set to `false`, and (on final sync path) the bundle export is initiated automatically.
 
@@ -432,7 +432,7 @@ When `POST /v1/ingest-decoded` is received, the server calls `daily.compute_day`
 
 | Abstraction | File | Description |
 |---|---|---|
-| `GooseAppModel` | `GooseSwift/GooseAppModel.swift` + `GooseAppModel+*.swift` | Central `@MainActor` coordinator; owns BLE client, Rust bridge, all notification queues, upload service. Split across 10 extension files by concern. |
+| `GooseAppModel` | `GooseSwift/GooseAppModel.swift` + `GooseAppModel+*.swift` | Central `@MainActor` coordinator; owns BLE client, Rust bridge, all notification queues, upload service. Split across 11 extension files by concern. |
 | `GooseBLEClient` | `GooseSwift/GooseBLEClient.swift` + `GooseBLEClient+*.swift` | CoreBluetooth central manager; WHOOP GATT connection and proprietary frame framing; command writes. Split across 10 extension files. |
 | `GooseRustBridge` | `GooseSwift/GooseRustBridge.swift` | JSON-RPC envelope over `goose_bridge_handle_json` / `goose_bridge_free_string` (C FFI). Schema: `goose.bridge.request.v1`. Stateless — multiple instances are normal. |
 | `HealthDataStore` | `GooseSwift/HealthDataStore.swift` + `HealthDataStore+*.swift` | `@MainActor` metric query layer. Holds its own `GooseRustBridge`; publishes scored health metrics to SwiftUI views. |
@@ -569,7 +569,7 @@ goose/
 | Store | Location | Owner | Contains |
 |---|---|---|---|
 | `goose.sqlite` (schema v19) | `ApplicationSupport/GooseSwift/goose.sqlite` | Rust core (via `rusqlite`) | All captured BLE frames, decoded biometric samples (including V24 streams and gravity2_samples), metric scores, activity sessions, synced flags |
-| Overnight guard spool | `ApplicationSupport/GooseSwift/overnight-guard/<sessionID>/` | `OvernightRawSpool` | JSONL files: raw notifications, command writes, range telemetry, event log, status snapshots |
+| Overnight guard spool | `ApplicationSupport/GooseSwift/overnight-guard/<sessionID>/` | `OvernightRawNotificationSpool` | JSONL files: raw notifications, command writes, range telemetry, event log, status snapshots |
 | `UserDefaults` | iOS system | Swift | Onboarding state, device identity, HR estimates, server URL (`goose.remote.serverURL`), upload enabled flag (`goose.remote.uploadEnabled`), last band sleep sync date |
 | iOS Keychain | iOS system | `RemoteServerKeychain` | Server API token (service: `goose.remote`, account: `apiKey`) |
 | TimescaleDB | Docker volume `goose-db-data` | Server | Hypertables for HR, RR, events, battery, SpO2, skin temp, respiration, gravity; derived tables for sleep/exercise/daily metrics |
