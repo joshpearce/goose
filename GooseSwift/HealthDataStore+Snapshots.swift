@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 extension HealthDataStore {
-  func runPacketScores() {
+  func runPacketScores() async {
     packetScoreStatus = "Extracting bridge packet-derived scores..."
     let baseArgs = bridgeBaseArgs(requireTrustedEvidence: false)
     let recoveryArgs = baseArgs.merging(recoveryScoreBridgeArgs()) { _, new in new }
@@ -24,83 +24,65 @@ extension HealthDataStore {
       "hrv_min_rr_intervals_to_compute": 2,
       "hrv_baseline_min_days": 3,
     ]) { _, new in new }
+    let sleepArgs = baseArgs.merging([
+      "sleep_need_minutes": 480.0,
+      "low_motion_threshold_0_to_1": 0.05,
+      "disturbance_motion_threshold_0_to_1": 0.20,
+      "target_midpoint_minutes_since_midnight": 180.0,
+      "history_import_in_progress": false,
+      "algorithm_id": "goose.sleep.v1",
+    ]) { _, new in new }
 
-    let bridge = self.bridge
-    packetInputQueue.async { [weak self] in
-      do {
-        let sleepReport = try bridge.request(
-          method: "metrics.sleep_score_from_features",
-          args: baseArgs.merging([
-            "sleep_need_minutes": 480.0,
-            "low_motion_threshold_0_to_1": 0.05,
-            "disturbance_motion_threshold_0_to_1": 0.20,
-            "target_midpoint_minutes_since_midnight": 180.0,
-            "history_import_in_progress": false,
-            "algorithm_id": "goose.sleep.v1",
-          ]) { _, new in new }
-        )
-        let strainReport = try bridge.request(
-          method: "metrics.strain_score_from_features",
-          args: strainArgs
-        )
-        let recoveryReport = try bridge.request(
-          method: "metrics.recovery_score_from_features",
-          args: recoveryArgs
-        )
-        let stressReport = try bridge.request(
-          method: "metrics.stress_score_from_features",
-          args: stressArgs
-        )
-
-        DispatchQueue.main.async { [weak self] in
-          guard let self else { return }
-          self.packetScoreReports["sleep"] = sleepReport
-          self.refreshPrimarySleepFromScoreReport()
-          self.packetScoreReports["strain"] = strainReport
-          self.packetScoreReports["recovery"] = recoveryReport
-          self.packetScoreReports["stress"] = stressReport
-          self.packetScoreStatus = "Bridge packet-derived scores recomputed"
-        }
-      } catch {
-        let shortErr = Self.shortError(error)
-        DispatchQueue.main.async { [weak self] in
-          guard let self else { return }
-          self.packetScoreStatus = "Bridge score run blocked: \(shortErr)"
-        }
-      }
+    do {
+      let sleepReport = try await bridge.requestAsync(
+        method: "metrics.sleep_score_from_features",
+        args: sleepArgs
+      )
+      let strainReport = try await bridge.requestAsync(
+        method: "metrics.strain_score_from_features",
+        args: strainArgs
+      )
+      let recoveryReport = try await bridge.requestAsync(
+        method: "metrics.recovery_score_from_features",
+        args: recoveryArgs
+      )
+      let stressReport = try await bridge.requestAsync(
+        method: "metrics.stress_score_from_features",
+        args: stressArgs
+      )
+      self.packetScoreReports["sleep"] = sleepReport
+      self.refreshPrimarySleepFromScoreReport()
+      self.packetScoreReports["strain"] = strainReport
+      self.packetScoreReports["recovery"] = recoveryReport
+      self.packetScoreReports["stress"] = stressReport
+      self.packetScoreStatus = "Bridge packet-derived scores recomputed"
+    } catch {
+      let shortErr = Self.shortError(error)
+      self.packetScoreStatus = "Bridge score run blocked: \(shortErr)"
     }
   }
 
-  func runSleepScore() {
+  func runSleepScore() async {
     packetScoreStatus = "Extracting bridge sleep score..."
-    let baseArgs = bridgeBaseArgs(requireTrustedEvidence: false)
-    let bridge = self.bridge
-    packetInputQueue.async { [weak self] in
-      do {
-        let sleepReport = try bridge.request(
-          method: "metrics.sleep_score_from_features",
-          args: baseArgs.merging([
-            "sleep_need_minutes": 480.0,
-            "low_motion_threshold_0_to_1": 0.05,
-            "disturbance_motion_threshold_0_to_1": 0.20,
-            "target_midpoint_minutes_since_midnight": 180.0,
-            "history_import_in_progress": false,
-            "algorithm_id": "goose.sleep.v1",
-          ]) { _, new in new }
-        )
-        DispatchQueue.main.async { [weak self] in
-          guard let self else { return }
-          self.packetScoreReports["sleep"] = sleepReport
-          self.refreshPrimarySleepFromScoreReport()
-          self.packetScoreStatus = "Bridge sleep score recomputed"
-        }
-      } catch {
-        let shortErr = Self.shortError(error)
-        DispatchQueue.main.async { [weak self] in
-          guard let self else { return }
-          self.packetScoreStatus = "Bridge sleep score blocked: \(shortErr)"
-        }
-      }
+    let sleepArgs = bridgeBaseArgs(requireTrustedEvidence: false).merging([
+      "sleep_need_minutes": 480.0,
+      "low_motion_threshold_0_to_1": 0.05,
+      "disturbance_motion_threshold_0_to_1": 0.20,
+      "target_midpoint_minutes_since_midnight": 180.0,
+      "history_import_in_progress": false,
+      "algorithm_id": "goose.sleep.v1",
+    ]) { _, new in new }
+    do {
+      let sleepReport = try await bridge.requestAsync(
+        method: "metrics.sleep_score_from_features",
+        args: sleepArgs
+      )
+      self.packetScoreReports["sleep"] = sleepReport
+      self.refreshPrimarySleepFromScoreReport()
+      self.packetScoreStatus = "Bridge sleep score recomputed"
+    } catch {
+      let shortErr = Self.shortError(error)
+      self.packetScoreStatus = "Bridge sleep score blocked: \(shortErr)"
     }
   }
 
