@@ -18,6 +18,7 @@ struct AppShellView: View {
       }
     }
     .onAppear {
+      model.healthStore = healthStore
       model.onHistoricalSyncCompleted = {
         Task {
           await healthStore.runPacketInputs()
@@ -25,6 +26,7 @@ struct AppShellView: View {
       }
     }
     .onDisappear {
+      model.healthStore = nil
       model.onHistoricalSyncCompleted = nil
     }
   }

@@ -162,6 +162,7 @@
 		D1000000000000000000005A /* HRMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005A /* HRMonitorView.swift */; };
 		D1000000000000000000005B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005B /* Localizable.xcstrings */; };
 		D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005C /* LocalizedStatusStrings.swift */; };
+		D1000000000000000000005D /* GooseAppModel+SleepSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005D /* GooseAppModel+SleepSync.swift */; };
 		E1000000000000000000001 /* CoachProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000001 /* CoachProviderProtocol.swift */; };
 		E1000000000000000000002 /* CoachChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000002 /* CoachChatModel.swift */; };
 		E1000000000000000000003 /* ChatGPTCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003 /* ChatGPTCoachProvider.swift */; };
@@ -368,6 +369,7 @@
 		D2000000000000000000005A /* HRMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorView.swift; sourceTree = "<group>"; };
 		D2000000000000000000005B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
+		D2000000000000000000005D /* GooseAppModel+SleepSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+SleepSync.swift"; sourceTree = "<group>"; };
 		E2000000000000000000001 /* CoachProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderProtocol.swift; sourceTree = "<group>"; };
 		E2000000000000000000002 /* CoachChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatModel.swift; sourceTree = "<group>"; };
 		E2000000000000000000003 /* ChatGPTCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTCoachProvider.swift; sourceTree = "<group>"; };
@@ -451,6 +453,7 @@
 				D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */,
 				D2000000000000000000003C /* GooseAppModel+OvernightState.swift */,
 				D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */,
+				D2000000000000000000005D /* GooseAppModel+SleepSync.swift */,
 				D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */,
 				D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */,
 				D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */,
@@ -963,6 +966,7 @@
 				D10000000000000000000059 /* GooseBLEReconnect.swift in Sources */,
 				D1000000000000000000005A /* HRMonitorView.swift in Sources */,
 				D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */,
+				D1000000000000000000005D /* GooseAppModel+SleepSync.swift in Sources */,
 				D10000000000000000000037 /* GooseBLEClient+Parsing.swift in Sources */,
 				D10000000000000000000038 /* GooseBLEClient+CentralDelegate.swift in Sources */,
 				D10000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift in Sources */,

@@ -70,6 +70,11 @@ final class GooseAppModel {
   // after a sync completes. Kept as a callback because HealthDataStore is
   // owned by the view layer, not GooseAppModel.
   var onHistoricalSyncCompleted: (() -> Void)?
+  // Set by AppShellView alongside onHistoricalSyncCompleted so GooseAppModel
+  // extensions can call HealthDataStore methods (e.g. markBandSleepSyncFailed)
+  // without creating a strong reference cycle. HealthDataStore is owned by the
+  // view layer; this weak reference lets SleepSync coordinate with it.
+  weak var healthStore: HealthDataStore?
 
   let ble: GooseBLEClient
   let packetMonitor = PacketMonitorModel()
