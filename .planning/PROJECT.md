@@ -9,6 +9,7 @@ v3.0 completed: HR monitor scan UI + independent capture, BLE stability, Recover
 v4.0 delivered: URL scheme security (deep link guard), full `@Observable` migration, four-provider Coach (ChatGPT/Claude/Custom/Gemini), complete pt-PT localisation for v4.0 strings.
 v5.0 shipped (2026-06-08): Validated algorithm pipeline — HRV (BLE-gap-aware RMSSD + Lipponen-Tarvainen filter), Sleep staging (Cole-Kripke scale=0.001 + 4-class), Strain/Calories (Ghidra-confirmed Keytel/H-B coefficients), V24 biometric decode (SpO2/skin_temp/resp/gravity2), Exercise detection (retroactive, Karvonen zones), Upload sync (synced flag + cursors), Readiness Engine (ACWR + Foster monotony). Schema v19. 128 Rust tests. 9 audit HIGH findings fixed.
 v6.0 shipped (2026-06-09): All v5.0 Rust algorithms wired to SwiftUI dashboards — Readiness Engine, Sleep Staging (4-class hypnogram + AASM), V24 Biometrics, Exercise Sessions, Upload Sync UI, IMU Step Detection. Algorithm alignment: recovery Z-score weights, EWMA 14-night alpha, Cole-Kripke 30s epochs. Raw BLE frame upload/import (trust-chain). Test Connection + Import do servidor UI. 0 untranslated pt-PT strings.
+v7.0 shipped (2026-06-10): Sync correctness + async migration — upload route pair complete (POST /v1/ingest-frames + GET export), device_uuid end-to-end (CoreBluetooth → SQLite → server), upload sync race fix (pre-capture rowIDs), HealthDataStore full async/await migration (60+ calls, GCD removed), morning band sleep sync (gravity K18/K24 extraction → Cole-Kripke → external_sleep_sessions). Algorithm defaults promoted to v1. Phase 51 (real-device validation) deferred — hardware gate.
 
 ## Core Value
 
@@ -76,10 +77,22 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - ✓ Test Connection: verificação de auth inline (/healthz + /v1/devices) — v6.0
 - ✓ pt-PT localização completa: 0 strings não traduzidas (era 49) — v6.0
 
-### Active (v7.0)
+### Validated (v7.0)
 
-- [ ] ALG-HRV-04 human gate: RMSSD cross-validated em ≥5 sessões overnight reais vs Python ref (delta ≤1 ms)
-- [ ] ALG-SLP-04 human gate: 4-class staging concordância ≥70% em ≥5 sessões overnight reais
+- ✓ Upload route pair: POST /v1/ingest-frames + GET /v1/export/frames/{device_id} com cursor + auth — v7.0 (ROUTE-01, ROUTE-02)
+- ✓ device_uuid end-to-end: CoreBluetooth UUID → raw_evidence + decoded_frames → servidor (bidirectional lookup) — v7.0 (DEVID-01, DEVID-02)
+- ✓ Upload sync race fix: captureAllPendingRowIDs pré-HTTP; markStreamsSynced só após 2xx — v7.0 (SYNCR-01)
+- ✓ HealthDataStore async migration: 60+ bridge calls → async/await; GCD queues removidos; zero sync calls @MainActor — v7.0 (ASYNC-01, ASYNC-02)
+- ✓ V24History gravity extraction: gravity_x/y/z K18/K24 wired → gravity table → Cole-Kripke pipeline — v7.0 (SLP-SYNC-01 partial)
+- ✓ Morning band sleep sync trigger: handleBLEConnectionStateChange → maybeScheduleMorningSleepSync → syncBandSleepHistory() — v7.0 (SLP-SYNC-02 partial)
+- ✓ Sleep V2 "A aguardar sincronização" label confirmed in simulator — v7.0 (SLP-SYNC-03 partial)
+- ✓ Algorithm defaults promoted: sleep v1, strain v1, recovery v1; readiness v1 added — v7.0
+
+### Active (v8.0 — hardware gate)
+
+- [ ] ALG-HRV-04 / VAL-HRV-01: RMSSD cross-validated em ≥5 sessões overnight reais vs Python ref (delta ≤1 ms) — Phase 51
+- [ ] ALG-SLP-04 / VAL-SLP-01: 4-class staging concordância ≥70% em ≥5 sessões overnight reais — Phase 51
+- [ ] SLP-SYNC real-device: gravity offsets K24 confirmados contra captura real; "Sincronizado da pulseira" e2e — Phase 51
 - [ ] BT button → abre definições iOS de Bluetooth (backlog, low priority)
 
 ### Out of Scope

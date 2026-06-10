@@ -8,7 +8,7 @@
 - ✅ **v4.0 Security, Performance & Coach Expansion** — Phases 16-19 (shipped 2026-06-06)
 - ✅ **v5.0 Metrics Accuracy, IMU & Upstream Fixes** — Phases 20-35 (shipped 2026-06-08)
 - ✅ **v6.0 UI Wiring, Algorithm Alignment & Parity Validation** — Phases 36-45 (shipped 2026-06-09)
-- 🚧 **v7.0 Sync Correctness, Async & Sleep Sync** — Phases 46-51 (in progress)
+- ✅ **v7.0 Sync Correctness, Async & Sleep Sync** — Phases 46-50 (shipped 2026-06-10)
 
 ## Phases
 
@@ -64,177 +64,23 @@ Known deferred: ALG-HRV-04 real overnight cross-validation (v7.0), ALG-SLP-04 re
 
 </details>
 
-### 🚧 v7.0 Sync Correctness, Async & Sleep Sync (In Progress)
+<details>
+<summary>✅ v7.0 Sync Correctness, Async & Sleep Sync (Phases 46-50) — SHIPPED 2026-06-10</summary>
 
-- [x] Phase 46: Upload Route Alignment (completed 2026-06-09)
-- [x] Phase 47: Device ID Namespace Resolution (completed 2026-06-10)
-- [x] Phase 48: Upload Sync Race Fix (completed 2026-06-10)
-- [x] Phase 49: HealthDataStore Async Migration (completed 2026-06-10)
-- [x] Phase 50: Morning Band Sleep Sync (completed 2026-06-10)
-- [ ] Phase 51: Validation Gates (human — ALG-HRV-04 + ALG-SLP-04)
+Full details: `.planning/milestones/v7.0-ROADMAP.md`
 
-## Phase Details
+Key: Upload round-trip (POST /v1/ingest-frames + GET export), device_uuid end-to-end, upload sync race fix, HealthDataStore full async migration (60+ calls), morning band sleep sync (gravity K18/K24 → Cole-Kripke → external_sleep_sessions).
 
-### Phase 46: Upload Route Alignment
+Known deferred: Phase 51 (VAL-HRV-01, VAL-SLP-01, SLP-SYNC real-device validation) — hardware gate, requires WHOOP + ≥5 overnight sessions
 
-**Goal**: O servidor FastAPI tem os endpoints em falta que o iOS já chama — `POST /v1/ingest-frames` e `GET /v1/export/frames/{device_id}` — tornando o ciclo upload/import de raw frames funcionalmente completo.
-**Depends on**: —
-**Requirements**: ROUTE-01, ROUTE-02
-**Source**: `.planning/quick/20260609-raw-frame-roundtrip/PLAN.md` (quick task já planeado)
-**Success Criteria** (what must be TRUE):
-
-  1. `POST /v1/ingest-frames` aceita um array de raw frame objects `{device_id, ts, frame_hex, packet_k}` e insere-os em `raw_evidence` com `ON CONFLICT DO NOTHING`; retorna `{inserted: N, skipped: M}`
-  2. `GET /v1/export/frames/{device_id}` retorna frames paginados com cursor (`?after_ts=&limit=`) ordenados por `ts ASC`; response inclui `{frames: [...], next_cursor, total}`
-  3. Ambos os endpoints requerem autenticação Bearer token (mesmo middleware existente)
-  4. O iOS `importHistoricalDataFromServer` e `GooseUploadService.uploadRawFrames` usam estes endpoints sem erros 404/405
-  5. Pytest suite existente (`server/ingest/tests/`) verde com novos testes para ambos os endpoints
-
-**Plans**: 2 plans
-
-- [x] 46-01-PLAN.md — Server: raw_frames table + POST /v1/ingest-frames + UNION read path + round-trip tests
-- [x] 46-02-PLAN.md — Deploy + live smoke-test + iOS upload/import verification
-
----
-
-### Phase 47: Device ID Namespace Resolution
-
-**Goal**: O mismatch UUID (CoreBluetooth) vs device_model (BLE name) nos identificadores de dispositivo é resolvido — a coluna `device_uuid` existe na DB e o mapeamento é feito na ligação BLE.
-**Depends on**: —
-**Requirements**: DEVID-01, DEVID-02
-**Success Criteria** (what must be TRUE):
-
-  1. Schema migration adiciona `device_uuid TEXT` a `raw_evidence` e `decoded_frames`; filas existentes recebem `NULL` (nullable); index em `(device_uuid, ts)`
-  2. No momento da ligação BLE, o `GooseBLEClient` extrai o UUID CoreBluetooth e passa-o ao `GooseAppModel` que resolve UUID ↔ device_model e guarda o mapeamento em `UserDefaults` (chave `goose.swift.device_uuid_map`)
-  3. `CaptureFrameWriteQueue` e `GooseUploadService` passam `device_uuid` nos bridge calls e upload payloads respectivamente
-  4. `GET /v1/export/frames/{device_id}` aceita tanto UUID como device_model como parâmetro (lookup bidireccional)
-  5. `cargo test -p goose-core` verde; testes cobrem: migration roundtrip, insert com uuid, query por uuid, query por device_model
-
-**Plans**: 3 plans (1 wave — parallel, zero file overlap)
-Plans:
-
-- [x] 47-01-PLAN.md — Rust storage layer: device_uuid migration, structs, insert/read, capture-import, upload bridge response (+ 5 tests) — DONE 2026-06-10
-- [x] 47-02-PLAN.md — iOS wiring: BLE connectedPeripheralUUID, UserDefaults UUID↔model map, CaptureFrameWriteQueue, upload payload (checkpoint)
-- [x] 47-03-PLAN.md — Server: raw_frames device_uuid migration, IngestFrame model, bidirectional export lookup (+ tests)
-
----
-
-### Phase 48: Upload Sync Race Fix
-
-**Goal**: A race condition em `performUpload` onde `hr_samples` são marcados como synced antes da confirmação do servidor é eliminada — rowIDs são capturados antes do request e `markHrSamplesSynced` só é chamado após 2xx.
-**Depends on**: —
-**Requirements**: SYNCR-01
-**Success Criteria** (what must be TRUE):
-
-  1. `GooseUploadService.performUpload` captura os rowIDs de `hr_samples` pendentes em `let rowIDs = ...` antes de construir o payload HTTP
-  2. `markHrSamplesSynced(rowIDs)` é chamado apenas no `switch response { case .success: }` — nunca antes ou no `case .failure:`
-  3. Uma falha HTTP 5xx ou timeout deixa os rows com `synced = 0` e eles são incluídos na próxima tentativa de upload
-  4. Teste de unidade: mock do servidor retorna 503 → rows permanecem `synced = 0`; mock retorna 200 → rows ficam `synced = 1`
-  5. `cargo test -p goose-core` verde (nenhuma regressão nos testes Rust do sync infrastructure)
-
-**Plans**: 3 plans
-Plans:
-**Wave 1**
-
-- [x] 48-01-PLAN.md — Rust TDD: test_pre_capture_does_not_mark_rows_inserted_during_race_window in sync_methods_tests
-- [x] 48-02-PLAN.md — Swift fix: captureAllPendingRowIDs + markStreamsSynced refactor + URLSession-injectable init
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 48-03-PLAN.md — Swift unit tests: MockURLProtocol + test_upload503_leavesSynced0 + test_upload200_marksSynced1
-
----
-
-### Phase 49: HealthDataStore Async Migration
-
-**Goal**: Os 60+ call sites de bridge Rust em `HealthDataStore` são migrados de síncrono (`@MainActor`) para `async`/`await` num background actor — eliminando o risco de freeze na main thread.
-**Depends on**: —
-**Requirements**: ASYNC-01, ASYNC-02
-**Success Criteria** (what must be TRUE):
-
-  1. `HealthDataStore` é annotado com `@BackgroundActor` (ou usa `Task.detached` com actor isolation) — nenhum método de bridge corre na `@MainActor`
-  2. Todos os 60+ call sites em `HealthDataStore+*.swift` (9 ficheiros) usam `await bridge.request(...)` — grep de `bridge.request` sem `await` retorna 0 resultados
-  3. Os dashboards (Recovery V2, Sleep V2, Esforço, etc.) continuam a actualizar com dados corretos após a migração — nenhuma regressão visual
-  4. `xcodebuild test` verde (ou build sem erros de compilação se não houver testes Swift)
-  5. Xcode console não mostra "Publishing changes from background threads" após a migração
-
-**Plans**: 7 plans (3 waves)
-Plans:
-**Wave 1**
-
-- [x] 49-01-PLAN.md — GooseRustBridge: additive async requestAsync/requestValueAsync (Task.detached FFI)
-
-**Wave 2** *(parallel — zero inter-plan file overlap; blocked on 49-01)*
-
-- [x] 49-02-PLAN.md — +PacketInputs (21 calls) + runPacketInputs async
-- [x] 49-03-PLAN.md — +Snapshots (runPacketScores, runSleepScore) + +Recovery (runRecoveryV1)
-- [x] 49-04-PLAN.md — +StagingSleep (runSleepStaging) + +Readiness (runReadinessV1)
-- [x] 49-05-PLAN.md — +Exercise + +IMUSteps + +V24Biometrics
-- [x] 49-06-PLAN.md — +Cardio direct calls + +Utilities helper
-
-**Wave 3** *(blocked on all Wave 2)*
-
-- [x] 49-07-PLAN.md — Remove queues, refreshBridgeCatalogs async, Task debounce, wrap all external callers, remove sync bridge API, build + dashboard smoke test
-
----
-
-### Phase 50: Morning Band Sleep Sync
-
-**Goal**: Ao ligar o WHOOP de manhã, o app lê automaticamente os frames históricos overnight da pulseira, extrai `gravity_x/y/z` dos frames K18/K24 validados, corre o Cole-Kripke pipeline, e grava `external_sleep_sessions` — dados de sono sem precisar do servidor.
-**Depends on**: Phase 47 (device_uuid em raw_evidence)
-**Requirements**: SLP-SYNC-01, SLP-SYNC-02, SLP-SYNC-03
-**Success Criteria** (what must be TRUE):
-
-  1. `gravity_x/y/z` dos frames K18/K24 (offsets 33–44 no body V24) são extraídos correctamente e validados contra pelo menos uma sessão de captura real com valores conhecidos — offsets confirmados antes de ir para produção
-  2. Após a ligação WHOOP de manhã (detecção: primeira ligação do dia após 04:00 local), `GooseAppModel` dispara `syncBandSleepHistory()` que: (a) solicita frames históricos overnight via `GooseBLEClient`, (b) extrai gravity amostras, (c) corre `metrics.sleep_staging` via bridge, (d) insere em `external_sleep_sessions`
-  3. O Sleep V2 dashboard mostra os dados sincronizados com a label "Sincronizado da pulseira" distinguindo de dados em tempo-real; noites sem sync mostram estado "A aguardar sincronização"
-  4. Se o utilizador já tem frames overnight em SQLite (de captura nocturna), o sync usa esses dados directamente sem BLE request adicional
-  5. `cargo test -p goose-core` verde; testes cobrem: extracção gravity dos offsets K24, insert `external_sleep_sessions`, não duplicar sessão existente
-
-**Plans**: 3 plans (2 waves)
-Plans:
-**Wave 1**
-
-- [x] 50-01-PLAN.md — Rust: V24History gravity extraction + gravity2 vec + store.insert_gravity_rows + 4 cargo tests
-- [x] 50-02-PLAN.md — Swift: GooseAppModel+SleepSync.swift + morning trigger + pt-PT initial status string
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 50-03-PLAN.md — Phase gate: cargo test + xcodebuild + visual checkpoint (human approved 2026-06-10)
-
-**Cross-cutting constraints:**
-
-- xcodebuild compiles without errors
-
----
-
-### Phase 51: Validation Gates (Human)
-
-**Goal**: Fechar as gates manuais ALG-HRV-04 e ALG-SLP-04 — validação com dados overnight reais de pelo menos 5 noites com WHOOP físico conectado ao Goose iOS.
-**Depends on**: Phase 50 (Morning Band Sleep Sync — desbloqueia dados overnight reais), Phase 47 (Device ID — garante sincronização correcta dos dados)
-**Requirements**: VAL-HRV-01, VAL-SLP-01
-**Human gate**: Requer dispositivo WHOOP físico + ≥5 noites de captura
-
-**Success Criteria** (what must be TRUE):
-
-  1. Golden fixtures gerados para ≥5 sessões overnight reais: `rr_golden_night_N.json` com RMSSD Python reference; `sleep_golden_night_N.json` com staging WHOOP oficial
-  2. `|rust_rmssd - python_rmssd| <= 1.0 ms` para as ≥5 sessões → ALG-HRV-04 CLOSED
-  3. Epoch agreement ≥70% entre Goose 4-class e WHOOP oficial para as ≥5 sessões → ALG-SLP-04 CLOSED
-  4. Resultados documentados em `51-SUMMARY.md` com sessão datas, valores, e deltas tabelados
-
-**Plans**: TBD (human gate — só depois de dados reais disponíveis)
-
----
+</details>
 
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
-| 46. Upload Route Alignment | v7.0 | 2/2 | Complete   | 2026-06-09 |
-| 47. Device ID Namespace | v7.0 | 3/3 | Complete   | 2026-06-10 |
-| 48. Upload Sync Race Fix | v7.0 | 3/3 | Complete   | 2026-06-10 |
-| 49. HealthDataStore Async | v7.0 | 7/7 | Complete   | 2026-06-10 |
-| 50. Morning Band Sleep Sync | v7.0 | 3/3 | Complete   | 2026-06-10 |
+| 46–50 | v7.0 | 18/18 | Complete | 2026-06-10 |
 | 51. Validation Gates (human) | v7.0 | 0/TBD | Blocked (human gate) | — |
 
 ## Backlog

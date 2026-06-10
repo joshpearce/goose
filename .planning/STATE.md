@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Sync Correctness, Async & Sleep Sync
-status: executing
-last_updated: "2026-06-10T20:10:00.000Z"
-last_activity: 2026-06-10 -- Phase 50 COMPLETE — all 3 plans done; human visual verification approved ("A aguardar sincronização" in SleepV2BandSyncCard); SLP-SYNC-01, SLP-SYNC-02, SLP-SYNC-03 satisfied
+status: shipped
+last_updated: "2026-06-10T22:00:00.000Z"
+last_activity: 2026-06-10 -- v7.0 SHIPPED — Phases 46-50 complete, 18 plans; Phase 51 deferred (hardware gate)
 progress:
-  total_phases: 12
-  completed_phases: 4
+  total_phases: 5
+  completed_phases: 5
   total_plans: 18
-  completed_plans: 17
-  percent: 44
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State

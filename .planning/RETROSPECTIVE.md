@@ -2,6 +2,47 @@
 
 *A living document updated after each milestone. Lessons feed forward into future planning.*
 
+## Milestone: v7.0 — Sync Correctness, Async & Sleep Sync
+
+**Shipped:** 2026-06-10
+**Phases:** 5 (46–50) | **Plans:** 18
+
+### What Was Built
+
+- Upload route pair: POST /v1/ingest-frames + GET /v1/export/frames endpoint pair completing iOS↔server raw frame round-trip
+- device_uuid end-to-end: CoreBluetooth UUID captured at connect, stored in raw_evidence/decoded_frames, propagated to server with bidirectional lookup
+- Upload sync race fix: pre-capture rowID pattern eliminates blind-marking; Rust contract TDD test locks the invariant
+- HealthDataStore async migration: 60+ bridge calls migrated from GCD dispatch to async/await; zero sync calls on @MainActor
+- Morning band sleep sync: V24History gravity extraction wired to gravity table; syncBandSleepHistory() flow with SQLite-first check; Cole-Kripke pipeline; Sleep V2 status labels
+
+### What Worked
+
+- **Parallel subagents**: Wave 1 of Phase 47 (3 plans, zero file overlap) and Phase 49 Wave 2 (5 plans) ran in parallel — significant time savings
+- **TDD for correctness**: Phase 48's Rust contract test (pre_capture_does_not_mark_rows_inserted_during_race_window) caught the race semantics precisely before Swift code was written
+- **Code review catching real bugs**: CR-01 in Phase 50 caught the `"complete"` vs `"synced"` status string mismatch that would have silently broken every morning sync attempt
+- **Retroactive Nyquist validation**: parallel validation agents for phases 46-49 completed in <10 minutes total
+
+### What Was Inefficient
+
+- **Cherry-pick history rewrite**: Manual cherry-pick attempt to remove a reference from git history failed because the approach required interactive rebase (prohibited); workaround was not available
+- **SourceKit false positives**: Every new Swift file addition triggered SourceKit re-indexing errors that looked alarming but were always false positives — cost diagnostic time
+- **Phase 50 simulator navigation**: Tab navigation in the simulator required many taps due to modal state restoration; the SleepV2BandSyncCard confirmation took longer than expected to reach
+
+### Patterns Established
+
+- `localRust = GooseRustBridge()` per-function instance pattern for async functions to avoid data races with shared `@Observable` bridge instance
+- BLE sync coordination via `historicalSyncStatus` polling (not `onHistoricalSyncCompleted` single slot) to avoid AppShellView callback conflict
+- `bpmRefreshTask?.cancel(); bpmRefreshTask = Task { try? await Task.sleep(500ms) }` debounce pattern for high-frequency `@Observable` property changes
+- Mock Xcode build validation confirmed as reliable: build succeeded with 0 errors is sufficient to proceed even when SourceKit shows false positives
+
+### Key Lessons
+
+- Always check the actual terminal state string in BLE callbacks against the source (GooseBLEClient) before writing polling logic — string mismatch bugs are silent and hard to trace at runtime
+- Hardware-gated requirements (Phase 51) should be tracked as a deferred milestone phase, not an open blocker — the code can be shipped and validated later
+- Pre-capture pattern (capture IDs before async operation) is the correct idiom for any "mark X after operation Y succeeds" synchronization problem
+
+---
+
 ## Milestone: v4.0 — Security, Performance & Coach Expansion
 
 **Shipped:** 2026-06-06

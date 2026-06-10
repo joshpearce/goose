@@ -1,5 +1,20 @@
 # Milestones
 
+## v7.0 Sync Correctness, Async & Sleep Sync (Shipped: 2026-06-10)
+
+**Phases completed:** 5 phases (46-50), 18 plans
+**Known deferred:** Phase 51 (VAL-HRV-01, VAL-SLP-01, SLP-SYNC real-device) — hardware gate
+
+**Key accomplishments:**
+
+- Upload round-trip completo: POST /v1/ingest-frames + GET /v1/export/frames com cursor pagination e autenticação Bearer (ROUTE-01, ROUTE-02)
+- device_uuid end-to-end: coluna nullable adicionada a raw_evidence + decoded_frames, CoreBluetooth UUID mapeado em ligação BLE, propagado até servidor (DEVID-01, DEVID-02)
+- Upload sync race fix: captureAllPendingRowIDs pré-HTTP, markStreamsSynced apenas após 2xx — elimina blind-marking (SYNCR-01)
+- HealthDataStore async migration: 60+ bridge calls migrados de GCD para async/await; GCD queues removidos; zero sync calls na @MainActor scope (ASYNC-01, ASYNC-02)
+- Morning band sleep sync: gravity K18/K24 V24History wired, syncBandSleepHistory() com SQLite-first check, "A aguardar sincronização" confirmado no simulador (SLP-SYNC-01/02/03 parcial)
+
+---
+
 ## v5.0 Metrics Accuracy, IMU & Upstream Fixes (Phases 20-26) — PLANNED
 
 **Phases:** 7 (Phases 20–26)
