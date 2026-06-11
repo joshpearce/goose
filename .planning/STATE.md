@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: BLE Reliability & Protocol Parity
 status: executing
-stopped_at: Completed 64-01-PLAN.md
-last_updated: "2026-06-11T14:21:16Z"
-last_activity: 2026-06-11 -- Phase 64 Plan 01 executed
+stopped_at: Completed 65-01-PLAN.md
+last_updated: "2026-06-11T14:42:51Z"
+last_activity: 2026-06-11 -- Phase 65 Plan 01 executed
 progress:
   total_phases: 22
   completed_phases: 5
   total_plans: 11
-  completed_plans: 12
+  completed_plans: 13
   percent: 25
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: 61 (BLE Bonding State Machine) — EXECUTING
-Plan: 2 of 2 (Phase 62 complete)
-Status: Ready to execute Phase 65
-Last activity: 2026-06-11 -- Phase 64 Plan 01 executed
+Phase: 65 (Generic BLE State Machine) — COMPLETE
+Plan: 1 of 1 (Phase 65 complete)
+Status: Ready to execute Phase 66
+Last activity: 2026-06-11 -- Phase 65 Plan 01 executed
 
 Progress: [██████████] 100%
 
@@ -65,6 +65,7 @@ Recent decisions affecting current work:
 - Phase 62 Plan 01: WatermarkType enum with rawFrames/decodedStreams cases; separate UserDefaults keys per type; Foundation-only store
 - Phase 62 Plan 02: effectiveSince gate inside service (not call site); watermark writes on 2xx only per type; clearAllUploadWatermarks resets both keys + lastUploadAt
 - Phase 64 Plan 01: GooseHRSanitizer static value type; WHOOP parity range 25-220 BPM; onHRSpike callback (not Combine); hrSpikeCount on @MainActor via Task hop
+- Phase 65 Plan 01: StateMachine<State: Hashable, Event> struct; GooseBLEBondingState promoted from Equatable to Hashable; transition(to:) total + maps to GooseBLEBondingEvent before machine.handle()
 - [Phase ?]: Callback pattern (not Combine) for GooseNetworkMonitor.onReachabilityChange — consistent with GooseBLEBondingManager
 - [Phase ?]: isReachable initialised to true to avoid false upload block before first async NWPath update
 - [Phase ?]: apnsDeviceToken uses internal access (not private(set)) so extension setter in separate file can write it
@@ -100,6 +101,6 @@ Items deferred from v8.0 milestone close (2026-06-11):
 
 ## Session Continuity
 
-Last session: 2026-06-11T14:21:16Z
-Stopped at: Completed 64-01-PLAN.md
+Last session: 2026-06-11T14:42:51Z
+Stopped at: Completed 65-01-PLAN.md
 Resume file: None
