@@ -1,183 +1,202 @@
-# Research Summary — v5.0 Metrics Accuracy, IMU & Upstream Fixes
+# Project Research Summary
 
-**Project:** Goose v5.0 — Metrics Accuracy, IMU Pipeline & Upstream Fixes
-**Domain:** Rust biometric algorithm accuracy for iOS WHOOP BLE app
-**Researched:** 2026-06-06
-**Confidence:** HIGH
-
----
-
-## Stack Additions
-
-**Zero new crates required.** Every algorithm in scope (Lipponen-Tarvainen ectopic filter, EWMA baselines, Z-score/logistic recovery model, Mifflin-St Jeor RMR, Keytel active-kcal, Banister TRIMP, Cole-Kripke sleep staging, gravity projection) is a closed-form arithmetic formula implementable using `f64` standard library methods. Do not add `ndarray`, `nalgebra`, `statrs`, `rand`, or any ML runtime crate — if a formula requires a crate, scope has drifted.
-
-Existing crates already cover all persistence, serialisation, and error needs:
-- `rusqlite 0.37` — gravity table (new migration to schema v15), algorithm run records
-- `serde 1.0` + `serde_json 1.0` — all bridge input/output structs (no change to FFI surface)
-- `thiserror 2.0` — error types for new modules
-
-New Rust modules required: `sleep_staging.rs` (Cole-Kripke + 4-class classifier), `baselines.rs` (EWMA state management).
+**Project:** Goose v10.0 — Protocol Parity, Haptics & Feature Completeness
+**Domain:** WHOOP-style BLE biometric companion app (iOS + Rust core)
+**Researched:** 2026-06-12
+**Confidence:** HIGH (FEATURES.md fully verified against live codebase; STACK/ARCHITECTURE/PITFALLS reflect v5.0 but remain structurally valid)
 
 ---
 
-## Feature Table Stakes
+## Executive Summary
 
-**HRV Pipeline**
-- BLE gap-aware RMSSD: compute successive differences within continuous capture windows only; gaps > 3 s are segment boundaries, not valid RR pairs
-- Lipponen-Tarvainen ectopic beat filter: local median reference ± adaptive threshold; replaces the current static 300–2000 ms range gate
-- Tiered SWS window selection: longest deep-sleep episode ≥ 5 min, fallback to weighted mean of all deep, fallback to full night
+Goose v10.0 is the feature-completeness milestone for this WHOOP companion iOS app. The research identified a clear set of protocol gaps that silently break WHOOP 5.0 users today (R22 packet type 0x10 unhandled, v18 historical frames silently discarded), plus a haptic primitive (`buzz(loops:)`, command 0x13) that is confirmed present in hardware but entirely absent from Swift — its addition unblocks four downstream features in a single ~2-hour task. The recommended approach is to sequence work in five waves ordered by dependency and RE risk: protocol fixes first (no RE risk, pure Rust, highest user impact), then the haptic primitive and its immediate dependents, then data-foundation schema migrations, then coaching and notification infrastructure, and finally the alarm wake-window engine which is gated behind a mandatory Ghidra + BTSnoop reverse-engineering session.
 
-**Recovery Score**
-- EWMA personal HRV/RHR baseline with α = 0.1 (~10-day memory); seeded from mean of first 7 nights, never from night 1
-- Z-score normalisation + logistic squash to 0–100; inflection at z = 0 must produce ~58% (validate against WHOOP 5.37.0)
-- Cold-start gate: null score for < 4 nights; trust levels: calibrating / provisional / trusted
+The primary architectural risk is that the existing Rust bridge is stateless and synchronous. New SQLite tables (journal, workout, appleDaily, metricSeries) must follow the established migration pattern in `store.rs` and every new state-bearing write must be idempotent, because multiple `GooseRustBridge` instances can call the same bridge method concurrently. The haptic and BLE protocol work is pure Swift + Rust extension on top of patterns that already exist; the main risk is the alarm wake-window feature, which requires a confirmed understanding of `SetAlarmInfoCommandPacketRev4` field layout before any implementation begins. HAP-04 must not be bundled with HAP-03.
 
-**Calories**
-- Mifflin-St Jeor RMR replacing `weight_kg * 22.0` proxy; requires `profile_height_cm` in `EnergyDailyRollupOptions`; fallback with quality flag when height absent
-- Keytel active-kcal sex-specific coefficients (Keytel et al. 2005); validate to ±5% against WHOOP labels for 3–5 workout types
-- Harris-Benedict revision: confirm SI vs imperial unit variant against WHOOP binary before locking
-
-**Strain**
-- Tanaka HRmax formula (208 − 0.7 × age) replacing Fox 220-age; add `profile_sex` to `StrainInput`
-- Banister TRIMP with zone-midpoint approximation (`banister_trimp_zone_midpoint_approximation` quality flag); normalise to 0–21 via population denominator; update strain golden files after switch
-
-**Sleep Metrics (without staging)**
-- HR dip %: `(baseline_awake_hr − min_sleep_hr) / baseline_awake_hr × 100`; gate on HR coverage ≥ 50%
-- WASO via HR threshold method; SOL from first sustained low-HR/low-motion period (≥ 3 consecutive minutes)
-- Disturbance count from motion threshold crossings
-
-**Sleep Staging (Cole-Kripke + IMU)**
-- Cole-Kripke actigraphy binary wake/sleep classifier on 1-minute aggregated epochs; do NOT use published coefficients directly on raw WHOOP IMU — derive empirical scaling factor
-- 4-class classifier (awake/core/deep/REM) using cardiorespiratory features per epoch
-- Physiological reimposition: minimum 5-min segment merge, forbidden-transition suppression
-
-**IMU Pipeline**
-- Expand `I16SeriesSummary` via new optional `full_samples: Option<Vec<i16>>` field (non-breaking; do NOT extend `preview` in-place)
-- Gravity SQLite table (schema v15); batch insert from K21/K10 decoded frames
-- TOGGLE_IMU_MODE: feature-flagged off by default until type-51 packet parsing is fully implemented
-
-**Upstream Fixes**
-- Gen4 sync fixes (upstream PR #26, 5 commits): import and resolve conflicts; verify 40+ integration tests pass
-- `body_hex` exclusion from K10/K21 cached JSON: add explicit `body_hex` assertions to K10/K21 tests first, then apply fix
+A secondary risk is scope creep from the NOOP reference codebase. Several NOOP features (YearHeatStrip heatmap, WHOOP CSV import, Metric Explorer, AdvancedHaptic/HapticHeartbeat pattern system) are tempting ports but should be explicitly deferred to v11.0. The v10.0 milestone is already substantial: two Rust protocol fixes, a haptic primitive + two haptic screens, four new SQLite tables, realtime strain accumulation, a NotificationScheduler actor, Coach VOW messages, BLE data validator, a GooseBLEHistoricalManager refactor, a service-layer protocol abstraction, and a smart alarm UI.
 
 ---
 
-## Feature Differentiators
+## Key Findings
 
-Defer to v6+:
-- Frequency-domain HRV (LF/HF via Lomb-Scargle): HIGH complexity
-- DFA alpha1 nonlinear index: HIGH complexity
-- Multi-variate Mahalanobis distance for recovery: HIGH complexity
-- MET-table active-calorie estimation: MEDIUM complexity
-- Per-epoch RMSSD for sleep staging: HIGH implementation investment
+### Recommended Stack
 
-Include in v5.0 (low effort, fields already exist):
-- pNN50: already computed in `HrvOutput.pnn50_fraction` — zero work needed
-- Circadian midpoint tracking: `midpoint_deviation_minutes` field exists; no new work
-- Sympathovagal arc: `sleep_hr_trend_bpm_per_hour` field exists; fill from HR feature report
+No new dependencies are needed for v10.0. The existing Cargo.toml (`rusqlite 0.37`, `serde 1.0`, `serde_json 1.0`, `thiserror 2.0`) is sufficient for all Rust work including new schema migrations, bridge methods, and algorithm additions. The Swift side requires no new frameworks: URLSession, CoreBluetooth, UNUserNotificationCenter, and ActivityKit are already linked.
 
----
+**Core technologies:**
+- `rusqlite 0.37` — all new SQLite tables (journal, workout, appleDaily, metricSeries) follow the existing migration pattern; no ORM needed
+- `serde_json` — all new bridge methods follow the existing `AlgorithmRunResult<T>` JSON envelope; no protocol changes
+- `UNUserNotificationCenter` — already permission-granted in onboarding; only the `NotificationScheduler` actor is missing
+- Swift `actor` type — preferred for `NotificationScheduler` and `GooseBLEHistoricalManager` to get compile-time isolation guarantees
+- No additions to `Cargo.toml`; all arithmetic for any algorithm extension is expressible in `f64` stdlib
 
-## Critical Discoveries
+### Expected Features
 
-1. **TOGGLE_IMU_MODE is a debug command never sent in production.** `GooseBLEClient.swift` defines commands 106 ON/OFF but `startCapture` does not send them. Sending command 106 without type-51 packet parsing causes all packets during IMU mode to be stored as `Raw` frames — HRV gaps, no staging data, no visible error. IMU pipeline cannot ship until type-51 parsing is complete and feature-flagged.
+All "missing" claims in the seed were verified against the live codebase before being accepted. No false positives.
 
-2. **I16SeriesSummary preview cap is hardcoded at 8 samples in `protocol.rs`.** Extending it in-place breaks all 40+ K10/K21 protocol_tests.rs assertions. The safe path is a new `full_samples: Option<Vec<i16>>` field. Existing `decoded_frames` rows cannot be backfilled — gravity extraction operates on new frames only.
+**Must have — P1 (table stakes or high-leverage unblocks):**
+- R22 packet parsing (Rust, type 0x10) — WHOOP 5.0 users get zero metrics today; pure Rust fix
+- v18 historical per-second decode — WHOOP 5.0 historical offload is silently discarded; Rust-only
+- `buzz(loops:)` haptic primitive (cmd 0x13) — 4 features depend on this single ~15-line function
+- Breathe screen with strap haptic cues — flagship haptic feature; NOOP BreathingView reference available
+- 4 SQLite tables (journal, workout, appleDaily, metricSeries) — foundation for 5+ features
+- Realtime strain accumulation during workout — live UX gap; formula already in Rust
+- iOS local notifications (sleep summary, workout, battery) — UNUserNotificationCenter auth already in onboarding
 
-3. **EWMA baseline has three independent failure modes that stack.** Cold-start bias (seeding from night 1), double-update from UI retries (non-idempotent write), and concurrent write race across multiple `GooseRustBridge` instances. All three require different mitigations and must be addressed before recovery v1 ships.
+**Should have — P2:**
+- Interval Timer with haptic cues (depends on buzz primitive)
+- Smart alarm UI — single-shot, using existing `AlarmCommandKind` + `writeAlarmCommand()` infra
+- Coach VOW messages — local rule-based; Rust decision tree + new CoachVOWView
+- Stress view enhancements (Calm Time tile, delta-baseline tiles, range selector)
+- Manual Workout Entry sheet (depends on workout table)
+- Long-range Trends Dashboard (depends on metricSeries table)
+- GooseBLEHistoricalManager refactor — decouples historical sync from active BLE connection
+- Swift BLE data validator (GooseBLEDataValidator) — approx 1 day
+- Protocol-based service layer + mocks + 2 test cases (GooseBLEManaging + GooseRustBridging)
 
-4. **`StrainInput` has no `profile_sex` field today.** Banister TRIMP sex-specific constants differ by ~15–25% for the same session. Silently defaulting to the male constant is a clinical-quality error for 50% of users. `profile_sex` must be added to `StrainInput` before TRIMP is implemented.
+**Defer to v11.0+:**
+- Wake-window engine (HAP-04) — RE-gated: `SetAlarmInfoCommandPacketRev4` layout unknown
+- AdvancedHaptic / HapticHeartbeat pattern system — RE prerequisite before implementation
+- WHOOP CSV import — meaningful effort, not user-blocking
+- YearHeatStrip heatmap (FEAT-02b)
+- Metric Explorer + Correlation Engine — 7-10 days; needs metricSeries table to exist first
+- HR sample decimation (LTTB) — conditional on Instruments evidence
 
-5. **Cole-Kripke published coefficients cannot be used directly on WHOOP IMU.** The algorithm was calibrated on wrist actigraph counts, not raw I16 acceleration samples. Without device-specific scaling validation against 5+ nights of ground-truth data, the classifier will over-detect sleep (pleasant but wrong).
+### Architecture Approach
 
-6. **body_hex and I16SeriesSummary changes have no K10/K21 assertions in existing tests.** `protocol_tests.rs` uses `..` pattern matching that ignores `body_hex` for K10/K21 variants. Any change to these fields is a silent Swift API contract break unless test coverage is added first.
+v10.0 extends the existing layered architecture without changing its fundamental shape. The Rust bridge remains stateless, the Swift side remains `@MainActor` for all UI mutations with dedicated `DispatchQueue` instances for BLE and pipeline work, and new features slot into the existing extension-file pattern (`GooseAppModel+*.swift`, `HealthDataStore+*.swift`). New components are: a `NotificationScheduler` actor, a `GooseBLEHistoricalManager` that wraps the historical sync logic currently embedded in `GooseAppModel`, a `GooseBLEDataValidator` struct that gates frames before the Rust bridge, and a `GooseStrainAccumulator` actor for realtime strain during workouts.
 
----
+**Major new/modified components:**
+1. `protocol.rs` — R22 (0x10) packet parsing + v18 historical per-second decode
+2. `store.rs` — 4 new SQLite tables via schema migration (version bump required)
+3. `bridge.rs` — new dispatch methods for realtime strain, Coach VOW, historical sync
+4. `GooseBLEClient+Haptics.swift` — `buzz(loops:)` command 0x13 wrapper (new extension file)
+5. `NotificationScheduler` (new Swift actor) — wires sleep/workout/battery triggers to UNUserNotificationCenter
+6. `GooseBLEHistoricalManager` (new Swift class) — decoupled historical sync; depends on ARCH-01 protocol
+7. `GooseBLEDataValidator` (new Swift struct) — frame validation gate before Rust bridge
+8. `GooseStrainAccumulator` (new Swift actor) — per-sample HR accumulation to live strain score
 
-## Architecture Summary
+### Critical Pitfalls
 
-All algorithm work is purely in the Rust core (`Rust/core/src/`). The C FFI surface (`goose_bridge_handle_json` / `goose_bridge_free_string`) is unchanged. New bridge methods are added to the existing `match method_str` dispatcher in `bridge.rs`.
+1. **HAP-03 and HAP-04 bundled in the same phase** — HAP-04 is RE-gated; bundling it with the single-shot alarm UI risks blocking delivery of HAP-03. Keep them in separate phases.
 
-The build order is strictly gated by one data foundation dependency: `protocol.rs` preview expansion + `store.rs` gravity table migration (schema v14 → v15) + K21/K10 gravity extraction in `bridge.rs` must complete first. After that, four algorithm streams can proceed in parallel — sleep staging (`sleep_staging.rs`), EWMA baselines (`baselines.rs`), HRV ectopic filter (in `metrics.rs`), and strain v1 (in `metrics.rs`). Recovery v1 is the final integration gate requiring all four to be complete.
+2. **State-bearing SQLite writes not idempotent** — any new table updated by multiple concurrent `GooseRustBridge` instances must wrap read-modify-write in `BEGIN EXCLUSIVE` or use a single atomic SQL expression. Applies to metricSeries inserts and any future EWMA baseline.
 
-Swift-side changes are minimal: one new `HealthDataStore+Recovery.swift` extension; no changes to `GooseBLEClient.swift` or `GooseUploadService.swift`.
+3. **Service layer protocols (ARCH-01) shipped without test targets** — protocols without tests are dead weight. ARCH-01 must include mocks + at least 2 test cases in the same phase; do not ship protocols alone.
 
-New components:
-- `sleep_staging.rs` — pure computation; reads gravity table + HR series; returns `Vec<SleepStageSegment>`
-- `baselines.rs` — EWMA state struct; `fold_history()` rebuilds from `daily_recovery_metrics` rows on each call (no new table in v1)
-- `gravity` table — schema v15; `device_id + ts_unix_ms` index
+4. **R22 / v18 Rust changes break existing `protocol_tests.rs` assertions** — run `cargo test -- protocol_tests` after every `protocol.rs` change; all new packet types must have round-trip tests.
 
----
-
-## Watch Out For
-
-1. **Lipponen-Tarvainen over-filters athletes (silent RMSSD suppression).** Adaptive thresholds required; add `ectopic_filter_removal_fraction` to `HrvOutput`; cross-validate against Python reference on 5 real overnight sessions. Any delta > 1 ms vs reference = investigate before shipping.
-
-2. **EWMA cold-start + double-update + concurrent race (three silent baseline corruption paths).** Require 7 nights before baseline is active; guard `UPDATE SET baseline = ? WHERE last_updated_date < ?`; wrap read-modify-write in `BEGIN EXCLUSIVE` transaction or use single atomic SQL expression.
-
-3. **Banister TRIMP sex constant silently defaults to male.** `profile_sex` must be in `StrainInput` before implementing TRIMP; emit `sex_unknown_using_population_average` quality flag when sex absent; add a test asserting male vs female outputs differ by the expected TRIMP constant ratio.
-
-4. **Cole-Kripke calibration mismatch — over-detects sleep on WHOOP IMU.** Never ship staging without a `staging_method_actigraphy_uncalibrated` quality flag; validate on 5+ overnight sessions against WHOOP official stages.
-
-5. **I16SeriesSummary structural changes silently break the Swift API contract.** Add explicit `body_hex` assertions to K10/K21 tests before any change; use `full_samples: Option<Vec<i16>>` (new field) not `preview` extension; measure JSON payload size before shipping 100-sample mode (K21 grows from ~150 bytes to ~1.8 KB per frame).
-
----
-
-## Phase Ordering Recommendation
-
-**Phase 1 — Upstream Fixes & Storage Cleanup** (no dependencies; unblocks everything)
-- Gen4 sync fixes (upstream PR #26, 5 commits)
-- `body_hex` exclusion from K10/K21 cached JSON (add K10/K21 `body_hex` test assertions first)
-- Rationale: zero algorithm risk; cleans the foundation before adding IMU data volume
-
-**Phase 2 — IMU Data Foundation** (must complete before Phases 3–5 start)
-- Add `full_samples: Option<Vec<i16>>` to `I16SeriesSummary` (non-breaking)
-- `store.rs`: gravity table DDL, schema migration v14 → v15, `insert_gravity_rows`, `gravity_rows_between`
-- `bridge.rs`: K21/K10 gravity extraction replacing `Vec::new()` placeholder; bridge methods for gravity store
-- Feature flag for TOGGLE_IMU_MODE (defaults off); implement type-51 packet parsing
-- Rationale: all algorithm phases touching IMU data block on this; early completion maximises parallel work
-
-**Phase 3 — HRV Accuracy** (parallel with Phases 4 and 5 after Phase 2 merges)
-- BLE gap segmentation (segment-aware RMSSD at `HrvFeature` collection level)
-- Lipponen-Tarvainen ectopic filter with adaptive thresholds; `high_ectopic_removal_fraction` quality flag
-- Tiered SWS window selection in feature report builder
-- Cross-validate against Python reference on 5 real sessions before completing
-- Rationale: foundation for recovery score v1; Phase 6 depends on clean RMSSD history
-
-**Phase 4 — Strain & Calories** (parallel with Phases 3 and 5 after Phase 2 merges)
-- Add `profile_sex` to `StrainInput`; Tanaka HRmax; Banister TRIMP zone-midpoint approximation; `fit_strain_denominator`; register `goose_strain_v1`; update golden files
-- Mifflin-St Jeor RMR; add `profile_height_cm` to rollup options; fallback quality flag
-- Keytel active-kcal validation (3–5 workout types, ±5% tolerance)
-- Harris-Benedict SI coefficient confirmation
-- Rationale: self-contained; no data dependencies beyond Phase 1; independent delivery
-
-**Phase 5 — Sleep Metrics Without Staging** (parallel with Phases 3 and 4 after Phase 2 merges)
-- HR dip %, WASO, SOL, disturbance count from existing HR feature infrastructure
-- `baselines.rs`: EWMA state, `fold_history()`, cold-start guard (7 nights), idempotent write, `BEGIN EXCLUSIVE` transaction
-- Sympathovagal arc fill (existing field; low effort)
-- Rationale: populates fields that already exist in schema; medium complexity; value without IMU staging risk
-
-**Phase 6 — Recovery Score v1** (gates on Phases 3 + 5 both complete)
-- `goose_recovery_v1`: Z-score normalisation + logistic squash; trust level enum in `RecoveryScoreOutput`
-- `metrics.goose_recovery_v1` bridge method (reads `daily_recovery_metrics` history)
-- `HealthDataStore+Recovery.swift`: new extension; update `RecoveryV2DashboardView`
-- Idempotency test + concurrent write test required before ship
-- Rationale: final integration of clean RMSSD (Phase 3) + EWMA baselines (Phase 5)
-
-**Phase 7 — Sleep Staging** (gates on Phase 2; ship last; highest complexity)
-- `sleep_staging.rs`: Cole-Kripke on 1-min aggregated epochs from `full_samples`; cardiorespiratory features; 4-class classifier with physiological reimposition
-- `metrics.sleep_staging` bridge method
-- Validation: 5+ overnight sessions against WHOOP official stages; `staging_method_actigraphy_uncalibrated` quality flag required
-- **Requires dedicated research sub-phase before implementation begins**
-- Rationale: highest complexity and empirical risk; Cole-Kripke calibration is an empirical unknown; shipping last minimises risk to stable metrics
-
-**Research flags:**
-- Phase 7 (Sleep Staging): requires dedicated research sub-phase before implementation
-- Phase 3 (HRV): conditional research sub-phase if cross-validation fails > 1 ms tolerance
-
-**Standard patterns (skip research):** Phases 1, 4, 5 — all coefficients explicit from peer-reviewed papers.
+5. **`TOGGLE_IMU_MODE` (cmd 106) enabled without type-51 parser** — if IMU mode is inadvertently enabled in `startCapture`, type-51 packets fall through as Raw frames creating silent HRV data gaps. Keep behind a feature flag defaulting to `false`.
 
 ---
 
-*Research completed: 2026-06-06*
+## Implications for Roadmap
+
+Based on dependency graph and risk profile from FEATURES.md:
+
+### Phase 1: Protocol Parity (WHOOP 5.0 fixes)
+**Rationale:** Independent of everything else; no RE risk; fixes existing users with zero working metrics. Highest user impact per effort. R22 and v18 tracks can be done in parallel.
+**Delivers:** WHOOP 5.0 realtime metrics (R22 / BLE5-01) + full historical offload (v18 / BLE5-02)
+**Addresses:** BLE5-01, BLE5-02
+**Avoids:** Protocol round-trip test failures — run `cargo test -- protocol_tests` after every change
+
+### Phase 2: Haptic Primitive + Haptic Screens
+**Rationale:** `buzz(loops:)` is the single highest-leverage primitive — one ~15-line Swift function unblocks Breathe, Interval Timer, and alarm feedback. HAP-01 must be first task; HAP-02 and FEAT-02a follow immediately within the same phase.
+**Delivers:** `buzz(loops:)` command, Breathe screen with strap cues, Interval Timer with haptic cues
+**Addresses:** HAP-01, HAP-02, FEAT-02a
+**Avoids:** Shipping haptic screens before the primitive exists; conflating HAP-03 with HAP-04
+
+### Phase 3: Data Foundation
+**Rationale:** Four SQLite tables are prerequisites for Manual Workout Entry, Trends Dashboard, and Coach VOW context. Single Rust migration keeps schema version consistent. Realtime strain accumulation shares this phase — it depends only on WhoopDataSignalPipeline (already exists).
+**Delivers:** Schema migration with 4 new tables, `GooseStrainAccumulator`, Stress view enhancements
+**Addresses:** DATA-01 (a-d), DATA-02, DATA-03a
+**Avoids:** Schema fragmentation across multiple migrations
+
+### Phase 4: Screens on New Foundation
+**Rationale:** Manual Workout Entry and Long-range Trends Dashboard depend on Phase 3 tables. Can begin immediately after Phase 3 lands.
+**Delivers:** Manual Workout Entry sheet, Long-range Trends Dashboard
+**Addresses:** DATA-03b, DATA-03c
+**Avoids:** Building screens before their data layer exists
+
+### Phase 5: Coaching, Notifications & Structural Features
+**Rationale:** Coach VOW and iOS notifications share the "passive intelligence" theme. BLE structural improvements ship together so the protocol abstraction is immediately exercised by mocks and tests — ARCH-01 is worthless without test targets.
+**Delivers:** Coach VOW messages, NotificationScheduler actor, GooseBLEHistoricalManager, GooseBLEDataValidator, service-layer protocols + mocks + 2 tests
+**Addresses:** FEAT-01, FEAT-03, BLE5-03, BLE5-04, ARCH-01
+**Avoids:** Shipping ARCH-01 protocols without test targets
+
+### Phase 6: Smart Alarm UI (HAP-03 only)
+**Rationale:** Single-shot alarm UI builds on `AlarmCommandKind` + `writeAlarmCommand()` infrastructure that already exists. Kept separate from HAP-04 to prevent RE dependency from blocking delivery.
+**Delivers:** Alarm arm/cancel UI in Sleep Coach, strap confirmation buzz via `buzz(loops:)`
+**Addresses:** HAP-03
+**Avoids:** Bundling HAP-04 (RE-gated) into this phase
+
+### Phase 7 (RE-gated): Wake-Window Engine
+**Rationale:** HAP-04 requires two discrete RE sessions before implementation can begin. RE-01 (BTSnoop capture of `STRAP_DRIVEN_ALARM_EXECUTED`) and RE-02 (Ghidra decompilation of `SetAlarmInfoCommandPacketRev4`) are explicit standalone tasks that gate this phase.
+**Delivers:** Smart alarm wake-window (lightest-sleep firing), `GooseWakeWindowManager`
+**Addresses:** HAP-04
+**Avoids:** Implementing unknown wire format
+
+### Phase Ordering Rationale
+
+- Phase 1 is first because it has zero dependencies and fixes users immediately.
+- Phase 2 is second because the haptic primitive is tiny with enormous downstream unlock value.
+- Phase 3 precedes Phases 4 and 5 because schema migrations must land before any screen or bridge method that reads the new tables.
+- Phase 5 groups structural/coaching work after the data layer is stable; ARCH-01 protocols are most useful once GooseBLEHistoricalManager exists to exercise them.
+- Phase 6 is isolated to prevent HAP-04 RE risk from delaying HAP-03.
+- Phase 7 is explicitly gated behind two completed RE sessions.
+
+### Research Flags
+
+Phases needing RE sessions before implementation tasks are written:
+- **Phase 7 (Wake-Window Engine):** RE-01 and RE-02 must complete and be documented before any implementation tickets are created.
+
+Phases with well-documented patterns (skip research-phase):
+- **Phase 1:** R22/v18 parsing follows established `protocol.rs` patterns; issue #92 provides BTSnoop ground truth for R22.
+- **Phase 2:** NOOP `BreathingView` + `IntervalTimerView` are available as reference; `buzz(loops:)` is hardware-confirmed.
+- **Phase 3:** SQLite migration pattern is well-established; no novel architecture.
+- **Phase 5:** `UNUserNotificationCenter` patterns are iOS stdlib; service-layer protocol patterns follow standard Swift conventions.
+
+---
+
+## Confidence Assessment
+
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Stack | HIGH | No new dependencies needed; verified against live Cargo.toml and Xcode project |
+| Features | HIGH | All "missing" claims grep-verified against live codebase 2026-06-12; NOOP reference available |
+| Architecture | HIGH | Existing component map authoritative; new components follow established patterns |
+| Pitfalls | HIGH | Critical pitfalls derived from live code inspection and established patterns |
+| Wake-Window (HAP-04) | LOW | Wire format unknown; RE sessions are prerequisites |
+| Cole-Kripke / IMU staging | MEDIUM | Device calibration mismatch is algorithm-literature risk; no empirical validation data |
+
+**Overall confidence:** HIGH for Phases 1-6; LOW for Phase 7 until RE sessions complete.
+
+### Gaps to Address
+
+- **`SetAlarmInfoCommandPacketRev4` field layout** — unknown until RE-02 (Ghidra decompilation + BTSnoop ground-truth capture). Do not write HAP-04 implementation tasks until resolved.
+- **`STRAP_DRIVEN_ALARM_EXECUTED` event parse** — unknown until RE-01 (BTSnoop capture at alarm-fire time on handle `0x0022`/`0x0027`).
+- **v18 stale-clock dedup logic** — mentioned in FEATURES.md alongside the decode; needs explicit implementation spec during Phase 1 planning.
+- **GooseStrainAccumulator formula inputs** — `WhoopDataSignalPipeline` publishes per-sample HR; confirm sufficient granularity during Phase 3 planning.
+
+---
+
+## Sources
+
+### Primary (HIGH confidence)
+- Live codebase grep verification — `GooseSwift/`, `Rust/core/src/` — 2026-06-12
+- `.planning/seeds/*.md` — 16 seeds reviewed; all claims cross-checked with grep before acceptance
+- NOOP reverse-engineering findings (hardware-confirmed on MG): `HapticPayloads.swift`, `BreathingView.swift`, `IntervalTimerView.swift`
+- Issue #92 (darylbleach) — BTSnoop capture confirming R22 type 0x10 on WHOOP 5.0
+
+### Secondary (MEDIUM confidence)
+- Ghidra analysis of WHOOP 5.37.0 IPA (2026-06-11) — `WhoopSleepCoach`, `WhoopVow`, `WhoopLocalNotifications`, `WHPBLEProcessDataValidator` classes
+- `.planning/PROJECT.md` — v10.0 active requirements list
+- `.planning/research/PITFALLS.md` (v5.0) — integration pitfalls; structurally applicable to v10.0
+
+### Tertiary (LOW confidence — validation required)
+- Cole-Kripke actigraphy calibration on WHOOP IMU — needs 5-night empirical validation before shipping sleep staging
+- `SetAlarmInfoCommandPacketRev4` wire layout — requires RE-02 session before HAP-04 implementation
+
+---
+*Research completed: 2026-06-12*
 *Ready for roadmap: yes*

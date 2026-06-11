@@ -1,194 +1,420 @@
-# Architecture Research — v5.0 Metrics Accuracy
+# Architecture Research
 
-**Domain:** Rust biometric algorithm layer for an iOS WHOOP app
-**Researched:** 2026-06-06
-**Confidence:** HIGH — based on direct codebase reading
+**Domain:** iOS biometric app — WHOOP BLE + Rust core + SwiftUI
+**Researched:** 2026-06-12
+**Confidence:** HIGH
+
+## Standard Architecture
+
+### System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           SwiftUI View Layer                             │
+│  ┌───────────┐ ┌──────────┐ ┌──────────────┐ ┌────────────────────────┐ │
+│  │ HomeView  │ │HealthView│ │  CoachView   │ │MoreView / SleepCoach  │ │
+│  │ Dashboard │ │Stress/   │ │  VOW Card    │ │AlarmUI / BreatheView  │ │
+│  │           │ │Trends    │ │  ChatRoutes  │ │IntervalTimer          │ │
+│  └─────┬─────┘ └────┬─────┘ └──────┬───────┘ └──────────┬────────────┘ │
+└────────┼────────────┼──────────────┼────────────────────┼──────────────┘
+         │            │              │                    │
+┌────────▼────────────▼──────────────▼────────────────────▼──────────────┐
+│                     @MainActor Coordinator Layer                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  GooseAppModel (@MainActor @Observable)                          │   │
+│  │  + NotificationPipeline  + ActivityRecording  + BandFirstSync    │   │
+│  │  + Upload  + SleepSync   + HealthCapture     + Lifecycle         │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  HealthDataStore (@MainActor @Observable, async/await)            │  │
+│  │  + Snapshots + Sleep + Cardio + Trends + Stress + PacketInputs   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+         │                          │
+┌────────▼──────────┐   ┌───────────▼──────────────────────────────────┐
+│  BLE Layer        │   │   Service Layer (v10.0 new)                  │
+│  GooseBLEClient   │   │  GooseHapticService     (HAP-01/02/03)       │
+│  + CentralDelegate│   │  GooseBLEHistoricalManager  (BLE5-03)        │
+│  + Commands       │   │  GooseStrainAccumulator     (DATA-02)        │
+│  + HistoricalCmds │   │  GooseWakeWindowManager     (HAP-04)         │
+│  + Parsing        │   │  GooseNotificationService   (FEAT-03)        │
+│  + UserActions    │   │  GooseHRDecimator           (DATA-04)        │
+│  GooseBLEDataVal. │   │  GooseCoachVOWService       (FEAT-01)        │
+│  (BLE5-04 new)    │   └──────────────────────────────────────────────┘
+│  GooseBLEBonding  │
+│  GooseHRSanitizer │
+└────────┬──────────┘
+         │  coreBluetoothQueue (dedicated DispatchQueue)
+┌────────▼─────────────────────────────────────────────────────────────┐
+│  Background Queue Layer                                               │
+│  notificationIngestQueue  notificationParseQueue  captureFrameRowBuild│
+│  rustStartupQueue         heart-rate-series       com.goose.swift.*  │
+└────────┬──────────────────────────────────────────────────────────────┘
+         │
+┌────────▼──────────────────────────────────────────────────────────────┐
+│  Rust Core (libgoose_core — stateless, synchronous FFI)                │
+│  bridge.rs (58+ methods) → protocol.rs / store.rs / historical_sync.rs│
+│  + R22 parser (BLE5-01 new)   + v18 decoder (BLE5-02 new)             │
+│  + journal/workout/appleDaily/metricSeries tables (DATA-01 new)        │
+│  + coach.vow_message() (FEAT-01 new)                                   │
+└────────┬──────────────────────────────────────────────────────────────┘
+         │
+┌────────▼──────────────────────────────────────────────────────────────┐
+│  Persistence Layer                                                     │
+│  goose.sqlite (rusqlite bundled)  HeartRateSeriesStore (JSON on disk) │
+│  UserDefaults (config/watermarks) Keychain (Bearer token)             │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Responsibilities — Existing (v9.0 baseline)
+
+| Component | Responsibility | File(s) |
+|-----------|----------------|---------|
+| `GooseAppModel` | @MainActor coordinator; owns BLE client, queues, pipelines, upload | `GooseAppModel.swift` + 9 extension files |
+| `HealthDataStore` | @MainActor metric query layer; async/await bridge calls per metric family | `HealthDataStore.swift` + extension files |
+| `GooseBLEClient` | CoreBluetooth central; WHOOP GATT; BLE command writes; historical sync orchestration | `GooseBLEClient.swift` + 10 extension files |
+| `GooseRustBridge` | Synchronous JSON-over-FFI; never call from @MainActor | `GooseRustBridge.swift` |
+| `CaptureFrameWriteQueue` | Batched SQLite inserts of BLE frames via Rust bridge | `CaptureFrameWriteQueue.swift` |
+| `HeartRateSeriesStore` | In-memory + persisted HR series; singleton; NSLock-protected | `HeartRateSeriesStores.swift` |
+| `WhoopDataSignalPipeline` | Routes WhoopDataSignalSample to HR pipeline + passive detector | `WhoopDataSignalPipeline.swift` |
+| `PassiveActivityDetectionPipeline` | Heuristic motion/HR workout detection | `PassiveActivityDetector.swift` |
+| `GooseBLEBondingManager` | 5-state bonding state machine (v9.0) | `GooseBLEBondingManager.swift` |
+| `GooseNetworkMonitor` | NWPathMonitor; publishes `isReachable` to GooseAppModel (v9.0) | `GooseNetworkMonitor.swift` |
+| `GooseHRSanitizer` | HR spike filter 25-220 BPM; spike counter (v9.0) | `GooseHRSanitizer.swift` |
+| `StateMachine<State, Event>` | Generic state machine type (v9.0) | `GooseStateMachine.swift` |
 
 ---
 
-## New vs Modified Components
+## New Components for v10.0 — Classification
 
-| Component | New/Modified | Description |
-|-----------|-------------|-------------|
-| `protocol.rs` — `summarize_i16_series` | Modified | Expand `preview: Vec<i16>` from hardcoded cap of 8 to full 100 samples; changes the serialised `I16SeriesSummary` shape in `parsed_payload_json` stored in `decoded_frames` |
-| `store.rs` — `gravity` table | New | Add `CREATE TABLE gravity (row_id INTEGER PK, device_id TEXT, ts_unix_ms INTEGER, x INTEGER, y INTEGER, z INTEGER)`; new schema migration bump to version 15 |
-| `store.rs` — `GooseStore::insert_gravity_rows` | New | Batch INSERT function for gravity rows; called from the K21/K10 path in `upload.get_recent_decoded_streams` and from new bridge method |
-| `metrics.rs` — Lipponen-Tarvainen ectopic filter | Modified | New pre-processing step inside `goose_hrv_v0`: classify RR intervals as normal/ectopic/missed using morphological rules from Lipponen & Tarvainen (2018); replaces the current simple range-gate drop |
-| `metrics.rs` — Tanaka HRmax formula | Modified | New helper `tanaka_hrmax(age_years: u32) -> f64` = `208.0 - 0.7 * age`; used as denominator in `StrainInput` when user has not calibrated a personal max |
-| `metrics.rs` — Banister TRIMP strain | Modified | New `goose_strain_v1` function implementing Banister's TRIMP formula using exponential HR-zone weighting; replaces the linear zone-weight model in `goose_strain_v0`; registered as a new `algorithm_definitions` row, not replacing v0 |
-| `metrics.rs` — `fit_strain_denominator` | Modified | Helper that normalises raw TRIMP score to the 0–21 Goose scale using a fitted population denominator; feeds into `goose_strain_v1` |
-| `metrics.rs` — `rmr_mifflin_st_jeor` | Modified | RMR calculator for energy rollup; replaces the current placeholder constant in `energy_rollup.rs` |
-| `metrics.rs` — `heart_rate_dip_pct` | Modified | Computes nocturnal HR dip % = (pre-sleep average HR - nadir HR) / pre-sleep x 100; the field already exists as `heart_rate_dip_percent: Option<f64>` in `SleepInput` and `SleepV1Input` but is currently not computed from captured data |
-| `metrics.rs` — `waso_estimation` | Modified | Computes WASO (Wake After Sleep Onset) from `SleepStageSegment` sequences; `wake_after_sleep_onset_minutes` already in `SleepInput`, currently populated externally |
-| `sleep_staging.rs` | New | New module: Cole-Kripke activity-based staging pipeline, cardiorespiratory features per 30 s epoch, 4-class classifier (Awake/Core/Deep/REM) with physiological reimposition rules; consumes `gravity` rows + HR series from store |
-| `baselines.rs` | New | New module: EWMA baseline state struct, `update(new_value: f64)` method, `fold_history(rows: &[DailyRecoveryMetricRow])` to rebuild from persisted data; used by recovery score to produce personal Z-scores instead of simple ratio |
-| `metrics.rs` — `recovery_score_v1` | New | New function `goose_recovery_v1(input: &RecoveryV1Input)`: logistic squash of Z-scored HRV and RHR relative to personal EWMA baselines from `baselines.rs`; registered as new algorithm definition |
-| `bridge.rs` — new methods | Modified | Four new RPC methods added to `BRIDGE_METHODS` and `handle_bridge_request` dispatcher; see Integration Points below |
-| `GooseBLEClient.swift` — IMU sequence | Not changed | `startPhysiologyCapture` and `stopPhysiologyCapture` already include `TOGGLE_IMU_MODE_ON/OFF` (command 106); the IMU stream is already enabled; what changes is the extraction of that data downstream |
-| `bridge.rs` — `upload.get_recent_decoded_streams` | Modified | Populate the currently-empty `gravity: Vec<serde_json::Value>` by extracting from `DataPacketBodySummary::RawMotionK21` axes; each sample becomes `{ts, device_id, x, y, z}` |
-| `GooseUploadService.swift` | Not changed | Already sends `gravity` key in upload payload; no Swift changes needed |
+### Strictly New Files
 
----
+| Component | ID | Purpose | Integration Point |
+|-----------|----|---------|-------------------|
+| `GooseBLEHistoricalManager` | BLE5-03 | Dedicated historical sync lifecycle; decouples from `GooseBLEClient` | `GooseAppModel+BandFirstSync.swift` replaces direct `ble.syncHistoricalPackets()` calls |
+| `GooseBLEDataValidator` | BLE5-04 | Swift-side frame validation before Rust/SQLite ingestion | Inserted into `CaptureFrameWriteQueue` and/or `NotificationFrameParsing.swift` |
+| `GooseHapticService` | HAP-01/02 | Orchestrates `buzz(loops:)` calls and Breathe session pacing | Owned by `GooseAppModel`; calls `ble.buzz()` on the BLE client |
+| `GooseWakeWindowManager` | HAP-04 | Wake-window alarm orchestration; sleep-stage polling fallback | Owned by `GooseAppModel`; calls `ble.setWindowedAlarm()` |
+| `GooseNotificationService` | FEAT-03 | UNUserNotificationCenter wrapper; sleep summary + workout + battery | Actor; called from `GooseAppModel` lifecycle triggers |
+| `GooseStrainAccumulator` | DATA-02 | Real-time Swift-side strain accumulator during live workouts | Subscribes to `WhoopDataSignalPipeline`; owned by `GooseAppModel` |
+| `GooseHRDecimator` | DATA-04 | LTTB decimation of HR samples before chart rendering | Applied in `HeartRateSeriesStore` before publishing to views |
+| `GooseCoachVOWView` | FEAT-01 | SwiftUI banner/card showing bridge-computed VOW coaching nudge | Inserted into `CoachViews.swift` top section |
+| `GooseBLEManaging` (protocol) | ARCH-01 | Protocol extracted from `GooseBLEClient` | New file; conformance added to `GooseBLEClient` |
+| `GooseRustBridging` (protocol) | ARCH-01 | Protocol extracted from `GooseRustBridge` | New file; conformance added to `GooseRustBridge` |
+| `GooseAppServicing` (protocol) | ARCH-01 | Top-level service protocol wrapping BLE + bridge + health store | New file |
+| `GooseBLEClientMock` | ARCH-01 | Test double for `GooseBLEManaging` | Test target only (`#if DEBUG`) |
+| `GooseRustBridgeMock` | ARCH-01 | Test double for `GooseRustBridging` (fixture JSON) | Test target only (`#if DEBUG`) |
 
-## Data Flow Changes
+### Modifications to Existing Files
 
-### New path: gravity data BLE -> SQLite
+| File | Change | ID |
+|------|--------|----|
+| `Rust/core/src/protocol.rs` | Add R22 (0x10) packet type variant + `parse_r22_body()`; split v18 arm from `7|9|12|18` to `parse_v18_body()` | BLE5-01, BLE5-02 |
+| `Rust/core/src/historical_sync.rs` | Add stale-clock dedup (86400s threshold + 300s grid snap); EVENT type-48 timestamp bypass | BLE5-02 |
+| `Rust/core/src/store.rs` | Add `run_migrations()` for 4 new tables: `journal`, `workout`, `appleDaily`, `metricSeries` + helpers | DATA-01 |
+| `Rust/core/src/bridge.rs` | New dispatch arms: `journal.*`, `workout.*`, `apple_daily.*`, `metric_series.*`, `coach.vow_message` | DATA-01, FEAT-01 |
+| `GooseSwift/GooseBLEClient+Commands.swift` | Add `buzz(loops: UInt8)` — cmd 0x13 puffin frame (~15 lines) | HAP-01 |
+| `GooseSwift/GooseBLEClient+HistoricalCommands.swift` | Reduce to pure BLE command writes; move orchestration to `GooseBLEHistoricalManager` | BLE5-03 |
+| `GooseSwift/GooseBLEClient+HistoricalHandlers.swift` | Move sync lifecycle callbacks to `GooseBLEHistoricalManager` | BLE5-03 |
+| `GooseSwift/GooseAppModel+BandFirstSync.swift` | Replace `ble.syncHistoricalPackets()` calls with `historicalManager.beginSync()` | BLE5-03 |
+| `GooseSwift/CaptureFrameWriteQueue.swift` | Insert `GooseBLEDataValidator` validation step before Rust bridge call | BLE5-04 |
+| `GooseSwift/NotificationFrameParsing.swift` | Optional early validation hook for frame type + length before reassembly | BLE5-04 |
+| `GooseSwift/WhoopDataSignalPipeline.swift` | Feed samples to `GooseStrainAccumulator` on sample arrival | DATA-02 |
+| `GooseSwift/GooseAppModel+ActivityRecording.swift` | Wire `GooseStrainAccumulator` reset on session start/stop | DATA-02 |
+| `GooseSwift/HeartRateSeriesStores.swift` | Apply `GooseHRDecimator` before publishing to chart views | DATA-04 |
+| `GooseSwift/GooseBLEClient.swift` | Add conformance to `GooseBLEManaging` protocol | ARCH-01 |
+| `GooseSwift/GooseRustBridge.swift` | Add conformance to `GooseRustBridging` protocol | ARCH-01 |
+| `GooseSwift/HealthKitFullImporter.swift` | Write to `appleDaily` bridge method instead of mixed daily tables | DATA-01 |
+| `GooseSwift/CoachViews.swift` | Insert `GooseCoachVOWView` at top of Coach tab | FEAT-01 |
 
-```
-WHOOP BLE (K21 packet, packet_type=51/52)
-  -> GooseBLEClient -> CaptureFrameWriteQueue
-  -> bridge: capture.import_frame_batch (existing)
-  -> decoded_frames table (existing, stores parsed_payload_json with I16SeriesSummary)
-  -> [NEW] upload.get_recent_decoded_streams extracts RawMotionK21 axes (preview now 100 samples)
-  -> [NEW] bridge: store.insert_gravity_rows -> gravity table
-```
+### New SwiftUI Screens (DATA-03, FEAT-02)
 
-The key change in `protocol.rs` is that `I16SeriesSummary.preview` grows from 8 to 100 samples. The `I16SeriesSummary` struct itself does not change shape — `preview` is already `Vec<i16>`. Existing rows stored in `decoded_frames` with 8-sample previews are not backfilled; the gravity extraction path operates on new frames only (filtered by `since_ts`).
-
-### New path: sleep staging
-
-```
-gravity table (x, y, z timeseries at ~50 Hz per packet)
-  + decoded_frames HR series
-  -> [NEW] sleep_staging.rs: cole_kripke_activity_series (activity count per 30s epoch)
-  -> [NEW] sleep_staging.rs: cardiorespiratory_features (HR features per epoch)
-  -> [NEW] sleep_staging.rs: 4-class classifier with physiological reimposition
-  -> Vec<SleepStageSegment>
-  -> SleepV1Input.stage_segments (existing field, already handled by goose_sleep_v1)
-```
-
-`sleep_staging.rs` is a pure computation module. It reads from the store, computes, and returns `Vec<SleepStageSegment>`. It does not write to any table; the caller passes the result through the existing `SleepV1Input` path. No new output types are required.
-
-### Modified path: HRV with ectopic filter
-
-```
-rr_intervals_ms (from decoded_frames, unchanged source)
-  -> [NEW] lipponen_tarvainen_ectopic_filter()  (inside goose_hrv_v0 pre-step)
-  -> cleaned rr_intervals
-  -> existing RMSSD / SDNN / pNN50 computation (unchanged)
-```
-
-The existing `invalid_interval_count` counter and `invalid_rr_interval_dropped` quality flag are reused to cover ectopic-rejected intervals. No new output fields are required in `HrvOutput` for v1.
-
-### Modified path: recovery with personal baselines
-
-```
-daily_recovery_metrics table (existing, stores hrv_rmssd_ms + resting_hr_bpm per day)
-  -> [NEW] baselines.rs: fold_history() -> EwmaBaselineState {hrv_ewma, rhr_ewma}
-  -> [NEW] goose_recovery_v1: Z-score each vital sign against personal EWMA
-  -> logistic squash -> score_0_to_100
-```
-
-The `baselines.rs` state is reconstructed on each call — not persisted in SQLite in v1. This avoids a new table and migration for the first iteration. The EWMA fold is cheap: typically 30–90 rows from `daily_recovery_metrics`.
-
-### Modified path: strain with Banister TRIMP
-
-```
-StrainInput {duration_minutes, resting_hr_bpm, average_hr_bpm, max_hr_bpm, hr_zone_minutes}
-  -> [NEW] tanaka_hrmax(age_years) if max_hr_bpm not calibrated
-  -> [NEW] goose_strain_v1 Banister TRIMP exponential weighting
-  -> [NEW] fit_strain_denominator() -> normalised score_0_to_21
-```
-
-`goose_strain_v0` remains registered and active as fallback. `goose_strain_v1` is a new algorithm definition row; `settings.set_algorithm_preference` switches the active algorithm per scope.
+| File | Screen | Prerequisite |
+|------|--------|--------------|
+| `GooseSwift/FitnessManualWorkoutSheet.swift` | Manual workout entry/edit sheet | `workout` table (DATA-01) |
+| `GooseSwift/HealthTrendsDashboardView.swift` | Long-range trends dashboard | `metricSeries` table (DATA-01) |
+| `GooseSwift/HealthStressViews.swift` | Stress/ANS additions (calm time, baseline-delta, range selector) | None |
+| `GooseSwift/BreatheView.swift` | Breathe HRV-biofeedback screen | HAP-01 (`buzz(loops:)`) |
+| `GooseSwift/IntervalTimerView.swift` | Interval timer with strap haptic cues | HAP-01 (`buzz(loops:)`) |
+| `GooseSwift/MetricExplorerView.swift` | Arbitrary metric key browsing | `metricSeries` table (DATA-01) |
 
 ---
 
-## Build Order
-
-Strict dependency order (each phase must be complete before the arrow target begins):
+## Recommended Build Order — Dependency Graph
 
 ```
-Phase 1 — protocol.rs + store.rs + gravity extraction in bridge.rs
-  |
-  +-> Phase 2 — sleep_staging.rs
-  |     (needs gravity rows in store)
-  |
-  +-> Phase 3 — baselines.rs EWMA
-  |     (reads existing daily_recovery_metrics; no Phase 1 data dependency,
-  |      but wait for Phase 1 to stabilise the build before branching)
-  |
-  +-> Phase 4 — HRV ectopic filter (in metrics.rs)
-  |     (pure computation, no data dependency on Phase 1,
-  |      but logically grouped after data foundation)
-  |
-  +-> Phase 5 — Strain v1 Banister TRIMP (in metrics.rs)
-        (pure computation, no data dependency)
-
-After Phase 2 + Phase 3 + Phase 4 complete:
-  -> Phase 6 — Recovery v1 (metrics.rs + bridge.rs + HealthDataStore Swift extension)
-       (needs EWMA baselines from Phase 3, sleep staging from Phase 2,
-        ectopic-filtered HRV from Phase 4 for accurate baseline history)
-
-Phase 7 — Helper metrics (heart_rate_dip_pct, waso_estimation, rmr_mifflin_st_jeor)
-  (independent, can be done at any time alongside Phase 2-5)
+BLE5-01 (R22 Rust parser)
+    |-- feeds metric pipeline for WHOOP 5.0 users
+BLE5-02 (v18 historical decode + stale-clock)
+    |-- completes WHOOP 5.0 historical offload
+BLE5-03 (GooseBLEHistoricalManager)
+    |-- depends on BLE5-01/02 for full test coverage; also depends on ARCH-01 for mocks
+BLE5-04 (GooseBLEDataValidator)
+    |-- independent of BLE5-01/02/03 -- can build in parallel with Wave 2
+ARCH-01 (protocol layer + mocks)
+    |-- unblocks unit tests for BLE5-03, DATA-02, HAP-01+
+HAP-01 (buzz primitive -- GooseBLEClient+Commands.swift)
+    |-- HAP-02 (Breathe screen + GooseHapticService)
+    |-- HAP-03 (smart alarm UI, event-57 RE required first)
+    |-- HAP-04 (GooseWakeWindowManager -- after HAP-03 event-57 and RE SetAlarmInfoCommandPacketRev4)
+DATA-01 (4 SQLite tables: metricSeries -> journal -> workout -> appleDaily)
+    |-- DATA-03 Screen 1: Stress additions (independent of DATA-01, build first)
+    |-- DATA-03 Screen 2: Manual Workout Entry (needs workout table)
+    |-- DATA-03 Screen 3: Trends Dashboard (needs metricSeries table)
+DATA-02 (GooseStrainAccumulator)
+    |-- independent; depends on WhoopDataSignalPipeline (already exists)
+DATA-04 (GooseHRDecimator)
+    |-- fully independent; add only after Instruments profile confirms render issue
+FEAT-01 (Coach VOW -- Rust bridge.rs + GooseCoachVOWView)
+    |-- depends on existing bridge metrics; no new tables needed for v1
+FEAT-02 (NoopApp: Breathe, Interval Timer, Metric Explorer)
+    |-- Breathe/Intervals depend on HAP-01; MetricExplorer depends on DATA-01 metricSeries
+FEAT-03 (GooseNotificationService)
+    |-- independent; uses PassiveActivityDetector callbacks + sleep sync + BLE battery
 ```
 
-Phases 2, 3, 4, 5 can be developed in parallel after Phase 1 merges. Phase 6 is the only gate that requires all four to be complete.
+### Recommended Phase Wave Order
+
+**Wave 1 — Foundation (no dependencies, highest user impact)**
+1. BLE5-01: R22 parser (Rust only, ~1 day) — fixes WHOOP 5.0 users seeing zero metrics
+2. DATA-01: 4 SQLite tables, implementation order: metricSeries, journal, workout, appleDaily
+3. ARCH-01: Protocol layer + mocks (Phase 1 protocols, Phase 2 mocks, Phase 3 tests together — only if test target can be added)
+
+**Wave 2 — Protocol completeness + buzz prerequisite**
+4. BLE5-02: v18 decode + stale-clock (Rust only, ~1 day) — completes WHOOP 5.0 historical offload
+5. HAP-01: `buzz(loops:)` primitive — 2 hours; gates all HAP-02/03/04 and FEAT-02 Breathe/Intervals
+6. BLE5-03: GooseBLEHistoricalManager — depends on ARCH-01 mocks for tests
+7. BLE5-04: GooseBLEDataValidator — insertable independently after BLE5-03 refactor settles
+
+**Wave 3 — Features (parallel, all Wave 1+2 gates met)**
+8. HAP-02: GooseHapticService + Breathe screen
+9. HAP-03: Smart alarm UI (BTSnoop session to capture event-57 required before implementation)
+10. HAP-04: GooseWakeWindowManager (after HAP-03 event-57 resolved; RE SetAlarmInfoCommandPacketRev4)
+11. DATA-02: GooseStrainAccumulator
+12. FEAT-01: Coach VOW (Rust method + SwiftUI card)
+13. FEAT-03: GooseNotificationService
+
+**Wave 4 — Polish**
+14. DATA-03: Stress additions, Manual Workout Entry (workout table), Trends Dashboard (metricSeries)
+15. FEAT-02: NoopApp Breathe + Interval Timer + Metric Explorer (metricSeries table)
+16. DATA-04: GooseHRDecimator (only after Instruments profile confirms render problem)
 
 ---
 
-## Integration Points
+## Data Flow
 
-### bridge.rs — new methods
+### New Real-Time Path — Strain Accumulator
 
-These four entries must be added to `BRIDGE_METHODS` (in lexicographic order to pass the constant-sync test) and to the `handle_bridge_request` match dispatcher:
-
-| Method | Args | Returns | Depends on |
-|--------|------|---------|------------|
-| `metrics.goose_recovery_v1` | `database_path, start_time, end_time, baseline_window_days` | `AlgorithmRunResult<RecoveryScoreOutput>` | `baselines.rs`, `goose_recovery_v1` |
-| `metrics.goose_strain_v1` | `StrainInput` JSON (same schema as v0) | `AlgorithmRunResult<StrainScoreOutput>` | `goose_strain_v1`, `tanaka_hrmax` |
-| `metrics.sleep_staging` | `database_path, sleep_start, sleep_end, device_id` | `Vec<SleepStageSegment>` | `sleep_staging.rs` |
-| `store.insert_gravity_rows` | `database_path, rows: [{ts_unix_ms, device_id, x, y, z}]` | `{inserted: usize}` | `GooseStore::insert_gravity_rows` |
-
-`metrics.goose_recovery_v1` requires `database_path` because it reads `daily_recovery_metrics` history to build baselines. `metrics.goose_strain_v1` does not — it is a pure computation like v0.
-
-### store.rs changes
-
-1. Bump `CURRENT_SCHEMA_VERSION` from 14 to 15.
-2. Add migration block for version 15 in `apply_migrations`: create `gravity` table with index.
-3. Add `GooseStore::insert_gravity_rows(rows: &[GravityRowInput]) -> GooseResult<usize>`.
-4. Add `GooseStore::gravity_rows_between(device_id: &str, start_unix_ms: i64, end_unix_ms: i64) -> GooseResult<Vec<GravityRow>>` — used by `sleep_staging.rs`.
-
-Gravity table DDL:
-```sql
-CREATE TABLE IF NOT EXISTS gravity (
-    row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id TEXT NOT NULL,
-    ts_unix_ms INTEGER NOT NULL,
-    x INTEGER NOT NULL,
-    y INTEGER NOT NULL,
-    z INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gravity_device_ts ON gravity(device_id, ts_unix_ms);
+```
+BLE notification (HR sample via 0x0022)
+    |
+GooseBLEClient.onLiveHeartRate callback
+    |
+WhoopDataSignalPipeline (realtimeVitalsQueue)
+    |-- HeartRateSamplePipeline -> HeartRateSeriesStore (existing)
+    |-- GooseStrainAccumulator.onSample() (new DATA-02)
+            |
+        Task { @MainActor in appModel.liveSessionStrain = updated }
+            |
+        SwiftUI workout view (live strain card updates)
 ```
 
-### protocol.rs changes
+### New Historical Path — WHOOP 5.0 V18
 
-In `summarize_i16_series`: change `if preview.len() < 8` to `if preview.len() < expected_count`. The `I16SeriesSummary` struct is unchanged — `preview` is already `Vec<i16>`. The only effect is that K21 and K10 packets now store all 100 samples in `parsed_payload_json` instead of the first 8.
+```
+BLE notification (WHOOP 5.0 historical frame on 0x0022)
+    |
+GooseBLEClient (subscription unchanged)
+    |
+GooseBLEHistoricalManager (new BLE5-03, receives frame via callback)
+    |
+GooseBLEDataValidator.validate() (new BLE5-04)
+    |-- if invalid: log warn + increment discardedFrameCount; drop
+    |-- if valid:
+CaptureFrameWriteQueue -> GooseRustBridge
+    |
+Rust bridge.rs -> protocol.rs.parse_v18_body() (new BLE5-02)
+    |
+store.rs inserts: skin_temp_samples / rr_interval_samples /
+                  step_counter_samples / gravity2_samples
+```
 
-### Swift call sites
+### New BLE Command Path — Haptics
 
-| File | Change |
-|------|--------|
-| `GooseBLEClient.swift` | No change — IMU already toggled in `startPhysiologyCapture` |
-| `GooseUploadService.swift` | No change — `gravity` key already sent in upload payload |
-| `HealthDataStore+Recovery.swift` (new file) | Add `refreshRecoveryV1(start:end:)` calling `bridge.request(method: "metrics.goose_recovery_v1", args: [...])` |
-| Existing `RecoveryV2DashboardView` | Update to consume `recoveryV1` property from `HealthDataStore` |
+```
+User action (Breathe screen inhale cue)
+    | @MainActor
+GooseHapticService.sendBreatheInhale() (new HAP-02)
+    | must dispatch off @MainActor
+GooseBLEClient.buzz(loops: 1) (new HAP-01, added to Commands extension)
+    | coreBluetoothQueue via writeValue
+activePeripheral.writeValue(puffinFrame, for: commandCharacteristic, type: .withoutResponse)
+```
+
+### New Journal/Workout Entry Path
+
+```
+User action (journal tag tap / manual workout save)
+    | @MainActor SwiftUI view
+Task.detached { bridge.request(method: "journal.upsert", args: [...]) }
+    | background thread -- never @MainActor inline
+GooseRustBridge.request() -> bridge.rs dispatch arm (new DATA-01)
+    |
+store.rs -> journal / workout / appleDaily / metricSeries table
+    |
+goose.sqlite
+```
 
 ---
 
-## Suggested Phase Groupings
+## Integration Points — Threading Analysis
 
-| Phase | Work | Parallel with | Gate for |
-|-------|------|--------------|----------|
-| 1 — Data Foundation | `protocol.rs` preview expansion, gravity table + migration, K21 extraction in bridge | Nothing (first) | All algorithm phases |
-| 2 — Sleep Staging | `sleep_staging.rs`, `metrics.sleep_staging` bridge method | Phase 3, 4, 5 after Phase 1 | Phase 6 |
-| 3 — EWMA Baselines | `baselines.rs`, `fold_history` | Phase 2, 4, 5 after Phase 1 | Phase 6 |
-| 4 — HRV Ectopic Filter | Lipponen-Tarvainen in `metrics.rs` | Phase 2, 3, 5 after Phase 1 | Phase 6 |
-| 5 — Strain v1 | Banister TRIMP + Tanaka HRmax + `fit_strain_denominator`, `metrics.goose_strain_v1` bridge method | Phase 2, 3, 4 after Phase 1 | Independent |
-| 6 — Recovery v1 | `goose_recovery_v1` in `metrics.rs`, bridge method, `HealthDataStore` extension | Nothing (last gate) | User-facing delivery |
-| 7 — Helper metrics | `heart_rate_dip_pct`, `waso_estimation`, `rmr_mifflin_st_jeor` | Any phase | Not blocking |
+### HAP-01: buzz(loops:) Command — Threading Risk: MEDIUM
 
-Phase 7 is the lowest-risk work and can be used as a warm-up or fill work during the Phase 2-3-4 parallel sprint.
+The existing `writeAlarmCommand()` and `writeClockCommand()` in `GooseBLEClient+Commands.swift` already include a main-thread dispatch guard:
+
+```swift
+guard Thread.isMainThread else {
+  DispatchQueue.main.async { [weak self] in self?.writeAlarmCommand(kind) }
+  return
+}
+```
+
+`buzz(loops:)` must include the same guard. `GooseHapticService` may schedule a `Timer` for Breathe session pacing — that timer must fire on the main run loop (schedule via `@MainActor` context), not a background `RunLoop.current`. If the timer fires on a background thread and calls `buzz()` without the guard, the guard catches it but silently adds latency. Preferred: schedule the Breathe timer from `@MainActor` so the guard never triggers.
+
+### BLE5-03: GooseBLEHistoricalManager — Threading Risk: HIGH
+
+`GooseBLEHistoricalManager` must coordinate with `GooseBLEClient` state (`isHistoricalSyncing`, `connectionState`, `activePeripheral`). These are `@Observable` properties mutated from both `coreBluetoothQueue` and `@MainActor`.
+
+The manager must not read `GooseBLEClient` internal state directly from a non-main thread. All reads must come from callbacks already dispatched to main (`onHistoricalSyncProgress`, `onConnectionStateChange`), or the manager must be `@MainActor` itself.
+
+If `GooseBLEHistoricalManager` owns a sync-timeout `DispatchWorkItem`, that work item must check state via a @MainActor-dispatched closure, not directly. Otherwise it races with `coreBluetoothQueue` mutations.
+
+After ARCH-01: the manager depends on `GooseBLEManaging` protocol only. State is communicated back via existing callbacks that `GooseBLEClient` already dispatches to main — do not add new direct property reads.
+
+### DATA-02: GooseStrainAccumulator — Threading Risk: MEDIUM
+
+`WhoopDataSignalPipeline` delivers samples on `realtimeVitalsQueue`. The accumulator computes incrementally on that queue (O(1) per sample). Publishing `liveSessionStrain` to `GooseAppModel` requires a main-actor hop:
+
+```swift
+// Inside GooseStrainAccumulator (realtimeVitalsQueue)
+func accumulate(sample: WhoopDataSignalSample) {
+  // O(1) Banister TRIMP increment
+  accumulatedStrain += deltaStrain(sample)
+  let snapshot = accumulatedStrain
+  Task { @MainActor in appModel.liveSessionStrain = snapshot }
+}
+```
+
+One `Task { @MainActor in }` per BLE sample (1/s) is acceptable. Do not coalesce unless profiling shows actor-hop overhead.
+
+### ARCH-01: Protocol Layer — Threading Risk: LOW
+
+Adding protocol conformances is purely additive. The protocols must document the threading contract inherited from the concrete types: callers must not call `GooseRustBridging.request()` from `@MainActor` inline; `GooseBLEManaging.buzz()` dispatches to main internally.
+
+Mock implementations in the test target must explicitly state they run on the caller's thread — `GooseBLEClientMock` does not simulate `coreBluetoothQueue`. Test assertions must not rely on background-queue timing.
+
+### FEAT-03: GooseNotificationService — Threading Risk: LOW
+
+`UNUserNotificationCenter` is safe from any thread. Implement as a Swift `actor` to serialize the battery notification reschedule sequence (read drain rate -> compute crossing time -> cancel old -> schedule new). Sleep summary and workout notifications are fire-and-forget and don't need serialization.
+
+The battery drain-rate computation reads SQLite via Rust bridge — must not happen on `@MainActor`. Call via `Task.detached` or via an existing `HealthDataStore` async method.
+
+### BLE5-04: GooseBLEDataValidator — Threading Risk: LOW
+
+`CaptureFrameWriteQueue` runs on `captureFrameRowBuildQueue`. `GooseBLEDataValidator` is a pure `struct` called inline in that queue — inherently safe. If a discarded-frame counter needs to be observable from the UI, expose it via `Task { @MainActor in }`, not a shared mutable property.
+
+---
+
+## Architectural Patterns
+
+### Pattern 1: @MainActor Coordinator + Background Queue Dispatch
+
+All UI-observable state lives on `@MainActor`. Background work dispatches results back via `Task { @MainActor in }` or `DispatchQueue.main.async`. Every new v10.0 component that publishes to `GooseAppModel` or `HealthDataStore` must follow this. Applies to: `GooseStrainAccumulator`, `GooseHapticService`, `GooseWakeWindowManager`, `GooseNotificationService`.
+
+```swift
+// New GooseHapticService call site in GooseAppModel (already @MainActor):
+func startBreatheSession() {
+  hapticService.begin()  // schedules Timer on main run loop internally
+}
+
+// Inside GooseHapticService (@MainActor):
+func begin() {
+  Timer.scheduledTimer(withTimeInterval: inhaleSeconds, repeats: true) { [weak self] _ in
+    self?.ble.buzz(loops: 1)  // ble is GooseBLEManaging; buzz dispatches internally
+  }
+}
+```
+
+### Pattern 2: Protocol-over-Concrete for Testable Services
+
+New service components depend on `GooseBLEManaging` and `GooseRustBridging` protocols, never on concrete types. `GooseBLEHistoricalManager` takes `any GooseBLEManaging` at init. `CaptureFrameWriteQueue` (post-refactor) takes `any GooseRustBridging`. No file outside `GooseBLEClient*.swift` casts to the concrete `GooseBLEClient` type.
+
+### Pattern 3: Rust Bridge as Stateless Service
+
+All new bridge calls for DATA-01 tables and FEAT-01 VOW follow the existing pattern: always pass `database_path`; never call from `@MainActor` inline; each caller either creates its own `GooseRustBridge()` instance or reuses one held by the owning class. The `GooseCoachVOWView` data should be fetched via a new `HealthDataStore+Coach.swift` extension that follows the async/await pattern from v7.0.
+
+### Pattern 4: Sequential Migration Order for SQLite Tables
+
+`store.rs:run_migrations()` applies all migrations in a single function, guarded by the current schema version. Each new table is a new migration version increment. DATA-01 must not use `ALTER TABLE` on existing tables. Add new table migrations in order: `metricSeries` (version N), `journal` (N+1), `workout` (N+2), `appleDaily` (N+3). In-memory test fixtures must run all migrations before any test assertion.
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Calling buzz() from a Background Timer Without Main-Thread Guard
+
+**What people do:** Schedule a `Timer` on `RunLoop.current` in a background thread inside `GooseHapticService.startBreatheSession()`, then call `ble.buzz(loops:)` directly when the timer fires.
+**Why it's wrong:** CoreBluetooth peripheral writes must originate from main or `coreBluetoothQueue`. The main-thread guard in `buzz()` catches this but silently adds per-buzz latency on every Breathe cycle (background -> main dispatch).
+**Do this instead:** Schedule the Breathe session `Timer` from `@MainActor` context. `GooseHapticService` is `@MainActor` or uses `DispatchQueue.main.async` for the timer callback.
+
+### Anti-Pattern 2: GooseBLEHistoricalManager Holding a Strong Reference to GooseBLEClient
+
+**What people do:** Store `let ble: GooseBLEClient` in the manager and read `ble.isHistoricalSyncing` or `ble.connectionState` directly.
+**Why it's wrong:** Defeats BLE5-03 decoupling; requires a real `CBCentralManager` to instantiate in tests; breaks ARCH-01 DI.
+**Do this instead:** Store `let ble: any GooseBLEManaging`. Historical state changes are communicated via `onHistoricalSyncProgress` and `onConnectionStateChange` callbacks — set these during init, clear on `deinit`.
+
+### Anti-Pattern 3: Writing to Journal/Workout Tables from @MainActor Inline
+
+**What people do:** Call `bridge.request(method: "journal.upsert", ...)` directly in a `@MainActor` button action.
+**Why it's wrong:** `GooseRustBridge.request()` is synchronous and blocks the caller. A cold SQLite write can take 5-30ms — on `@MainActor` this drops frames.
+**Do this instead:** Always wrap in `Task.detached` or call via an `async` method on `HealthDataStore` that dispatches internally. This is the pattern established in v7.0 async migration.
+
+### Anti-Pattern 4: Adding Protocol Conformance Without Tests
+
+**What people do:** Extract `GooseBLEManaging` and `GooseRustBridging` as protocols without creating a test target to use the mocks.
+**Why it's wrong:** The seed is explicit: protocols without tests are dead code. ARCH-01 is only justified when test targets exist.
+**Do this instead:** Build ARCH-01 Phase 1 (protocols) + Phase 2 (mocks) + Phase 3 (tests for `PassiveActivityDetector` and `CaptureFrameWriteQueue`) in a single phase. If the test target cannot be added, defer ARCH-01 entirely.
+
+### Anti-Pattern 5: Decimating HR Samples at Ingest
+
+**What people do:** Filter HR samples before storing them in `HeartRateSeriesStore` to reduce memory.
+**Why it's wrong:** `HeartRateSeriesStore` already has `maxSamples = 100_000` + `prune()`. Memory is not the primary problem. Decimating at ingest permanently discards data needed for HRV computation and accurate chart zoom-in.
+**Do this instead:** `GooseHRDecimator` operates only on the slice passed to chart views (view-side projection), not on the stored series. LTTB is fast enough to run at chart render time.
+
+---
+
+## Scaling Considerations
+
+This is a single-user personal device app. Scale concerns are per-session data volume, not concurrent users.
+
+| Concern | Current | v10.0 Risk | Mitigation |
+|---------|---------|------------|------------|
+| HR samples in memory | 100k cap + prune | `GooseStrainAccumulator` adds per-sample computation on `realtimeVitalsQueue` | Accumulate incrementally (O(1) per sample, not O(n)) |
+| SQLite migration time | Schema v19, ~100ms cold start | 4 new tables in DATA-01 | All 4 tables in one `run_migrations()` transaction; no schema version regression risk |
+| Breathe session timer precision | N/A | Paced haptic requires ~100ms accuracy | Use `Timer` on main run loop; avoid `DispatchQueue.asyncAfter` chaining for pacing |
+| Notification scheduling | OnboardingModels.swift requests permission | 3 notification types, 1 actor | `GooseNotificationService` actor serializes battery reschedule; UNUserNotificationCenter handles OS queuing |
+
+---
+
+## Sources
+
+- Seed files in `.planning/seeds/` (2026-06-11): R22 wire format from BTSnoop capture (#92), v18 field layout from NoopApp/WhoopProtocol cross-reference, alarm payloads confirmed on real MG hardware, journal schema from Ghidra WhoopJournal RE, service-layer DI rationale from WHOOP class inventory
+- Project history: `.planning/PROJECT.md` — v9.0 architecture baseline (StateMachine, BondingManager, NetworkMonitor, HRSanitizer confirmed shipped)
+- Codebase inspection: `GooseBLEClient.swift`, `GooseAppModel.swift`, `GooseBLEClient+Commands.swift`, `GooseAppModel+BandFirstSync.swift`, `Rust/core/src/protocol.rs` (PACKET_TYPE constants, `packet_type_name` dispatch table), `GooseSwift/HeartRateSeriesStores.swift` (maxSamples, prune, NSLock pattern)
+- WHOOP RE: `smart-alarm-strap-haptic.md` — puffin frame format + buzz payload confirmed on real MG hardware; `whoop5-r22-packet-support.md` — BTSnoop HCI capture from issue #92 (darylbleach)
+- WHOOP RE: `advanced-haptic-breathe-primitive.md` — Ghidra ObjC class inventory (WhoopBiotelemetry framework); `wake-window-alarm.md` — WhoopSleepCoach class names (WakeWindow, SmartAlarmTriggerManager, SetAlarmInfoCommandPacketRev4)
+
+---
+*Architecture research for: Goose iOS biometric platform — v10.0 component integration*
+*Researched: 2026-06-12*
