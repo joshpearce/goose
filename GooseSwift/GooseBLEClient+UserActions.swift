@@ -440,6 +440,10 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.metadata", title: "battery.refresh.blocked", body: "no active peripheral")
       return
     }
+    guard activePeripheral.state == .connected else {
+      record(level: .warn, source: "ble.metadata", title: "battery.refresh.blocked", body: "peripheral state \(activePeripheral.state.rawValue)")
+      return
+    }
 
     activePeripheral.delegate = self
     if let batteryLevelCharacteristic {
