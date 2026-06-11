@@ -10,7 +10,7 @@ use goose_core::{
         GooseStore,
     },
 };
-use zip::{CompressionMethod, ZipWriter, write::FileOptions};
+use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
 
 #[test]
 fn clean_goosebundle_export_passes_privacy_lint() {
@@ -467,7 +467,7 @@ fn privacy_lint_scans_zip_entries() {
     let zip_path = tempdir.path().join("bad.goosebundle.zip");
     let file = File::create(&zip_path).unwrap();
     let mut zip = ZipWriter::new(file);
-    let options = FileOptions::default().compression_method(CompressionMethod::Stored);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
     zip.start_file("data/debug_events.jsonl", options).unwrap();
     zip.write_all(br#"{"data_json":"ws://127.0.0.1/goose-debug/stream?token=secret"}"#)
         .unwrap();

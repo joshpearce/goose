@@ -10,7 +10,7 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use zip::{CompressionMethod, ZipArchive, ZipWriter, write::FileOptions};
+use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
 use crate::{
     GooseError, GooseResult,
@@ -7795,7 +7795,7 @@ fn write_export_zip(
     let zip_file =
         File::create(zip_output_path).map_err(|source| GooseError::io(zip_output_path, source))?;
     let mut writer = ZipWriter::new(zip_file);
-    let options = FileOptions::default()
+    let options = SimpleFileOptions::default()
         .compression_method(CompressionMethod::Deflated)
         .unix_permissions(0o644);
 
@@ -7824,7 +7824,7 @@ fn write_zip_file(
     writer: &mut ZipWriter<File>,
     archive_path: &str,
     source_path: &Path,
-    options: FileOptions,
+    options: SimpleFileOptions,
 ) -> GooseResult<()> {
     validate_safe_relative_path(archive_path)?;
     let bytes = fs::read(source_path).map_err(|source| GooseError::io(source_path, source))?;

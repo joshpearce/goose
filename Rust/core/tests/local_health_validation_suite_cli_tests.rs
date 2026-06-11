@@ -18,7 +18,7 @@ use std::{
     io::Write,
     path::Path,
 };
-use zip::{CompressionMethod, ZipWriter, write::FileOptions};
+use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
 
 #[test]
 fn local_health_validation_suite_accepts_raw_export_directory_bundle() {
@@ -5378,7 +5378,7 @@ fn write_steps_unavailable_manifest_for_day(path: &Path, date_key: &str) {
 fn zip_goose_database(zip_path: &Path, database_path: &Path, archive_path: &str) -> String {
     let zip_file = File::create(zip_path).unwrap();
     let mut writer = ZipWriter::new(zip_file);
-    let options = FileOptions::default()
+    let options = SimpleFileOptions::default()
         .compression_method(CompressionMethod::Deflated)
         .unix_permissions(0o644);
     let bytes = fs::read(database_path).unwrap();
