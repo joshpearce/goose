@@ -190,7 +190,15 @@ final class GooseUploadService: @unchecked Sendable {
       if attempt > 0 {
         let delaySeconds = min(1.0 * pow(2.0, Double(attempt - 1)), 60.0)
         let delayNanos = UInt64(delaySeconds * 1_000_000_000)
-        try? await Task.sleep(nanoseconds: delayNanos)
+        do {
+          try await Task.sleep(nanoseconds: delayNanos)
+        } catch {
+          // CancellationError: task was cancelled during backoff sleep.
+          // Stop retrying immediately rather than continuing after the sleep.
+          logger.debug("upload backoff cancelled — aborting retry loop")
+          stateLock.withLock { _pendingBatchCount = max(0, _pendingBatchCount - 1) }
+          return
+        }
       }
       let result = await performRequest(request)
       switch result {
