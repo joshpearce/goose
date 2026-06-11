@@ -96,12 +96,13 @@ Full details: `.planning/milestones/v8.0-ROADMAP.md`
 Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verify); hardware gates (VAL-HRV-01, VAL-SLP-01, SLP-SYNC)
 
 </details>
+
 ### v9.0 BLE Reliability & Protocol Parity (Planned)
 
 **Milestone Goal:** Close the critical architectural gaps identified by Ghidra RE of WHOOP v5.37.0. Phases derived from `.planning/research/whoop-re/WHOOP-GOOSE-CROSS-COMPARE.md`.
 
 - [x] **Phase 60: Band-First Sync** - Align sync architecture with WHOOP's foreground-trigger + silent push + BGAppRefreshTask model; remove overnight poll loop (completed 2026-06-11)
-- [ ] **Phase 61: BLE Bonding State Machine** - Formal 5-state bonding manager (WHPBLEBondingManager parity); replace implicit OS bonding
+- [x] **Phase 61: BLE Bonding State Machine** - Formal 5-state bonding manager (WHPBLEBondingManager parity); replace implicit OS bonding (completed 2026-06-11)
 - [ ] **Phase 62: Upload Watermark per Sensor** - Per-type upload watermark to prevent re-uploads after crash/restart (WHPStrapLatestUploadedMetricDateKey parity)
 - [ ] **Phase 63: Network Monitor & Upload Gating** - NWPathMonitor-based reachability gating + exponential backoff (WHPNetworkMonitor parity)
 - [ ] **Phase 64: HR Data Sanitizer** - Swift-side HR spike filter before HeartRateSeriesStore (WHPHeartRateDataSanitizer parity)
@@ -252,7 +253,7 @@ Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verif
 | 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Complete | 2026-06-11 |
 | 59. Band Sleep Import | v8.0 | 0/TBD | Complete | 2026-06-11 |
 | 60. Band-First Sync | v8.0âv9.0 | 3/3 | Complete   | 2026-06-11 |
-| 61. BLE Bonding State Machine | v9.0 | 2/3 | In progress | - |
+| 61. BLE Bonding State Machine | v9.0 | 3/3 | Complete   | 2026-06-11 |
 | 62. Upload Watermark per Sensor | v9.0 | 0/TBD | Not started | - |
 | 63. Network Monitor & Upload Gating | v9.0 | 0/TBD | Not started | - |
 | 64. HR Data Sanitizer | v9.0 | 0/TBD | Not started | - |
@@ -492,7 +493,7 @@ WHOOP uses Approov (`ApproovURLSession`, `ApproovURLSessionAdapter`) for all ser
 3. Bonding state is persisted across app restarts so the app can resume from the last known state
 4. The existing string-based `connectionState` is replaced with the formal state machine output for the bonding portion
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 Plans:
 
 **Wave 1**
@@ -505,7 +506,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 61-03-PLAN.md — Human-verify checkpoint: bond-loss recovery + persistence across restart
+- [x] 61-03-PLAN.md — Human-verify checkpoint: bond-loss recovery + persistence across restart
 
 ---
 
