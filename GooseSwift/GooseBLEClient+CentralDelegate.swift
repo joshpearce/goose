@@ -248,8 +248,11 @@ extension GooseBLEClient: CBCentralManagerDelegate {
   func isBondLossError(_ error: Error?) -> Bool {
     guard let error else { return false }
     let nsError = error as NSError
-    if nsError.domain == CBErrorDomain && nsError.code == CBError.peerRemovedPairingInformation.rawValue {
-      return true
+    if nsError.domain == CBErrorDomain {
+      let code = CBError.Code(rawValue: nsError.code)
+      if code == .peerRemovedPairingInformation || code == .encryptionTimedOut {
+        return true
+      }
     }
     if nsError.domain == CBATTErrorDomain && nsError.code == CBATTError.insufficientAuthentication.rawValue {
       return true
