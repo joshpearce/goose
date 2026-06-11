@@ -323,11 +323,6 @@ final class GooseAppModel {
         self?.handleHistoricalSyncProgress(progress)
       }
     }
-    // SYNC-01: weak self prevents a GooseAppModel↔GooseBLEClient retain cycle;
-    // this closure is intentionally weak (per upstream PR #26 review).
-    ble.onHistoricalRangeTelemetry = { [weak self] telemetry in
-      self?.persistOvernightHistoricalRangeTelemetry(telemetry)
-    }
     configureUploadService()
     refreshHeartRateHourlyRanges()
     ble.record(source: "app", title: "model.init")

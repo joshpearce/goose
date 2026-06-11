@@ -444,7 +444,6 @@ extension GooseAppModel {
 
   func handleWhoopEvent(_ sample: WhoopEventSample) {
     publishWhoopEventStatus(sample.statusSummary, at: sample.capturedAt)
-    recordOvernightEventTarget(sample)
     if shouldLogWhoopEvent(sample) {
       ble.record(level: .debug, source: "whoop.event", title: "event.received", body: sample.logSummary)
     }
@@ -469,7 +468,6 @@ extension GooseAppModel {
   }
 
   func handleWhoopDataSignal(_ sample: WhoopDataSignalSample) {
-    recordOvernightDataSignalTarget(sample)
     observeRespiratoryPacketWatch(sample)
     whoopDataSignalPipeline.ingest(sample)
   }

@@ -141,6 +141,7 @@
 		D10000000000000000000041 /* GooseAppModel+NotificationPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */; };
 		D10000000000000000000042 /* GooseAppModel+PacketPublishing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */; };
 		D10000000000000000000043 /* GooseAppModel+ActivityTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */; };
+		D1000000000000000000005E /* GooseAppModel+BandFirstSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005E /* GooseAppModel+BandFirstSync.swift */; };
 		D10000000000000000000044 /* GooseLocalDataExporter+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */; };
 		D10000000000000000000045 /* GooseLocalDataExporter+Metrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */; };
 		D10000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */; };
@@ -347,6 +348,7 @@
 		D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+NotificationPipeline.swift"; sourceTree = "<group>"; };
 		D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+PacketPublishing.swift"; sourceTree = "<group>"; };
 		D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityTimeline.swift"; sourceTree = "<group>"; };
+		D2000000000000000000005E /* GooseAppModel+BandFirstSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+BandFirstSync.swift"; sourceTree = "<group>"; };
 		D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Validation.swift"; sourceTree = "<group>"; };
 		D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Metrics.swift"; sourceTree = "<group>"; };
 		D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+FileSystem.swift"; sourceTree = "<group>"; };
@@ -455,6 +457,7 @@
 				D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */,
 				D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */,
 				D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */,
+				D2000000000000000000005E /* GooseAppModel+BandFirstSync.swift */,
 				D20000000000000000000017 /* NotificationFrameParsing.swift */,
 				D20000000000000000000018 /* CaptureFrameWriteQueue.swift */,
 				D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */,
@@ -821,6 +824,7 @@
 				D10000000000000000000041 /* GooseAppModel+NotificationPipeline.swift in Sources */,
 				D10000000000000000000042 /* GooseAppModel+PacketPublishing.swift in Sources */,
 				D10000000000000000000043 /* GooseAppModel+ActivityTimeline.swift in Sources */,
+				D1000000000000000000005E /* GooseAppModel+BandFirstSync.swift in Sources */,
 				D10000000000000000000017 /* NotificationFrameParsing.swift in Sources */,
 				D10000000000000000000018 /* CaptureFrameWriteQueue.swift in Sources */,
 				D10000000000000000000019 /* OvernightSQLiteMirrorQueue.swift in Sources */,
