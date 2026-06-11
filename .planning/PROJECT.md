@@ -108,20 +108,39 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 - ✓ Sleep V2 "A aguardar sincronização" label confirmed in simulator — v7.0 (SLP-SYNC-03 partial)
 - ✓ Algorithm defaults promoted: sleep v1, strain v1, recovery v1; readiness v1 added — v7.0
 
-### Active (v9.0 — BLE Reliability & Protocol Parity)
+### Validated (v9.0)
 
-- [ ] BLE-BOND-01: GooseBLEBondingManager — 5-state formal bonding (NotStarted/Started/Subscribed/Completed/Cancelled); bond-loss detection and recovery; persistence across restart
-- [ ] UPLOAD-WM-01: Per-sensor upload watermark — persisted per data type; atomic update on success; duplicate prevention after crash
-- [ ] NET-MON-01: NWPathMonitor-based upload gating + exponential backoff (1s/2s/4s/max 60s); isReachable published to GooseAppModel
-- [ ] HR-SAN-01: GooseHRSanitizer — HR spike filter (25–220 BPM); logged and counted in debug counter
-- [ ] SM-01: StateMachine<State, Event> generic type; migrate BLE connection/bonding states
-- [ ] CAPSENSE-01: Cap sense GATT UUID identified via Ghidra; on-wrist detection (WHPWhoopStrapOnWrist parity)
+- ✓ BLE bonding state machine: GooseBLEBondingManager 5-state (NotStarted/Started/Subscribed/Completed/Cancelled); bond-loss recovery; UserDefaults persistence — v9.0 (BLE-BOND-01)
+- ✓ Per-sensor upload watermark: WatermarkType enum (rawFrames/decodedStreams); separate UserDefaults keys per type; atomic write on 2xx — v9.0 (UPLOAD-WM-01)
+- ✓ NWPathMonitor upload gating: GooseNetworkMonitor; exponential backoff 1s/2s/4s/max 60s; isReachable published to GooseAppModel — v9.0 (NET-MON-01)
+- ✓ GooseHRSanitizer: HR spike filter 25–220 BPM; onHRSpike callback; hrSpikeCount @MainActor — v9.0 (HR-SAN-01)
+- ✓ StateMachine<State: Hashable, Event> generic type; GooseBLEBondingState migrated to Hashable — v9.0 (SM-01)
+
+### Active (v10.0 — Protocol Parity, Haptics & Feature Completeness)
+
+- [ ] BLE5-01: WHOOP 5.0 R22 packet parsing — fix missing metrics for WHOOP 5.0 users (issue #92)
+- [ ] BLE5-02: V18 per-second historical decode + stale-clock dedup
+- [ ] BLE5-03: GooseBLEHistoricalManager dedicated class — decouple historical sync from GooseBLEClient
+- [ ] BLE5-04: Swift-side BLE data validator before Rust/SQLite ingestion
+- [ ] HAP-01: buzz(loops:) primitive via cmd 0x13 — prerequisite for all haptic features
+- [ ] HAP-02: Breathe screen + AdvancedHaptic/HapticHeartbeat paced vibration
+- [ ] HAP-03: Smart alarm via BLE-commanded strap vibration
+- [ ] HAP-04: Wake-window engine: sleep state polling + autonomous haptic at optimal moment
+- [ ] FEAT-01: Coach VOW messages — contextual nudges computed from bridge data in Coach tab
+- [ ] FEAT-02: NoopApp features: Breathe UI, Interval Timer, Metric Explorer
+- [ ] FEAT-03: iOS local notifications: sleep summary, workout detection, WHOOP battery
+- [ ] DATA-01: 4 SQLite tables: journal (daily behaviours), workout (sport-tagged log), appleDaily (HealthKit provenance), metricSeries (schema-free)
+- [ ] DATA-02: Realtime strain accumulation — live Swift-side accumulator mirroring WHPBiotelemetry
+- [ ] DATA-03: Stress/ANS view, Long-range Trends dashboard, Manual Workout Entry (3 SwiftUI screens)
+- [ ] DATA-04: HR sample decimation for HeartRateSeriesStore (memory + chart performance)
+- [ ] ARCH-01: Protocol-based service layer + mock infrastructure for unit testing
 
 ### Deferred (hardware gate — sem device físico)
 
 - [ ] ALG-HRV-04 / VAL-HRV-01: RMSSD cross-validated em ≥5 sessões overnight reais vs Python ref (delta ≤1 ms) — Phase 51
 - [ ] ALG-SLP-04 / VAL-SLP-01: 4-class staging concordância ≥70% em ≥5 sessões overnight reais — Phase 51
 - [ ] SLP-SYNC real-device: gravity offsets K24 confirmados contra captura real; "Sincronizado da pulseira" e2e — Phase 51
+- [ ] CAPSENSE-01: Cap sense GATT UUID identification + on-wrist detection (WHPWhoopStrapOnWrist parity) — hardware gate; UUID not yet identified via Ghidra
 
 ### Out of Scope
 
@@ -162,20 +181,19 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current Milestone: v9.0 BLE Reliability & Protocol Parity
+## Current Milestone: v10.0 Protocol Parity, Haptics & Feature Completeness
 
-**Goal:** Close the critical architectural gaps identified by Ghidra RE of WHOOP v5.37.0. Formal bonding state machine, per-sensor upload watermarks, network monitor gating, HR sanitizer, generic state machine, and cap sense on-wrist detection.
+**Goal:** Close WHOOP 5.0 protocol gaps (R22/v18 packets, historical manager refactor), activate haptic hardware commands on the strap (buzz, Breathe, smart alarm, wake-window), and deliver the deferred feature completeness items from v9.0 seeds (Coach VOW, NoopApp features, iOS notifications, SQLite tables, Stress/Trends screens, HR decimation, service layer DI).
 
 **Target features:**
-- Phase 61: Formal BLE bonding state machine (WHPBLEBondingManager parity)
-- Phase 62: Per-sensor upload watermark (WHPStrapLatestUploadedMetricDateKey parity)
-- Phase 63: NWPathMonitor-based upload gating + exponential backoff
-- Phase 64: HR spike sanitizer before HeartRateSeriesStore
-- Phase 65: Generic StateMachine<State, Event> type; BLE states migrated
-- Phase 66: Cap sense GATT UUID identification + on-wrist detection (blocked until UUID found)
+- BLE5-01 to BLE5-04: WHOOP 5.0 R22/v18 protocol support + GooseBLEHistoricalManager + data validator
+- HAP-01 to HAP-04: Haptic buzz primitive + Breathe screen + smart alarm + wake-window engine
+- FEAT-01 to FEAT-03: Coach VOW messages + NoopApp features + iOS local notifications
+- DATA-01 to DATA-04: 4 SQLite tables + realtime strain + Stress/Trends screens + HR decimation
+- ARCH-01: Protocol-based service layer + mock infrastructure
 
 ---
-*Last updated: 2026-06-11 after v8.0 milestone*
+*Last updated: 2026-06-11 after v9.0 milestone*
 
 ## Evolution
 

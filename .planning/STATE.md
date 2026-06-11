@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v9.0
-milestone_name: BLE Reliability & Protocol Parity
-status: shipped
-stopped_at: v9.0 milestone archived — 5/6 phases shipped, Phase 66 hardware-gated
-last_updated: "2026-06-11T15:00:00Z"
-last_activity: 2026-06-11 -- v9.0 milestone closed; Phase 66 CAPSENSE-01 deferred (hardware gate)
+milestone: v10.0
+milestone_name: Protocol Parity, Haptics & Feature Completeness
+status: planning
+last_updated: "2026-06-11T22:55:35.472Z"
+last_activity: 2026-06-11
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 ## Current Position
 
-Phase: 65 (Generic BLE State Machine) — COMPLETE
-Plan: 1 of 1 (Phase 65 complete)
-Status: Ready to execute Phase 66
-Last activity: 2026-06-11 -- Phase 65 Plan 01 executed
-
-Progress: [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-11 — Milestone v10.0 started
 
 ## Performance Metrics
 
