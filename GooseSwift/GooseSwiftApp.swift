@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct GooseSwiftApp: App {
+  @UIApplicationDelegateAdaptor(GooseAppDelegate.self) private var appDelegate
   @Environment(\.scenePhase) private var scenePhase
   @State private var model = GooseAppModel()
   @StateObject private var router = AppRouter()
