@@ -252,7 +252,7 @@ Guides and reference docs:
 
 This project moves quickly, so small focused changes are easiest to review.
 
-Want to talk to other contributors? [Join the group here](https://x.com/i/chat/group_join/g2061785795330019536/3SHQtt2O8f).
+Want to talk to other contributors? [Join the discussion on GitHub](https://github.com/tigercraft4/goose/discussions).
 
 - Keep changes close to the feature or bug you are working on.
 - Match the existing SwiftUI style before introducing new patterns.

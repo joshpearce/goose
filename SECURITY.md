@@ -16,7 +16,7 @@ Goose is currently in alpha. Only the latest commit on `main` is supported.
 If you discover a security vulnerability, report it privately:
 
 1. Open a [GitHub Security Advisory](https://github.com/tigercraft4/goose/security/advisories/new) — this is confidential and only visible to maintainers.
-2. Or contact the maintainer directly via the group chat linked in [CONTRIBUTING.md](CONTRIBUTING.md).
+2. Or reach out via [GitHub Discussions](https://github.com/tigercraft4/goose/discussions).
 
 Include:
 - A description of the vulnerability and its potential impact
