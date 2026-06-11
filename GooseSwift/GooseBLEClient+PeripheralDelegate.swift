@@ -294,7 +294,12 @@ extension GooseBLEClient: CBPeripheralDelegate {
       title: "notification.received",
       body: "\(event.characteristicUUID) bytes=\(value.count)"
     )
-    if fanOutNotifications {
+    // During historical sync, historical data packets are written directly to SQLite
+    // via flushPendingHistoricalFramesIfNeeded(). Skip the unbounded async notification
+    // pipeline for those packets to prevent memory pressure and jetsam kills.
+    let suppressNotification = lastHandledWasHistoricalDataPacket
+    lastHandledWasHistoricalDataPacket = false
+    if fanOutNotifications && !suppressNotification {
       onNotification?(event)
     }
   }

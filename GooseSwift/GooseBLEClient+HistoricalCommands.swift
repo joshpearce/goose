@@ -52,6 +52,8 @@ extension GooseBLEClient {
     historicalRangeRetryCount = 0
     historicalTransferRequestAttemptCount = 0
     pendingHistoricalCommand = nil
+    pendingHistoricalFrames.removeAll()
+    lastHandledWasHistoricalDataPacket = false
     historicalCommandTimeoutWorkItem?.cancel()
     historicalIdleWorkItem?.cancel()
     historicalRangeRetryWorkItem?.cancel()

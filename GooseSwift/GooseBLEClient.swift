@@ -270,6 +270,10 @@ import OSLog
   var historicalIdleWorkItem: DispatchWorkItem?
   var historicalRangeRetryWorkItem: DispatchWorkItem?
   var pendingHistoricalCommand: PendingHistoricalCommand?
+  var pendingHistoricalFrames: [(hex: String, capturedAt: String)] = []
+  var lastHandledWasHistoricalDataPacket = false
+  let historicalDirectWriteBridge = GooseRustBridge()
+  var historicalDirectWriteDatabasePath: String = ""
   var nextHistoricalCommandSequence: UInt8 = 57
   var historicalPacketsReceivedThisSync = 0
   var historicalRangePendingResponses = 0
@@ -369,6 +373,7 @@ import OSLog
   static let hrvChunkMaxAge: TimeInterval = 60
   static let hrvRMSSDAverageWindowSize = 12
   static let hrvEstimatePublishInterval: TimeInterval = 60
+  static let historicalFrameFlushBatchSize = 32
   static let historicalPacketCountPublishInterval: TimeInterval = 1
   static let historicalProgressCallbackInterval: TimeInterval = 1
   static let strapClockAutoSyncThresholdSeconds: TimeInterval = 5

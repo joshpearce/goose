@@ -38,6 +38,14 @@ extension GooseBLEClient {
         title: "historical_sync.packet",
         body: "\(characteristic.uuid.uuidString) count=\(historicalPacketsReceivedThisSync)"
       )
+      // Direct write: accumulate frame hex and flush in batches, bypassing the unbounded
+      // async notification pipeline that causes jetsam kills on long syncs (WHOOP pattern:
+      // createWhoopStatusPacketEntityWithData → immediate CoreData write per packet).
+      let hex = frame.map { String(format: "%02x", $0) }.joined()
+      let capturedAtISO = ISO8601DateFormatter().string(from: Date())
+      pendingHistoricalFrames.append((hex: hex, capturedAt: capturedAtISO))
+      lastHandledWasHistoricalDataPacket = true
+      flushPendingHistoricalFramesIfNeeded()
     case V5PacketType.metadata, V5PacketType.puffinMetadata:
       handleHistoricalMetadata(payload)
     default:
@@ -53,6 +61,56 @@ extension GooseBLEClient {
 
     lastHistoricalPacketCountPublishedAt = date
     historicalPacketCount = historicalPacketsReceivedThisSync
+  }
+
+  func flushPendingHistoricalFramesIfNeeded(force: Bool = false) {
+    guard force || pendingHistoricalFrames.count >= Self.historicalFrameFlushBatchSize else {
+      return
+    }
+    guard !pendingHistoricalFrames.isEmpty, !historicalDirectWriteDatabasePath.isEmpty else {
+      pendingHistoricalFrames.removeAll()
+      return
+    }
+    let frames = pendingHistoricalFrames
+    pendingHistoricalFrames.removeAll()
+    let deviceUUID = selectedDeviceID?.uuidString
+    let deviceType: String
+    switch activeDeviceGeneration {
+    case .gen4: deviceType = "GEN4"
+    case .gen5: deviceType = "MAVERICK"
+    }
+    let frameObjects: [[String: Any]] = frames.map { f in
+      [
+        "evidence_id": UUID().uuidString,
+        "source": "historical_sync",
+        "captured_at": f.capturedAt,
+        "device_model": rememberedDeviceName ?? deviceType,
+        "frame_hex": f.hex,
+        "sensitivity": "normal",
+        "device_type": deviceType,
+        "device_uuid": deviceUUID as Any,
+        "capture_session_id": NSNull(),
+      ]
+    }
+    let args: [String: Any] = [
+      "database_path": historicalDirectWriteDatabasePath,
+      "frames": frameObjects,
+      "include_results": false,
+      "include_timeline_rows": false,
+      "compact_raw_payloads": true,
+      "active_device_id": deviceUUID as Any,
+    ]
+    do {
+      _ = try historicalDirectWriteBridge.request(method: "capture.import_frame_batch", args: args)
+      record(
+        level: .debug,
+        source: "ble.sync",
+        title: "historical_sync.direct_write.flushed",
+        body: "count=\(frames.count) total=\(historicalPacketsReceivedThisSync)"
+      )
+    } catch {
+      record(level: .warn, source: "ble.sync", title: "historical_sync.direct_write.error", body: error.localizedDescription)
+    }
   }
 
   func handleAlarmValue(_ value: Data, characteristic: CBCharacteristic) {
@@ -581,6 +639,7 @@ extension GooseBLEClient {
       historyEndAckSentThisBurst = false
       pendingHistoryEndAckPayload = nil
     case .historyEnd:
+      flushPendingHistoricalFramesIfNeeded(force: true)
       historyEndReceived = true
       guard !historyEndAckSentThisBurst else {
         record(
@@ -666,6 +725,7 @@ extension GooseBLEClient {
     historicalDataResultAckEnabled = true
     let completedAt = Date()
     let rangeOnly = historicalRangePollOnly
+    flushPendingHistoricalFramesIfNeeded(force: true)
     isHistoricalSyncing = false
     historicalRangePollOnly = false
     publishHistoricalPacketCountIfNeeded(force: true, at: completedAt)
@@ -700,6 +760,7 @@ extension GooseBLEClient {
     historicalRangeRetryCount = 0
     historicalTransferRequestAttemptCount = 0
     historicalDataResultAckEnabled = true
+    flushPendingHistoricalFramesIfNeeded(force: true)
     isHistoricalSyncing = false
     historicalRangePollOnly = false
     publishHistoricalPacketCountIfNeeded(force: true)

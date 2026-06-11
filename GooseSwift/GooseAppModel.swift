@@ -304,6 +304,7 @@ final class GooseAppModel {
         self?.handleNotification(event)
       }
     }
+    ble.historicalDirectWriteDatabasePath = HealthDataStore.defaultDatabasePath()
     ble.onLiveHeartRate = { bpm, source, capturedAt in
       heartRateSamplePipeline.recordHeartRateSample(bpm: bpm, source: source, capturedAt: capturedAt)
     }
