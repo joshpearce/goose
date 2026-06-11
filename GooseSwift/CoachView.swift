@@ -23,7 +23,13 @@ struct CoachView: View {
       snapshot: coachSnapshot,
       chatIsSignedIn: chat.isSignedIn,
       chatStatus: chatStatus,
-      openChat: { openChat(prompt: nil) },
+      openChat: {
+          if chat.isSignedIn {
+            openChat(prompt: nil)
+          } else {
+            showingSettings = true
+          }
+        },
       openHealth: router.openHealth,
       openMore: router.openMore,
       openChatPrompt: openChat(prompt:),
@@ -574,10 +580,16 @@ private struct CoachOverviewChatCard: View {
 
       Spacer(minLength: 8)
 
-      Button(signedIn ? "Open" : "Sign In", action: action)
-        .font(.caption.weight(.semibold))
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+      Button(action: action) {
+        if signedIn {
+          Text("Open")
+        } else {
+          Label("Sign In", systemImage: "gearshape")
+        }
+      }
+      .font(.caption.weight(.semibold))
+      .buttonStyle(.bordered)
+      .controlSize(.small)
     }
     .padding(14)
     .coachCardSurface(tint: .blue)
