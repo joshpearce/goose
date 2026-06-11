@@ -1,0 +1,38 @@
+name: Stale Cleanup
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f # v10.2.0
+        with:
+          days-before-stale: 28
+          days-before-close: 14
+          stale-issue-message: >
+            This issue has been inactive for 28 days. It will be closed in 14 days
+            if there is no further activity. If this is still relevant, please comment
+            or retest on the latest version.
+          stale-pr-message: >
+            This PR has been inactive for 28 days. It will be closed in 14 days
+            if there is no further activity.
+          close-issue-message: >
+            Closed due to inactivity. If this is still relevant, please reopen
+            with updated reproduction steps on the latest version.
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          exempt-issue-labels: 'pinned,bug,enhancement'
+          exempt-pr-labels: 'pinned,DO NOT MERGE'
