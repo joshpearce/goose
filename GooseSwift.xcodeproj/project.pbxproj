@@ -134,9 +134,7 @@
 		D10000000000000000000038 /* GooseBLEClient+CentralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */; };
 		D10000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */; };
 		D1000000000000000000003A /* GooseAppModel+Lifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */; };
-		D1000000000000000000003B /* GooseAppModel+OvernightRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */; };
-		D1000000000000000000003C /* GooseAppModel+OvernightState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003C /* GooseAppModel+OvernightState.swift */; };
-		D1000000000000000000003D /* GooseAppModel+OvernightRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */; };
+
 		D1000000000000000000003E /* GooseAppModel+HealthCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */; };
 		D1000000000000000000003F /* GooseAppModel+ActivityRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */; };
 		D10000000000000000000040 /* PacketUIStateAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000040 /* PacketUIStateAggregator.swift */; };
@@ -342,9 +340,7 @@
 		D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+CentralDelegate.swift"; sourceTree = "<group>"; };
 		D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+PeripheralDelegate.swift"; sourceTree = "<group>"; };
 		D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+Lifecycle.swift"; sourceTree = "<group>"; };
-		D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRecovery.swift"; sourceTree = "<group>"; };
-		D2000000000000000000003C /* GooseAppModel+OvernightState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightState.swift"; sourceTree = "<group>"; };
-		D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRun.swift"; sourceTree = "<group>"; };
+
 		D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+HealthCapture.swift"; sourceTree = "<group>"; };
 		D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityRecording.swift"; sourceTree = "<group>"; };
 		D20000000000000000000040 /* PacketUIStateAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketUIStateAggregator.swift; sourceTree = "<group>"; };
@@ -452,9 +448,7 @@
 				A20000000000000000000001 /* GooseSwiftApp.swift */,
 				A20000000000000000000002 /* GooseAppModel.swift */,
 				D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */,
-				D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */,
-				D2000000000000000000003C /* GooseAppModel+OvernightState.swift */,
-				D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */,
+
 				D2000000000000000000005D /* GooseAppModel+SleepSync.swift */,
 				D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */,
 				D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */,
@@ -821,9 +815,7 @@
 				A10000000000000000000001 /* GooseSwiftApp.swift in Sources */,
 				A10000000000000000000002 /* GooseAppModel.swift in Sources */,
 				D1000000000000000000003A /* GooseAppModel+Lifecycle.swift in Sources */,
-				D1000000000000000000003B /* GooseAppModel+OvernightRecovery.swift in Sources */,
-				D1000000000000000000003C /* GooseAppModel+OvernightState.swift in Sources */,
-				D1000000000000000000003D /* GooseAppModel+OvernightRun.swift in Sources */,
+
 				D1000000000000000000003E /* GooseAppModel+HealthCapture.swift in Sources */,
 				D1000000000000000000003F /* GooseAppModel+ActivityRecording.swift in Sources */,
 				D10000000000000000000041 /* GooseAppModel+NotificationPipeline.swift in Sources */,
