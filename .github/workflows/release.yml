@@ -11,13 +11,13 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   build-ipa:
     name: Build unsigned IPA
     runs-on: macos-15
+    permissions: {}
     outputs:
       ipa-name: ${{ steps.package.outputs.ipa-name }}
       ipa-size: ${{ steps.package.outputs.ipa-size }}
@@ -25,18 +25,22 @@ jobs:
     steps:
       - name: Resolve tag
         id: resolve-tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check out repository at main
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Bump versions from tag
         run: |
@@ -87,7 +91,7 @@ jobs:
           echo "ipa-size=$IPA_SIZE" >> "$GITHUB_OUTPUT"
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ipa
           path: ${{ steps.package.outputs.ipa-name }}
@@ -97,22 +101,27 @@ jobs:
     name: Attach IPA to release and update AltStore source
     needs: build-ipa
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Check out main (for altstore-source.json)
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: main
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download IPA
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: ipa
 
       - name: Generate release notes
         id: notes
+        env:
+          RELEASE_TAG: ${{ needs.build-ipa.outputs.tag }}
         run: |
-          TAG="${{ needs.build-ipa.outputs.tag }}"
+          TAG="$RELEASE_TAG"
           PREV_TAG=$(git tag --sort=version:refname | grep "^v" | awk "/${TAG}/{found=1; next} found{print; exit}" | head -1)
           PREV_TAG_BEFORE=$(git tag --sort=version:refname | grep "^v" | awk "p==1{print; exit} /${TAG}/{p=1}" | head -1)
 
@@ -129,14 +138,19 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upsert release, attach IPA, and update AltStore source
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          RELEASE_TAG: ${{ needs.build-ipa.outputs.tag }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.notes }}
+          IPA_NAME: ${{ needs.build-ipa.outputs.ipa-name }}
+          IPA_SIZE: ${{ needs.build-ipa.outputs.ipa-size }}
         with:
           script: |
             const fs = require('fs');
-            const tag = `${{ needs.build-ipa.outputs.tag }}`;
-            const notes = `${{ steps.notes.outputs.notes }}`;
-            const ipaName = `${{ needs.build-ipa.outputs.ipa-name }}`;
-            const ipaSize = parseInt(`${{ needs.build-ipa.outputs.ipa-size }}`);
+            const tag = process.env.RELEASE_TAG;
+            const notes = process.env.RELEASE_NOTES;
+            const ipaName = process.env.IPA_NAME;
+            const ipaSize = parseInt(process.env.IPA_SIZE);
 
             // 1. Get or create the GitHub Release
             let releaseId;

@@ -8,6 +8,8 @@ on:
       - '.github/workflows/rust-core.yml'
   pull_request: {}
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,7 +29,9 @@ jobs:
       run:
         working-directory: Rust/core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - name: Install Rust ${{ env.RUST_TOOLCHAIN }} with rustfmt
         run: |
           rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal --component rustfmt
@@ -45,12 +49,14 @@ jobs:
       run:
         working-directory: Rust/core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - name: Install Rust ${{ env.RUST_TOOLCHAIN }}
         run: |
           rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal
           rustup default ${{ env.RUST_TOOLCHAIN }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: Rust/core
       - name: cargo build --lib
@@ -69,12 +75,14 @@ jobs:
     # Flip `continue-on-error` to `false` once the existing warnings are cleared.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - name: Install Rust ${{ env.RUST_TOOLCHAIN }} with clippy
         run: |
           rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal --component clippy
           rustup default ${{ env.RUST_TOOLCHAIN }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: Rust/core
       - run: cargo clippy --lib --no-deps -- -D warnings
