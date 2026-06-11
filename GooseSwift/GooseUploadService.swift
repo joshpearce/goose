@@ -127,6 +127,29 @@ final class GooseUploadService: @unchecked Sendable {
       "hr": hr, "rr": rr, "events": events, "battery": battery,
       "spo2": spo2, "skin_temp": skinTemp, "resp": resp, "gravity": gravity,
     ]
+
+    // Compute the maximum data timestamp across all streams to use as the watermark.
+    // Using Date() (upload time) instead of max(data.ts) causes a silent gap: when
+    // triggerBackfill inserts historical rows and calls performUpload, the watermark
+    // would jump to now — permanently excluding those historical rows from future cycles.
+    // Using max(data.ts) ensures the watermark represents the latest data that reached
+    // the server, not the wall-clock time of the upload call.
+    var maxDataTs: Double = 0
+    let allStreamArrays: [[Any]] = [hr, rr, events, battery, spo2, skinTemp, resp, gravity]
+    for streamArray in allStreamArrays {
+      for item in streamArray {
+        if let row = item as? [String: Any],
+           let ts = (row["ts"] as? NSNumber)?.doubleValue ?? (row["ts"] as? Double) {
+          maxDataTs = max(maxDataTs, ts)
+        }
+      }
+    }
+    // Guard against clock skew: cap at current time and fall back to effectiveSince
+    // if no valid ts was found in any stream (should not happen given hasData check above).
+    let uploadedUntil = maxDataTs > 0
+      ? min(Date(timeIntervalSince1970: maxDataTs), Date())
+      : effectiveSince
+
     let payload = buildUploadPayload(deviceID: deviceID, deviceType: deviceType, streams: streams)
 
     guard let body = try? JSONSerialization.data(withJSONObject: payload) else {
@@ -160,7 +183,9 @@ final class GooseUploadService: @unchecked Sendable {
       markStreamsSynced(rowIDsByStream: pendingRowIDs)
       // Commit decodedStreams watermark AFTER marking rows synced — never written before confirmed
       // success (RESEARCH Pitfall 1). UserDefaults writes are individually atomic; no lock needed.
-      GooseUploadWatermark.update(.decodedStreams, to: Date())
+      // Write uploadedUntil (max data ts, capped at now) rather than Date() so that backfill
+      // uploads of historical rows don't silently advance the watermark past those rows.
+      GooseUploadWatermark.update(.decodedStreams, to: uploadedUntil)
       // Upload raw BLE frames alongside decoded streams. This enables a fresh iOS
       // install to reconstruct the trust chain via capture.import_frame_batch.
       await uploadRawFrames(deviceID: deviceID, sinceTimestamp: effectiveSince)
