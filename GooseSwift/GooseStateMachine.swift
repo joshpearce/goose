@@ -12,9 +12,7 @@ struct StateMachine<State: Hashable, Event> {
   private(set) var state: State
   private let transitions: (State, Event) -> State?
 
-  private static var bleLogger: Logger {
-    Logger(subsystem: "com.goose.swift", category: "ble")
-  }
+  private static let bleLogger = Logger(subsystem: "com.goose.swift", category: "ble")
 
   init(initial: State, transitions: @escaping (State, Event) -> State?) {
     self.state = initial
