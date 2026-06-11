@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: BLE Reliability & Protocol Parity
 status: executing
-stopped_at: Completed 62-upload-watermark-per-sensor-01-PLAN.md
-last_updated: "2026-06-11T13:28:52.196Z"
-last_activity: 2026-06-11 -- Phase 61 execution started
+stopped_at: Completed 62-upload-watermark-per-sensor-02-PLAN.md
+last_updated: "2026-06-11T14:10:00.000Z"
+last_activity: 2026-06-11 -- Phase 62 Plan 02 executed
 progress:
   total_phases: 22
   completed_phases: 3
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 14
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 ## Current Position
 
 Phase: 61 (BLE Bonding State Machine) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
-Last activity: 2026-06-11 -- Phase 61 execution started
+Plan: 2 of 2 (Phase 62 complete)
+Status: Ready to execute Phase 63
+Last activity: 2026-06-11 -- Phase 62 Plan 02 executed
 
 Progress: [██████████] 100%
 
@@ -62,7 +62,8 @@ Recent decisions affecting current work:
 - Phase 59 (BAND-01): band sleep import path is the final piece of the morning sync story started in Phase 50
 - [Phase ?]: D-03 purge helper inlines Documents/GooseSwift/OvernightGuard path; try? FileManager ensures idempotency on all devices
 - [Phase ?]: Band-first lifecycle: scenePhase active/foreground triggers purgeLegacyOvernightGuardDirectory then triggerForegroundBLESync; overnight guard gate eliminated
-- [Phase ?]: WatermarkType enum with rawFrames/decodedStreams cases; separate UserDefaults keys per type; Foundation-only store
+- Phase 62 Plan 01: WatermarkType enum with rawFrames/decodedStreams cases; separate UserDefaults keys per type; Foundation-only store
+- Phase 62 Plan 02: effectiveSince gate inside service (not call site); watermark writes on 2xx only per type; clearAllUploadWatermarks resets both keys + lastUploadAt
 
 ### Roadmap Evolution
 
@@ -87,6 +88,7 @@ Items deferred from v8.0 milestone close (2026-06-11):
 | verification_gap | Phase 22 — ALG-HRV-04 RMSSD parity (≥5 real sessions) | human_needed | v5.0 close |
 | verification_gap | Phase 26 — ALG-SLP-04 4-class staging validation | human_needed | v5.0 close |
 | Phase 62-upload-watermark-per-sensor P01 | 15 | 2 tasks | 2 files |
+| Phase 62-upload-watermark-per-sensor P02 | 20 | 2 tasks | 2 files |
 
 ## Session Continuity
 
