@@ -511,7 +511,7 @@ fn bridge_exposes_algorithm_registry_and_score_methods() {
     }));
     assert!(registry.ok, "{:?}", registry.error);
     let definitions = registry.result.unwrap();
-    assert_eq!(definitions.as_array().unwrap().len(), 6);
+    assert_eq!(definitions.as_array().unwrap().len(), 9);
     assert!(
         definitions
             .as_array()
@@ -736,7 +736,7 @@ fn bridge_exposes_algorithm_registry_and_score_methods() {
             "input": {
                 "start_time": "2026-05-27T00:00:00Z",
                 "end_time": "2026-05-27T00:01:00Z",
-                "rr_intervals_ms": [800.0, 810.0, 790.0, 800.0],
+                "rr_intervals_ms": [800.0, 810.0, 790.0, 800.0, 805.0, 795.0, 810.0, 800.0, 790.0, 805.0, 800.0, 795.0, 810.0, 800.0, 790.0, 805.0, 800.0, 795.0, 810.0, 800.0],
                 "input_ids": ["bridge.hrv.reference"]
             }
         }
@@ -1172,7 +1172,7 @@ fn bridge_persists_algorithm_preferences_for_settings_algorithms() {
         "args": {}
     }));
     assert!(defaults.ok, "{:?}", defaults.error);
-    assert_eq!(defaults.result.unwrap().as_array().unwrap().len(), 5);
+    assert_eq!(defaults.result.unwrap().as_array().unwrap().len(), 6);
 
     let applied = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
@@ -1184,7 +1184,7 @@ fn bridge_persists_algorithm_preferences_for_settings_algorithms() {
         }
     }));
     assert!(applied.ok, "{:?}", applied.error);
-    assert_eq!(applied.result.unwrap().as_array().unwrap().len(), 5);
+    assert_eq!(applied.result.unwrap().as_array().unwrap().len(), 6);
 
     let recovery = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
@@ -1197,9 +1197,10 @@ fn bridge_persists_algorithm_preferences_for_settings_algorithms() {
         }
     }));
     assert!(recovery.ok, "{:?}", recovery.error);
+    // Default preference for recovery is now goose.recovery.v1.
     assert_eq!(
         recovery.result.unwrap()["algorithm_id"],
-        "goose.recovery.v0"
+        "goose.recovery.v1"
     );
 
     let list = request(serde_json::json!({
@@ -1212,7 +1213,7 @@ fn bridge_persists_algorithm_preferences_for_settings_algorithms() {
         }
     }));
     assert!(list.ok, "{:?}", list.error);
-    assert_eq!(list.result.unwrap().as_array().unwrap().len(), 5);
+    assert_eq!(list.result.unwrap().as_array().unwrap().len(), 6);
 
     let set_debug = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
@@ -2377,7 +2378,7 @@ fn bridge_reports_metric_input_readiness_for_debug_scoring_gate() {
     let report = response.result.unwrap();
     assert_eq!(report["schema"], "goose.metric-input-readiness-report.v1");
     assert_eq!(report["pass"], false);
-    assert_eq!(report["family_count"], 6);
+    assert_eq!(report["family_count"], 9);
     assert_eq!(report["ready_family_count"], 0);
     assert!(
         report["families"]
@@ -3443,7 +3444,7 @@ fn bridge_extracts_hrv_features_and_score_for_debug_score_inputs() {
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-28T04:00:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 810, 790, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 810, 790, 800, 805, 795, 810, 800, 790, 805, 800, 795, 810, 800, 790, 805, 800, 795, 810, 800]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 }
@@ -3474,8 +3475,8 @@ fn bridge_extracts_hrv_features_and_score_for_debug_score_inputs() {
     assert_eq!(report["pass"], true);
     assert_eq!(report["feature_count"], 1);
     assert_eq!(report["trusted_feature_count"], 1);
-    assert_eq!(report["rr_interval_count"], 4);
-    assert_eq!(report["trusted_rr_interval_count"], 4);
+    assert_eq!(report["rr_interval_count"], 20);
+    assert_eq!(report["trusted_rr_interval_count"], 20);
     assert_eq!(report["daily_count"], 1);
     assert_eq!(report["baseline"]["day_count"], 1);
     assert!(
@@ -3489,9 +3490,9 @@ fn bridge_extracts_hrv_features_and_score_for_debug_score_inputs() {
             .as_array()
             .unwrap()
             .len(),
-        4
+        20
     );
-    assert_eq!(report["score_result"]["output"]["valid_interval_count"], 4);
+    assert_eq!(report["score_result"]["output"]["valid_interval_count"], 20);
 }
 
 #[test]
@@ -3514,7 +3515,7 @@ fn bridge_validates_hrv_against_whoop_label_without_promoting_metric() {
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-28T04:00:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 810, 790, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 810, 790, 800, 805, 795, 810, 800, 790, 805, 800, 795, 810, 800, 790, 805, 800, 795, 810, 800]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 }
@@ -3535,7 +3536,7 @@ fn bridge_validates_hrv_against_whoop_label_without_promoting_metric() {
             "min_owned_captures": 1,
             "require_trusted_evidence": true,
             "min_rr_intervals_to_compute": 2,
-            "official_whoop_hrv_rmssd_ms": 14.1,
+            "official_whoop_hrv_rmssd_ms": 11.355,
             "tolerance_ms": 0.2,
             "label_provenance": {
                 "source": "whoop_app_manual_read",
@@ -3553,16 +3554,16 @@ fn bridge_validates_hrv_against_whoop_label_without_promoting_metric() {
         "official_whoop_values_are_validation_labels_not_inputs"
     );
     assert_eq!(report["capture_kind"], "overnight_rest");
-    assert_eq!(report["official_whoop_hrv_rmssd_ms"], 14.1);
+    assert_eq!(report["official_whoop_hrv_rmssd_ms"], 11.355);
     assert!(
-        (report["local_hrv_rmssd_ms"].as_f64().unwrap() - 14.142_135_623_730_951).abs() < 0.000_001
+        (report["local_hrv_rmssd_ms"].as_f64().unwrap() - 11.355_499_479_153_378).abs() < 0.000_001
     );
     assert_eq!(report["hrv_rmssd_error_ms"], 0.0);
     assert_eq!(report["hrv_rmssd_within_tolerance"], true);
     assert_eq!(report["provided_label_count"], 1);
     assert_eq!(report["matching_label_count"], 1);
-    assert_eq!(report["rr_interval_count"], 4);
-    assert_eq!(report["trusted_rr_interval_count"], 4);
+    assert_eq!(report["rr_interval_count"], 20);
+    assert_eq!(report["trusted_rr_interval_count"], 20);
     assert_eq!(report["algorithm_id"], GOOSE_HRV_V0_ID);
     assert_eq!(report["algorithm_version"], GOOSE_HRV_V0_VERSION);
     assert_eq!(
@@ -6371,7 +6372,7 @@ fn bridge_builds_local_recovery_score_from_feature_reports_and_provided_vitals()
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-28T04:00:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 825, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 },
@@ -6381,7 +6382,7 @@ fn bridge_builds_local_recovery_score_from_feature_reports_and_provided_vitals()
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-27T04:00:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 850, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 },
@@ -6668,7 +6669,7 @@ fn bridge_builds_local_stress_score_from_feature_reports() {
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-28T12:01:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 825, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825, 800, 825]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 },
@@ -6678,7 +6679,7 @@ fn bridge_builds_local_stress_score_from_feature_reports() {
                     "source": "ios.corebluetooth.notification",
                     "captured_at": "2026-05-27T04:00:00Z",
                     "device_model": "WHOOP 5.0 Goose",
-                    "frame_hex": r17_frame_hex(&[800, 850, 800]),
+                    "frame_hex": r17_frame_hex(&[800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850, 800, 850]),
                     "sensitivity": "user-owned-capture",
                     "device_type": "GOOSE"
                 }

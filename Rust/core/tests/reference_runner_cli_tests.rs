@@ -35,7 +35,7 @@ fn neurokit_hrv_adapter_emits_external_reference_contract() {
     assert_eq!(report["output_units"]["rmssd_ms"], "ms");
     assert_close(
         report["output"]["rmssd_ms"].as_f64().unwrap(),
-        14.142135623730951,
+        11.355499479153378,
     );
     assert_eq!(
         report["quality_flags"]
@@ -81,7 +81,7 @@ fn pyhrv_time_domain_adapter_emits_external_reference_contract() {
     assert_eq!(report["output_units"]["pnn50_fraction"], "fraction");
     assert_close(
         report["output"]["sdnn_ms"].as_f64().unwrap(),
-        8.16496580927726,
+        6.668859288553501,
     );
     assert_eq!(report["output"]["nn50_count"], 0);
     assert_eq!(

@@ -23,7 +23,7 @@ fn metric_input_readiness_cli_emits_machine_readable_blockers_from_database() {
     assert_eq!(report["pass"], false);
     assert_eq!(report["require_scores_ready"], true);
     assert_eq!(report["capture_correlation_pass"], false);
-    assert_eq!(report["family_count"], 6);
+    assert_eq!(report["family_count"], 9);
     assert_eq!(report["ready_family_count"], 0);
     assert!(
         report["next_actions"]

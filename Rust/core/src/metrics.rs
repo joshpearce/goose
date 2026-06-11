@@ -525,8 +525,11 @@ pub fn built_in_algorithm_definitions() -> Vec<AlgorithmDefinitionRecord> {
         sleep_definition(),
         sleep_v1_definition(),
         strain_definition(),
+        strain_v1_definition(),
         recovery_definition(),
+        recovery_v1_definition(),
         stress_definition(),
+        readiness_v1_definition(),
     ]
 }
 
@@ -805,6 +808,93 @@ fn stress_definition() -> AlgorithmDefinitionRecord {
             "high_motion_context_flag"
         ])
         .to_string(),
+        status: "experimental".to_string(),
+    }
+}
+
+fn strain_v1_definition() -> AlgorithmDefinitionRecord {
+    AlgorithmDefinitionRecord {
+        algorithm_id: GOOSE_STRAIN_V1_ID.to_string(),
+        version: GOOSE_STRAIN_V1_VERSION.to_string(),
+        metric_family: "strain".to_string(),
+        display_name: "Goose Strain v1".to_string(),
+        implementation: "rust".to_string(),
+        license: "UNLICENSED".to_string(),
+        input_schema: "goose.strain-input.v1".to_string(),
+        output_schema: "goose.strain-v1-output.v1".to_string(),
+        input_requirements_json: json!({
+            "hr_zone_minutes": {"unit": "minutes", "required_count": 5},
+            "duration_minutes": {"unit": "minutes", "minimum_to_compute": 1.0},
+            "resting_hr_bpm": {"unit": "bpm"},
+            "average_hr_bpm": {"unit": "bpm"},
+            "max_hr_bpm": {"unit": "bpm"}
+        })
+        .to_string(),
+        params_json: json!({
+            "zone_weights": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "strain_policy": "banister_trimp_with_logarithmic_score"
+        })
+        .to_string(),
+        quality_gates_json: json!([
+            "five_hr_zones_required",
+            "positive_duration",
+            "max_hr_above_resting_hr",
+            "zone_minutes_sum_close_to_duration"
+        ])
+        .to_string(),
+        status: "experimental".to_string(),
+    }
+}
+
+fn recovery_v1_definition() -> AlgorithmDefinitionRecord {
+    AlgorithmDefinitionRecord {
+        algorithm_id: GOOSE_RECOVERY_V1_ID.to_string(),
+        version: GOOSE_RECOVERY_V1_VERSION.to_string(),
+        metric_family: "recovery".to_string(),
+        display_name: "Goose Recovery v1".to_string(),
+        implementation: "rust".to_string(),
+        license: "UNLICENSED".to_string(),
+        input_schema: "goose.recovery-v1-input.v1".to_string(),
+        output_schema: "goose.recovery-v1-output.v1".to_string(),
+        input_requirements_json: json!({
+            "hrv_rmssd_ms": {"unit": "ms"},
+            "resting_hr_bpm": {"unit": "bpm"},
+            "sleep_score_0_to_100": {"unit": "score_0_to_100"}
+        })
+        .to_string(),
+        params_json: json!({
+            "recovery_policy": "ewma_baseline_z_score"
+        })
+        .to_string(),
+        quality_gates_json: json!([
+            "positive_hrv_baseline",
+            "heart_rate_at_or_above_resting"
+        ])
+        .to_string(),
+        status: "experimental".to_string(),
+    }
+}
+
+fn readiness_v1_definition() -> AlgorithmDefinitionRecord {
+    AlgorithmDefinitionRecord {
+        algorithm_id: GOOSE_READINESS_V1_ID.to_string(),
+        version: GOOSE_READINESS_V1_VERSION.to_string(),
+        metric_family: "readiness".to_string(),
+        display_name: "Goose Readiness v1".to_string(),
+        implementation: "rust".to_string(),
+        license: "UNLICENSED".to_string(),
+        input_schema: "goose.readiness-input.v1".to_string(),
+        output_schema: "goose.readiness-v1-output.v1".to_string(),
+        input_requirements_json: json!({
+            "recovery_score_0_to_100": {"unit": "score_0_to_100"},
+            "strain_score_0_to_21": {"unit": "score_0_to_21"}
+        })
+        .to_string(),
+        params_json: json!({
+            "readiness_policy": "recovery_minus_prior_strain"
+        })
+        .to_string(),
+        quality_gates_json: json!([]).to_string(),
         status: "experimental".to_string(),
     }
 }

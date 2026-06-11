@@ -685,7 +685,7 @@ fn algorithm_metamorphic_properties(cases: usize) -> PropertyGroupReport {
         let hrv = goose_hrv_v0(&HrvInput {
             start_time: "2026-05-28T00:00:00Z".to_string(),
             end_time: "2026-05-28T00:01:00Z".to_string(),
-            rr_intervals_ms: vec![800.0, 800.0, 800.0, 800.0],
+            rr_intervals_ms: vec![800.0; 20],
             input_ids: Vec::new(),
             rr_timestamps_s: None,
             stage_segments: None,
@@ -725,10 +725,11 @@ fn check_hrv_bounds(group: &mut GroupBuilder, rng: &mut DeterministicRng, case_i
         };
         intervals.push(value);
     }
-    if expected_valid_count < 2 {
+    // goose_hrv_v0 requires ≥20 valid RR intervals (MIN_BEATS=20).
+    // Pad with physiological intervals if needed.
+    while expected_valid_count < 20 {
         intervals.push(800.0);
-        intervals.push(810.0);
-        expected_valid_count += 2;
+        expected_valid_count += 1;
     }
     let result = goose_hrv_v0(&HrvInput {
         start_time: "2026-05-28T00:00:00Z".to_string(),

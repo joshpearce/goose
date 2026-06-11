@@ -409,7 +409,12 @@ fn sleep_v1_unexpected_evidence_files(evidence_dir: &Path) -> Vec<String> {
     entries
         .filter_map(Result::ok)
         .filter_map(|entry| entry.file_name().into_string().ok())
-        .filter(|filename| !filename.starts_with('.') && !allowed.contains(filename))
+        .filter(|filename| {
+            !filename.starts_with('.')
+                && !filename.ends_with("-shm")
+                && !filename.ends_with("-wal")
+                && !allowed.contains(filename)
+        })
         .collect()
 }
 

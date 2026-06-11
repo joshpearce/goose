@@ -32,16 +32,16 @@ fn build_hr_samples(ts_start: f64, count: usize, bpm: u64) -> serde_json::Value 
     serde_json::Value::Array(samples)
 }
 
-/// Build gravity rows with active motion (magnitude well above MOTION_THRESHOLD=0.01).
-/// x=0.15, y=0.0, z=1.0 → mag = sqrt(0.15^2 + 0 + 1.0^2) - 1.0 = sqrt(1.0225) - 1.0 ≈ 0.011
-/// After smoothing (rolling mean over all same-magnitude points) ≈ 0.011 > 0.01 ✓
+/// Build gravity rows with active motion (magnitude well above MOTION_THRESHOLD=0.20).
+/// x=1.2, y=0.0, z=1.0 → mag = sqrt(1.2^2 + 0 + 1.0^2) - 1.0 = sqrt(2.44) - 1.0 ≈ 0.562
+/// After smoothing (rolling mean over all same-magnitude points) ≈ 0.562 > 0.20 ✓
 fn build_gravity_rows(ts_start: f64, count: usize, device_id: &str) -> serde_json::Value {
     let rows: Vec<serde_json::Value> = (0..count)
         .map(|i| {
             serde_json::json!({
                 "device_id": device_id,
                 "ts": ts_start + i as f64,
-                "x": 0.15,
+                "x": 1.2,
                 "y": 0.0,
                 "z": 1.0
             })
@@ -209,7 +209,7 @@ fn test_detect_sessions_gap_merge() {
         grav_rows.push(serde_json::json!({
             "device_id": device_id,
             "ts": i as f64,
-            "x": 0.15, "y": 0.0, "z": 1.0
+            "x": 1.2, "y": 0.0, "z": 1.0
         }));
     }
     // Gap: no data at ts 360..=400 (41 s gap — within MERGE_GAP_S=60)
@@ -220,7 +220,7 @@ fn test_detect_sessions_gap_merge() {
         grav_rows.push(serde_json::json!({
             "device_id": device_id,
             "ts": i as f64,
-            "x": 0.15, "y": 0.0, "z": 1.0
+            "x": 1.2, "y": 0.0, "z": 1.0
         }));
     }
 

@@ -1212,8 +1212,9 @@ pub fn keytel_active_kcal_per_min(
             (male_raw + female_raw) / 2.0
         }
     };
-    // Keytel formulas produce kJ/min; divide by 4.1868 to get kcal/min.
-    (raw / 4.1868_f64).max(0.0)
+    // Keytel formulas produce kJ/min; divide by 251.04 to get kcal/min
+    // (1 kcal/min = 4.1868 kJ/min × 60 s/min = 251.04 kJ per kcal·min unit).
+    (raw / 251.04_f64).max(0.0)
 }
 
 /// Harris-Benedict resting metabolic rate (kcal/day).

@@ -87,7 +87,13 @@ pub struct StorageCheckNextAction {
 }
 
 pub fn check_storage_database(options: StorageCheckOptions<'_>) -> GooseResult<StorageCheckReport> {
-    let store = GooseStore::open(options.database_path)?;
+    // Use open_read_only first to inspect the existing schema without running migrations.
+    // Fall back to full open (which runs migrations) if the DB doesn't exist yet.
+    let store = if options.database_path.exists() {
+        GooseStore::open_read_only(options.database_path)?
+    } else {
+        GooseStore::open(options.database_path)?
+    };
     let actual_schema_version = store.schema_version()?;
     let foreign_keys_enabled = store.foreign_keys_enabled()?;
     let integrity_check = store.integrity_check()?;

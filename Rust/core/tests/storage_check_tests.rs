@@ -2,7 +2,7 @@ use rusqlite::Connection;
 
 use goose_core::{
     storage_check::{StorageCheckOptions, check_storage_database},
-    store::known_tables,
+    store::{GooseStore, known_tables},
 };
 
 #[test]
@@ -99,12 +99,21 @@ fn storage_check_can_run_without_mutating_self_test_rows() {
 
 #[test]
 fn storage_check_reports_missing_required_columns_after_partial_migration() {
+    // Simulate a partially-migrated state: run a full migration first, then
+    // drop the raw_evidence table and recreate it with only the primary key column.
+    // check_storage_database uses open_read_only so it doesn't re-run migrations.
     let tempdir = tempfile::tempdir().unwrap();
     let db = tempdir.path().join("goose.sqlite");
+
+    // Full migration first (sets user_version = 19 and creates all tables).
+    let _ = GooseStore::open(&db).unwrap();
+
+    // Re-open with a raw connection to simulate partial schema.
     let conn = Connection::open(&db).unwrap();
-    conn.execute(
-        "CREATE TABLE raw_evidence (evidence_id TEXT PRIMARY KEY)",
-        [],
+    conn.execute_batch(
+        "DROP INDEX IF EXISTS idx_raw_evidence_by_captured_at;
+         DROP TABLE IF EXISTS raw_evidence;
+         CREATE TABLE raw_evidence (evidence_id TEXT PRIMARY KEY);",
     )
     .unwrap();
     drop(conn);

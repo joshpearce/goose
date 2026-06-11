@@ -79,7 +79,7 @@ fn goose_hrv_v0_matches_internal_reference_for_shared_policy() {
     let input = HrvInput {
         start_time: "2026-05-27T00:00:00Z".to_string(),
         end_time: "2026-05-27T00:01:00Z".to_string(),
-        rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0],
+        rr_intervals_ms: vec![800.0, 810.0, 790.0, 800.0, 805.0, 795.0, 810.0, 800.0, 790.0, 805.0, 800.0, 795.0, 810.0, 800.0, 790.0, 805.0, 800.0, 795.0, 810.0, 800.0],
         input_ids: Vec::new(),
         rr_timestamps_s: None,
         stage_segments: None,
