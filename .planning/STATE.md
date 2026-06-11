@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: BLE Reliability & Protocol Parity
-status: planning
-stopped_at: v8.0 milestone archived — ready to execute Phase 61
-last_updated: "2026-06-11T12:00:00.000Z"
-last_activity: 2026-06-11 -- v8.0 milestone closed; Phase 60 complete
+status: executing
+stopped_at: Completed Phase 61 Plan 01 — BLE bonding foundation types (enum + manager + localized strings) complete, build clean
+last_updated: "2026-06-11T13:05:00.000Z"
+last_activity: 2026-06-11 -- Phase 61 Plan 01 complete
 progress:
-  total_phases: 6
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 16
+  total_phases: 22
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 5
+  percent: 9
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v9.0 — BLE Reliability & Protocol Parity (Phase 61 next)
+**Current focus:** Phase 61 — BLE Bonding State Machine
 
 ## Current Position
 
-Phase: 60 — COMPLETE
-Plan: 3 of 3 (Tasks 1-3 complete; Task 4 checkpoint pending)
-Status: Phase 60 complete
-Last activity: 2026-06-11 -- Phase 60 marked complete
+Phase: 61 (BLE Bonding State Machine) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 61 (Plan 01 complete — proceeding to Plan 02)
+Last activity: 2026-06-11 -- Phase 61 Plan 01 complete
 
 Progress: [██████████] 100%
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- Phase 61 Plan 01: GooseBLEBondingManager is plain final class with callback (not @Observable); UserDefaults keys owned by manager type; .cancelled persists as notStarted (Pitfall 5)
 - Phase 51 (Bug Audit): reviews phases 36–50; HIGH findings must be closed before phase closes
 - Phase 52: QT-01 bt-button and QT-02 CodeQL and QT-03 HealthKit importer are all long-deferred from v2.0/v3.0
 - Phase 56 (BIO-05): fabricated 55.0 bpm baseline in HealthDataStore+Recovery.swift:95 must be eliminated

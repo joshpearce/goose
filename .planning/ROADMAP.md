@@ -252,7 +252,7 @@ Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verif
 | 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Complete | 2026-06-11 |
 | 59. Band Sleep Import | v8.0 | 0/TBD | Complete | 2026-06-11 |
 | 60. Band-First Sync | v8.0âv9.0 | 3/3 | Complete   | 2026-06-11 |
-| 61. BLE Bonding State Machine | v9.0 | 0/3 | Not started | - |
+| 61. BLE Bonding State Machine | v9.0 | 1/3 | In progress | - |
 | 62. Upload Watermark per Sensor | v9.0 | 0/TBD | Not started | - |
 | 63. Network Monitor & Upload Gating | v9.0 | 0/TBD | Not started | - |
 | 64. HR Data Sanitizer | v9.0 | 0/TBD | Not started | - |
@@ -497,7 +497,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 61-01-PLAN.md — Foundation: GooseBLEBondingState enum + GooseBLEBondingManager class + localized strings
+- [x] 61-01-PLAN.md — Foundation: GooseBLEBondingState enum + GooseBLEBondingManager class + localized strings
 
 **Wave 2** *(blocked on Wave 1)*
 
