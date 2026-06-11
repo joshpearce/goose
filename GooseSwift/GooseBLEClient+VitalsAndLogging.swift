@@ -5,8 +5,9 @@ import OSLog
 
 extension GooseBLEClient {
   func recordLiveHeartRate(_ bpm: Int, source: String, at date: Date = Date()) {
-    guard (20...240).contains(bpm) else {
-      record(level: .warn, source: source, title: "heart_rate.rejected", body: "\(bpm) bpm outside expected range")
+    guard GooseHRSanitizer.sanitize(bpm) != nil else {
+      record(level: .warn, source: source, title: "heart_rate.spike_rejected", body: "\(bpm) bpm outside \(GooseHRSanitizer.minValidBPM)-\(GooseHRSanitizer.maxValidBPM)")
+      onHRSpike?(bpm, source)
       return
     }
 
