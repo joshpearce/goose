@@ -99,6 +99,12 @@ Items deferred from v8.0 milestone close (2026-06-11):
 | Phase 63-network-monitor-upload-gating P01 | 8 | 3 tasks | 3 files |
 | Phase 63 P02 | 5min | 4 tasks | 7 files |
 
+## Quick Tasks Completed
+
+| Date | Slug | Description | Commit |
+|------|------|-------------|--------|
+| 2026-06-11 | ci-cleanup-add-dependabot | Remove rust-core-ci.yml (duplicate); add dependabot.yml + swift-build.yml | f629dd7 |
+
 ## Session Continuity
 
 Last session: 2026-06-11T14:42:51Z
