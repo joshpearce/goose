@@ -185,7 +185,16 @@ final class GooseUploadService: @unchecked Sendable {
       // success (RESEARCH Pitfall 1). UserDefaults writes are individually atomic; no lock needed.
       // Write uploadedUntil (max data ts, capped at now) rather than Date() so that backfill
       // uploads of historical rows don't silently advance the watermark past those rows.
-      GooseUploadWatermark.update(.decodedStreams, to: uploadedUntil)
+      //
+      // CR-02: watermark is WHOOP-only. HR monitor uploads share the same decodedStreams key
+      // but must NOT advance it — a successful HR monitor upload at T_HR would cause the next
+      // WHOOP cycle to start from T_HR, silently skipping WHOOP data in [T_WHOOP, T_HR].
+      // HR monitor (default deviceType) always uploads from sinceTimestamp without watermark
+      // advancement. Only WHOOP device types ("GEN4", "GOOSE") own this watermark.
+      let isWhoopDevice = deviceType == "GEN4" || deviceType == "GOOSE"
+      if isWhoopDevice {
+        GooseUploadWatermark.update(.decodedStreams, to: uploadedUntil)
+      }
       // Upload raw BLE frames alongside decoded streams. This enables a fresh iOS
       // install to reconstruct the trust chain via capture.import_frame_batch.
       await uploadRawFrames(deviceID: deviceID, sinceTimestamp: effectiveSince)
