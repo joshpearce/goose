@@ -11,6 +11,13 @@
       "iconURL": "https://raw.githubusercontent.com/tigercraft4/goose/main/GooseSwift/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
       "versions": [
         {
+          "version": "9.0",
+          "date": "2026-06-11",
+          "localizedDescription": "- chore: archive v9.0 milestone — BLE Reliability & Protocol Parity (5/6 phases shipped)\n- feat(about): add License section with GPL v3, copyright, source link; rename Model → Device\n- docs(v9.0): milestone audit — passed (5/6 phases, Phase 66 hardware-gated)",
+          "downloadURL": "https://github.com/tigercraft4/goose/releases/download/v9.0/GooseSwift-v9.0-unsigned.ipa",
+          "size": 11909146
+        },
+        {
           "version": "8.0",
           "date": "2026-06-11",
           "localizedDescription": "- chore: remove REQUIREMENTS.md for v8.0 milestone\n- chore: archive v8.0 milestone files\n- docs(61): add pattern map",
