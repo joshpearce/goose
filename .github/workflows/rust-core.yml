@@ -6,10 +6,7 @@ on:
     paths:
       - 'Rust/**'
       - '.github/workflows/rust-core.yml'
-  pull_request:
-    paths:
-      - 'Rust/**'
-      - '.github/workflows/rust-core.yml'
+  pull_request: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -81,3 +78,21 @@ jobs:
         with:
           workspaces: Rust/core
       - run: cargo clippy --lib --no-deps -- -D warnings
+
+  rust-gate:
+    name: rust / gate
+    needs: [fmt, build-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          fmt="${{ needs.fmt.result }}"
+          build="${{ needs.build-test.result }}"
+          if [[ "$fmt" == "failure" || "$fmt" == "cancelled" ]]; then
+            echo "fmt failed: $fmt" && exit 1
+          fi
+          if [[ "$build" == "failure" || "$build" == "cancelled" ]]; then
+            echo "build-test failed: $build" && exit 1
+          fi
+          echo "rust CI passed (fmt=$fmt, build=$build)"

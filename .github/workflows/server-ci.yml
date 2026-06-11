@@ -10,10 +10,7 @@ on:
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
-  pull_request:
-    paths:
-      - "server/**"
-      - ".github/workflows/server-ci.yml"
+  pull_request: {}
   workflow_dispatch:
 
 defaults:
@@ -52,3 +49,17 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/ -v --tb=short
+
+  server-gate:
+    name: server / gate
+    needs: [pytest]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          pytest="${{ needs.pytest.result }}"
+          if [[ "$pytest" == "failure" || "$pytest" == "cancelled" ]]; then
+            echo "pytest failed: $pytest" && exit 1
+          fi
+          echo "server CI passed (pytest=$pytest)"

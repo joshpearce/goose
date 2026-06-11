@@ -13,12 +13,7 @@ on:
       - "GooseWorkoutLiveActivityExtension/**"
       - "GooseSwift.xcodeproj/**"
       - ".github/workflows/swift-build.yml"
-  pull_request:
-    paths:
-      - "GooseSwift/**"
-      - "GooseWorkoutLiveActivityExtension/**"
-      - "GooseSwift.xcodeproj/**"
-      - ".github/workflows/swift-build.yml"
+  pull_request: {}
   workflow_dispatch:
 
 concurrency:
@@ -66,3 +61,17 @@ jobs:
             DEVELOPMENT_TEAM="" \
             -derivedDataPath build/DerivedData \
             build
+
+  swift-gate:
+    name: swift / gate
+    needs: [build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          build="${{ needs.build.result }}"
+          if [[ "$build" == "failure" || "$build" == "cancelled" ]]; then
+            echo "build failed: $build" && exit 1
+          fi
+          echo "swift CI passed (build=$build)"
