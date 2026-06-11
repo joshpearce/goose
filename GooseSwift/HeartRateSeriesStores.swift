@@ -80,7 +80,7 @@ final class HeartRateSeriesStore: @unchecked Sendable {
   }
 
   func append(bpm: Int, source: String, capturedAt: Date) -> Bool {
-    guard (20...240).contains(bpm) else {
+    guard GooseHRSanitizer.validRange.contains(bpm) else {
       return false
     }
     stateLock.lock()
@@ -212,7 +212,7 @@ final class HeartRateSeriesStore: @unchecked Sendable {
     let lowQuartileCount = max(1, values.count / 4)
     let lowQuartileValues = values.prefix(lowQuartileCount)
     let estimate = Double(lowQuartileValues.reduce(0, +)) / Double(lowQuartileValues.count)
-    guard estimate.isFinite, (20...240).contains(Int(estimate.rounded())) else {
+    guard estimate.isFinite, (GooseHRSanitizer.minValidBPM...GooseHRSanitizer.maxValidBPM).contains(Int(estimate.rounded())) else {
       return nil
     }
 

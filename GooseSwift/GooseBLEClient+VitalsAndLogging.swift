@@ -58,7 +58,7 @@ extension GooseBLEClient {
     }
 
     let estimate = Self.lowQuartileMeanBPM(from: restingHeartRateWindowBPM)
-    guard estimate.isFinite, (20...240).contains(Int(estimate.rounded())) else {
+    guard estimate.isFinite, (GooseHRSanitizer.minValidBPM...GooseHRSanitizer.maxValidBPM).contains(Int(estimate.rounded())) else {
       return
     }
 

@@ -16,7 +16,7 @@ struct GooseHRSanitizer {
 
   // Closed range derived from the two threshold constants; avoids repeating
   // the bounds at every call site.
-  static var validRange: ClosedRange<Int> { minValidBPM...maxValidBPM }
+  static let validRange: ClosedRange<Int> = minValidBPM...maxValidBPM
 
   // Returns bpm unchanged when it falls within the valid physiological range,
   // or nil when the sample should be rejected as a spike artefact.
