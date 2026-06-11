@@ -368,7 +368,13 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
     # otherwise query by device_model. Both branches are fully parameterised (%s).
     remaining = max(0, limit - len(out))
     is_uuid = _is_uuid(device_id)
-    device_clause = "device_uuid = %s" if is_uuid else "device_id = %s"
+    if is_uuid:
+        device_clause = "device_uuid = %s"
+        clause_params = (device_id, from_ts, to_ts, remaining)
+    else:
+        # Match either device_id (primary key) or device_model (legacy lookup)
+        device_clause = "(device_id = %s OR device_model = %s)"
+        clause_params = (device_id, device_id, from_ts, to_ts, remaining)
     db_rows = conn.execute(
         f"""SELECT extract(epoch FROM captured_at)::float AS captured_at_unix,
                   frame_hex,
@@ -382,7 +388,7 @@ def read_device_frames(conn, device_id: str, from_ts: float, to_ts: float, limit
              AND extract(epoch FROM captured_at) <= %s
            ORDER BY captured_at
            LIMIT %s""",
-        (device_id, from_ts, to_ts, remaining),
+        clause_params,
     ).fetchall()
     for row in db_rows:
         out.append({
