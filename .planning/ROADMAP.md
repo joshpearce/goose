@@ -10,6 +10,7 @@
 - ✅ **v6.0 UI Wiring, Algorithm Alignment & Parity Validation** — Phases 36-45 (shipped 2026-06-09)
 - ✅ **v7.0 Sync Correctness, Async & Sleep Sync** — Phases 46-50 (shipped 2026-06-10)
 - ✅ **v8.0 Quality, Completeness & Backlog Clearance** — Phases 51-59 (shipped 2026-06-11)
+- 🔜 **v9.0 BLE Reliability & Protocol Parity** — Phases 61-66 (planned)
 
 ## Phases
 
@@ -224,15 +225,22 @@ Known deferred: Phase 51 (VAL-HRV-01, VAL-SLP-01, SLP-SYNC real-device validatio
 |-------|-----------|----------------|--------|-----------|
 | 1–45 | v1.0–v6.0 | — | Complete | 2026-06-03 to 2026-06-09 |
 | 46–50 | v7.0 | 18/18 | Complete | 2026-06-10 |
-| 51. Bug Audit | v8.0 | 0/TBD | Not started | - |
-| 52. Quick Tasks & Surface Cleanup | v8.0 | 0/TBD | Not started | - |
-| 53. Home Dashboard Completion | v8.0 | 0/TBD | Not started | - |
-| 54. Coach Score Summaries & Journal | v8.0 | 0/TBD | Not started | - |
-| 55. Coach Routes | v8.0 | 0/TBD | Not started | - |
-| 56. Biometrics & Activity | v8.0 | 0/TBD | Not started | - |
-| 57. Persistence & Calibration | v8.0 | 0/TBD | Not started | - |
-| 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Not started | - |
-| 59. Band Sleep Import | v8.0 | 0/TBD | Not started | - |
+| 51. Bug Audit | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 52. Quick Tasks & Surface Cleanup | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 53. Home Dashboard Completion | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 54. Coach Score Summaries & Journal | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 55. Coach Routes | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 56. Biometrics & Activity | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 57. Persistence & Calibration | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 59. Band Sleep Import | v8.0 | 0/TBD | Complete | 2026-06-11 |
+| 60. Band-First Sync | v8.0→v9.0 | 0/TBD | Not started | - |
+| 61. BLE Bonding State Machine | v9.0 | 0/TBD | Not started | - |
+| 62. Upload Watermark per Sensor | v9.0 | 0/TBD | Not started | - |
+| 63. Network Monitor & Upload Gating | v9.0 | 0/TBD | Not started | - |
+| 64. HR Data Sanitizer | v9.0 | 0/TBD | Not started | - |
+| 65. Generic BLE State Machine | v9.0 | 0/TBD | Not started | - |
+| 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -430,6 +438,124 @@ WHOOP uses Approov (`ApproovURLSession`, `ApproovURLSessionAdapter`) for all ser
 - Reuse same APNs call for `"start-sync-data"` type when new BLE data is ingested
 - APNs credentials via env: `GOOSE_APNS_KEY_P8`, `GOOSE_APNS_KEY_ID`, `GOOSE_APNS_TEAM_ID`, `GOOSE_APNS_BUNDLE_ID`
 - Add `server/ingest/app/apns.py` module using `httpx` async client (HTTP/2, APNs requires it)
+
+**Plans:** 0 plans
+
+---
+
+## v9.0 — BLE Reliability & Protocol Parity
+
+**Milestone Goal:** Close the critical architectural gaps identified by Ghidra reverse-engineering of WHOOP v5.37.0. Each phase targets a specific subsystem where Goose diverges from the WHOOP reference in ways that affect real-world reliability. Source: `.planning/research/whoop-re/WHOOP-GOOSE-CROSS-COMPARE.md`.
+
+**Depends on:** Phase 60
+
+---
+
+### Phase 61: BLE Bonding State Machine
+
+**Goal:** Replace the implicit OS bonding path with a formal bonding manager that tracks bond state through distinct steps, matching the `WHPBLEBondingManager` pattern from WHOOP (NotStarted → Started → Subscribed → Completed/Cancelled).
+
+**Depends on:** Phase 60
+**Requirements:** BLE-BOND-01
+**WHOOP reference:** `WHPBLEBondingManager`, `WHPBLEBondingManagerProtocol`, states: `WHPBLEBondingNotStartedState`, `WHPBLEBondingStartedState`, `WHPBLEBondingSubscribedState`, `WHPBLEBondingCompletedState`, `WHPBLEBondingCancelledState`
+**Success Criteria** (what must be TRUE):
+
+1. A `GooseBLEBondingManager` type exists with the 5 formal states; bonding progress is observable from `GooseAppModel`
+2. On BT reset or iOS reboot, the app detects bond loss, re-enters the bonding flow, and reconnects without user action
+3. Bonding state is persisted across app restarts so the app can resume from the last known state
+4. The existing string-based `connectionState` is replaced with the formal state machine output for the bonding portion
+
+**Plans:** 0 plans
+
+---
+
+### Phase 62: Upload Watermark per Sensor
+
+**Goal:** Track the last successfully uploaded timestamp per data type (raw frames, processed metrics) so restarts and partial uploads never re-send data already in TimescaleDB, matching WHOOP's `WHPStrapLatestUploadedMetricDateKey` / per-sensor high-water-mark pattern.
+
+**Depends on:** Phase 61
+**Requirements:** UPLOAD-WM-01
+**WHOOP reference:** `WHPStrapLatestUploadedMetricDateKey`, `WHPStrapHighWaterMarkDateKey`, `WatermarksInteractor`, `StoredWatermarksAtHistoryComplete`, watermark shape `[Int: Date]` keyed by revision
+**Success Criteria** (what must be TRUE):
+
+1. A watermark is persisted (UserDefaults or SQLite) for each upload type (raw frames, daily metrics) and updated atomically on upload success
+2. After a crash mid-upload, the next launch resumes from the watermark — no duplicate rows appear in TimescaleDB
+3. The server-side `POST /v1/ingest-frames` endpoint rejects (or deduplicates) frames below the committed watermark
+4. A reset path exists (`clearAllWatermarks`) for logout / device swap
+
+**Plans:** 0 plans
+
+---
+
+### Phase 63: Network Monitor & Upload Gating
+
+**Goal:** Gate all outbound uploads on network reachability, matching WHOOP's `WHPNetworkMonitor` pattern, and implement exponential-backoff retry so uploads fail visibly rather than silently when offline.
+
+**Depends on:** Phase 62
+**Requirements:** NET-MON-01
+**WHOOP reference:** `WHPNetworkMonitor`, `WHPAccountCanUploadDataStatusChanged` notification (WHOOP also gates on account authorisation)
+**Success Criteria** (what must be TRUE):
+
+1. A `GooseNetworkMonitor` wraps `NWPathMonitor` and publishes a `isReachable: Bool` to `GooseAppModel`
+2. Upload is not attempted when `isReachable == false`; queued work is retried automatically when connectivity returns
+3. Upload failures due to server error (5xx) use exponential backoff (1s, 2s, 4s, max 60s) with a visible error state in the UI
+4. Upload is gated on a non-empty device token (APNs registration must have succeeded at least once)
+
+**Plans:** 0 plans
+
+---
+
+### Phase 64: HR Data Sanitizer
+
+**Goal:** Add a Swift-side heart rate sanitization step between raw BLE notification bytes and `HeartRateSeriesStore`, matching WHOOP's `WHPHeartRateDataSanitizer`, to suppress physiologically impossible spikes before they reach the UI or Rust algorithms.
+
+**Depends on:** Phase 60
+**Requirements:** HR-SAN-01
+**WHOOP reference:** `WHPHeartRateDataSanitizer`, `WHPHeartRateDecimator2` (decimation is a stretch goal)
+**Success Criteria** (what must be TRUE):
+
+1. A `GooseHRSanitizer` type filters HR samples outside a configurable valid range (e.g. 25–220 BPM) before they enter `HeartRateSeriesStore`
+2. Spike samples are logged (OSLog) and counted in a debug counter visible in More > Debug
+3. The live HR display never shows a value outside the valid range during normal wear
+4. Sanitizer thresholds are constants (`static let`) not hard-coded literals
+
+**Plans:** 0 plans
+
+---
+
+### Phase 65: Generic BLE State Machine
+
+**Goal:** Extract a lightweight reusable `StateMachine<State, Event>` type (matching `WHPStateMachine` + `WHPStateMachineState` + `WHPStateMachineEventDefinition`) and migrate the BLE connection and bonding state into it, replacing the ad-hoc string status scattered across `GooseBLEClient`.
+
+**Depends on:** Phase 61
+**Requirements:** SM-01
+**WHOOP reference:** `WHPStateMachine`, `WHPStateMachineState`, `WHPStateMachineEventDefinition`
+**Note:** Previously flagged as over-engineering for the codebase's current size — added at user request. Scope is deliberately minimal: one generic type + migration of BLE connection/bonding states only. No broader adoption beyond BLE layer unless a future phase warrants it.
+**Success Criteria** (what must be TRUE):
+
+1. A `StateMachine<State: Hashable, Event>` struct exists in `GooseBLETypes.swift` or a new `GooseStateMachine.swift`
+2. BLE connection states (from Phase 61's bonding manager + existing connection states) are expressed as `StateMachine` instances
+3. Invalid state transitions are asserted in DEBUG builds; in RELEASE they are no-ops that log an OSLog error
+4. No reduction in observable behaviour — existing UI reflecting connection state continues to work
+
+**Plans:** 0 plans
+
+---
+
+### Phase 66: Cap Sense / On-Wrist Detection
+
+**Goal:** Identify the GATT characteristic for WHOOP's capacitive skin-contact sensor (cap sense) via Ghidra and implement on-wrist detection in Goose, matching `WHPWhoopStrapCapSenseSuccessNotification` / `CapSenseFailed`, so physiological data is only trusted when the band is being worn.
+
+**Depends on:** Phase 60
+**Requirements:** CAPSENSE-01
+**WHOOP reference:** `WHPWhoopStrapCapSenseSuccessNotification`, `WHPWhoopStrapCapSenseFailed`, `WHPWhoopStrapOnWrist`, `WHPWhoopStrapOffWrist`, `WHPWhoopStrapSensorsStatusLiveChangedNotification`
+**Note:** GATT characteristic UUID for cap sense is not yet identified — this phase begins with a Ghidra investigation step. If the characteristic cannot be identified from the binary, the phase is blocked and deferred.
+**Success Criteria** (what must be TRUE):
+
+1. The cap sense GATT characteristic UUID is identified via Ghidra static analysis and documented in `.planning/research/whoop-re/`
+2. `GooseBLEClient` subscribes to the cap sense characteristic and publishes `isOnWrist: Bool` to `GooseAppModel`
+3. HR and HRV samples acquired while `isOnWrist == false` are flagged in SQLite (`on_wrist = 0`) and excluded from strain/recovery computations
+4. The Device Status Card (Phase 53) shows an off-wrist indicator when detected
 
 **Plans:** 0 plans
 
