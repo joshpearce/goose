@@ -340,11 +340,13 @@ enum GooseBLEBondingEvent {
 /// Transition table encoding the legal bonding graph.
 ///
 /// Legal edges:
-///   notStarted  + start    → started
-///   started     + subscribe → subscribed
-///   subscribed  + complete  → completed(deviceID:)
-///   any         + reset     → notStarted
-///   any         + cancel    → cancelled(reason:)
+///   notStarted           + start     → started
+///   completed            + start     → started   (reconnect after cold-start BT restoration)
+///   started              + subscribe → subscribed
+///   completed            + subscribe → subscribed (fast reconnect when peripheral already connected)
+///   subscribed           + complete  → completed(deviceID:)
+///   any                  + reset     → notStarted
+///   any                  + cancel    → cancelled(reason:)
 ///
 /// All other (state, event) pairs return nil — invalid transition.
 func gooseBLEBondingTransition(
@@ -357,11 +359,24 @@ func gooseBLEBondingTransition(
   case .cancel(let reason):
     return .cancelled(reason: reason)
   case .start:
-    guard case .notStarted = state else { return nil }
-    return .started
+    // .completed is valid here: iOS BT state restoration may deliver willRestoreState
+    // while the machine is still .completed (restored from UserDefaults), before the
+    // peripheral has had a chance to disconnect and reset through the normal path.
+    switch state {
+    case .notStarted, .completed:
+      return .started
+    default:
+      return nil
+    }
   case .subscribe:
-    guard case .started = state else { return nil }
-    return .subscribed
+    // .completed is valid here: willRestoreState with peripheral.state == .connected
+    // arrives before any disconnect, so the machine may still be .completed.
+    switch state {
+    case .started, .completed:
+      return .subscribed
+    default:
+      return nil
+    }
   case .complete(let deviceID):
     guard case .subscribed = state else { return nil }
     return .completed(deviceID: deviceID)
