@@ -254,8 +254,8 @@ Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verif
 | 59. Band Sleep Import | v8.0 | 0/TBD | Complete | 2026-06-11 |
 | 60. Band-First Sync | v8.0âv9.0 | 3/3 | Complete   | 2026-06-11 |
 | 61. BLE Bonding State Machine | v9.0 | 3/3 | Complete   | 2026-06-11 |
-| 62. Upload Watermark per Sensor | v9.0 | 1/2 | In Progress|  |
-| 63. Network Monitor & Upload Gating | v9.0 | 0/TBD | Not started | - |
+| 62. Upload Watermark per Sensor | v9.0 | 2/2 | Complete   | 2026-06-11 |
+| 63. Network Monitor & Upload Gating | v9.0 | 0/2 | Planned | - |
 | 64. HR Data Sanitizer | v9.0 | 0/TBD | Not started | - |
 | 65. Generic BLE State Machine | v9.0 | 0/TBD | Not started | - |
 | 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
@@ -524,10 +524,10 @@ Plans:
 3. The server-side `POST /v1/ingest-frames` endpoint rejects (or deduplicates) frames below the committed watermark
 4. A reset path exists (`clearAllWatermarks`) for logout / device swap
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 - [x] 62-01-PLAN.md — Create GooseUploadWatermark store (UserDefaults, per-type Date, clearAllWatermarks)
-- [ ] 62-02-PLAN.md — Wire watermark into upload pipeline (gated sinceTimestamp, atomic write on 2xx, reset path)
+- [x] 62-02-PLAN.md — Wire watermark into upload pipeline (gated sinceTimestamp, atomic write on 2xx, reset path)
 
 ---
 
@@ -545,7 +545,16 @@ Plans:
 3. Upload failures due to server error (5xx) use exponential backoff (1s, 2s, 4s, max 60s) with a visible error state in the UI
 4. Upload is gated on a non-empty device token (APNs registration must have succeeded at least once)
 
-**Plans:** 0 plans
+**Plans:** 2 plans
+Plans:
+
+**Wave 1**
+
+- [ ] 63-01-PLAN.md — Create GooseNetworkMonitor (NWPathMonitor wrapper) + wire isNetworkReachable into GooseAppModel + register in project.pbxproj
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 63-02-PLAN.md — Reachability + APNs-token upload gating, connectivity-return retry, 5xx exponential backoff (1/2/4s, max 60s) with visible error state, APNs registration AppDelegate
 
 ---
 
