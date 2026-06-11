@@ -7,7 +7,11 @@ import Foundation
 // dispatches via dispatchCoreBluetoothDelegateToMainIfNeeded before calling transition().
 // Do NOT call transition() or access bondingState from a background queue.
 final class GooseBLEBondingManager {
-  private(set) var bondingState: GooseBLEBondingState = .notStarted
+  // Internal state machine — drives bondingState via validated transitions.
+  private var machine: StateMachine<GooseBLEBondingState, GooseBLEBondingEvent>
+
+  // Read-only public access mirrors the machine's current state; satisfies private(set) semantics.
+  var bondingState: GooseBLEBondingState { machine.state }
 
   // Callback invoked on every state transition (on main thread).
   var onBondingStateChange: ((GooseBLEBondingState) -> Void)?
@@ -17,12 +21,14 @@ final class GooseBLEBondingManager {
   static let bondingDeviceIDKey = "goose.swift.ble.bondingDeviceID"
 
   init() {
-    loadPersistedState()
+    let initial = GooseBLEBondingManager.loadInitialState()
+    machine = StateMachine(initial: initial, transitions: gooseBLEBondingTransition)
   }
 
   func transition(to newState: GooseBLEBondingState) {
     guard newState != bondingState else { return }
-    bondingState = newState
+    let event = GooseBLEBondingManager.event(for: newState)
+    machine.handle(event)
     persistState()
     DispatchQueue.main.async { [weak self] in
       guard let self else { return }
@@ -43,16 +49,29 @@ final class GooseBLEBondingManager {
     }
   }
 
-  private func loadPersistedState() {
-    let key = UserDefaults.standard.string(forKey: Self.bondingStateKey) ?? ""
+  private static func loadInitialState() -> GooseBLEBondingState {
+    let key = UserDefaults.standard.string(forKey: bondingStateKey) ?? ""
     switch key {
     case "completed":
-      if let uuidString = UserDefaults.standard.string(forKey: Self.bondingDeviceIDKey),
+      if let uuidString = UserDefaults.standard.string(forKey: bondingDeviceIDKey),
          let uuid = UUID(uuidString: uuidString) {
-        bondingState = .completed(deviceID: uuid)
+        return .completed(deviceID: uuid)
       }
+      return .notStarted
     default:
-      bondingState = .notStarted
+      return .notStarted
+    }
+  }
+
+  // Maps a target GooseBLEBondingState to the corresponding event that produces it.
+  // transition(to:) is total — every state has a corresponding event.
+  private static func event(for state: GooseBLEBondingState) -> GooseBLEBondingEvent {
+    switch state {
+    case .notStarted:              return .reset
+    case .started:                 return .start
+    case .subscribed:              return .subscribe
+    case .completed(let id):       return .complete(deviceID: id)
+    case .cancelled(let reason):   return .cancel(reason: reason)
     }
   }
 }

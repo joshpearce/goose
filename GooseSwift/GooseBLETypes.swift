@@ -293,7 +293,7 @@ enum WhoopGeneration: CustomStringConvertible {
 
 // MARK: - BLE Bonding State
 
-enum GooseBLEBondingState: Equatable {
+enum GooseBLEBondingState: Hashable {
   case notStarted
   case started
   case subscribed
