@@ -1164,7 +1164,7 @@
 					"-force_load",
 					"$(SRCROOT)/Rust/$(PLATFORM_NAME)/libgoose_core.a",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1206,7 +1206,7 @@
 					"-force_load",
 					"$(SRCROOT)/Rust/$(PLATFORM_NAME)/libgoose_core.a",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1234,7 +1234,7 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.WorkoutLiveActivityExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app.WorkoutLiveActivityExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1261,7 +1261,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.WorkoutLiveActivityExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app.WorkoutLiveActivityExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1289,7 +1289,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
@@ -1316,7 +1316,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goose.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;
