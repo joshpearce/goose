@@ -31,9 +31,15 @@ final class GooseBLEBondingManager {
   }
 
   private func persistState() {
-    UserDefaults.standard.set(bondingState.persistenceKey, forKey: Self.bondingStateKey)
-    if case .completed(let id) = bondingState {
+    switch bondingState {
+    case .completed(let id):
+      UserDefaults.standard.set(bondingState.persistenceKey, forKey: Self.bondingStateKey)
       UserDefaults.standard.set(id.uuidString, forKey: Self.bondingDeviceIDKey)
+    case .notStarted, .cancelled:
+      UserDefaults.standard.removeObject(forKey: Self.bondingStateKey)
+      UserDefaults.standard.removeObject(forKey: Self.bondingDeviceIDKey)
+    case .started, .subscribed:
+      break // transient connection states — do not persist; meaningless after app restart
     }
   }
 
