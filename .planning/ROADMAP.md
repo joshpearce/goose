@@ -126,132 +126,6 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 
 ## Phase Details
 
-### Phase 51: Bug Audit
-
-**Goal**: Known bugs and correctness issues from v6.0–v7.0 (phases 36–50) are identified, documented, and fixed
-**Depends on**: Phase 50
-**Requirements**: AUDIT-01
-**Success Criteria** (what must be TRUE):
-
-  1. Every phase 36–50 is reviewed and a written audit report lists findings by severity (HIGH / MEDIUM / LOW)
-  2. All HIGH findings are fixed and verified before this phase closes
-  3. No data race or crash-class finding remains open
-  4. MEDIUM findings are either fixed or explicitly deferred with a rationale
-
-**Plans**: TBD
-
-### Phase 52: Quick Tasks & Surface Cleanup
-
-**Goal**: Three long-deferred quick tasks ship and debug-only preview strings are removed from production builds
-**Depends on**: Phase 51
-**Requirements**: QT-01, QT-02, QT-03, SURF-01
-**Success Criteria** (what must be TRUE):
-
-  1. Tapping the BT button in the app opens iOS Bluetooth Settings directly
-  2. A CodeQL workflow runs automatically on every PR and push via GitHub Actions and reports findings
-  3. The user can trigger a HealthKit full import from the app and data appears in local storage
-  4. A production build contains no fabricated preview values visible to the user (previewMissingData is #if DEBUG-gated)
-
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 53: Home Dashboard Completion
-
-**Goal**: HomeDashboardView shows a complete live Device Status Card, a Tools Grid of shortcuts, and an Evidence Footer
-**Depends on**: Phase 52
-**Requirements**: HOME-01, HOME-02, HOME-03
-**Success Criteria** (what must be TRUE):
-
-  1. The Home tab shows a Device Status Card with live device name, connection state, battery percent, current HR, last sync time, and a reconnect action when disconnected — never static text
-  2. The Home tab shows a Tools Grid with shortcuts to Sleep Coach, Activity, Journal, and Calibration, each reflecting its bridge readiness state
-  3. The Home tab shows an Evidence Footer with Rust core version, local store path, data mode, and provenance per metric family — tapping opens More > Debug
-
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 54: Coach Score Summaries & Journal
-
-**Goal**: Coach tab shows score summaries for all four metrics and users can write and persist a daily journal entry
-**Depends on**: Phase 53
-**Requirements**: COACH-07, COACH-08
-**Success Criteria** (what must be TRUE):
-
-  1. The Coach tab displays score summaries for sleep, recovery, strain, and stress — each populated from live bridge data
-  2. The user can open a daily journal entry, write a text note, add optional tags, and save it — the entry persists across app restarts
-  3. The most recent journal entry for a given date is recoverable after relaunching the app
-
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 55: Coach Routes
-
-**Goal**: Coach tab has four dedicated child route views — Sleep Coach, Recovery Insights, Strain Guidance, and Stress Guidance — each populated from bridge data
-**Depends on**: Phase 54
-**Requirements**: COACH-09, COACH-10, COACH-11, COACH-12
-**Success Criteria** (what must be TRUE):
-
-  1. Sleep Coach route shows wind-down time, target bedtime, wake time, and sleep debt/fulfillment from local data
-  2. Recovery Insights route shows recovery score, HRV, RHR, respiratory rate, skin temp delta, and a deterministic recommendation
-  3. Strain Guidance route shows strain score, target strain, exercise duration, daytime HR, and under/in/over-target guidance
-  4. Stress Guidance route shows stress score, last HRV/HR, breakdown by level, and non-activity stress when available
-
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 56: Biometrics & Activity
-
-**Goal**: Recovery score uses real resting HR derived from V24 packet data, and non-activity stress only uses HR samples outside detected exercise sessions
-**Depends on**: Phase 51
-**Requirements**: BIO-05, ACT-01
-**Success Criteria** (what must be TRUE):
-
-  1. The recovery score computation uses z_rhr calculated from real SpO2/resp/wrist-temp V24 packet data — the fabricated 55.0 bpm baseline is removed
-  2. Non-activity stress is computed and displayed (no longer shows "non-activity stress requires HR samples and activity masks")
-  3. Stress windows exclude HR samples that fall within detected exercise session boundaries
-
-**Plans**: TBD
-
-### Phase 57: Persistence & Calibration
-
-**Goal**: Daily stress history and Energy Bank state are persisted in SQLite, and the calibration pipeline runs real train/holdout splits from local metric history
-**Depends on**: Phase 56
-**Requirements**: ENB-01, CAL-01
-**Success Criteria** (what must be TRUE):
-
-  1. Daily stress windows and Energy Bank state are written to SQLite and survive app restarts — long-range trend data is available after multiple days
-  2. The calibration pipeline runs against local historical metrics, producing real train/holdout split results
-  3. Calibration output values are derived from actual data — the hardcoded "4 train / 2 holdout | improved" string is removed
-  4. Calibration results are gated on a completed run; no results are shown if calibration has not run
-
-**Plans**: TBD
-
-### Phase 58: More Tab, Previews & Health Algorithms
-
-**Goal**: More tab actions are fully backed by Swift bridge, SwiftUI previews exist for Home/Coach/More with simulator screenshots, and algorithm preference properties are wired in HealthDataStore
-**Depends on**: Phase 55
-**Requirements**: MORE-01, PREV-01, HALG-01
-**Success Criteria** (what must be TRUE):
-
-  1. More tab capture import, backfill, raw export, and privacy actions are enabled and functional
-  2. SwiftUI previews exist for HomeDashboardView, CoachView, and More views covering connected/populated, disconnected, and no-data states — each verified with a simulator screenshot
-  3. HealthDataStore exposes algorithmPreferences and referenceAlgorithmDefinitions properties wired to the bridge catalog — the Health > Algorithms section can display primary algorithm selection and reference definitions
-
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 59: Band Sleep Import
-
-**Goal**: Sleep records are ingested directly from BLE band packets — the "band sleep import not available" message is gone and real sleep data appears
-**Depends on**: Phase 57
-**Requirements**: BAND-01
-**Success Criteria** (what must be TRUE):
-
-  1. After a BLE connection, sleep records from band packets are persisted locally via the band sleep import path
-  2. The Sleep tab no longer shows "band sleep import not available" when band data is present
-  3. Sleep data imported via band packets is consistent with data imported via the server path for the same session
-
-**Plans**: TBD
-
 ### Phase 67: WHOOP 5.0 Protocol Fixes
 
 **Goal**: WHOOP 5.0 users receive realtime metrics and full per-second historical data — the two silent protocol gaps (R22 type 0x10 unhandled, v18 historical frames silently discarded) are fixed in Rust with no Swift changes required
@@ -387,35 +261,35 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 
 ## Backlog
 
-### Phase 999.5: GooseAppModel @Observable Migration (promoted to Phase 17 — v4.0)
+#### Archived phase 999.5 — GooseAppModel @Observable Migration (promoted to Phase 17 — v4.0)
 
 Promoted to Phase 17: @Observable Migration.
 
 ---
 
-### Phase 999.4: Recovery V2 Completion (promoted to Phase 13 — v3.0)
+#### Archived phase 999.4 — Recovery V2 Completion (promoted to Phase 13 — v3.0)
 
 Promoted to Phase 13: Recovery V2 Dashboard.
 
 ---
 
-### Phase 999.3: Apply upstream PR #15 (promoted to Phase 16 — v4.0)
+#### Archived phase 999.3 — Apply upstream PR #15 (promoted to Phase 16 — v4.0)
 
 Promoted to Phase 16: Deep Link Security.
 
 ---
 
-### Phase 999.2: Multi-Language Support (promoted to Phase 14 — v3.0)
+#### Archived phase 999.2 — Multi-Language Support (promoted to Phase 14 — v3.0)
 
 Promoted to Phase 14: pt-PT Localisation.
 
 ---
 
-### Phase 999.1: Coach Multi-Provider & Custom Endpoint (promoted to Phase 18 — v4.0)
+#### Archived phase 999.1 — Coach Multi-Provider & Custom Endpoint (promoted to Phase 18 — v4.0)
 
 Promoted to Phase 18: Coach Multi-Provider.
 
-### Phase 60: Band-First Sync
+#### Archived phase 60 — Band-First Sync
 
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
@@ -431,7 +305,7 @@ Plans:
 
 - [x] 60-03-PLAN.md — Wire foreground trigger + clean secondary overnight references; build clean (wave 2)
 
-### Phase 61: BLE Bonding State Machine
+#### Archived phase 61 — BLE Bonding State Machine
 
 **Goal:** Replace the implicit OS bonding path with a formal bonding manager that tracks bond state through distinct steps, matching the `WHPBLEBondingManager` pattern from WHOOP (NotStarted → Started → Subscribed → Completed/Cancelled).
 
@@ -462,7 +336,7 @@ Plans:
 
 ---
 
-### Phase 62: Upload Watermark per Sensor
+#### Archived phase 62 — Upload Watermark per Sensor
 
 **Goal:** Track the last successfully uploaded timestamp per data type (raw frames, processed metrics) so restarts and partial uploads never re-send data already in TimescaleDB, matching WHOOP's `WHPStrapLatestUploadedMetricDateKey` / per-sensor high-water-mark pattern.
 
@@ -483,7 +357,7 @@ Plans:
 
 ---
 
-### Phase 63: Network Monitor & Upload Gating
+#### Archived phase 63 — Network Monitor & Upload Gating
 
 **Goal:** Gate all outbound uploads on network reachability, matching WHOOP's `WHPNetworkMonitor` pattern, and implement exponential-backoff retry so uploads fail visibly rather than silently when offline.
 
@@ -510,7 +384,7 @@ Plans:
 
 ---
 
-### Phase 64: HR Data Sanitizer
+#### Archived phase 64 — HR Data Sanitizer
 
 **Goal:** Add a Swift-side heart rate sanitization step between raw BLE notification bytes and `HeartRateSeriesStore`, matching WHOOP's `WHPHeartRateDataSanitizer`, to suppress physiologically impossible spikes before they reach the UI or Rust algorithms.
 
@@ -537,7 +411,7 @@ Plans:
 
 ---
 
-### Phase 65: Generic BLE State Machine
+#### Archived phase 65 — Generic BLE State Machine
 
 **Goal:** Extract a lightweight reusable `StateMachine<State, Event>` type (matching `WHPStateMachine` + `WHPStateMachineState` + `WHPStateMachineEventDefinition`) and migrate the BLE connection and bonding state into it, replacing the ad-hoc string status scattered across `GooseBLEClient`.
 
@@ -560,7 +434,7 @@ Plans:
 
 ---
 
-### Phase 66: Cap Sense / On-Wrist Detection
+#### Archived phase 66 — Cap Sense / On-Wrist Detection
 
 **Goal:** Identify the GATT characteristic for WHOOP's capacitive skin-contact sensor (cap sense) via Ghidra and implement on-wrist detection in Goose, matching `WHPWhoopStrapCapSenseSuccessNotification` / `CapSenseFailed`, so physiological data is only trusted when the band is being worn.
 
@@ -579,6 +453,6 @@ Plans:
 
 ---
 
-### Phase 999.6: body_hex Storage Optimization (absorbed into Phase 20 — v5.0)
+#### Archived phase 999.6 — body_hex Storage Optimization (absorbed into Phase 20 — v5.0)
 
 Absorbed into Phase 20: Upstream Fixes & Storage (as PERF-05).
