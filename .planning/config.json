@@ -10,11 +10,11 @@
   "project_code": null,
   "claude_md_path": "./CLAUDE.md",
   "git": {
-    "branching_strategy": "none",
+    "branching_strategy": "phase",
     "create_tag": true,
     "phase_branch_template": "gsd/phase-{phase}-{slug}",
     "milestone_branch_template": "gsd/{milestone}-{slug}",
-    "quick_branch_template": null
+    "quick_branch_template": "gsd/quick-{slug}"
   },
   "workflow": {
     "research": true,
