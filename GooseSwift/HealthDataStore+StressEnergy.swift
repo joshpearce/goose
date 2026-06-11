@@ -17,8 +17,8 @@ extension HealthDataStore {
       )
     }
 
-    let samples = heartRateSeriesStore.samples(forDayContaining: date, calendar: calendar)
-    guard samples.count >= 6 else {
+    let allSamples = heartRateSeriesStore.samples(forDayContaining: date, calendar: calendar)
+    guard allSamples.count >= 6 else {
       return emptyStressSummary(
         status: "No HR data",
         freshness: heartRateTimelineStatus,
@@ -26,10 +26,26 @@ extension HealthDataStore {
       )
     }
 
+    // ACT-01: exclude samples that fall inside detected exercise session windows.
+    // This ensures non-activity stress is computed only from non-exercise HR.
+    let exerciseWindows: [(start: TimeInterval, end: TimeInterval)] = exerciseSessions.map {
+      ($0.startTs, $0.endTs)
+    }
+    let samples: [HeartRateSamplePoint]
+    if exerciseWindows.isEmpty {
+      samples = allSamples
+    } else {
+      samples = allSamples.filter { sample in
+        let ts = sample.capturedAt.timeIntervalSince1970
+        return !exerciseWindows.contains { ts >= $0.start && ts <= $0.end }
+      }
+    }
+
     let dayStart = calendar.startOfDay(for: date)
     let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(24 * 60 * 60)
+    // RHR estimation uses all samples (including exercise) for accuracy.
     let restingHeartRate = stressRestingHeartRateEstimate(
-      samples: samples,
+      samples: allSamples,
       date: date,
       calendar: calendar,
       allowLiveFallbacks: allowLiveFallbacks
@@ -101,12 +117,14 @@ extension HealthDataStore {
     let sampleConfidence = Self.clamp(Double(samples.count) / 120.0, min: 0, max: 1)
     let windowConfidence = Self.clamp(Double(windows.count) / 18.0, min: 0, max: 1)
     let stressConfidence = Self.clamp(0.32 + sampleConfidence * 0.42 + windowConfidence * 0.18, min: 0.32, max: 0.88)
+    let maskedCount = allSamples.count - samples.count
     let inputSummary = [
       "hr_samples=\(samples.count)",
+      maskedCount > 0 ? "exercise_masked=\(maskedCount)" : nil,
       "windows=\(windows.count)",
       "resting_hr=\(Self.numberText(restingHeartRate, fractionDigits: 0) ?? "--") bpm",
-      "model=hr_elevation+hr_volatility",
-    ].joined(separator: " | ")
+      "model=non_activity_hr_elevation+volatility",
+    ].compactMap { $0 }.joined(separator: " | ")
     let confidenceText = Self.numberText(stressConfidence, fractionDigits: 2) ?? "0"
 
     return StressAlgorithmSummary(

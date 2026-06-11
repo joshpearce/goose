@@ -827,14 +827,20 @@ extension HealthDataStore {
     // RHR component
     let rhr_score: Double
     if let rhr = hkRestingHR {
-      let rhrBaseline: Double
+      let rhrBaseline: Double?
       if hkRHRHistory.count >= 7 {
         let values = hkRHRHistory.dropLast(1).suffix(60).map { $0.bpm }
         rhrBaseline = values.reduce(0, +) / Double(values.count)
       } else {
-        rhrBaseline = 55.0
+        rhrBaseline = nil
       }
-      rhr_score = min(max(70 + (rhrBaseline - rhr) * 5, 0), 100)
+      // Without sufficient RHR history, emit a neutral score rather than
+      // biasing the result with a hardcoded population average (BIO-05).
+      if let baseline = rhrBaseline {
+        rhr_score = min(max(70 + (baseline - rhr) * 5, 0), 100)
+      } else {
+        rhr_score = 70.0
+      }
     } else {
       rhr_score = 70.0 // neutral when unavailable
     }
