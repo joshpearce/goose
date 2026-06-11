@@ -243,8 +243,8 @@ struct HealthMetricFamilyView: View {
         ]
       }
       return [
-        HealthSummaryRow("Primary sleep", value: "No band sleep data", source: .unavailable("band sleep import not available"), systemImage: "bed.double"),
-        HealthSummaryRow("Timeline", value: "No sleep timeline", source: .unavailable("sleep stage import not available"), systemImage: "timeline.selection"),
+        HealthSummaryRow("Primary sleep", value: store.bandSleepImportStatus, source: .unavailable(store.bandSleepImportStatus), systemImage: "bed.double"),
+        HealthSummaryRow("Timeline", value: "Sem timeline de sono", source: .unavailable(store.bandSleepImportStatus), systemImage: "timeline.selection"),
       ]
     case .recovery:
       return [

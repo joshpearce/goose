@@ -498,7 +498,7 @@ struct HealthMonitorView: View {
           if let sleep = store.primarySleep() {
             HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: "\(sleep.startLabel) - \(sleep.endLabel) | \(sleep.durationText) | \(sleep.scoreDisplayText)", source: sleep.source, systemImage: "bed.double"))
           } else {
-            HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: "No band sleep data", source: .unavailable("band sleep import not available"), systemImage: "bed.double"))
+            HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: store.bandSleepImportStatus, source: .unavailable(store.bandSleepImportStatus), systemImage: "bed.double"))
           }
           HealthInfoRow(row: HealthSummaryRow("Heart rate 1D", value: store.heartRateTimelineStatus, source: store.heartRateHourlyRanges.isEmpty ? .unavailable("BLE heart-rate sample store") : .live("BLE heart-rate sample store"), systemImage: "heart"))
           ForEach(store.heartRateHourlyTimelineRows()) { row in
