@@ -245,6 +245,18 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     }
   }
 
+  func isBondLossError(_ error: Error?) -> Bool {
+    guard let error else { return false }
+    let nsError = error as NSError
+    if nsError.domain == CBErrorDomain && nsError.code == CBError.peerRemovedPairingInformation.rawValue {
+      return true
+    }
+    if nsError.domain == CBATTErrorDomain && nsError.code == CBATTError.insufficientAuthentication.rawValue {
+      return true
+    }
+    return false
+  }
+
   func centralManager(
     _ central: CBCentralManager,
     didDisconnectPeripheral peripheral: CBPeripheral,
@@ -272,6 +284,11 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     if !pendingDebugCommands.isEmpty {
       failAllDebugCommands("WHOOP disconnected during debug command. \(error?.localizedDescription ?? "No CoreBluetooth error was provided.")")
     }
+    if isBondLossError(error) {
+      bondingManager.transition(to: .cancelled(reason: "bond_lost"))
+      record(level: .warn, source: "ble.bonding", title: "bond.lost", body: error?.localizedDescription ?? "")
+    }
+    bondingManager.transition(to: .notStarted)
     updateConnectionState(error?.localizedDescription ?? "disconnected")
     record(
       level: error == nil ? .info : .warn,
