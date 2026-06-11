@@ -38,6 +38,17 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Bump versions from tag
+        run: |
+          TAG="${{ steps.resolve-tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          MAJOR="${VERSION%%.*}"
+          CARGO_VERSION="${VERSION}.0"
+          sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${VERSION};/g" GooseSwift.xcodeproj/project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = ${MAJOR};/g" GooseSwift.xcodeproj/project.pbxproj
+          sed -i '' "s/^version = \".*\"/version = \"${CARGO_VERSION}\"/" Rust/core/Cargo.toml
+          echo "Bumped to app=${VERSION} build=${MAJOR} rust=${CARGO_VERSION}"
+
       - name: Select Xcode 26.3
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
 
