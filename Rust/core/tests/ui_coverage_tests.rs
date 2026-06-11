@@ -487,5 +487,5 @@ fn write_inventory_with_resources(
 
 fn sha256_hex(path: &Path) -> String {
     let bytes = fs::read(path).unwrap();
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }

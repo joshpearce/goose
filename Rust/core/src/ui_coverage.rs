@@ -881,7 +881,7 @@ fn load_csv_rows(
 fn file_sha256(path: &Path) -> GooseResult<String> {
     let bytes = fs::read(path).map_err(|source| GooseError::io(path, source))?;
     let digest = Sha256::digest(&bytes);
-    Ok(format!("{digest:x}"))
+    Ok(hex::encode(digest))
 }
 
 fn validate_expected_inventory(

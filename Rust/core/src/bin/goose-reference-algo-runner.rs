@@ -680,7 +680,7 @@ fn require_array(field: &str, value: &serde_json::Value) -> goose_core::GooseRes
 fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 fn truncate_for_error(value: &str) -> String {
