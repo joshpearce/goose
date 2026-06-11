@@ -1,40 +1,33 @@
 import Foundation
-import UIKit
 
 
 extension GooseAppModel {
   func handleAppLifecycleChange(_ phase: String) {
-    let power = Self.currentOvernightPowerState()
-    ble.record(source: "app.lifecycle", title: "scene_phase", body: "\(phase) | \(power.summary)")
-    guard overnightGuardActive else {
+    ble.record(source: "app.lifecycle", title: "scene_phase", body: phase)
+    if phase == "active" || phase == "foreground" {
+      purgeLegacyOvernightGuardDirectory()
+      triggerHealthCheckIfNeeded()
+      triggerForegroundBLESync()
+    }
+  }
+
+  // One-shot best-effort cleanup of the legacy overnight session directory left on disk
+  // by devices that ran the now-removed overnight guard feature (D-03).
+  // Idempotent: a UserDefaults flag prevents repeat filesystem work after the first run.
+  // Silent on missing path: try? is a no-op when the directory never existed (safe on all devices).
+  private func purgeLegacyOvernightGuardDirectory() {
+    let defaults = UserDefaults.standard
+    guard !defaults.bool(forKey: "goose.swift.legacyOvernightDirectoryPurged") else {
       return
     }
-
-    applyOvernightPowerState(power)
-    if phase == "background" || phase == "inactive" {
-      overnightGuardStatus = "Recording overnight guard | app \(phase)"
-      let snapshot = overnightRawSpool.synchronizeActive(reason: "scene_phase_\(phase)")
-      overnightGuardRawNotificationCount = snapshot.notificationCount
-      overnightGuardRangeTelemetryCount = snapshot.historicalRangePollCount
-      overnightGuardCommandWriteCount = snapshot.commandWriteCount
-      overnightGuardEventLogCount = snapshot.eventLogCount
-      overnightGuardSpoolSizeSummary = Self.overnightSpoolSizeSummary(snapshot)
-      if let rawURL = snapshot.rawNotificationsURL {
-        overnightGuardSpoolPath = rawURL.path
-      }
-      if snapshot.lastError != nil {
-        applyOvernightRawSpoolWarning(
-          from: snapshot,
-          reason: "lifecycle_spool_\(phase)",
-          warningStatus: "Recording overnight guard | app \(phase) | flush warning"
-        )
-      }
-      ble.record(source: "overnight.guard", title: "lifecycle.flush", body: "phase=\(phase) raw=\(snapshot.notificationCount) range=\(snapshot.historicalRangePollCount) commands=\(snapshot.commandWriteCount) events=\(snapshot.eventLogCount)")
-    } else if phase == "active" || phase == "foreground" {
-      resumeOvernightGuardStreamsIfReady(reason: "scene_phase_\(phase)")
-      triggerHealthCheckIfNeeded()
-    }
-    writeOvernightGuardStatus(reason: "scene_phase_\(phase)")
+    let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+      ?? FileManager.default.temporaryDirectory
+    let url = documents
+      .appendingPathComponent("GooseSwift", isDirectory: true)
+      .appendingPathComponent("OvernightGuard", isDirectory: true)
+    ble.record(source: "app.lifecycle", title: "overnight.purge", body: url.path)
+    try? FileManager.default.removeItem(at: url)
+    defaults.set(true, forKey: "goose.swift.legacyOvernightDirectoryPurged")
   }
 
   func completeOnboarding() {
@@ -135,28 +128,10 @@ extension GooseAppModel {
       captureFrameWriteQueue.currentDeviceUUID = nil
     }
 
-    if overnightGuardActive {
-      if state == "ready" {
-        resumeOvernightGuardStreamsIfReady(reason: "ble_ready")
-        if ble.canSyncClock {
-          ble.writeClockCommand(.get, syncIfNeeded: true)
-          ble.record(source: "ble.clock", title: "clock.auto_sync.triggered", body: "state=ready overnight_guard=true")
-        }
-      } else {
-        passiveActivityCaptureWorkItem?.cancel()
-        overnightGuardStatus = "Recording overnight guard | connection \(state)"
-        refreshOvernightReadiness(reason: "ble_\(state)", record: true)
-        writeOvernightGuardStatus(reason: "ble_\(state)")
-      }
-      return
-    }
-
     guard state == "ready" else {
       passiveActivityCaptureWorkItem?.cancel()
-      refreshOvernightReadiness(reason: "ble_\(state)")
       return
     }
-    refreshOvernightReadiness(reason: "ble_ready")
     schedulePassiveActivityCapture(reason: "ble_ready")
     scheduleAutoStartRespiratoryPacketWatchIfNeeded()
     if ble.canSyncClock {
@@ -227,55 +202,6 @@ extension GooseAppModel {
 
   func stopPhysiologySignalCapture() {
     ble.stopPhysiologySignalCapture()
-  }
-
-  func beginOvernightGuardCriticalBackgroundTask(reason: String) {
-    guard overnightGuardCriticalBackgroundTaskID == .invalid else {
-      ble.record(
-        source: "overnight.guard",
-        title: "background_task.already_active",
-        body: "active_reason=\(overnightGuardCriticalBackgroundTaskReason ?? "unknown") requested_reason=\(reason)"
-      )
-      return
-    }
-
-    let taskName = "Goose Overnight \(reason)"
-    let taskID = UIApplication.shared.beginBackgroundTask(withName: taskName) { [weak self] in
-      Task { @MainActor [weak self] in
-        self?.expireOvernightGuardCriticalBackgroundTask()
-      }
-    }
-    if taskID == .invalid {
-      overnightGuardCriticalBackgroundTaskReason = nil
-      ble.record(level: .warn, source: "overnight.guard", title: "background_task.denied", body: "reason=\(reason)")
-      writeOvernightGuardStatus(reason: "background_task_denied")
-      return
-    }
-
-    overnightGuardCriticalBackgroundTaskID = taskID
-    overnightGuardCriticalBackgroundTaskReason = reason
-    ble.record(source: "overnight.guard", title: "background_task.started", body: "reason=\(reason)")
-    writeOvernightGuardStatus(reason: "background_task_started")
-  }
-
-  func expireOvernightGuardCriticalBackgroundTask() {
-    let reason = overnightGuardCriticalBackgroundTaskReason ?? "unknown"
-    ble.record(level: .warn, source: "overnight.guard", title: "background_task.expired", body: "reason=\(reason)")
-    overnightGuardStatus = "Background time expired during \(reason); keep Goose foregrounded if possible"
-    endOvernightGuardCriticalBackgroundTask(reason: "expired_\(reason)")
-    writeOvernightGuardStatus(reason: "background_task_expired")
-  }
-
-  func endOvernightGuardCriticalBackgroundTask(reason: String) {
-    let taskID = overnightGuardCriticalBackgroundTaskID
-    guard taskID != .invalid else {
-      return
-    }
-    let activeReason = overnightGuardCriticalBackgroundTaskReason ?? "unknown"
-    overnightGuardCriticalBackgroundTaskID = .invalid
-    overnightGuardCriticalBackgroundTaskReason = nil
-    UIApplication.shared.endBackgroundTask(taskID)
-    ble.record(source: "overnight.guard", title: "background_task.ended", body: "active_reason=\(activeReason) reason=\(reason)")
   }
 
   func startMovementHeartRateCapture() {
