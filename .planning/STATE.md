@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v9.0
 milestone_name: BLE Reliability & Protocol Parity
 status: executing
-stopped_at: Completed 63-02-PLAN.md
-last_updated: "2026-06-11T14:01:39.314Z"
-last_activity: 2026-06-11 -- Phase 62 Plan 02 executed
+stopped_at: Completed 64-01-PLAN.md
+last_updated: "2026-06-11T14:21:16Z"
+last_activity: 2026-06-11 -- Phase 64 Plan 01 executed
 progress:
   total_phases: 22
   completed_phases: 5
   total_plans: 11
-  completed_plans: 11
-  percent: 23
+  completed_plans: 12
+  percent: 25
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-06-11)
 
 Phase: 61 (BLE Bonding State Machine) — EXECUTING
 Plan: 2 of 2 (Phase 62 complete)
-Status: Ready to execute Phase 63
-Last activity: 2026-06-11 -- Phase 62 Plan 02 executed
+Status: Ready to execute Phase 65
+Last activity: 2026-06-11 -- Phase 64 Plan 01 executed
 
 Progress: [██████████] 100%
 
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Band-first lifecycle: scenePhase active/foreground triggers purgeLegacyOvernightGuardDirectory then triggerForegroundBLESync; overnight guard gate eliminated
 - Phase 62 Plan 01: WatermarkType enum with rawFrames/decodedStreams cases; separate UserDefaults keys per type; Foundation-only store
 - Phase 62 Plan 02: effectiveSince gate inside service (not call site); watermark writes on 2xx only per type; clearAllUploadWatermarks resets both keys + lastUploadAt
+- Phase 64 Plan 01: GooseHRSanitizer static value type; WHOOP parity range 25-220 BPM; onHRSpike callback (not Combine); hrSpikeCount on @MainActor via Task hop
 - [Phase ?]: Callback pattern (not Combine) for GooseNetworkMonitor.onReachabilityChange — consistent with GooseBLEBondingManager
 - [Phase ?]: isReachable initialised to true to avoid false upload block before first async NWPath update
 - [Phase ?]: apnsDeviceToken uses internal access (not private(set)) so extension setter in separate file can write it
@@ -99,6 +100,6 @@ Items deferred from v8.0 milestone close (2026-06-11):
 
 ## Session Continuity
 
-Last session: 2026-06-11T14:01:39.304Z
-Stopped at: Completed 63-02-PLAN.md
+Last session: 2026-06-11T14:21:16Z
+Stopped at: Completed 64-01-PLAN.md
 Resume file: None

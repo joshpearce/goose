@@ -105,7 +105,7 @@ Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verif
 - [x] **Phase 61: BLE Bonding State Machine** - Formal 5-state bonding manager (WHPBLEBondingManager parity); replace implicit OS bonding (completed 2026-06-11)
 - [x] **Phase 62: Upload Watermark per Sensor** - Per-type upload watermark to prevent re-uploads after crash/restart (WHPStrapLatestUploadedMetricDateKey parity) (completed 2026-06-11)
 - [x] **Phase 63: Network Monitor & Upload Gating** - NWPathMonitor-based reachability gating + exponential backoff (WHPNetworkMonitor parity) (completed 2026-06-11)
-- [ ] **Phase 64: HR Data Sanitizer** - Swift-side HR spike filter before HeartRateSeriesStore (WHPHeartRateDataSanitizer parity)
+- [x] **Phase 64: HR Data Sanitizer** - Swift-side HR spike filter before HeartRateSeriesStore (WHPHeartRateDataSanitizer parity) (completed 2026-06-11)
 - [ ] **Phase 65: Generic BLE State Machine** - Minimal StateMachine<State, Event> type; migrate BLE connection/bonding states into it (WHPStateMachine parity)
 - [ ] **Phase 66: Cap Sense / On-Wrist Detection** - Ghidra investigation of cap sense GATT UUID; on-wrist flag on HR/HRV samples (WHPWhoopStrapOnWrist parity; blocked until UUID identified)
 
