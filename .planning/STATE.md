@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Quality, Completeness & Backlog Clearance
-status: planning
+status: complete
 last_updated: "2026-06-10"
 last_activity: 2026-06-10
 progress:
@@ -24,12 +24,12 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 53 of 59 (Home Dashboard Completion)
+Phase: 59 of 59 — MILESTONE COMPLETE
 Plan: —
-Status: Ready to plan
-Last activity: 2026-06-11 — Phase 52 complete: BT settings + previewMissingData gated
+Status: All phases shipped
+Last activity: 2026-06-11 — Phase 59 complete: band sleep import status messages fixed
 
-Progress: [██░░░░░░░░] 22%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
