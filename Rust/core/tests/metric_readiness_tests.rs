@@ -78,7 +78,7 @@ fn metric_input_readiness_marks_motion_ready_after_trusted_extraction_exists() {
 
     assert!(report.pass, "{:?}", report.issues);
     assert_eq!(report.family_count, 9);
-    assert_eq!(report.ready_family_count, 2);
+    assert_eq!(report.ready_family_count, 3);
     let stress = report
         .families
         .iter()
