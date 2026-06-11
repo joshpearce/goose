@@ -256,7 +256,7 @@ Known deferred: ble-api-misuse-state-restore debug session (awaiting_human_verif
 | 61. BLE Bonding State Machine | v9.0 | 3/3 | Complete   | 2026-06-11 |
 | 62. Upload Watermark per Sensor | v9.0 | 2/2 | Complete   | 2026-06-11 |
 | 63. Network Monitor & Upload Gating | v9.0 | 2/2 | Complete   | 2026-06-11 |
-| 64. HR Data Sanitizer | v9.0 | 0/2 | Planned | - |
+| 64. HR Data Sanitizer | v9.0 | 2/2 | Complete   | 2026-06-11 |
 | 65. Generic BLE State Machine | v9.0 | 0/TBD | Not started | - |
 | 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
 
@@ -572,16 +572,16 @@ Plans:
 3. The live HR display never shows a value outside the valid range during normal wear
 4. Sanitizer thresholds are constants (`static let`) not hard-coded literals
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 
 **Wave 1**
 
-- [ ] 64-01-PLAN.md — GooseHRSanitizer (struct + static let 25/220 thresholds), wire at recordLiveHeartRate chokepoint to gate liveHeartRateBPM + HeartRateSeriesStore, hrSpikeCount + More > Debug counter, build clean
+- [x] 64-01-PLAN.md — GooseHRSanitizer (struct + static let 25/220 thresholds), wire at recordLiveHeartRate chokepoint to gate liveHeartRateBPM + HeartRateSeriesStore, hrSpikeCount + More > Debug counter, build clean
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 64-02-PLAN.md — Human-verify checkpoint: live HR stays in-range during normal wear + debug spike counter increments
+- [x] 64-02-PLAN.md — Human-verify checkpoint: live HR stays in-range during normal wear + debug spike counter increments
 
 ---
 
@@ -600,7 +600,10 @@ Plans:
 3. Invalid state transitions are asserted in DEBUG builds; in RELEASE they are no-ops that log an OSLog error
 4. No reduction in observable behaviour â existing UI reflecting connection state continues to work
 
-**Plans:** 0 plans
+**Plans:** 1 plan
+
+Plans:
+- [ ] 65-01-PLAN.md — Add generic StateMachine<State, Event> struct + migrate GooseBLEBondingManager onto it (SM-01)
 
 ---
 
