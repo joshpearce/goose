@@ -204,3 +204,16 @@ extension String {
     }
   }
 }
+
+
+extension GooseBLEBondingState {
+  var localizedDescription: String {
+    switch self {
+    case .notStarted:         return String(localized: "Não iniciado")
+    case .started:            return String(localized: "A iniciar...")
+    case .subscribed:         return String(localized: "A descobrir...")
+    case .completed:          return String(localized: "Ligado")
+    case .cancelled(let r):   return r.isEmpty ? String(localized: "Cancelado") : r
+    }
+  }
+}
