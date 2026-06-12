@@ -120,7 +120,6 @@ private struct TrendsSparklineCard: View {
               .fill(tint.opacity(0.07))
           }
           .accessibilityHidden(true)
-          .accessibilityLabel("\(metric.title) trend over 7 days")
 
         if dateLabels.count >= 2 {
           HStack {

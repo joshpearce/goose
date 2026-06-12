@@ -45,6 +45,7 @@ final class WorkoutEntryViewModel: ObservableObject {
           "notes": "perceived_effort: \(effortValue)",
         ]
       )
+      isSubmitting = false
       // success — caller dismisses
     } catch {
       errorMessage = "Could not save workout. Please try again."

@@ -7054,7 +7054,10 @@ impl GooseStore {
             stmt.query_map(params![metric_name, src, start_date, end_date], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
             })?
-            .filter_map(|r| r.ok())
+            .filter_map(|r| {
+                r.map_err(|e| eprintln!("[metric_series] row error: {e}"))
+                    .ok()
+            })
             .map(|(date, value)| serde_json::json!({"date": date, "value": value}))
             .collect()
         } else {
@@ -7066,7 +7069,10 @@ impl GooseStore {
             stmt.query_map(params![metric_name, start_date, end_date], |row| {
                 Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
             })?
-            .filter_map(|r| r.ok())
+            .filter_map(|r| {
+                r.map_err(|e| eprintln!("[metric_series] row error: {e}"))
+                    .ok()
+            })
             .map(|(date, value)| serde_json::json!({"date": date, "value": value}))
             .collect()
         };
