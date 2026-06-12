@@ -25,6 +25,10 @@ struct HomeDashboardView: View {
           openCoach: openCoach
         )
 
+        if !baselineProgress.allReady {
+          HomeBaselineProgressCard(progress: baselineProgress)
+        }
+
         HomeStressEnergySection(
           stress: landingSnapshot(for: .stress),
           energy: landingSnapshot(for: .energyBank),
@@ -114,6 +118,7 @@ struct HomeDashboardView: View {
     }
     .task {
       await healthStore.loadBridgeCatalogsIfNeeded()
+      healthStore.refreshPacketInputsIfNeeded()
       model.refreshActivityTimeline(for: selectedDate)
       refreshSnapshots()
     }
@@ -178,6 +183,10 @@ struct HomeDashboardView: View {
   private var deviceToolbarConnected: Bool {
     let state = model.ble.connectionState.lowercased()
     return state == "ready" || state == "connected"
+  }
+
+  private var baselineProgress: BaselineProgressModel {
+    healthStore.baselineProgress()
   }
 
   private var dailyActionSummary: String {
