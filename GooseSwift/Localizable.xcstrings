@@ -207,32 +207,12 @@
         }
       }
     },
-    "%lld of %lld ready" : {
+    "%lld packets received" : {
       "localizations" : {
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de %lld prontos"
-          }
-        }
-      }
-    },
-    "%lld of %lld scores ready" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld de %lld pontuações prontas"
-          }
-        }
-      }
-    },
-    "%lld of %lld scores ready. Keep wearing your strap and the rest will fill in." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld de %lld pontuações prontas. Continue a usar a banda e as restantes serão preenchidas."
+            "value" : "%lld pacotes recebidos"
           }
         }
       }
@@ -932,16 +912,6 @@
         }
       }
     },
-    "Analysing collected data…" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A analisar dados recolhidos…"
-          }
-        }
-      }
-    },
     "Analysis" : {
       "localizations" : {
         "pt-PT" : {
@@ -1329,16 +1299,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Distribuição"
-          }
-        }
-      }
-    },
-    "Building your baseline" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A construir a sua linha de base"
           }
         }
       }
@@ -1781,16 +1741,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fechar"
-          }
-        }
-      }
-    },
-    "Close the data gaps first" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resolva primeiro as lacunas de dados"
           }
         }
       }
@@ -2913,16 +2863,6 @@
         }
       }
     },
-    "Enter this code on the OpenAI device page:" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Introduza este código na página de dispositivos da OpenAI:"
-          }
-        }
-      }
-    },
     "Enter High Frequency Sync" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3477,16 +3417,6 @@
         }
       }
     },
-    "Goose is waiting for its first night of data. Wear your strap and keep it connected." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Goose está à espera da primeira noite de dados. Use a banda e mantenha-a ligada."
-          }
-        }
-      }
-    },
     "Goose needs Bluetooth to find your owned WHOOP strap and keep the local connection live." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3866,16 +3796,6 @@
         }
       }
     },
-    "HRV: %@" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VFC: %@"
-          }
-        }
-      }
-    },
     "HR Reconnect" : {
       "localizations" : {
         "pt-PT" : {
@@ -4164,16 +4084,6 @@
         }
       }
     },
-    "Keep collecting data" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue a recolher dados"
-          }
-        }
-      }
-    },
     "Keep the strap close while Goose confirms it can read data." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4268,16 +4178,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Evento Mais Recente"
-          }
-        }
-      }
-    },
-    "Latest HR: %@" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "FC mais recente: %@"
           }
         }
       }
@@ -5263,16 +5163,6 @@
         }
       }
     },
-    "Open Coach for today's recommendation." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abra o Treinador para a recomendação de hoje."
-          }
-        }
-      }
-    },
     "Open Health > Algorithms" : {
       "localizations" : {
         "pt-PT" : {
@@ -6254,16 +6144,6 @@
         }
       }
     },
-    "Requesting sign-in code…" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A pedir código de início de sessão…"
-          }
-        }
-      }
-    },
     "Research BT Commands" : {
       "localizations" : {
         "pt-PT" : {
@@ -6345,16 +6225,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repetir Reconexão Monitor FC"
-          }
-        }
-      }
-    },
-    "Review today" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reveja o dia de hoje"
           }
         }
       }
@@ -7248,16 +7118,6 @@
         }
       }
     },
-    "Sleep %@, recovery %@, strain %@. Ask Coach what to prioritise today." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sono %@, recuperação %@, esforço %@. Pergunte ao Treinador o que priorizar hoje."
-          }
-        }
-      }
-    },
     "Sleep Alarm" : {
       "localizations" : {
         "pt-PT" : {
@@ -7387,16 +7247,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Horário de sono"
-          }
-        }
-      }
-    },
-    "Sleep score appears after your first full night with the strap." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A pontuação de sono aparece após a primeira noite completa com a banda."
           }
         }
       }
@@ -7616,26 +7466,6 @@
         }
       }
     },
-    "Still collecting data for %@ and %@. Keep wearing your strap and the scores will fill in." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ainda a recolher dados para %@ e %@. Continue a usar a banda e as pontuações serão preenchidas."
-          }
-        }
-      }
-    },
-    "Still collecting data for %@. Keep wearing your strap and the score will fill in." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ainda a recolher dados para %@. Continue a usar a banda e a pontuação será preenchida."
-          }
-        }
-      }
-    },
     "Stop Capture" : {
       "localizations" : {
         "pt-PT" : {
@@ -7763,16 +7593,6 @@
         }
       }
     },
-    "Strain %@" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esforço %@"
-          }
-        }
-      }
-    },
     "Strain Data" : {
       "localizations" : {
         "pt-PT" : {
@@ -7821,16 +7641,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stress"
-          }
-        }
-      }
-    },
-    "Stress %@" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stress %@"
           }
         }
       }
@@ -7933,6 +7743,16 @@
         }
       }
     },
+    "Sync in progress" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronização em curso"
+          }
+        }
+      }
+    },
     "Sync pendente" : {
       "comment" : "A label that indicates the number of rows that need to be synced.",
       "isCommentAutoGenerated" : true,
@@ -7956,12 +7776,42 @@
         }
       }
     },
+    "Syncing %@ — %lld packets" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronizar %@ — %lld pacotes"
+          }
+        }
+      }
+    },
     "Syncing Historical Packets" : {
       "localizations" : {
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "A sincronizar pacotes históricos"
+          }
+        }
+      }
+    },
+    "Syncing your strap" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronizar a sua banda"
+          }
+        }
+      }
+    },
+    "Syncing — %lld packets" : {
+      "localizations" : {
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronizar — %lld pacotes"
           }
         }
       }
@@ -8047,16 +7897,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tempo alvo na cama para a próxima janela de sono."
-          }
-        }
-      }
-    },
-    "Target today: %@" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alvo de hoje: %@"
           }
         }
       }
@@ -8170,16 +8010,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A pensar..."
-          }
-        }
-      }
-    },
-    "This provider could not be configured. Please reselect it above." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível configurar este fornecedor. Selecione-o novamente acima."
           }
         }
       }
@@ -8476,16 +8306,6 @@
         }
       }
     },
-    "Uses OpenAI device sign-in: you'll get a code to enter in your browser. Tokens are stored in Keychain." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa o início de sessão por dispositivo da OpenAI: receberá um código para introduzir no navegador. Os tokens ficam guardados no Keychain."
-          }
-        }
-      }
-    },
     "Validate Export And Lint" : {
       "localizations" : {
         "pt-PT" : {
@@ -8745,16 +8565,6 @@
         }
       }
     },
-    "Wear your strap day and night — most metrics appear after your first night. HRV and resting heart rate baselines mature over 4–7 nights." : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use a pulseira dia e noite — a maioria das métricas aparece após a primeira noite. As linhas de base de HRV e FC em repouso amadurecem ao longo de 4–7 noites."
-          }
-        }
-      }
-    },
     "WebSocket" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8840,16 +8650,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Banda WHOOP"
-          }
-        }
-      }
-    },
-    "Waiting for approval…" : {
-      "localizations" : {
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "À espera de aprovação…"
           }
         }
       }

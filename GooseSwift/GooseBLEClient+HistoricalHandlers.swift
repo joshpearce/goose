@@ -662,6 +662,7 @@ extension GooseBLEClient {
         )
         return
       }
+      historicalSyncBurstsCompleted += 1
       let ackPayload: [UInt8]
       if activeDeviceGeneration == .gen4 {
         historicalManager.gen4HistoricalPageSeq &+= 1
