@@ -464,10 +464,11 @@ private struct CoachOverviewScreen: View {
           showingJournal = true
         }
 
-        if !vowDismissed, let nudge = CoachVOWNudge.resolve(healthStore: healthStore) {
-          CoachVOWCard(nudge: nudge) { vowDismissed = true }
-            .opacity(vowDismissed ? 0 : 1)
-            .animation(.easeOut(duration: 0.2), value: vowDismissed)
+        if let nudge = CoachVOWNudge.resolve(healthStore: healthStore), !vowDismissed {
+          CoachVOWCard(nudge: nudge) {
+            withAnimation(.easeOut(duration: 0.2)) { vowDismissed = true }
+          }
+          .transition(.opacity)
         }
 
         CoachRoutesSection(healthStore: healthStore)
