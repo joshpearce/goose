@@ -126,7 +126,8 @@ final class WorkoutLiveActivityController {
     session: ActivitySessionModel,
     heartRate: Int?,
     distanceMeters: Double,
-    status: String
+    status: String,
+    usesImperialUnits: Bool = false
   ) -> WorkoutLiveActivityAttributes.ContentState {
     let now = Date()
     let elapsed = max(session.elapsed, 0)
@@ -141,7 +142,7 @@ final class WorkoutLiveActivityController {
       distanceMeters: distanceMeters > 0 ? distanceMeters : nil,
       isPaused: session.isPaused,
       updatedAt: now,
-      usesImperialUnits: UnitPreference.isImperial
+      usesImperialUnits: usesImperialUnits
     )
   }
 
