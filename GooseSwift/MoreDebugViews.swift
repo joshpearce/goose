@@ -82,6 +82,12 @@ struct MoreDebugView: View {
           systemImage: "lungs",
           status: self.respiratoryPacketWatchStatus
         )
+        MoreInfoRow(
+          title: "Invalid Frames",
+          value: "\(model.ble.invalidFrameCount) rejected this session",
+          systemImage: "xmark.circle",
+          status: model.ble.invalidFrameCount == 0 ? .ready : .blocked
+        )
         MoreActionRow(
           title: model.healthPacketCaptureSessionID == nil ? "Start Walk Capture" : "Stop Capture",
           detail: model.healthPacketCaptureSessionID == nil ? "Starts a 30 minute WHOOP movement, HR, GPS, and activity candidate capture" : model.healthPacketCaptureTargetSummary,
