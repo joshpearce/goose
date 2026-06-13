@@ -35,10 +35,12 @@ simulator_tested: 2026-06-13
 - Verify: after firmware update, app re-reads device-info; no sync failure dialog
 - **Status:** Deferred — hardware gate
 
-### HV-02: Home warm-up progress (PR-INT-06)
-- Open More > Device — verify baseline accumulation shown as warm-up ring (not empty dials)
-- Navigate Home: verify no false success checkmark on vitals with no data
-- **Status:** Testable on simulator (no data = warm-up state shown)
+### HV-02: Home warm-up progress (PR-INT-06) ✅ VERIFIED in simulator
+- "Building your baseline" card visible on Home screen with "0 of 9 ready" ✅
+- Individual metric progress (HRV 0/1, Sleep 1/5, Strain 0/5, Recovery 0/9, etc.) ✅
+- Coach section shows friendly copy: "0 of 9 scores ready. Keep wearing your strap and the rest will fill in." ✅
+- No unexplained empty dials — warm-up state is explicit and informative ✅
+- **Status:** PASSED (simulator 2026-06-13)
 
 ### HV-03: Historical sync donut (PR-INT-07)
 - Requires BLE connection + historical sync trigger
