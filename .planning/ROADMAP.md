@@ -12,6 +12,7 @@
 - ✅ **v8.0 Quality, Completeness & Backlog Clearance** — Phases 51-59+60 (shipped 2026-06-11)
 - ✅ **v9.0 BLE Reliability & Protocol Parity** — Phases 61-65+66 (shipped 2026-06-11)
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
+- **v11.0 PR Integration, Code Health & App Polish** — Phases 74-79 (active)
 
 ## Phases
 
@@ -127,177 +128,86 @@ Full details: `.planning/milestones/v10.0-ROADMAP.md`
 - [x] Phase 72: Screens on New Foundation + Service Layer — Stress/ANS, Trends dashboard, Manual Workout Entry, protocol mocks (completed 2026-06-12)
 - [x] Phase 73: Smart Alarm + Wake-Window Engine — HAP-03 alarm UI + HAP-04 RE-gated stub (completed 2026-06-12)
 
-Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-gated, BTSnoop capture needed), HAP-02/DATA-02 (deferred), 9 requirements partially satisfied
+Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-gated, BTSnoop capture needed), HAP-02/DATA-02 (promoted to v11.0 as DEF-01/DEF-02)
 
 </details>
 
+### v11.0 PR Integration, Code Health & App Polish
+
+- [ ] **Phase 74: Fork PR Integration — UX, i18n & Auth** - Integrate tigercraft4 PRs #132–#136 (units, localisation, UUIDs, ChatGPT auth)
+- [ ] **Phase 75: Fork PR Integration — BLE, Sync & Home** - Integrate tigercraft4 PRs #131, #135, #137 (firmware recovery, warm-up state, sync progress)
+- [ ] **Phase 76: Upstream PR Integration** - Cherry-pick upstream b-nnett/goose PRs #4, #12, #29, #31 (main-thread safety, scroll jitter)
+- [ ] **Phase 77: Codebase Audit** - Full codebase map + deep review of phases 67-73 + fix all critical findings
+- [ ] **Phase 78: Performance & BLE Reliability** - SQLite query optimisation, startup lazy-init, BLE auth retry (SEED-001)
+- [ ] **Phase 79: Polish & Deferred Features** - Debug tab 3-tabs, Support rename, Breathe haptics, live strain accumulator
+
 ## Phase Details
 
-_(v10.0 phase details archived to `.planning/milestones/v10.0-ROADMAP.md`)_
-
-### Phase 67: WHOOP 5.0 Protocol Fixes
-
-**Goal**: WHOOP 5.0 users receive realtime metrics and full per-second historical data — the two silent protocol gaps (R22 type 0x10 unhandled, v18 historical frames silently discarded) are fixed in Rust with no Swift changes required
-**Depends on**: Phase 65
-**Requirements**: BLE5-01, BLE5-02
+### Phase 74: Fork PR Integration — UX, i18n & Auth
+**Goal**: Users experience a correct, localised, and privacy-respecting app — units match device preference, advanced UUIDs are hidden from primary views, ChatGPT sign-in works, and all UI strings are properly localised with English as source language
+**Depends on**: Phase 73
+**Requirements**: PR-INT-01, PR-INT-03, PR-INT-04, PR-INT-05
 **Success Criteria** (what must be TRUE):
+  1. Technical identifiers (UUIDs, raw values, sequence IDs) are visible only in advanced/debug sections — not on main Health, Home, or Sleep views
+  2. Temperature, distance, pace, and elevation display in the user's preferred unit system (imperial or metric) — switching the device setting updates the app without restart
+  3. All UI strings that previously showed raw localisation keys now display translated text; English is the source language with zero visible key strings in the app
+  4. The ChatGPT sign-in flow in Coach settings completes without an authentication error on a fresh sign-in attempt
+**Plans**: TBD
+**UI hint**: yes
 
-  1. A WHOOP 5.0 device streaming R22 packets produces non-zero realtime HRV, HR, and recovery metrics in the Health tab (R22 type 0x10 parsed and routed)
-  2. Historical sync for a WHOOP 5.0 device imports per-second rows into SQLite without duplicates (v18 decode + sequence_id dedup active)
-  3. `cargo test -- protocol_tests` passes in full, including new round-trip tests for R22 type 0x10 and v18 per-second decode
-  4. No Swift files are changed — the fix is entirely within `Rust/core/src/protocol.rs` and its test suite
-
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1**
-
-- [ ] 67-01-PLAN.md — BLE5-01: R22 realtime packet (type 0x10) parsing + R17/R22 same-second dedup (R22 priority)
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [ ] 67-02-PLAN.md — BLE5-02: v18 per-second historical decode + SQLite persistence + stale-clock 300s snap + EVENT type-48 timestamp bypass
-
-### Phase 68: BLE Manager Refactor + Data Validator
-
-**Goal**: Historical sync logic is decoupled from GooseBLEClient into a dedicated GooseBLEHistoricalManager, and a GooseBLEDataValidator struct gates structurally invalid BLE frames before they reach the Rust bridge
-**Depends on**: Phase 67
-**Requirements**: BLE5-03, BLE5-04
+### Phase 75: Fork PR Integration — BLE, Sync & Home
+**Goal**: The app recovers gracefully from firmware-induced device-info invalidation, the Home screen shows honest warm-up and vitals state, and historical sync communicates its progress to the user via a real-time donut and completion protocol
+**Depends on**: Phase 73
+**Requirements**: PR-INT-02, PR-INT-06, PR-INT-07
 **Success Criteria** (what must be TRUE):
+  1. After a firmware update, the app re-reads device-info via BLE retry — no sync failure dialog or crash is shown to the user
+  2. The Home screen warm-up progress indicator reflects the actual baseline accumulation state (honest progress, not a static placeholder); vitals display the real BLE-received state
+  3. Historical sync shows a live donut progress indicator that updates as packets arrive; the completion event is driven by a protocol-level signal (not a timer)
+**Plans**: TBD
+**UI hint**: yes
 
-  1. A `GooseBLEHistoricalManager` class exists and owns the historical sync state machine; `GooseBLEClient` delegates to it via a proxy computed property that preserves all existing call sites
-  2. A `GooseDataValidator` (or `GooseBLEDataValidator`) struct exists and rejects frames that fail structural invariants (minimum length, non-nil device ID, non-empty payload) before the Rust bridge is called
-  3. Invalid frames are counted in a debug counter visible in More > Debug and logged via OSLog without crashing
-  4. All existing historical sync behaviour is preserved — no regression in sync correctness
-
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1**
-
-- [x] 68-01-PLAN.md — BLE5-03: extract GooseBLEHistoricalManager (final class, proxy computed vars preserve all call sites)
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [x] 68-02-PLAN.md — BLE5-04: GooseBLEDataValidator struct (structural invariants only) + invalidFrameCount in More > Debug
-
-### Phase 69: Data Foundation
-
-**Goal**: Four new SQLite tables (journal, workout, appleDaily, metricSeries) are migrated into the Rust store and a realtime strain accumulator publishes live strain during active workout sessions
-**Depends on**: Phase 67
-**Requirements**: DATA-01, DATA-02
+### Phase 76: Upstream PR Integration
+**Goal**: Performance improvements from b-nnett/goose upstream (main-thread offload, non-blocking FFI bridge calls, display-safety filtering) are integrated, eliminating frame drops and scroll jitter on the Home and Health tabs
+**Depends on**: Phase 74
+**Requirements**: PR-UP-01, PR-UP-02, PR-UP-03
 **Success Criteria** (what must be TRUE):
+  1. Heavy operations previously running on the main thread are dispatched to background queues — the Home and Health tabs render without frame drops during BLE activity
+  2. All blocking FFI bridge calls execute on a background thread; the main thread is never blocked by a bridge call during normal app operation
+  3. Scrolling through the Home and Health views is smooth with no visible jitter; the display-safety filter on notification ingest prevents mid-render data mutations
+**Plans**: TBD
 
-  1. Schema version advances to v20; four new tables (journal, workout, appleDaily, metricSeries) are created on first launch after upgrade without data loss
-  2. The strain tile on the workout screen updates at most every few seconds during an active session, driven by `GooseStrainAccumulator` receiving HR samples from `WhoopDataSignalPipeline`
-  3. `cargo test` passes in full, including migration tests verifying the v19→v20 migration arm is idempotent
-  4. Multiple concurrent GooseRustBridge instances writing to metricSeries produce no duplicate rows (idempotent insert pattern)
-
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1** *(parallel — Rust and Swift are independent)*
-
-- [x] 69-01-PLAN.md — DATA-01: schema v20 migration (4 tables) + 4 bridge upsert methods + migration tests
-- [ ] 69-02-PLAN.md — DATA-02: GooseStrainAccumulator actor + GooseAppModel wiring (liveWorkoutStrain)
-
-### Phase 70: Haptic Primitive + Breathe Screen
-
-**Goal**: The app can command the WHOOP 5.0 strap to vibrate via BLE cmd 0x13, and the Breathe screen delivers a paced haptic session using that primitive
-**Depends on**: Phase 65
-**Requirements**: HAP-01, HAP-02
+### Phase 77: Codebase Audit
+**Goal**: The codebase is fully mapped across architecture, tech stack, quality, and cross-cutting concerns; phases 67-73 have been deeply reviewed; and all critical findings from that review are resolved and committed
+**Depends on**: Phase 76
+**Requirements**: AUDIT-01, AUDIT-02, AUDIT-03
 **Success Criteria** (what must be TRUE):
+  1. A codebase map covering architecture, tech stack, quality dimensions, and cross-cutting concerns is committed under `.planning/codebase/` and describes every major subsystem accurately
+  2. A REVIEW.md file exists for each of phases 67-73 in `.planning/phases/`, documenting all critical and warning-level findings identified during deep code review
+  3. Every finding rated CRITICAL in any phase REVIEW.md is resolved — the fix is committed and the REVIEW.md updated to mark it as resolved
+  4. No new HIGH-severity issues are introduced by the fixes (verified by a second-pass review of the fix commits)
+**Plans**: TBD
 
-  1. A `buzz(loops:)` method exists on `GooseBLEClient` (via a new `GooseBLEClient+Haptics.swift` extension file) and issues cmd 0x13 over the established command characteristic — verified by OSLog output showing the write
-  2. The Breathe screen is accessible from the app, completes a full breath cycle (inhale/hold/exhale), and calls `buzz(loops:)` at each phase transition to pace the user via strap vibration
-  3. The Breathe session can be started and stopped by the user; stopping mid-session does not leave the BLE command characteristic in an undefined state
-  4. No buzz is attempted when no WHOOP device is connected — the UI shows an appropriate disabled state
-
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1** *(parallel)*
-
-- [x] 70-01-PLAN.md — HAP-01: GooseBLEClient+Haptics.swift with buzz(loops:) — fire-and-forget BLE cmd 0x13
-- [ ] 70-02-PLAN.md — HAP-02: BreatheView.swift + MoreRoute.breathe navigation wiring + MoreDataStore updates
-
-### Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation
-
-**Goal**: The Coach tab shows locally-computed contextual nudges, three NoopApp-derived features (Breathe UI access, Interval Timer, Metric Explorer) are reachable, iOS local notifications fire at the right moments, and the HR chart loads without lag on long sessions
-**Depends on**: Phase 70
-**Requirements**: FEAT-01, FEAT-02, FEAT-03, DATA-04
+### Phase 78: Performance & BLE Reliability
+**Goal**: SQLite queries on the v20 schema are indexed and validated, app startup renders the first frame before BLE initialisation completes, and the BLE auth retry (SEED-001) silently recovers from insufficientAuthentication without user intervention
+**Depends on**: Phase 77
+**Requirements**: PERF-01, PERF-02, BLE-REL-01
 **Success Criteria** (what must be TRUE):
+  1. The four schema-v20 tables (metricSeries, journal, workout, appleDaily) have covering indexes on their query-critical columns; EXPLAIN QUERY PLAN confirms index usage for the hot paths
+  2. The app's first SwiftUI frame is rendered before GooseBLEClient and GooseRustBridge are fully initialised — heavy init is deferred via lazy or async patterns
+  3. When `didWriteValueFor` receives `CBATTError.insufficientAuthentication`, the app automatically retries the write after 2.5 seconds; if the retry also fails, the user sees an actionable error message (not a silent failure)
+  4. A second `insufficientAuthentication` on retry does not cause a crash or infinite retry loop
+**Plans**: TBD
 
-  1. The Coach tab displays at least one VOW (Voice of WHOOP) nudge computed locally from bridge data — nudges are contextual (e.g. low recovery warning, high strain alert) and require no server call
-  2. Breathe UI, Interval Timer, and Metric Explorer are each reachable from the app and functional
-  3. A local notification fires after a detected sleep cycle completes, after a workout session is detected, and when WHOOP battery drops below 20% — all using the existing `UNUserNotificationCenter` permission granted in onboarding
-  4. The HR chart for a session longer than 60 minutes renders without visible lag; the in-memory sample count is reduced via stride/LTTB decimation while local extrema are preserved
-
-**Plans**: 4 plans
-
-Plans:
-
-**Wave 1** *(parallel)*
-
-- [x] 71-01-PLAN.md — FEAT-01: Coach VOW card (CoachVOWNudge enum + CoachVOWCard view in CoachView.swift)
-- [x] 71-02-PLAN.md — DATA-04: HeartRateSeriesStore.decimatedSamples + migrate 4 HealthDataStore+* call sites
-
-**Wave 2** *(parallel — no dependency on Wave 1)*
-
-- [x] 71-03-PLAN.md — FEAT-02: IntervalTimerView + MetricExplorerView + MoreRoute wiring (5 files)
-- [x] 71-04-PLAN.md — FEAT-03: NotificationScheduler actor + 3 scheduling sites (sleep / workout / battery)
-
-### Phase 72: Screens on New Foundation + Service Layer
-
-**Goal**: Three new SwiftUI screens (Stress/ANS view, Trends dashboard, Manual Workout Entry sheet) are delivered on the Phase 69 data tables, and GooseBLEClient/GooseRustBridge/HealthDataStore gain Swift protocols with corresponding mocks in the test target
-**Depends on**: Phase 69
-**Requirements**: DATA-03, ARCH-01
+### Phase 79: Polish & Deferred Features
+**Goal**: The Debug tab is restructured into three focused tabs eliminating the duplicate Connection row, the Support group is renamed and reorganised, the Breathe screen delivers full haptic pacing at each breath phase, and the live workout strain tile updates in real time from the signal pipeline
+**Depends on**: Phase 78
+**Requirements**: POL-01, POL-02, DEF-01, DEF-02
 **Success Criteria** (what must be TRUE):
-
-  1. A Stress/ANS view is accessible and shows ANS-derived tiles (HRV, RHR, stress level) populated from bridge data
-  2. A Trends dashboard shows long-range metric history (≥7 days) sourced from the metricSeries table added in Phase 69
-  3. A Manual Workout Entry sheet allows the user to log a workout with sport tag, duration, and perceived effort — the entry is persisted to the workout table
-  4. `GooseBLEManaging`, `GooseRustBridging`, and `HealthDataStoring` protocols exist; mock implementations exist in the test target; at least 2 unit tests use the mocks and pass with `cargo test` or Swift test runner
-
-**Plans**: 3 plans
-
-Plans:
-
-**Wave 1** *(parallel)*
-
-- [ ] 72-01-PLAN.md — DATA-03: Rust metric_series.query_range bridge method + store.rs query function + round-trip test
-- [x] 72-02-PLAN.md — DATA-03: ANS Balance tiles in StressV2OverviewPage + TrendsDashboardView + ManualWorkoutEntrySheet + pbxproj
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [ ] 72-03-PLAN.md — ARCH-01: GooseRustBridging + GooseBLEManaging + HealthDataStoring protocols + mocks + 2 unit tests
-
-### Phase 73: Smart Alarm + Wake-Window Engine
-
-**Goal**: The user can schedule a single-shot strap vibration alarm at a fixed time (HAP-03), and the wake-window engine fires the alarm at the lightest-sleep moment within the user's alarm window (HAP-04, RE-gated)
-**Depends on**: Phase 70
-**Requirements**: HAP-03, HAP-04
-**Note**: HAP-04 is RE-gated — implementation of the wake-window engine must not begin until BTSnoop capture of `STRAP_DRIVEN_ALARM_EXECUTED` and Ghidra decompilation of `SetAlarmInfoCommandPacketRev4` are both completed and documented in `.planning/research/whoop-re/`
-**Success Criteria** (what must be TRUE):
-
-  1. The Sleep Coach screen shows an alarm arm/cancel control; arming it schedules a single-shot vibration at the user-specified time via `AlarmCommandKind` + `writeAlarmCommand()` + `buzz(loops:)` confirmation
-  2. Cancelling a scheduled alarm disarms it and updates the UI to reflect the cancelled state
-  3. (HAP-04 — RE-gated) `GooseWakeWindowManager` exists and monitors sleep state via bridge polling; it fires `buzz(loops:)` at the lightest-sleep moment within the user's alarm window
-  4. (HAP-04 — RE-gated) The wake-window wire format is derived from confirmed `SetAlarmInfoCommandPacketRev4` field layout — no speculative byte assignments
-
-**Plans**: 2 plans
-
-Plans:
-
-**Wave 1** *(parallel)*
-
-- [x] 73-01-PLAN.md — HAP-03: Wake Alarm UI in CoachSleepRouteView + GooseAppModel alarm state properties
-- [x] 73-02-PLAN.md — HAP-04 stub: GooseWakeWindowManager.swift (RE-gated, compilable stub + pbxproj registration)
-
+  1. More > Debug is organised into three tabs (Status / Capture / Research); the Connection row appears exactly once; the previously monolithic 612-line section is split into focused child views
+  2. The "Support" entry in MoreView is renamed "Logs & Export" and placed in the Developer hub group; the Support group contains only "About"
+  3. During a Breathe session, the WHOOP strap vibrates at the start of each inhale, hold, and exhale phase via `buzz(loops:1)` — the haptic is absent when no device is connected
+  4. The strain tile on the active workout screen updates every few seconds with the current session strain computed live from HR samples delivered by `WhoopDataSignalPipeline`
+**Plans**: TBD
 **UI hint**: yes
 
 ## Progress
@@ -323,6 +233,12 @@ Plans:
 | 65. Generic BLE State Machine | v9.0 | 1/1 | Complete | 2026-06-11 |
 | 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
 | 67–73. v10.0 Phases | v10.0 | 17/17 | Complete | 2026-06-13 |
+| 74. Fork PR Integration — UX, i18n & Auth | v11.0 | 0/TBD | Not started | - |
+| 75. Fork PR Integration — BLE, Sync & Home | v11.0 | 0/TBD | Not started | - |
+| 76. Upstream PR Integration | v11.0 | 0/TBD | Not started | - |
+| 77. Codebase Audit | v11.0 | 0/TBD | Not started | - |
+| 78. Performance & BLE Reliability | v11.0 | 0/TBD | Not started | - |
+| 79. Polish & Deferred Features | v11.0 | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -376,7 +292,6 @@ Plans:
 
 **Depends on:** Phase 60
 **Requirements:** BLE-BOND-01
-**WHOOP reference:** `WHPBLEBondingManager`, `WHPBLEBondingManagerProtocol`, states: `WHPBLEBondingNotStartedState`, `WHPBLEBondingStartedState`, `WHPBLEBondingSubscribedState`, `WHPBLEBondingCompletedState`, `WHPBLEBondingCancelledState`
 **Success Criteria** (what must be TRUE):
 
 1. A `GooseBLEBondingManager` type exists with the 5 formal states; bonding progress is observable from `GooseAppModel`
@@ -385,36 +300,19 @@ Plans:
 4. The existing string-based `connectionState` is replaced with the formal state machine output for the bonding portion
 
 **Plans:** 3/3 plans complete
-Plans:
-
-**Wave 1**
 
 - [x] 61-01-PLAN.md — Foundation: GooseBLEBondingState enum + GooseBLEBondingManager class + localized strings
-
-**Wave 2** *(blocked on Wave 1)*
-
 - [x] 61-02-PLAN.md — Integration: wire bonding manager into GooseBLEClient/delegate/commands + GooseAppModel observability + bond-loss detection
-
-**Wave 3** *(blocked on Wave 2)*
-
 - [x] 61-03-PLAN.md — Human-verify checkpoint: bond-loss recovery + persistence across restart
 
 ---
 
 #### Archived phase 62 — Upload Watermark per Sensor
 
-**Goal:** Track the last successfully uploaded timestamp per data type (raw frames, processed metrics) so restarts and partial uploads never re-send data already in TimescaleDB, matching WHOOP's `WHPStrapLatestUploadedMetricDateKey` / per-sensor high-water-mark pattern.
+**Goal:** Track the last successfully uploaded timestamp per data type (raw frames, processed metrics) so restarts and partial uploads never re-send data already in TimescaleDB.
 
 **Depends on:** Phase 61
 **Requirements:** UPLOAD-WM-01
-**WHOOP reference:** `WHPStrapLatestUploadedMetricDateKey`, `WHPStrapHighWaterMarkDateKey`, `WatermarksInteractor`, `StoredWatermarksAtHistoryComplete`, watermark shape `[Int: Date]` keyed by revision
-**Success Criteria** (what must be TRUE):
-
-1. A watermark is persisted (UserDefaults or SQLite) for each upload type (raw frames, daily metrics) and updated atomically on upload success
-2. After a crash mid-upload, the next launch resumes from the watermark — no duplicate rows appear in TimescaleDB
-3. The server-side `POST /v1/ingest-frames` endpoint rejects (or deduplicates) frames below the committed watermark
-4. A reset path exists (`clearAllWatermarks`) for logout / device swap
-
 **Plans:** 2/2 plans complete
 
 - [x] 62-01-PLAN.md — Create GooseUploadWatermark store (UserDefaults, per-type Date, clearAllWatermarks)
@@ -424,96 +322,49 @@ Plans:
 
 #### Archived phase 63 — Network Monitor & Upload Gating
 
-**Goal:** Gate all outbound uploads on network reachability, matching WHOOP's `WHPNetworkMonitor` pattern, and implement exponential-backoff retry so uploads fail visibly rather than silently when offline.
+**Goal:** Gate all outbound uploads on network reachability and implement exponential-backoff retry.
 
 **Depends on:** Phase 62
 **Requirements:** NET-MON-01
-**WHOOP reference:** `WHPNetworkMonitor`, `WHPAccountCanUploadDataStatusChanged` notification (WHOOP also gates on account authorisation)
-**Success Criteria** (what must be TRUE):
-
-1. A `GooseNetworkMonitor` wraps `NWPathMonitor` and publishes a `isReachable: Bool` to `GooseAppModel`
-2. Upload is not attempted when `isReachable == false`; queued work is retried automatically when connectivity returns
-3. Upload failures due to server error (5xx) use exponential backoff (1s, 2s, 4s, max 60s) with a visible error state in the UI
-4. Upload is gated on a non-empty device token (APNs registration must have succeeded at least once)
-
 **Plans:** 2/2 plans complete
-Plans:
 
-**Wave 1**
-
-- [x] 63-01-PLAN.md — Create GooseNetworkMonitor (NWPathMonitor wrapper) + wire isNetworkReachable into GooseAppModel + register in project.pbxproj
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [x] 63-02-PLAN.md — Reachability + APNs-token upload gating, connectivity-return retry, 5xx exponential backoff (1/2/4s, max 60s) with visible error state, APNs registration AppDelegate
+- [x] 63-01-PLAN.md — Create GooseNetworkMonitor (NWPathMonitor wrapper) + wire isNetworkReachable into GooseAppModel
+- [x] 63-02-PLAN.md — Reachability + APNs-token upload gating, connectivity-return retry, 5xx exponential backoff
 
 ---
 
 #### Archived phase 64 — HR Data Sanitizer
 
-**Goal:** Add a Swift-side heart rate sanitization step between raw BLE notification bytes and `HeartRateSeriesStore`, matching WHOOP's `WHPHeartRateDataSanitizer`, to suppress physiologically impossible spikes before they reach the UI or Rust algorithms.
+**Goal:** Add a Swift-side heart rate sanitization step between raw BLE notification bytes and HeartRateSeriesStore.
 
 **Depends on:** Phase 60
 **Requirements:** HR-SAN-01
-**WHOOP reference:** `WHPHeartRateDataSanitizer`, `WHPHeartRateDecimator2` (decimation is a stretch goal)
-**Success Criteria** (what must be TRUE):
-
-1. A `GooseHRSanitizer` type filters HR samples outside a configurable valid range (e.g. 25–220 BPM) before they enter `HeartRateSeriesStore`
-2. Spike samples are logged (OSLog) and counted in a debug counter visible in More > Debug
-3. The live HR display never shows a value outside the valid range during normal wear
-4. Sanitizer thresholds are constants (`static let`) not hard-coded literals
-
 **Plans:** 2/2 plans complete
-Plans:
 
-**Wave 1**
-
-- [x] 64-01-PLAN.md — GooseHRSanitizer (struct + static let 25/220 thresholds), wire at recordLiveHeartRate chokepoint to gate liveHeartRateBPM + HeartRateSeriesStore, hrSpikeCount + More > Debug counter, build clean
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [x] 64-02-PLAN.md — Human-verify checkpoint: live HR stays in-range during normal wear + debug spike counter increments
+- [x] 64-01-PLAN.md — GooseHRSanitizer (struct + static let 25/220 thresholds), wire at recordLiveHeartRate chokepoint
+- [x] 64-02-PLAN.md — Human-verify checkpoint
 
 ---
 
 #### Archived phase 65 — Generic BLE State Machine
 
-**Goal:** Extract a lightweight reusable `StateMachine<State, Event>` type (matching `WHPStateMachine` + `WHPStateMachineState` + `WHPStateMachineEventDefinition`) and migrate the BLE connection and bonding state into it, replacing the ad-hoc string status scattered across `GooseBLEClient`.
+**Goal:** Extract a lightweight reusable StateMachine<State, Event> type and migrate BLE connection/bonding state.
 
 **Depends on:** Phase 61
 **Requirements:** SM-01
-**WHOOP reference:** `WHPStateMachine`, `WHPStateMachineState`, `WHPStateMachineEventDefinition`
-**Note:** Previously flagged as over-engineering for the codebase's current size — added at user request. Scope is deliberately minimal: one generic type + migration of BLE connection/bonding states only. No broader adoption beyond BLE layer unless a future phase warrants it.
-**Success Criteria** (what must be TRUE):
-
-1. A `StateMachine<State: Hashable, Event>` struct exists in `GooseBLETypes.swift` or a new `GooseStateMachine.swift`
-2. BLE connection states (from Phase 61's bonding manager + existing connection states) are expressed as `StateMachine` instances
-3. Invalid state transitions are asserted in DEBUG builds; in RELEASE they are no-ops that log an OSLog error
-4. No reduction in observable behaviour — existing UI reflecting connection state continues to work
-
 **Plans:** 1/1 plans complete
 
-Plans:
-
-- [x] 65-01-PLAN.md — Add generic StateMachine<State, Event> struct + migrate GooseBLEBondingManager onto it (SM-01)
+- [x] 65-01-PLAN.md — Add generic StateMachine<State, Event> struct + migrate GooseBLEBondingManager onto it
 
 ---
 
 #### Archived phase 66 — Cap Sense / On-Wrist Detection
 
-**Goal:** Identify the GATT characteristic for WHOOP's capacitive skin-contact sensor (cap sense) via Ghidra and implement on-wrist detection in Goose, matching `WHPWhoopStrapCapSenseSuccessNotification` / `CapSenseFailed`, so physiological data is only trusted when the band is being worn.
+**Goal:** Identify the GATT characteristic for WHOOP's capacitive skin-contact sensor via Ghidra and implement on-wrist detection.
 
 **Depends on:** Phase 60
 **Requirements:** CAPSENSE-01
-**WHOOP reference:** `WHPWhoopStrapCapSenseSuccessNotification`, `WHPWhoopStrapCapSenseFailed`, `WHPWhoopStrapOnWrist`, `WHPWhoopStrapOffWrist`, `WHPWhoopStrapSensorsStatusLiveChangedNotification`
-**Note:** GATT characteristic UUID for cap sense is not yet identified — this phase begins with a Ghidra investigation step. If the characteristic cannot be identified from the binary, the phase is blocked and deferred.
-**Success Criteria** (what must be TRUE):
-
-1. The cap sense GATT characteristic UUID is identified via Ghidra static analysis and documented in `.planning/research/whoop-re/`
-2. `GooseBLEClient` subscribes to the cap sense characteristic and publishes `isOnWrist: Bool` to `GooseAppModel`
-3. HR and HRV samples acquired while `isOnWrist == false` are flagged in SQLite (`on_wrist = 0`) and excluded from strain/recovery computations
-4. The Device Status Card (Phase 53) shows an off-wrist indicator when detected
-
+**Note:** GATT characteristic UUID for cap sense is not yet identified. Phase deferred — hardware gate.
 **Plans:** 0 plans
 
 ---
