@@ -64,8 +64,8 @@ final class MoreDataStore: ObservableObject {
   @Published var rawMetricFamilies = "heart_rate,hrv,activity"
   @Published var rawAlgorithmIDs = ""
   @Published var rawAlgorithmVersions = ""
-  @Published var includeRawBytes = true
-  @Published var selectedRawFamilies: Set<String> = ["raw_evidence", "decoded_frames", "packet_timeline", "sensor_samples", "metric_features", "metric_outputs", "algorithm_runs", "local_health_metrics", "sqlite"]
+  @Published var includeRawBytes = false
+  @Published var selectedRawFamilies: Set<String> = ["raw_evidence", "decoded_frames", "packet_timeline", "sensor_samples", "metric_features", "metric_outputs", "algorithm_runs", "local_health_metrics"]
   @Published var rawExportStatus = "No export yet"
   @Published var rawExportInProgress = false
   @Published var rawBundlePath = "No bundle"
