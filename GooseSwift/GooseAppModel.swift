@@ -63,7 +63,10 @@ final class GooseAppModel {
   let packetMonitor = PacketMonitorModel()
   let activitySession = ActivitySessionModel()
   let activityLocationTracker = ActivityLocationTracker()
-  let rust = GooseRustBridge()
+  // lazy: defers GooseRustBridge() construction until first access so the first SwiftUI
+  // frame renders before the FFI bridge is initialised. GooseRustBridge is stateless and
+  // not observed by SwiftUI, so @ObservationIgnored is required here.
+  @ObservationIgnored lazy var rust = GooseRustBridge()
   let notificationFrameParser = NotificationFrameParser()
   let notificationIngestQueue = DispatchQueue(label: "com.goose.swift.notification-ingest", qos: .utility)
   let notificationIngestStateLock = NSLock()
