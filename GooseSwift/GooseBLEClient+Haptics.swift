@@ -4,12 +4,6 @@ import OSLog
 
 
 extension GooseBLEClient {
-  func nextHapticCommandSequence() -> UInt8 {
-    let sequence = nextHapticCommandSequence
-    nextHapticCommandSequence = nextHapticCommandSequence == UInt8.max ? 144 : nextHapticCommandSequence + 1
-    return sequence
-  }
-
   func buzz(loops: Int) {
     guard let activePeripheral, let commandCharacteristic else {
       record(source: "ble.haptic", title: "buzz.blocked", body: "no active peripheral or characteristic")
@@ -20,7 +14,8 @@ extension GooseBLEClient {
       return
     }
     let clamped = UInt8(max(1, min(255, loops)))
-    let sequence = nextHapticCommandSequence()
+    let sequence = nextHapticCommandSequence
+    nextHapticCommandSequence = nextHapticCommandSequence == UInt8.max ? 144 : nextHapticCommandSequence + 1
     let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: 0x13,
