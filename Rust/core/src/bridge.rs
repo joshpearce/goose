@@ -2227,10 +2227,12 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             })
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "metrics.imu_step_count_from_decoded_frames" => request_args::<ImuStepCountFromDecodedFramesArgs>(&request)
-            .and_then(imu_step_count_from_decoded_frames_bridge)
-            .map(|value| bridge_ok(&request.request_id, value))
-            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.imu_step_count_from_decoded_frames" => {
+            request_args::<ImuStepCountFromDecodedFramesArgs>(&request)
+                .and_then(imu_step_count_from_decoded_frames_bridge)
+                .map(|value| bridge_ok(&request.request_id, value))
+                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
+        }
         "metrics.imu_step_count_v1" => request_args::<ImuStepCountInput>(&request)
             .and_then(|input| {
                 serde_json::to_value(imu_step_count_v1(&input)).map_err(|e| {
@@ -3284,9 +3286,7 @@ fn imu_step_count_from_decoded_frames_bridge(
         }
     }
 
-    let input = ImuStepCountInput {
-        gravity_samples,
-    };
+    let input = ImuStepCountInput { gravity_samples };
     let output = imu_step_count_v1(&input);
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize imu_step_count output: {e}")))

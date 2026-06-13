@@ -9299,11 +9299,7 @@ fn bridge_imu_step_count_from_decoded_frames_returns_result_from_k10() {
             }]
         }
     }));
-    assert!(
-        import_resp.ok,
-        "K10 import failed: {:?}",
-        import_resp.error
-    );
+    assert!(import_resp.ok, "K10 import failed: {:?}", import_resp.error);
 
     // Call the new bridge method
     let resp = request(serde_json::json!({
@@ -9316,7 +9312,11 @@ fn bridge_imu_step_count_from_decoded_frames_returns_result_from_k10() {
             "end_ts": 9999999999.0
         }
     }));
-    assert!(resp.ok, "imu_step_count_from_decoded_frames failed: {:?}", resp.error);
+    assert!(
+        resp.ok,
+        "imu_step_count_from_decoded_frames failed: {:?}",
+        resp.error
+    );
 
     let result = resp.result.unwrap();
 
