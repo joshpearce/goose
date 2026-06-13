@@ -11,7 +11,7 @@
 - ✅ **v7.0 Sync Correctness, Async & Sleep Sync** — Phases 46-50 (shipped 2026-06-10)
 - ✅ **v8.0 Quality, Completeness & Backlog Clearance** — Phases 51-59+60 (shipped 2026-06-11)
 - ✅ **v9.0 BLE Reliability & Protocol Parity** — Phases 61-65+66 (shipped 2026-06-11)
-- ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-12)
+- **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (active)
 
 ## Phases
 
@@ -114,24 +114,17 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 
 </details>
 
-<details>
-<summary>✅ v10.0 Protocol Parity, Haptics & Feature Completeness (Phases 67-73) — SHIPPED 2026-06-12</summary>
+### v10.0 Protocol Parity, Haptics & Feature Completeness
 
-Full details: `.planning/milestones/v10.0-ROADMAP.md`
+- [x] **Phase 67: WHOOP 5.0 Protocol Fixes** — R22 realtime packet parsing + v18 per-second historical decode (pure Rust, highest user impact) (completed 2026-06-12)
+- [x] **Phase 68: BLE Manager Refactor + Data Validator** — GooseBLEHistoricalManager dedicated class + GooseBLEDataValidator Swift struct (completed 2026-06-12)
+- [x] **Phase 69: Data Foundation** — 4 new SQLite tables (schema v20) + realtime strain accumulator (completed 2026-06-12)
+- [ ] **Phase 70: Haptic Primitive + Breathe Screen** — buzz(loops:) cmd 0x13 + Breathe UI with paced haptic cues
+- [x] **Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation** — contextual nudges, Interval Timer, Metric Explorer, iOS local notifications, HR chart performance (completed 2026-06-12)
+- [ ] **Phase 72: Screens on New Foundation + Service Layer** — Stress/ANS view, Trends dashboard, Manual Workout Entry, protocol-based service layer + mocks
+- [x] **Phase 73: Smart Alarm + Wake-Window Engine** — HAP-03 single-shot alarm UI + HAP-04 RE-gated wake-window engine (completed 2026-06-12)
 
-- [x] Phase 67: WHOOP 5.0 Protocol Fixes — R22 type 0x10 parser + v18 per-second decode (pure Rust)
-- [x] Phase 68: BLE Manager Refactor + Data Validator — GooseBLEHistoricalManager + GooseBLEDataValidator
-- [x] Phase 69: Data Foundation — schema v20 + 4 SQLite tables + GooseStrainAccumulator actor
-- [x] Phase 70: Haptic Primitive + Breathe Screen — buzz(loops:) + BreatheView 4s/4s/4s box breathing
-- [x] Phase 71: Coach VOW + NoopApp + Notifications + HR Decimation — VOW nudge + Interval Timer + Metric Explorer + 3 notifications + stride-N decimation
-- [x] Phase 72: Screens on New Foundation + Service Layer — ANS tiles + Trends + Manual Workout + GooseRustBridging + 4 unit tests
-- [x] Phase 73: Smart Alarm + Wake-Window Engine — HAP-03 Wake Alarm UI + HAP-04 RE-gated stub
-
-Known deferred: HAP-04 wake-window (RE-gated: BTSnoop STRAP_DRIVEN_ALARM_EXECUTED + Ghidra SetAlarmInfoCommandPacketRev4); simulator validation for phases 68, 70, 72
-
-</details>
-
-## Phase Details (archived — see `.planning/milestones/`)
+## Phase Details
 
 ### Phase 67: WHOOP 5.0 Protocol Fixes
 
@@ -323,9 +316,9 @@ Plans:
 | 67. WHOOP 5.0 Protocol Fixes | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
-| 70. Haptic Primitive + Breathe Screen | v10.0 | 2/2 | Complete | 2026-06-12 |
+| 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 4/4 | Complete   | 2026-06-12 |
-| 72. Screens on New Foundation + Service Layer | v10.0 | 3/3 | Complete | 2026-06-12 |
+| 72. Screens on New Foundation + Service Layer | v10.0 | 1/3 | In Progress|  |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 2/2 | Complete   | 2026-06-12 |
 
 ## Backlog
