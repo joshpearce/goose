@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: PR Integration, Code Health & App Polish
 status: in_progress
-last_updated: "2026-06-13T22:30:00.000Z"
+last_updated: "2026-06-13T22:35:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 6
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 17
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 8
+  percent: 33
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v11.0 — Phase 75 (Fork PR Integration — BLE, Sync & Home)
+**Current focus:** v11.0 — Phase 76 (Upstream PR Integration)
 
 ## Current Position
 
-Phase: 75 — Fork PR Integration — BLE, Sync & Home
+Phase: 76 — Upstream PR Integration
 Plan: —
-Status: Phase 74 complete — ready for Phase 75
-Last activity: 2026-06-13 — Phase 74 complete: PRs #132, #133, #134, #136 integrated (i18n, units, UX, ChatGPT auth)
+Status: Phase 75 complete — ready for Phase 76
+Last activity: 2026-06-13 — Phase 75 complete: PRs #131, #135, #137 integrated (BLE firmware recovery, home baseline, sync donut)
 
 ## Performance Metrics
 
