@@ -310,6 +310,7 @@ import OSLog
   var pendingDebugCommands: [UInt8: PendingDebugCommand] = [:]
   var debugCommandTimeoutWorkItems: [UInt8: DispatchWorkItem] = [:]
   var nextDebugCommandSequence: UInt8 = 120
+  var nextHapticCommandSequence: UInt8 = 144
   var highFrequencyHistorySyncRequestedExpiry: Date?
   var debugSkinTemperatureCommandSent = false
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?
