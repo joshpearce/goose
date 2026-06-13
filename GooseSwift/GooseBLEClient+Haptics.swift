@@ -15,7 +15,7 @@ extension GooseBLEClient {
     }
     let clamped = UInt8(max(1, min(255, loops)))
     let sequence = nextHapticCommandSequence
-    nextHapticCommandSequence = nextHapticCommandSequence == UInt8.max ? 144 : nextHapticCommandSequence + 1
+    nextHapticCommandSequence = nextHapticCommandSequence == UInt8.max ? 0 : nextHapticCommandSequence + 1
     let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: 0x13,
