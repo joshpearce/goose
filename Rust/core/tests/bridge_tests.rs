@@ -9275,6 +9275,81 @@ fn bridge_k10_gravity_extraction_lsb_to_g_conversion() {
     assert_eq!(ts, 0.0, "first row ts should be 0.0 (zero-filled header)");
 }
 
+// ── metrics.imu_step_count_from_decoded_frames tests ─────────────────────────
+
+// Test: import a K10 frame with all axes = 3900 LSB (= 1.0 g after conversion),
+// call metrics.imu_step_count_from_decoded_frames, and assert the bridge returns
+// 100 samples, insufficient_data=false, and step_count=0 (uniform magnitude,
+// no zero-crossings after DC removal).
+#[test]
+fn bridge_imu_step_count_from_decoded_frames_returns_result_from_k10() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import a K10 frame with all accel samples = 3900 LSB (= 1.0 g per axis)
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "imu-decoded-import-1",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-imu",
+            "frames": [{
+                "evidence_id": "imu-decoded-ev-1",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-06-06T10:00:00.000Z",
+                "device_model": "WHOOP-Test",
+                "frame_hex": k10_motion_frame_hex_with_value(3900),
+                "sensitivity": "user-owned-capture"
+            }]
+        }
+    }));
+    assert!(import_resp.ok, "K10 import failed: {:?}", import_resp.error);
+
+    // Call the new bridge method
+    let resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "imu-decoded-step-1",
+        "method": "metrics.imu_step_count_from_decoded_frames",
+        "args": {
+            "database_path": db_path,
+            "start_ts": 0.0,
+            "end_ts": 9999999999.0
+        }
+    }));
+    assert!(
+        resp.ok,
+        "imu_step_count_from_decoded_frames failed: {:?}",
+        resp.error
+    );
+
+    let result = resp.result.unwrap();
+
+    // 100 samples (K10 has 100 samples per axis)
+    assert_eq!(
+        result["sample_count"].as_u64(),
+        Some(100),
+        "expected 100 samples, got: {:?}",
+        result["sample_count"]
+    );
+
+    // insufficient_data must be false (100 >= 50 threshold)
+    assert_eq!(
+        result["insufficient_data"].as_bool(),
+        Some(false),
+        "insufficient_data should be false for 100 samples"
+    );
+
+    // step_count = 0: all samples are identical (1.0 g on every axis),
+    // so mean-centred magnitude is 0.0 everywhere — zero zero-crossings.
+    assert_eq!(
+        result["step_count"].as_u64(),
+        Some(0),
+        "step_count should be 0 for uniform magnitude signal"
+    );
+}
+
 // Test 2: gravity row count equals min of the three accel axis sample lengths;
 // first row ts matches the frame's base ts.
 #[test]

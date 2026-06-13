@@ -267,6 +267,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "metrics.hourly_activity_metrics",
     "metrics.hrv_capture_validation",
     "metrics.hrv_features",
+    "metrics.imu_step_count_from_decoded_frames",
     "metrics.imu_step_count_v1",
     "metrics.input_readiness",
     "metrics.motion_features",
@@ -2308,6 +2309,12 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             })
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metrics.imu_step_count_from_decoded_frames" => {
+            request_args::<ImuStepCountFromDecodedFramesArgs>(&request)
+                .and_then(imu_step_count_from_decoded_frames_bridge)
+                .map(|value| bridge_ok(&request.request_id, value))
+                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
+        }
         "metrics.imu_step_count_v1" => request_args::<ImuStepCountInput>(&request)
             .and_then(|input| {
                 serde_json::to_value(imu_step_count_v1(&input)).map_err(|e| {
@@ -3318,6 +3325,74 @@ const IMU_LSB_PER_G: f64 = 3900.0;
 // in the Swift layer. No Rust toggle is needed — this pipeline only stores
 // and converts the resulting K10/K21 motion data. (IMU-04 — no code change
 // required beyond this documentation comment.)
+
+#[derive(Debug, Deserialize)]
+struct ImuStepCountFromDecodedFramesArgs {
+    database_path: String,
+    start_ts: f64,
+    end_ts: f64,
+}
+
+/// Read K10 accelerometer data from decoded_frames between start_ts and end_ts,
+/// convert LSB→g via IMU_LSB_PER_G, and feed the samples to imu_step_count_v1.
+/// Bypasses the gravity table entirely — works for all users regardless of
+/// whether server upload is configured.
+fn imu_step_count_from_decoded_frames_bridge(
+    args: ImuStepCountFromDecodedFramesArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+
+    let start_dt = chrono_from_unix(args.start_ts);
+    let end_dt = chrono_from_unix(args.end_ts);
+
+    let frames = store.decoded_frames_between(&start_dt, &end_dt)?;
+
+    let mut gravity_samples: Vec<[f64; 3]> = Vec::new();
+
+    for frame in &frames {
+        if !frame.header_crc_valid || !frame.payload_crc_valid {
+            continue;
+        }
+
+        let parsed: Option<ParsedPayload> =
+            serde_json::from_str(&frame.parsed_payload_json).unwrap_or(None);
+
+        if let Some(ParsedPayload::DataPacket {
+            body_summary: Some(DataPacketBodySummary::RawMotionK10 { axes, .. }),
+            ..
+        }) = parsed
+        {
+            let ax = axes
+                .iter()
+                .find(|a| a.name == "accelerometer_x")
+                .and_then(|a| a.full_samples.as_ref());
+            let ay = axes
+                .iter()
+                .find(|a| a.name == "accelerometer_y")
+                .and_then(|a| a.full_samples.as_ref());
+            let az = axes
+                .iter()
+                .find(|a| a.name == "accelerometer_z")
+                .and_then(|a| a.full_samples.as_ref());
+
+            if let (Some(xs), Some(ys), Some(zs)) = (ax, ay, az) {
+                let n = xs.len().min(ys.len()).min(zs.len());
+                for i in 0..n {
+                    gravity_samples.push([
+                        xs[i] as f64 / IMU_LSB_PER_G,
+                        ys[i] as f64 / IMU_LSB_PER_G,
+                        zs[i] as f64 / IMU_LSB_PER_G,
+                    ]);
+                }
+            }
+        }
+    }
+
+    let input = ImuStepCountInput { gravity_samples };
+    let output = imu_step_count_v1(&input);
+    serde_json::to_value(output)
+        .map_err(|e| GooseError::message(format!("cannot serialize imu_step_count output: {e}")))
+}
 
 #[derive(Debug, Deserialize)]
 struct UploadGetRecentDecodedStreamsArgs {
