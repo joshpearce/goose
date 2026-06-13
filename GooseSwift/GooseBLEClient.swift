@@ -274,7 +274,7 @@ import OSLog
   var syncClearWorkItem: DispatchWorkItem?
   let historicalDirectWriteBridge = GooseRustBridge()
   var historicalDirectWriteDatabasePath: String = ""
-  private let historicalWriteQueue = DispatchQueue(label: "com.goose.swift.historical-write", qos: .utility)
+  let historicalWriteQueue = DispatchQueue(label: "com.goose.swift.historical-write", qos: .utility)
   var lastHeartRateLogAt: Date?
   var lastHeartRateLogBPM: Int?
   var lastHeartRateLogSource = ""
