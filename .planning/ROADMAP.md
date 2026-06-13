@@ -138,7 +138,7 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 - [x] **Phase 75: Fork PR Integration — BLE, Sync & Home** - Integrate tigercraft4 PRs #131, #135, #137 (firmware recovery, warm-up state, sync progress)
 - [x] **Phase 76: Upstream PR Integration** - Cherry-pick upstream b-nnett/goose PRs #4, #12, #29, #31 (main-thread safety, scroll jitter)
 - [x] **Phase 77: Codebase Audit** - Full codebase map + deep review of phases 67-73 + fix all critical findings
-- [ ] **Phase 78: Performance & BLE Reliability** - SQLite query optimisation, startup lazy-init, BLE auth retry (SEED-001)
+- [x] **Phase 78: Performance & BLE Reliability** - SQLite query optimisation, startup lazy-init, BLE auth retry (SEED-001)
 - [ ] **Phase 79: Polish & Deferred Features** - Debug tab 3-tabs, Support rename, Breathe haptics, live strain accumulator
 
 ## Phase Details
@@ -237,7 +237,7 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 | 75. Fork PR Integration — BLE, Sync & Home | v11.0 | 3/3 | Complete | 2026-06-13 |
 | 76. Upstream PR Integration | v11.0 | 1/1 | Complete | 2026-06-13 |
 | 77. Codebase Audit | v11.0 | 3/3 | Complete | 2026-06-14 |
-| 78. Performance & BLE Reliability | v11.0 | 0/TBD | Not started | - |
+| 78. Performance & BLE Reliability | v11.0 | 3/3 | Complete | 2026-06-14 |
 | 79. Polish & Deferred Features | v11.0 | 0/TBD | Not started | - |
 
 ## Backlog

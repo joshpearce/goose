@@ -7,10 +7,10 @@ last_updated: "2026-06-13T22:35:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 8
   completed_plans: 8
-  percent: 67
+  percent: 83
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v11.0 — Phase 78 (Performance & BLE Reliability)
+**Current focus:** v11.0 — Phase 79 (Polish & Deferred Features)
 
 ## Current Position
 
-Phase: 78 — Performance & BLE Reliability
+Phase: 79 — Polish & Deferred Features
 Plan: —
-Status: Phase 77 complete — ready for Phase 78
-Last activity: 2026-06-14 — Phase 77 complete: codebase map (7 docs), code review 67-73 (6 CRITICAL fixed)
+Status: Phase 78 complete — ready for Phase 79
+Last activity: 2026-06-14 — Phase 78 complete: SQLite indexes (schema v21), lazy-init, BLE auth retry
 
 ## Performance Metrics
 
