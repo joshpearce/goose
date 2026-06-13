@@ -7,4 +7,3 @@ protocol HealthDataStoring: AnyObject {
   func fetchTrendsSeries(metricName: String, days: Int) async throws -> [(date: String, value: Double)]
 }
 
-// TODO(future): extension HealthDataStore: HealthDataStoring {}

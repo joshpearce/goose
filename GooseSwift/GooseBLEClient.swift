@@ -274,6 +274,7 @@ import OSLog
   var syncClearWorkItem: DispatchWorkItem?
   let historicalDirectWriteBridge = GooseRustBridge()
   var historicalDirectWriteDatabasePath: String = ""
+  let historicalWriteQueue = DispatchQueue(label: "com.goose.swift.historical-write", qos: .utility)
   var lastHeartRateLogAt: Date?
   var lastHeartRateLogBPM: Int?
   var lastHeartRateLogSource = ""
@@ -986,7 +987,7 @@ import OSLog
       guard let self else { return }
       self.updateConnectionState(newState.connectionStateString)
     }
-    historicalManager.onSyncStateChange = { [weak self] _ in
+    historicalManager.onSyncStateChange = { _ in
       // @Observable tracks historicalManager.isHistoricalSyncing via the proxy var;
       // the callback exists for future explicit observers if needed.
     }
