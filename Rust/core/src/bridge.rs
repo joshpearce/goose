@@ -7292,10 +7292,9 @@ fn apple_daily_upsert_bridge(args: AppleDailyUpsertArgs) -> GooseResult<serde_js
 fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serde_json::Value> {
     // T-69-01: validate metric_name is non-empty and matches [a-z0-9._-]+
     if args.metric_name.is_empty()
-        || !args
-            .metric_name
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '_' || c == '-')
+        || !args.metric_name.chars().all(|c| {
+            c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '_' || c == '-'
+        })
     {
         return Err(GooseError::message(format!(
             "invalid metric_name '{}': must be non-empty and match [a-z0-9._-]+",
@@ -7303,12 +7302,8 @@ fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serd
         )));
     }
     let store = open_bridge_store(&args.database_path)?;
-    let inserted = store.insert_metric_series(
-        &args.source,
-        &args.metric_name,
-        &args.date,
-        args.value,
-    )?;
+    let inserted =
+        store.insert_metric_series(&args.source, &args.metric_name, &args.date, args.value)?;
     Ok(json!({
         "schema": "goose.metric-series-upsert-result.v1",
         "generated_by": "goose-bridge",
