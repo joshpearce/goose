@@ -542,7 +542,8 @@ final class MoreDataStore: ObservableObject {
     privacyLintStatus = "Not linted"
     sanitizedPrivacyStatus = "No sanitized copy"
 
-    DispatchQueue.global(qos: .userInitiated).async {
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      guard let self else { return }
       do {
         let bridge = GooseRustBridge()
         let value = try bridge.request(method: "export.raw_timeframe", args: args)
@@ -588,7 +589,8 @@ final class MoreDataStore: ObservableObject {
           bundlePath: bundlePath,
           zipPath: finishedZipPath
         )
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
           let status = Self.passSummary(value, fallback: "Export completed")
           self.rawExportInProgress = false
           self.rawExportStatus = status
@@ -608,7 +610,8 @@ final class MoreDataStore: ObservableObject {
           self.sanitizedPrivacyStatus = artifactValidation.sanitizedPrivacy
         }
       } catch {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
           let message = Self.errorSummary(error)
           self.rawExportInProgress = false
           self.rawExportStatus = "Export failed: \(message)"
