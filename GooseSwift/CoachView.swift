@@ -786,6 +786,12 @@ enum DailyJournalStore {
   static func save(_ entry: DailyJournalEntry) throws {
     var all = load()
     all[entry.dateKey] = entry
+    // Retain only the most recent 90 days to prevent unbounded growth
+    let cutoff = Calendar.current.date(byAdding: .day, value: -90, to: Date()) ?? Date()
+    let fmt = DateFormatter()
+    fmt.dateFormat = "yyyy-MM-dd"
+    let cutoffKey = fmt.string(from: cutoff)
+    all = all.filter { $0.key >= cutoffKey }
     let data = try JSONEncoder().encode(all)
     UserDefaults.standard.set(data, forKey: key)
   }
