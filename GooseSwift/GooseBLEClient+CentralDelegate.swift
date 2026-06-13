@@ -275,6 +275,7 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     let shouldReconnect = rememberedDeviceID == peripheral.identifier
     autoConnectForPhysiologyCapture = false
     autoStartedPhysiologyCapture = false
+    authRetryPending = false
     readySyncWorkItem?.cancel()
     if isHistoricalSyncing {
       failHistoricalSync("WHOOP disconnected during historical sync. \(error?.localizedDescription ?? "No CoreBluetooth error was provided.")")

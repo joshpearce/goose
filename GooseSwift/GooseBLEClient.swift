@@ -335,6 +335,8 @@ import OSLog
   var highFrequencyHistorySyncRequestedExpiry: Date?
   var debugSkinTemperatureCommandSent = false
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?
+  // BLE-REL-01: tracks whether a single auth retry is already pending. Reset on connect/disconnect.
+  var authRetryPending = false
 
   enum DefaultsKey {
     static let rememberedDeviceID = "goose.swift.rememberedDeviceID"
