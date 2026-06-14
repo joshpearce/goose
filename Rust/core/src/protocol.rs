@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::capabilities::DeviceKind;
 use crate::{GooseError, GooseResult};
 
 pub const FRAME_START: u8 = 0xaa;
@@ -27,6 +28,8 @@ pub const COMMAND_GET_HELLO: u8 = 145;
 pub enum DeviceType {
     Gen4,
     Maverick,
+    /// Hardware code name with no known generation mapping — likely unshipped.
+    /// Parses as Gen5-family wire format (8-byte header).
     Puffin,
     Goose,
     HrMonitor,
@@ -66,6 +69,39 @@ impl DeviceType {
             }
         }
     }
+
+    pub fn wire_protocol(self) -> WireProtocol {
+        match self {
+            DeviceType::Gen4 => WireProtocol::Gen4,
+            DeviceType::Maverick
+            | DeviceType::Puffin
+            | DeviceType::Goose
+            | DeviceType::HrMonitor => WireProtocol::Gen5,
+        }
+    }
+
+    /// Returns true for all devices that use the 8-byte Gen5-family frame header.
+    pub fn is_gen5_family(self) -> bool {
+        matches!(
+            self,
+            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor
+        )
+    }
+
+    pub fn device_kind(self) -> DeviceKind {
+        match self {
+            DeviceType::Gen4 => DeviceKind::Whoop4,
+            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
+            DeviceType::HrMonitor => DeviceKind::HrMonitor,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WireProtocol {
+    Gen4,
+    Gen5,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1082,6 +1118,87 @@ fn read_i16_le(bytes: &[u8], offset: usize) -> Option<i16> {
         *bytes.get(offset)?,
         *bytes.get(offset + 1)?,
     ]))
+}
+
+#[cfg(test)]
+mod wire_protocol_tests {
+    use super::*;
+    use crate::capabilities::DeviceKind;
+
+    #[test]
+    fn wire_protocol_gen4() {
+        assert_eq!(DeviceType::Gen4.wire_protocol(), WireProtocol::Gen4);
+    }
+
+    #[test]
+    fn wire_protocol_goose_is_gen5() {
+        assert_eq!(DeviceType::Goose.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_maverick_is_gen5() {
+        assert_eq!(DeviceType::Maverick.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_puffin_is_gen5() {
+        assert_eq!(DeviceType::Puffin.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_hr_monitor_is_gen5() {
+        assert_eq!(DeviceType::HrMonitor.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn is_gen5_family_gen4_false() {
+        assert!(!DeviceType::Gen4.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_goose_true() {
+        assert!(DeviceType::Goose.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_maverick_true() {
+        assert!(DeviceType::Maverick.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_puffin_true() {
+        assert!(DeviceType::Puffin.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_hr_monitor_true() {
+        assert!(DeviceType::HrMonitor.is_gen5_family());
+    }
+
+    #[test]
+    fn device_kind_gen4_is_whoop4() {
+        assert_eq!(DeviceType::Gen4.device_kind(), DeviceKind::Whoop4);
+    }
+
+    #[test]
+    fn device_kind_goose_is_whoop5() {
+        assert_eq!(DeviceType::Goose.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_maverick_is_whoop5() {
+        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_puffin_is_whoop5() {
+        assert_eq!(DeviceType::Puffin.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_hr_monitor() {
+        assert_eq!(DeviceType::HrMonitor.device_kind(), DeviceKind::HrMonitor);
+    }
 }
 
 pub fn padding_len(length: usize) -> usize {
