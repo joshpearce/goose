@@ -13,7 +13,7 @@
         {
           "version": "11.0",
           "date": "2026-06-14",
-          "localizedDescription": "- Resting HR floor: 30 bpm minimum (closes #130)\n- Battery fix: R22 battery level for Gen5; Gen4 0xFF guard (closes #149)\n- HealthKit import persistence to SQLite (closes #150)\n- Debug 3-tab split, Logs & Export rename, Breathe haptics, live strain\n- Schema v21 indexes, lazy init, BLE auth retry\n- Fork + upstream PR integration (units, localisation, BLE recovery, sync donut)",
+          "localizedDescription": "- chore(v11.0): remove REQUIREMENTS.md — archived to milestones/v11.0-REQUIREMENTS.md\n- docs(v11.0): archive milestone — ROADMAP, REQUIREMENTS, AUDIT committed to milestones/\n- docs(v11.0): milestone audit passed — 23/23 requirements satisfied",
           "downloadURL": "https://github.com/tigercraft4/goose/releases/download/v11.0/GooseSwift-v11.0-unsigned.ipa",
           "size": 12400928
         },
