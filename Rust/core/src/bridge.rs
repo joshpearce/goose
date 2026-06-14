@@ -9820,6 +9820,7 @@ fn escape_json_string(value: &str) -> String {
     value
         .replace('\\', "\\\\")
         .replace('"', "\\\"")
+        .replace('\0', "\\u0000")
         .replace('\n', "\\n")
         .replace('\r', "\\r")
         .replace('\t', "\\t")
