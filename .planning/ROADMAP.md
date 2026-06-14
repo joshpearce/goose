@@ -166,7 +166,14 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
   2. Bridge method `device.capabilities(device_kind)` returns a `DeviceCapabilities` JSON object; GooseBLEClient caches it as `connectedCapabilities` after GATT discovery
   3. DB migration runs automatically on open and all MAVERICK/PUFFIN rows become GOOSE; `parse_device_type("MAVERICK")` returns an error after migration
   4. `cargo test --locked` passes clean and the iOS build compiles without new warnings
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
+- [ ] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+- [ ] 83-03-PLAN.md — Bridge: device.capabilities method, BRIDGE_METHODS update, parse_device_type rejection (Wave 2)
+- [ ] 83-04-PLAN.md — Swift types: WireProtocol enum, DeviceCapabilities, connectedCapabilities, GATT discovery call (Wave 3)
+- [ ] 83-05-PLAN.md — Swift guards: all 23 activeDeviceGeneration + 11 rustDeviceType sites across 9 files (Wave 3)
+- [ ] 83-06-PLAN.md — Phase gate: cargo test --locked full suite + iOS build verification (Wave 4)
 **Context**: `.planning/phases/83-protocol-architecture-refactor-gen4-gen5-capability-model/83-CONTEXT.md` (design decisions finalised — read before planning)
 
 ---
@@ -282,7 +289,14 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
   2. Bridge method `device.capabilities(device_kind)` returns a `DeviceCapabilities` JSON object; GooseBLEClient caches it as `connectedCapabilities` after GATT discovery
   3. DB migration runs automatically on open and all MAVERICK/PUFFIN rows become GOOSE; `parse_device_type("MAVERICK")` returns an error after migration
   4. `cargo test --locked` passes clean and the iOS build compiles without new warnings
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
+- [ ] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+- [ ] 83-03-PLAN.md — Bridge: device.capabilities method, BRIDGE_METHODS update, parse_device_type rejection (Wave 2)
+- [ ] 83-04-PLAN.md — Swift types: WireProtocol enum, DeviceCapabilities, connectedCapabilities, GATT discovery call (Wave 3)
+- [ ] 83-05-PLAN.md — Swift guards: all 23 activeDeviceGeneration + 11 rustDeviceType sites across 9 files (Wave 3)
+- [ ] 83-06-PLAN.md — Phase gate: cargo test --locked full suite + iOS build verification (Wave 4)
 **Context**: `.planning/phases/83-protocol-architecture-refactor-gen4-gen5-capability-model/83-CONTEXT.md`
 
 ### Phase 84: Gen4 Battery
