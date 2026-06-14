@@ -392,7 +392,15 @@ Plans:
   2. bridge.rs dispatcher entry point is wrapped in `catch_unwind`; panics are caught and returned as an error JSON response rather than crashing the process
   3. All 133 former `.unwrap()` sites in bridge.rs and store.rs return `Result<_, GooseError>` with a specific error variant; `cargo test --locked` passes
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 85-01-PLAN.md — Add deny(clippy::unwrap_used) to lib.rs + per-module allow shields; convert bridge.rs test unwraps to expect
+- [ ] 85-02-PLAN.md — Convert store.rs test unwraps to expect; remove store.rs allow shield
+- [ ] 85-03-PLAN.md — Fix 3 metrics.rs production unwrap sites; convert tests; remove allow shield
+- [ ] 85-04-PLAN.md — Convert capabilities.rs test unwraps to expect; remove allow shield
+- [ ] 85-05-PLAN.md — Fix 2 production unwrap sites (energy_rollup, step_discovery); convert small-file tests; remove allow shields
+- [ ] 85-06-PLAN.md — Gate: cargo clippy --lib -D unwrap_used = 0; verify catch_unwind exists; cargo test --locked passes
 
 ### Phase 86: bridge.rs Split + Protocol Comments
 
