@@ -9925,14 +9925,14 @@ mod tests {
         let result = response.result.expect("result payload");
         assert_eq!(result["schema"], BRIDGE_METHODS_LIST_SCHEMA);
         assert_eq!(
-            result["count"].as_u64().unwrap() as usize,
+            result["count"].as_u64().expect("result.count must be a u64 integer") as usize,
             BRIDGE_METHODS.len()
         );
         let methods: Vec<String> = result["methods"]
             .as_array()
-            .unwrap()
+            .expect("result.methods must be a JSON array")
             .iter()
-            .map(|v| v.as_str().unwrap().to_string())
+            .map(|v| v.as_str().expect("each method entry must be a JSON string").to_string())
             .collect();
         let expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
         assert_eq!(methods, expected);
@@ -9962,7 +9962,7 @@ mod tests {
             generic_metric_action,
             recovery_sensor_action.clone(),
         ])
-        .unwrap();
+        .expect("next focus should be Some when actions are present");
 
         assert_eq!(focus.source, "Recovery Sensors");
         assert_eq!(focus.scope, "oxygen_saturation_percent");
@@ -9988,7 +9988,7 @@ mod tests {
 
         let focus =
             capture_arrival_plan_next_focus(&[generic_metric_action, local_health_action.clone()])
-                .unwrap();
+                .expect("next focus should be Some when actions are present");
 
         assert_eq!(focus.source, "Local Health Validation");
         assert_eq!(focus.scope, "owned-step-validation");
@@ -10016,7 +10016,8 @@ mod tests {
         assert!(sleep_history_schedule_baseline(&[impossible_night.clone()]).is_none());
 
         let (bedtime, wake_time) =
-            sleep_history_schedule_baseline(&[usable_night, impossible_night]).unwrap();
+            sleep_history_schedule_baseline(&[usable_night, impossible_night])
+                .expect("baseline should be Some when at least one usable night is provided");
         assert_eq!(bedtime, 22.0 * 60.0);
         assert_eq!(wake_time, 6.0 * 60.0);
     }
@@ -10061,9 +10062,11 @@ mod tests {
 
     #[test]
     fn sleep_v1_external_history_prefers_detailed_stage_rows_over_empty_summary() {
-        let store = GooseStore::open_in_memory().unwrap();
-        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z").unwrap();
-        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z").unwrap();
+        let store = GooseStore::open_in_memory().expect("in-memory store should always open");
+        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
+        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
         store
             .insert_external_sleep_session(ExternalSleepSessionInput {
                 sleep_id: "detailed-stage-night",
@@ -10077,7 +10080,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"healthkit_sleep_analysis"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_session should succeed on empty in-memory store");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "detailed-stage-night-core",
@@ -10088,7 +10091,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"healthkit_sleep_analysis"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "detailed-stage-night-awake",
@@ -10099,14 +10102,15 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"healthkit_sleep_analysis"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
 
         let nights = external_sleep_history_nights_for_sleep_v1(
             &store,
             480.0,
-            sleep_time_unix_ms("2026-05-02T22:00:00Z").unwrap(),
+            sleep_time_unix_ms("2026-05-02T22:00:00Z")
+                .expect("fixed RFC3339 timestamp should parse"),
         )
-        .unwrap();
+        .expect("external_sleep_history_nights_for_sleep_v1 should succeed on valid store");
 
         assert_eq!(nights.len(), 1);
         let night = &nights[0];
@@ -10120,9 +10124,11 @@ mod tests {
 
     #[test]
     fn sleep_v1_external_history_excludes_low_confidence_detailed_stage_rows() {
-        let store = GooseStore::open_in_memory().unwrap();
-        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z").unwrap();
-        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z").unwrap();
+        let store = GooseStore::open_in_memory().expect("in-memory store should always open");
+        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
+        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
         store
             .insert_external_sleep_session(ExternalSleepSessionInput {
                 sleep_id: "low-confidence-stage-night",
@@ -10136,7 +10142,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_session"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_session should succeed on empty in-memory store");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "low-confidence-stage-night-core",
@@ -10147,7 +10153,7 @@ mod tests {
                 confidence: 0.40,
                 provenance_json: r#"{"source":"health_connect_sleep_stage"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "low-confidence-stage-night-awake",
@@ -10158,14 +10164,15 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_stage"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
 
         let nights = external_sleep_history_nights_for_sleep_v1(
             &store,
             480.0,
-            sleep_time_unix_ms("2026-05-02T22:00:00Z").unwrap(),
+            sleep_time_unix_ms("2026-05-02T22:00:00Z")
+                .expect("fixed RFC3339 timestamp should parse"),
         )
-        .unwrap();
+        .expect("external_sleep_history_nights_for_sleep_v1 should succeed on valid store");
 
         assert_eq!(nights.len(), 1);
         assert_eq!(nights[0].night_id, "low-confidence-stage-night");
@@ -10174,9 +10181,11 @@ mod tests {
 
     #[test]
     fn sleep_v1_external_history_excludes_manual_detailed_stage_rows() {
-        let store = GooseStore::open_in_memory().unwrap();
-        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z").unwrap();
-        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z").unwrap();
+        let store = GooseStore::open_in_memory().expect("in-memory store should always open");
+        let night_start = sleep_time_unix_ms("2026-05-01T22:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
+        let night_end = sleep_time_unix_ms("2026-05-02T06:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
         store
             .insert_external_sleep_session(ExternalSleepSessionInput {
                 sleep_id: "manual-stage-night",
@@ -10190,7 +10199,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"healthkit_sleep_analysis"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_session should succeed on empty in-memory store");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "manual-stage-night-core",
@@ -10201,14 +10210,15 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"manual_sleep_edit","manual_entry":true}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
 
         let nights = external_sleep_history_nights_for_sleep_v1(
             &store,
             480.0,
-            sleep_time_unix_ms("2026-05-02T22:00:00Z").unwrap(),
+            sleep_time_unix_ms("2026-05-02T22:00:00Z")
+                .expect("fixed RFC3339 timestamp should parse"),
         )
-        .unwrap();
+        .expect("external_sleep_history_nights_for_sleep_v1 should succeed on valid store");
 
         assert_eq!(nights.len(), 1);
         assert_eq!(nights[0].night_id, "manual-stage-night");
@@ -10217,9 +10227,11 @@ mod tests {
 
     #[test]
     fn sleep_v1_external_nap_credit_excludes_platform_imported_stage_rows() {
-        let store = GooseStore::open_in_memory().unwrap();
-        let nap_start = sleep_time_unix_ms("2026-05-02T16:00:00Z").unwrap();
-        let nap_end = sleep_time_unix_ms("2026-05-02T17:00:00Z").unwrap();
+        let store = GooseStore::open_in_memory().expect("in-memory store should always open");
+        let nap_start = sleep_time_unix_ms("2026-05-02T16:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
+        let nap_end = sleep_time_unix_ms("2026-05-02T17:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
         store
             .insert_external_sleep_session(ExternalSleepSessionInput {
                 sleep_id: "detailed-stage-nap",
@@ -10233,7 +10245,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_session"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_session should succeed on empty in-memory store");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "detailed-stage-nap-core",
@@ -10244,7 +10256,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_stage"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "detailed-stage-nap-awake",
@@ -10255,7 +10267,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_stage"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
         let sleep_input = SleepInput {
             start_time: "2026-05-02T22:00:00Z".to_string(),
             end_time: "2026-05-03T06:00:00Z".to_string(),
@@ -10267,16 +10279,19 @@ mod tests {
             ..Default::default()
         };
 
-        let naps_minutes = external_sleep_naps_before_sleep(&store, &sleep_input).unwrap();
+        let naps_minutes = external_sleep_naps_before_sleep(&store, &sleep_input)
+            .expect("external_sleep_naps_before_sleep should succeed on valid store");
 
         assert_eq!(naps_minutes, 0.0);
     }
 
     #[test]
     fn sleep_v1_external_nap_credit_excludes_low_confidence_stage_rows() {
-        let store = GooseStore::open_in_memory().unwrap();
-        let nap_start = sleep_time_unix_ms("2026-05-02T16:00:00Z").unwrap();
-        let nap_end = sleep_time_unix_ms("2026-05-02T17:00:00Z").unwrap();
+        let store = GooseStore::open_in_memory().expect("in-memory store should always open");
+        let nap_start = sleep_time_unix_ms("2026-05-02T16:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
+        let nap_end = sleep_time_unix_ms("2026-05-02T17:00:00Z")
+            .expect("fixed RFC3339 timestamp should parse");
         store
             .insert_external_sleep_session(ExternalSleepSessionInput {
                 sleep_id: "low-confidence-stage-nap",
@@ -10290,7 +10305,7 @@ mod tests {
                 confidence: 0.90,
                 provenance_json: r#"{"source":"health_connect_sleep_session"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_session should succeed on empty in-memory store");
         store
             .insert_external_sleep_stage(ExternalSleepStageInput {
                 stage_id: "low-confidence-stage-nap-core",
@@ -10301,7 +10316,7 @@ mod tests {
                 confidence: 0.40,
                 provenance_json: r#"{"source":"health_connect_sleep_stage"}"#,
             })
-            .unwrap();
+            .expect("insert_external_sleep_stage should succeed on valid session");
         let sleep_input = SleepInput {
             start_time: "2026-05-02T22:00:00Z".to_string(),
             end_time: "2026-05-03T06:00:00Z".to_string(),
@@ -10313,7 +10328,8 @@ mod tests {
             ..Default::default()
         };
 
-        let naps_minutes = external_sleep_naps_before_sleep(&store, &sleep_input).unwrap();
+        let naps_minutes = external_sleep_naps_before_sleep(&store, &sleep_input)
+            .expect("external_sleep_naps_before_sleep should succeed on valid store");
 
         assert_eq!(naps_minutes, 0.0);
     }
@@ -10492,7 +10508,12 @@ mod tests {
             "fold_history must reflect inserted night"
         );
         assert!(
-            (fold_result["hrv"]["mean"].as_f64().unwrap() - 60.0).abs() < 1e-9,
+            (fold_result["hrv"]["mean"]
+                .as_f64()
+                .expect("fold_history result.hrv.mean must be a f64")
+                - 60.0)
+                .abs()
+                < 1e-9,
             "fold_history hrv mean must be 60.0 after one night"
         );
     }
@@ -11012,14 +11033,14 @@ mod tests {
         };
         let result = device_capabilities_bridge(args);
         assert!(result.is_ok(), "device_capabilities_bridge should succeed for Whoop4");
-        let value = result.unwrap();
+        let value = result.expect("device_capabilities_bridge returned Ok so unwrap is safe");
         assert_eq!(
-            value["wire_protocol"].as_str().unwrap(),
+            value["wire_protocol"].as_str().expect("wire_protocol must be a JSON string"),
             "gen4",
             "Whoop4 wire_protocol must be gen4"
         );
         assert_eq!(
-            value["historical_sync"].as_str().unwrap(),
+            value["historical_sync"].as_str().expect("historical_sync must be a JSON string"),
             "page_sequence",
             "Whoop4 historical_sync must be page_sequence"
         );
