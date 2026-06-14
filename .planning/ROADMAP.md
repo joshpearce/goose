@@ -12,7 +12,8 @@
 - ✅ **v8.0 Quality, Completeness & Backlog Clearance** — Phases 51-59+60 (shipped 2026-06-11)
 - ✅ **v9.0 BLE Reliability & Protocol Parity** — Phases 61-65+66 (shipped 2026-06-11)
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
-- **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (active)
+- ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
+- **v12.0 TBD** — (next milestone, not yet defined)
 
 ## Phases
 
@@ -132,146 +133,39 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 
 </details>
 
-### v11.0 PR Integration, Code Health & App Polish
+<details>
+<summary>✅ v11.0 PR Integration, Code Health & App Polish (Phases 74-82) — SHIPPED 2026-06-14</summary>
 
-- [x] **Phase 74: Fork PR Integration — UX, i18n & Auth** - Integrate tigercraft4 PRs #132–#136 (units, localisation, UUIDs, ChatGPT auth)
-- [x] **Phase 75: Fork PR Integration — BLE, Sync & Home** - Integrate tigercraft4 PRs #131, #135, #137 (firmware recovery, warm-up state, sync progress)
-- [x] **Phase 76: Upstream PR Integration** - Cherry-pick upstream b-nnett/goose PRs #4, #12, #29, #31 (main-thread safety, scroll jitter)
-- [x] **Phase 77: Codebase Audit** - Full codebase map + deep review of phases 67-73 + fix all critical findings
-- [x] **Phase 78: Performance & BLE Reliability** - SQLite query optimisation, startup lazy-init, BLE auth retry (SEED-001)
-- [x] **Phase 79: Polish & Deferred Features** - Debug tab 3-tabs, Support rename, Breathe haptics, live strain accumulator
-- [x] **Phase 80: Resting HR Floor Filter** - Fix anomalously low resting HR values from historical sync (issue #130)
-- [x] **Phase 81: Battery Level Fix** - Fix battery always showing 100% for Gen4/Gen5 devices (issue #149, SEED-002)
-- [x] **Phase 82: HealthKit Import Persistence** - Persist HealthKit imported data to SQLite (issue #150)
+Full details: `.planning/milestones/v11.0-ROADMAP.md`
 
-## Phase Details
+- [x] Phase 74: Fork PR UX/i18n/Auth — units, localisation, UUID hiding, ChatGPT auth (#132–136)
+- [x] Phase 75: Fork PR BLE/Sync/Home — firmware recovery, warm-up state, sync donut (#131,135,137)
+- [x] Phase 76: Upstream PR Integration — main-thread offload, FFI async, scroll jitter (#4,12,29,31)
+- [x] Phase 77: Codebase Audit — 7-doc map + deep review phases 67-73 + all CRITICAL fixed
+- [x] Phase 78: Performance & BLE Reliability — schema v21 indexes, lazy init, auth retry (SEED-001)
+- [x] Phase 79: Polish & Deferred — Debug 3-tabs, Logs & Export, Breathe haptics, live strain
+- [x] Phase 80: Resting HR Floor Filter — 30 bpm minimum in metric_features.rs (#130)
+- [x] Phase 81: Battery Level Fix — R22 battery_pct to Swift; Gen4 0xFF guard (#149)
+- [x] Phase 82: HealthKit Import Persistence — persist to metric_series SQLite (#150)
 
-### Phase 74: Fork PR Integration — UX, i18n & Auth
-**Goal**: Users experience a correct, localised, and privacy-respecting app — units match device preference, advanced UUIDs are hidden from primary views, ChatGPT sign-in works, and all UI strings are properly localised with English as source language
-**Depends on**: Phase 73
-**Requirements**: PR-INT-01, PR-INT-03, PR-INT-04, PR-INT-05
-**Success Criteria** (what must be TRUE):
-  1. Technical identifiers (UUIDs, raw values, sequence IDs) are visible only in advanced/debug sections — not on main Health, Home, or Sleep views
-  2. Temperature, distance, pace, and elevation display in the user's preferred unit system (imperial or metric) — switching the device setting updates the app without restart
-  3. All UI strings that previously showed raw localisation keys now display translated text; English is the source language with zero visible key strings in the app
-  4. The ChatGPT sign-in flow in Coach settings completes without an authentication error on a fresh sign-in attempt
-**Plans**: TBD
-**UI hint**: yes
+Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misuse-state-restore (resolved/acknowledged); CAPSENSE-01, HAP-04, BLE5-01/02 hardware gates
 
-### Phase 75: Fork PR Integration — BLE, Sync & Home
-**Goal**: The app recovers gracefully from firmware-induced device-info invalidation, the Home screen shows honest warm-up and vitals state, and historical sync communicates its progress to the user via a real-time donut and completion protocol
-**Depends on**: Phase 73
-**Requirements**: PR-INT-02, PR-INT-06, PR-INT-07
-**Success Criteria** (what must be TRUE):
-  1. After a firmware update, the app re-reads device-info via BLE retry — no sync failure dialog or crash is shown to the user
-  2. The Home screen warm-up progress indicator reflects the actual baseline accumulation state (honest progress, not a static placeholder); vitals display the real BLE-received state
-  3. Historical sync shows a live donut progress indicator that updates as packets arrive; the completion event is driven by a protocol-level signal (not a timer)
-**Plans**: TBD
-**UI hint**: yes
+</details>
 
-### Phase 76: Upstream PR Integration
-**Goal**: Performance improvements from b-nnett/goose upstream (main-thread offload, non-blocking FFI bridge calls, display-safety filtering) are integrated, eliminating frame drops and scroll jitter on the Home and Health tabs
-**Depends on**: Phase 74
-**Requirements**: PR-UP-01, PR-UP-02, PR-UP-03
-**Success Criteria** (what must be TRUE):
-  1. Heavy operations previously running on the main thread are dispatched to background queues — the Home and Health tabs render without frame drops during BLE activity
-  2. All blocking FFI bridge calls execute on a background thread; the main thread is never blocked by a bridge call during normal app operation
-  3. Scrolling through the Home and Health views is smooth with no visible jitter; the display-safety filter on notification ingest prevents mid-render data mutations
-**Plans**: TBD
+### v12.0 TBD
 
-### Phase 77: Codebase Audit
-**Goal**: The codebase is fully mapped across architecture, tech stack, quality, and cross-cutting concerns; phases 67-73 have been deeply reviewed; and all critical findings from that review are resolved and committed
-**Depends on**: Phase 76
-**Requirements**: AUDIT-01, AUDIT-02, AUDIT-03
-**Success Criteria** (what must be TRUE):
-  1. A codebase map covering architecture, tech stack, quality dimensions, and cross-cutting concerns is committed under `.planning/codebase/` and describes every major subsystem accurately
-  2. A REVIEW.md file exists for each of phases 67-73 in `.planning/phases/`, documenting all critical and warning-level findings identified during deep code review
-  3. Every finding rated CRITICAL in any phase REVIEW.md is resolved — the fix is committed and the REVIEW.md updated to mark it as resolved
-  4. No new HIGH-severity issues are introduced by the fixes (verified by a second-pass review of the fix commits)
-**Plans**: TBD
-
-### Phase 78: Performance & BLE Reliability
-**Goal**: SQLite queries on the v20 schema are indexed and validated, app startup renders the first frame before BLE initialisation completes, and the BLE auth retry (SEED-001) silently recovers from insufficientAuthentication without user intervention
-**Depends on**: Phase 77
-**Requirements**: PERF-01, PERF-02, BLE-REL-01
-**Success Criteria** (what must be TRUE):
-  1. The four schema-v20 tables (metricSeries, journal, workout, appleDaily) have covering indexes on their query-critical columns; EXPLAIN QUERY PLAN confirms index usage for the hot paths
-  2. The app's first SwiftUI frame is rendered before GooseBLEClient and GooseRustBridge are fully initialised — heavy init is deferred via lazy or async patterns
-  3. When `didWriteValueFor` receives `CBATTError.insufficientAuthentication`, the app automatically retries the write after 2.5 seconds; if the retry also fails, the user sees an actionable error message (not a silent failure)
-  4. A second `insufficientAuthentication` on retry does not cause a crash or infinite retry loop
-**Plans**: TBD
-
-### Phase 79: Polish & Deferred Features
-**Goal**: The Debug tab is restructured into three focused tabs eliminating the duplicate Connection row, the Support group is renamed and reorganised, the Breathe screen delivers full haptic pacing at each breath phase, and the live workout strain tile updates in real time from the signal pipeline
-**Depends on**: Phase 78
-**Requirements**: POL-01, POL-02, DEF-01, DEF-02
-**Success Criteria** (what must be TRUE):
-  1. More > Debug is organised into three tabs (Status / Capture / Research); the Connection row appears exactly once; the previously monolithic 612-line section is split into focused child views
-  2. The "Support" entry in MoreView is renamed "Logs & Export" and placed in the Developer hub group; the Support group contains only "About"
-  3. During a Breathe session, the WHOOP strap vibrates at the start of each inhale, hold, and exhale phase via `buzz(loops:1)` — the haptic is absent when no device is connected
-  4. The strain tile on the active workout screen updates every few seconds with the current session strain computed live from HR samples delivered by `WhoopDataSignalPipeline`
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 80: Resting HR Floor Filter
-**Goal**: Fix anomalously low resting HR values (e.g. 32 bpm) produced by historical sync by adding a physiological plausibility floor to the resting HR estimation pipeline
-**Depends on**: Phase 77
-**Requirements**: BUG-HR-01
-**Success Criteria** (what must be TRUE):
-  1. Resting HR values below 30 bpm are rejected from the estimation pipeline in `Rust/core/src/metric_features.rs`; EXPLAIN with: the existing filter at line ~4494 allows 25 bpm through — tighten to 30 bpm minimum consistent with WHOOP's documented range
-  2. Historical sync that previously produced 32 bpm now produces a plausible value (or no value if insufficient data)
-**Plans**: TBD
-
-### Phase 81: Battery Level Fix
-**Goal**: Fix battery level always showing 100% for Gen4/Gen5 WHOOP devices by correctly parsing the battery byte from BLE notifications
-**Depends on**: Phase 77
-**Requirements**: BUG-BAT-01
-**Success Criteria** (what must be TRUE):
-  1. Battery percentage from BLE R22/realtime notifications is correctly decoded and displayed — not always 100%
-  2. Both Gen4 and Gen5 device battery levels reflect the actual charge state
-**Plans**: TBD
-
-### Phase 82: HealthKit Import Persistence
-**Goal**: Persist HealthKit imported data (resting HR, HRV, workouts, sleep) to SQLite so it survives app relaunch
-**Depends on**: Phase 69
-**Requirements**: BUG-HK-01
-**Success Criteria** (what must be TRUE):
-  1. After "Import from Apple Health" and app relaunch, HealthKit-sourced metrics are visible in Health views — no re-import required
-  2. HealthKit data is written to the appropriate SQLite tables (apple_daily or metric_series) via the Rust bridge
-**Plans**: TBD
+Next milestone scope not yet defined.
 
 ## Progress
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1–45 | v1.0–v6.0 | ✓ | Complete | 2026-06-03 to 2026-06-09 |
-| 46–50 | v7.0 | 18/18 | Complete | 2026-06-10 |
-| 51. Bug Audit | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 52. Quick Tasks & Surface Cleanup | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 53. Home Dashboard Completion | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 54. Coach Score Summaries & Journal | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 55. Coach Routes | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 56. Biometrics & Activity | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 57. Persistence & Calibration | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 58. More Tab, Previews & Health Algorithms | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 59. Band Sleep Import | v8.0 | 0/TBD | Complete | 2026-06-11 |
-| 60. Band-First Sync | v8.0–v9.0 | 3/3 | Complete | 2026-06-11 |
-| 61. BLE Bonding State Machine | v9.0 | 3/3 | Complete | 2026-06-11 |
-| 62. Upload Watermark per Sensor | v9.0 | 2/2 | Complete | 2026-06-11 |
-| 63. Network Monitor & Upload Gating | v9.0 | 2/2 | Complete | 2026-06-11 |
-| 64. HR Data Sanitizer | v9.0 | 2/2 | Complete | 2026-06-11 |
-| 65. Generic BLE State Machine | v9.0 | 1/1 | Complete | 2026-06-11 |
-| 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
-| 67–73. v10.0 Phases | v10.0 | 17/17 | Complete | 2026-06-13 |
-| 74. Fork PR Integration — UX, i18n & Auth | v11.0 | 5/5 | Complete | 2026-06-13 |
-| 75. Fork PR Integration — BLE, Sync & Home | v11.0 | 3/3 | Complete | 2026-06-13 |
-| 76. Upstream PR Integration | v11.0 | 1/1 | Complete | 2026-06-13 |
-| 77. Codebase Audit | v11.0 | 3/3 | Complete | 2026-06-14 |
-| 78. Performance & BLE Reliability | v11.0 | 3/3 | Complete | 2026-06-14 |
-| 79. Polish & Deferred Features | v11.0 | 4/4 | Complete | 2026-06-14 |
-| 80. Resting HR Floor Filter | v11.0 | 1/1 | Complete | 2026-06-14 |
-| 81. Battery Level Fix | v11.0 | 1/1 | Complete | 2026-06-14 |
-| 82. HealthKit Import Persistence | v11.0 | 1/1 | Complete | 2026-06-14 |
+| Phase | Milestone | Status | Completed |
+|-------|-----------|--------|-----------|
+| 1–45 | v1.0–v6.0 | Complete | 2026-06-03 to 2026-06-09 |
+| 46–50 | v7.0 | Complete | 2026-06-10 |
+| 51–60 | v8.0 | Complete | 2026-06-11 |
+| 61–65 | v9.0 | Complete | 2026-06-11 |
+| 67–73 | v10.0 | Complete | 2026-06-13 |
+| 74–82 | v11.0 | Complete | 2026-06-14 |
 
 ## Backlog
 

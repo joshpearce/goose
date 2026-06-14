@@ -11,6 +11,7 @@ v5.0 shipped (2026-06-08): Validated algorithm pipeline — HRV (BLE-gap-aware R
 v6.0 shipped (2026-06-09): All v5.0 Rust algorithms wired to SwiftUI dashboards — Readiness Engine, Sleep Staging (4-class hypnogram + AASM), V24 Biometrics, Exercise Sessions, Upload Sync UI, IMU Step Detection. Algorithm alignment: recovery Z-score weights, EWMA 14-night alpha, Cole-Kripke 30s epochs. Raw BLE frame upload/import (trust-chain). Test Connection + Import do servidor UI. 0 untranslated pt-PT strings.
 v7.0 shipped (2026-06-10): Sync correctness + async migration — upload route pair complete (POST /v1/ingest-frames + GET export), device_uuid end-to-end (CoreBluetooth → SQLite → server), upload sync race fix (pre-capture rowIDs), HealthDataStore full async/await migration (60+ calls, GCD removed), morning band sleep sync (gravity K18/K24 extraction → Cole-Kripke → external_sleep_sessions). Algorithm defaults promoted to v1. Phase 51 (real-device validation) deferred — hardware gate.
 v10.0 shipped (2026-06-13): Protocol parity + haptics + feature completeness — WHOOP 5.0 BLE manager refactor (GooseBLEHistoricalManager + GooseBLEDataValidator), haptic buzz primitive (cmd 0x13), BreatheView, Coach VOW nudges, Interval Timer, iOS notifications (sleep/workout/battery), HR decimation, Stress/ANS + Trends + Manual Workout screens, service layer protocols + mocks, smart alarm UI (HAP-03), wake-window RE-gated stub. Schema v20 (4 new SQLite tables). Code review fixes across 3 phases.
+v11.0 shipped (2026-06-14): PR integration + code health + app polish — 7 fork PRs integrated (units, localisation, UUID hiding, ChatGPT auth, firmware recovery, warm-up progress, sync donut), 4 upstream PRs merged (main-thread offload, async FFI, scroll jitter fix), full codebase audit (7 documents + CRITICAL findings resolved), schema v21 indexes, lazy init, BLE auth retry (SEED-001), Debug 3-tab split, Logs & Export, Breathe haptics, live strain tile, resting HR floor (30 bpm), R22 battery display, HealthKit SQLite persistence.
 
 ## Core Value
 
@@ -129,7 +130,21 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 
 Known deferred (v10.0): BLE5-01/02 (hardware-gated — real WHOOP 5.0), HAP-02/DATA-02 (deferred), HAP-04 (RE-gated — BTSnoop + Ghidra), FEAT-01/02/ARCH-01 (partial), DATA-01 (schema migrated, Swift wiring partial)
 
-### Active (v11.0 — TBD)
+### Validated (v11.0)
+
+- ✓ Fork PR integration: UUID hiding in advanced sections, imperial/metric units, English source localisation, ChatGPT auth fix — v11.0 (PR-INT-01,03,04,05)
+- ✓ Fork PR BLE/Sync: firmware-update device-info retry, honest warm-up progress, historical sync donut + protocol-driven completion — v11.0 (PR-INT-02,06,07)
+- ✓ Upstream PR merge: main-thread offload, async FFI bridge calls, display-safety filter (scroll jitter eliminated) — v11.0 (PR-UP-01,02,03)
+- ✓ Codebase map: 7 documents in `.planning/codebase/` covering architecture/stack/quality/concerns — v11.0 (AUDIT-01,02,03)
+- ✓ Schema v21: covering indexes on metricSeries/journal/workout/appleDaily; lazy bridge init; BLE auth retry 2.5s — v11.0 (PERF-01,02,BLE-REL-01)
+- ✓ Debug 3-tab split, Logs & Export rename, Breathe haptics (buzz/phase), live workout strain accumulator — v11.0 (POL-01,02,DEF-01,02)
+- ✓ Resting HR floor: 30 bpm minimum in metric_features.rs (closes #130) — v11.0 (BUG-HR-01)
+- ✓ Battery fix: R22 battery_pct in compact summary; 0xFF guard on 2A19 (closes #149) — v11.0 (BUG-BAT-01)
+- ✓ HealthKit import persistence: scalars + 90-day history persisted to metric_series; restored on launch (closes #150) — v11.0 (BUG-HK-01)
+
+Known deferred: Ph74/75 BLE device-gate tests; CAPSENSE-01, HAP-04, BLE5-01/02 hardware gates
+
+### Active (v12.0 — TBD)
 
 _(Next milestone not yet defined — run `/gsd-new-milestone` to begin.)_
 
