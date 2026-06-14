@@ -1,6 +1,3 @@
-// Unconverted production .unwrap() call remains in this file; shield removed in Plan 5.
-#![allow(clippy::unwrap_used)]
-
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
