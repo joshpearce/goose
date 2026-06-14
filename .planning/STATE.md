@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 83-01-PLAN.md
-last_updated: "2026-06-14T12:23:47.907Z"
-last_activity: 2026-06-14 -- Phase 83 execution started
+stopped_at: Completed 83-02-PLAN.md
+last_updated: "2026-06-14T13:30:00.000Z"
+last_activity: 2026-06-14 -- Phase 83 Plan 02 completed (schema migration step 22)
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 83 (protocol-architecture-refactor-gen4-gen5-capability-model) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 83 execution started
+Last activity: 2026-06-14 -- Completed Plan 02 (schema migration step 22)
 
 Progress: [Phase 83 of 91] ░░░░░░░░░░ 0% complete
 
@@ -69,6 +69,7 @@ Recent decisions affecting current work:
 - v11.0 roadmap: Phase 78 (PERF + BLE-REL) after audit so any performance findings from audit feed directly into the optimisation work
 - v11.0 roadmap: Phase 79 (polish + deferred) last — DEF-01/DEF-02 complete HAP-02/DATA-02 which were explicitly deferred from v10.0
 - [Phase ?]: 83-01: WireProtocol in protocol.rs (co-located with DeviceType); DeviceKind and DeviceCapabilities in new capabilities.rs (avoids growing bridge.rs before Phase 86 split)
+- [Phase 83-02]: Migration step 22 unit tests placed in internal #[cfg(test)] module in store.rs (not store_tests.rs) — private `conn` field access required for WHERE-filtered COUNT queries
 
 ### Roadmap Evolution
 

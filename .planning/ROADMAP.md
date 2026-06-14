@@ -173,7 +173,7 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
 **Wave 1**
 
 - [x] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
-- [ ] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+- [x] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -339,8 +339,8 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
 **Plans**: 6 plans
 Plans:
 
-- [ ] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
-- [ ] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+- [x] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
+- [x] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
 - [ ] 83-03-PLAN.md — Bridge: device.capabilities method, BRIDGE_METHODS update, parse_device_type rejection (Wave 2)
 - [ ] 83-04-PLAN.md — Swift types: WireProtocol enum, DeviceCapabilities, connectedCapabilities, GATT discovery call (Wave 3)
 - [ ] 83-05-PLAN.md — Swift guards: all 23 activeDeviceGeneration + 11 rustDeviceType sites across 9 files (Wave 3)
