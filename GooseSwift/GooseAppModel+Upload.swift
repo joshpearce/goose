@@ -122,7 +122,7 @@ extension GooseAppModel {
     let sinceTimestamp = Date().addingTimeInterval(-30)
     uploadService.upload(
       deviceID: deviceEvent.deviceID,
-      deviceType: deviceEvent.rustDeviceType,
+      deviceType: deviceEvent.wireProtocol.bridgeString,
       sinceTimestamp: sinceTimestamp
     )
   }

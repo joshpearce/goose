@@ -521,7 +521,7 @@ extension GooseAppModel {
 
   func notificationParseContext(for event: GooseNotificationEvent) -> NotificationParseContext {
     NotificationParseContext(
-      deviceType: event.rustDeviceType,
+      deviceType: event.wireProtocol.bridgeString,
       healthCaptureActive: activeHealthPacketCapture != nil,
       respiratoryPacketWatchActive: respiratoryPacketWatchActive,
       fallbackHeartRate: recentLiveHeartRate(around: event.capturedAt),
@@ -697,7 +697,7 @@ extension GooseAppModel {
         frameHex: frame.hex,
         sensitivity: "user-owned-capture",
         captureSessionID: request.captureSessionID,
-        deviceType: request.event.rustDeviceType,
+        deviceType: request.event.wireProtocol.bridgeString,
         deviceUUID: request.deviceUUID
       )
     }
@@ -717,7 +717,7 @@ extension GooseAppModel {
     // Bypass the WHOOP reassembly path and treat the entire notification value as one frame.
     // This function is intentionally NOT @MainActor — HR notifications arrive at high frequency
     // and must stay off the main thread (review MEDIUM-3).
-    if event.rustDeviceType == "HR_MONITOR" {
+    if event.wireProtocol == .hrMonitor {
       let frameHex = event.value.hexString
       guard !frameHex.isEmpty else {
         return NotificationIngestResult(
@@ -826,7 +826,7 @@ extension GooseAppModel {
     var frames: [Data] = []
     var droppedBytes = 0
     var expectedBytes: Int?
-    let headerLength = event.rustDeviceType == "GEN4" ? 4 : 8
+    let headerLength = event.wireProtocol == .gen4 ? 4 : 8
 
     while let startIndex = bytes.firstIndex(of: 0xaa) {
       if startIndex > 0 {
@@ -838,7 +838,7 @@ extension GooseAppModel {
       }
 
       let declaredLength: Int
-      if event.rustDeviceType == "GEN4" {
+      if event.wireProtocol == .gen4 {
         declaredLength = Int(bytes[1]) | Int(bytes[2]) << 8
       } else {
         declaredLength = Int(bytes[2]) | Int(bytes[3]) << 8
@@ -878,7 +878,7 @@ extension GooseAppModel {
   }
 
   nonisolated func frameReassemblyKey(for event: GooseNotificationEvent) -> String {
-    "\(event.deviceID.uuidString)|\(event.serviceUUID)|\(event.characteristicUUID)|\(event.rustDeviceType)"
+    "\(event.deviceID.uuidString)|\(event.serviceUUID)|\(event.characteristicUUID)|\(event.wireProtocol.bridgeString)"
   }
 
   nonisolated static func frameSummary(_ parsed: [String: Any]) -> String {
