@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 83-04-PLAN.md
-last_updated: "2026-06-14T17:55:00.000Z"
-last_activity: 2026-06-14 -- Phase 83 Plan 04 completed (Swift WireProtocol types + connectedCapabilities)
+stopped_at: Completed 83-01-PLAN.md
+last_updated: "2026-06-14T15:18:01.560Z"
+last_activity: 2026-06-14 -- Completed Plan 04 (Swift WireProtocol types + connectedCapabilities)
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 83 (protocol-architecture-refactor-gen4-gen5-capability-model) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-06-14 -- Completed Plan 04 (Swift WireProtocol types + connectedCapabilities)
 
@@ -71,6 +71,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 83-01: WireProtocol in protocol.rs (co-located with DeviceType); DeviceKind and DeviceCapabilities in new capabilities.rs (avoids growing bridge.rs before Phase 86 split)
 - [Phase 83-02]: Migration step 22 unit tests placed in internal #[cfg(test)] module in store.rs (not store_tests.rs) — private `conn` field access required for WHERE-filtered COUNT queries
 - [Phase 83-04]: WireProtocol/HistoricalSyncKind use String,Decodable with explicit raw values matching Rust JSON snake_case — avoids custom init(from:); whoopGenerationFromCapabilities() uses internal visibility (not private) so sibling extension files can call it
+- [Phase ?]: Wire-level guards use wireProtocol; historical-protocol guards use historicalSync — separation matches plan D-08 design intent
 
 ### Roadmap Evolution
 
@@ -109,6 +110,7 @@ Items deferred from previous milestones:
 | quick_task | historical-sync-direct-write | missing | v10.0 close |
 | quick_task | fix-imu-step-count | missing | v10.0 close |
 | Phase 83 P01 | 1800 | 2 tasks | 3 files |
+| Phase 83 P05 | 18 | 2 tasks | 9 files |
 
 ## Quick Tasks Completed
 
@@ -119,7 +121,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T12:23:47.890Z
+Last session: 2026-06-14T15:17:45.584Z
 Stopped at: Completed 83-01-PLAN.md
 Resume file: None
 Next action: Run /gsd-plan-phase 83 to begin Protocol Architecture Refactor (83-CONTEXT.md already complete — no research step needed)
