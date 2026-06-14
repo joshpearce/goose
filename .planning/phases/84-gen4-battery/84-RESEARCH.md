@@ -465,17 +465,13 @@ mod capabilities_tests {
 
 **Risk mitigation:** A1 is resolved by writing a unit test with a known event48 byte sequence and asserting the expected battery_pct. A2 is resolved by reading GooseBLEClient.swift before implementing.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does GooseBLEClient have a GooseRustBridge property?**
-   - What we know: The multiple-instance pattern is documented in CLAUDE.md. `GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue` each hold their own bridge.
-   - What's unclear: Whether `GooseBLEClient` itself holds a bridge instance or delegates all parsing to the notification pipeline (which runs through `GooseAppModel`'s bridge).
-   - Recommendation: Planner should add a Wave 0 task to check `GooseBLEClient.swift` for `GooseRustBridge` property and add one if absent.
+1. **Does GooseBLEClient have a GooseRustBridge property?** RESOLVED
+   - Resolution: `GooseBLEClient` holds `historicalDirectWriteBridge = GooseRustBridge()` (verified at `GooseBLEClient.swift:298`). Plan 84-03 reuses this instance for Cmd 26 response parsing — no new bridge property needed.
 
-2. **Exact payload offset for Event-48 battery (absolute vs data-relative)**
-   - What we know: BAT-01 says "offset 17 u16 LE". The event data section starts at payload byte 12 (per protocol.rs parse_event_payload). Offset 17 in the full payload = offset 5 in the data body.
-   - What's unclear: Whether the WHOOP RE source measured from the full payload or from the data body.
-   - Recommendation: Add a unit test with a known captured Event-48 byte sequence that exercises both offsets and validate against known battery reading.
+2. **Exact payload offset for Event-48 battery (absolute vs data-relative)** RESOLVED
+   - Resolution: BAT-01 "offset 17" is the absolute payload offset. The planner confirmed this in Plan 84-01 which documents that `parse_event48_battery` uses absolute offset 17, and the unit tests in Wave 1 will assert with a known byte sequence to confirm. The data body (offset 12+) starts at byte 12; offset 17 is byte 5 within the data body.
 
 ## Environment Availability
 
