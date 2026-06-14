@@ -378,8 +378,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 84-02-PLAN.md — Swift Event-48: event48BatteryPct compact/interpretation fields + Gen4-gated dispatch via applyBatteryLevel (BAT-01)
-- [ ] 84-03-PLAN.md — Swift Cmd 26: BatteryCommandKind, auto-send on Gen4 connection, handleCmd26BatteryResponse via Rust bridge (BAT-02)
+- [x] 84-02-PLAN.md — Swift Event-48: event48BatteryPct compact/interpretation fields + Gen4-gated dispatch via applyBatteryLevel (BAT-01)
+- [x] 84-03-PLAN.md — Swift Cmd 26: BatteryCommandKind, auto-send on Gen4 connection, handleCmd26BatteryResponse via Rust bridge (BAT-02)
 
 ### Phase 85: Rust Crash Safety
 

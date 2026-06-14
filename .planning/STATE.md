@@ -9,8 +9,8 @@ progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 9
-  completed_plans: 8
-  percent: 11
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 Phase: 84 (gen4-battery) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Complete
 Last activity: 2026-06-14
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase 83-04]: WireProtocol/HistoricalSyncKind use String,Decodable with explicit raw values matching Rust JSON snake_case — avoids custom init(from:); whoopGenerationFromCapabilities() uses internal visibility (not private) so sibling extension files can call it
 - [Phase 83]: Wire-level guards use wireProtocol; historical-protocol guards use historicalSync — separation matches plan D-08 design intent
 - [Phase ?]: [Phase 84-02]: Event-48 battery dispatch gated on batteryViaEvent48 == true AND wireProtocol == .gen4 — Gen5 shares the batteryViaEvent48 flag so wireProtocol guard is mandatory
+- [Phase 84-03]: Cmd 26 auto-send gated on batteryViaCMD26 && wireProtocol == .gen4 — Gen5 also has batteryViaCMD26=true (RESEARCH Pitfall 5); historicalDirectWriteBridge reused; project.pbxproj must be manually updated when adding new Swift source files
 
 ### Roadmap Evolution
 
@@ -109,7 +110,6 @@ Items deferred from previous milestones:
 | verification_gap | Phase 70 — 70-VERIFICATION.md | human_needed | v10.0 close |
 | quick_task | historical-sync-direct-write | missing | v10.0 close |
 | quick_task | fix-imu-step-count | missing | v10.0 close |
-| Phase 84-gen4-battery P02 | 12 | 2 tasks | 2 files |
 
 ## Quick Tasks Completed
 
@@ -120,10 +120,10 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T16:49:39.830Z
-Stopped at: Completed 84-02-PLAN.md
+Last session: 2026-06-14T17:55:00.000Z
+Stopped at: Completed 84-03-PLAN.md — Phase 84 (gen4-battery) fully complete
 Resume file: None
-Next action: Run /gsd-plan-phase 84 to begin Gen4 Battery (depends on Phase 83 DeviceCapabilities — now complete)
+Next action: Run /gsd-plan-phase 85 to begin Phase 85 (Rust Crash Safety — independent of Gen4 battery)
 
 ## Operator Next Steps
 
