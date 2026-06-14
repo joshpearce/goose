@@ -996,12 +996,42 @@ extension GooseBLEClient {
         commandCharacteristic = characteristic
         let detectedGeneration = WhoopGeneration.detect(from: characteristic)
         let deviceKindString = detectedGeneration == .gen4 ? "WHOOP4" : "WHOOP5"
-        if let result = try? historicalDirectWriteBridge.request(
+        let kindString = deviceKindString
+        historicalWriteQueue.async { [weak self] in
+          guard let self else { return }
+          do {
+            let result = try self.historicalDirectWriteBridge.request(
               method: "device.capabilities",
-              args: ["device_kind": deviceKindString]),
-           let capData = try? JSONSerialization.data(withJSONObject: result),
-           let caps = try? JSONDecoder().decode(DeviceCapabilities.self, from: capData) {
-          connectedCapabilities = caps
+              args: ["device_kind": kindString])
+            let capData = try JSONSerialization.data(withJSONObject: result)
+            let caps = try JSONDecoder().decode(DeviceCapabilities.self, from: capData)
+            DispatchQueue.main.async { self.connectedCapabilities = caps }
+          } catch {
+            let gen = kindString
+            DispatchQueue.main.async {
+              self.record(
+                level: .error,
+                source: "ble",
+                title: "device.capabilities.failed",
+                body: "generation=\(gen) error=\(error)"
+              )
+              self.connectedCapabilities = gen == "WHOOP4"
+                ? DeviceCapabilities(
+                    wireProtocol: .gen4,
+                    historicalSync: .pageSequence,
+                    batteryViaR22: false,
+                    batteryViaEvent48: true,
+                    batteryViaCMD26: true,
+                    r22Realtime: false)
+                : DeviceCapabilities(
+                    wireProtocol: .gen5,
+                    historicalSync: .stream,
+                    batteryViaR22: true,
+                    batteryViaEvent48: true,
+                    batteryViaCMD26: true,
+                    r22Realtime: true)
+            }
+          }
         }
         activeDescriptor = characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
           ? .whoopGen4 : .whoopGen5
