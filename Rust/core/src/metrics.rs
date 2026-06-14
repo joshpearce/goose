@@ -1,6 +1,3 @@
-// Unconverted production and test .unwrap() calls remain in this file; shield removed in Plan 3.
-#![allow(clippy::unwrap_used)]
-
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
@@ -4524,7 +4521,7 @@ mod recovery_v1_tests {
             sleep_performance_fraction: None,
         };
         let output_neutral = goose_recovery_v1(&input_neutral, &baseline_neutral);
-        let score_neutral = output_neutral.score_0_to_100.unwrap();
+        let score_neutral = output_neutral.score_0_to_100.expect("recovery score must be Some for valid input");
 
         // Scenario: RHR is below baseline mean → lower than usual → BETTER → should raise score.
         let baseline_good = make_baseline(hrv, rhr);
@@ -4537,7 +4534,7 @@ mod recovery_v1_tests {
             sleep_performance_fraction: None,
         };
         let output_good = goose_recovery_v1(&input_good, &baseline_good);
-        let score_good = output_good.score_0_to_100.unwrap();
+        let score_good = output_good.score_0_to_100.expect("recovery score must be Some for valid input");
 
         assert!(
             score_good > score_neutral,
@@ -4912,7 +4909,7 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 0.8).abs() < 1e-9, "acwr must be 0.8, got {acwr}");
         assert_eq!(out.acwr_zone, "optimal", "acwr=0.8 must map to 'optimal'");
     }
@@ -4930,7 +4927,7 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 1.3).abs() < 1e-9, "acwr must be 1.3, got {acwr}");
         assert_eq!(out.acwr_zone, "optimal", "acwr=1.3 must map to 'optimal'");
     }
@@ -4948,7 +4945,7 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 1.5).abs() < 1e-6, "acwr must be 1.5, got {acwr}");
         assert_eq!(out.acwr_zone, "danger", "acwr=1.5 must map to 'danger'");
         assert_eq!(
@@ -4966,7 +4963,7 @@ mod readiness_tests {
         // chronic=(21*5+7*21)/28=(105+147)/28=252/28=9.0; acute=21; acwr=21/9=2.333>1.5 → Rundown
         let input = split_input(5.0, 21.0);
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!(acwr >= 1.5, "acwr must be >=1.5, got {acwr}");
         assert_eq!(out.level, ReadinessLevel::Rundown);
     }
@@ -4978,7 +4975,7 @@ mod readiness_tests {
         // chronic=(210+7)/28=217/28=7.75; acute=1.0; acwr=1/7.75≈0.129 → Strained
         let input = split_input(10.0, 1.0);
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!(acwr < 0.8, "acwr must be <0.8, got {acwr}");
         assert_eq!(
             out.level,
@@ -5076,7 +5073,7 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out.acwr.expect("acwr must be Some when sufficient strain data is provided");
         assert!(
             acwr > 1.3 && acwr < 1.5,
             "acwr must be in caution zone (1.3-1.5), got {acwr}"
