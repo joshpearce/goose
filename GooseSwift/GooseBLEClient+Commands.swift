@@ -527,7 +527,12 @@ extension GooseBLEClient {
       // connectedCapabilities is nil when disconnected or if the device.capabilities
       // bridge call failed. Log the nil access and return .gen5 as a conservative
       // fallback; generation-specific commands should not be sent in this state.
-      os_log(.error, "[BLE] whoopGenerationFromCapabilities called with nil connectedCapabilities — generation unknown, defaulting to gen5")
+      record(
+        level: .error,
+        source: "ble",
+        title: "capabilities.nil",
+        body: "connectedCapabilities is nil — generation unknown, defaulting to gen5"
+      )
       return .gen5
     }
     return caps.wireProtocol == .gen4 ? .gen4 : .gen5
