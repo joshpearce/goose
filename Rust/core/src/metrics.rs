@@ -1055,7 +1055,11 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
             valid.push(*interval);
             if timestamps_aligned {
                 // Safety: index is valid because we verified lengths match above.
-                valid_timestamps.push(working_timestamps_opt.as_ref().unwrap()[i]);
+                valid_timestamps.push(
+                    working_timestamps_opt
+                        .as_ref()
+                        .expect("timestamps_aligned guard ensures Some — lengths verified above")[i],
+                );
             }
         } else {
             invalid_interval_count += 1;
@@ -2017,7 +2021,7 @@ pub fn estimate_hrmax_from_history(hr_history: &[f64]) -> Option<f64> {
     if finite.len() < 600 {
         return None;
     }
-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    finite.sort_by(|a, b| a.total_cmp(b));
     let len = finite.len();
     // CR-01 fix: nearest-rank P99.5 is ceil(0.995*n) - 1 (0-indexed).
     let index = ((0.995 * len as f64).ceil() as usize)
@@ -3604,12 +3608,12 @@ fn sleep_cardiovascular_score(input: &SleepV1Input, baseline: Option<&SleepBasel
         baseline_window.average_sleep_hr_trend_bpm_per_hour,
     );
 
-    if trend_score.is_some() {
+    if let Some(ts) = trend_score {
         let base = dip_score * 0.35
             + average_hr_score * 0.20
             + min_hr_score * 0.15
             + dip_vs_baseline_score * 0.15
-            + trend_score.unwrap() * 0.15;
+            + ts * 0.15;
         pre_sleep_hr_score
             .map(|score| base * 0.90 + score * 0.10)
             .unwrap_or(base)
