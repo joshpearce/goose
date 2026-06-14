@@ -599,6 +599,52 @@ fn test_capture_import_frame_batch_rejects_legacy_puffin() {
     );
 }
 
+// Integration tests for the device.capabilities JSON dispatch path (Phase 83).
+// These exercise the full handle_bridge_request_json → DeviceCapabilitiesArgs
+// deserialisation → device_capabilities_bridge round trip, which the unit tests
+// in bridge.rs do not cover.
+
+#[test]
+fn test_device_capabilities_bridge_whoop4_via_json_dispatch() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-whoop4",
+        "method": "device.capabilities",
+        "args": { "device_kind": "WHOOP4" }
+    }));
+    assert!(response.ok, "{:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["wire_protocol"].as_str().unwrap(), "gen4");
+    assert_eq!(result["historical_sync"].as_str().unwrap(), "page_sequence");
+    assert_eq!(result["battery_via_r22"].as_bool().unwrap(), false);
+}
+
+#[test]
+fn test_device_capabilities_bridge_whoop5_via_json_dispatch() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-whoop5",
+        "method": "device.capabilities",
+        "args": { "device_kind": "WHOOP5" }
+    }));
+    assert!(response.ok, "{:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["wire_protocol"].as_str().unwrap(), "gen5");
+    assert_eq!(result["historical_sync"].as_str().unwrap(), "stream");
+    assert_eq!(result["battery_via_r22"].as_bool().unwrap(), true);
+}
+
+#[test]
+fn test_device_capabilities_bridge_unknown_kind_rejected() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-unknown",
+        "method": "device.capabilities",
+        "args": { "device_kind": "UNKNOWN" }
+    }));
+    assert!(!response.ok, "unknown device_kind must be rejected");
+}
+
 #[test]
 fn bridge_exposes_algorithm_registry_and_score_methods() {
     let registry = request(serde_json::json!({
