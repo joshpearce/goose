@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
-status: completed
+status: executing
 stopped_at: Phase 85 context gathered
-last_updated: "2026-06-14T19:36:03.883Z"
-last_activity: 2026-06-14 -- Phase 85 planning complete
+last_updated: "2026-06-14T19:44:28.212Z"
+last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 15
+  completed_plans: 10
   percent: 22
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** Phase 84 — gen4-battery
+**Current focus:** Phase 85 — rust-crash-safety
 
 ## Current Position
 
-Phase: 84 (gen4-battery) — EXECUTING
-Plan: 3 of 3
-Status: Complete
-Last activity: 2026-06-14 -- Phase 85 planning complete
+Phase: 85 (rust-crash-safety) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-06-14 -- Phase 85 execution started
 
 Progress: [██████████] 100%
 
@@ -111,6 +111,7 @@ Items deferred from previous milestones:
 | verification_gap | Phase 70 — 70-VERIFICATION.md | human_needed | v10.0 close |
 | quick_task | historical-sync-direct-write | missing | v10.0 close |
 | quick_task | fix-imu-step-count | missing | v10.0 close |
+| Phase 85-rust-crash-safety P01 | 335 | 2 tasks | 9 files |
 
 ## Quick Tasks Completed
 
@@ -121,7 +122,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T18:25:02.209Z
+Last session: 2026-06-14T19:44:28.207Z
 Stopped at: Phase 85 context gathered
 Resume file: .planning/phases/85-rust-crash-safety/85-CONTEXT.md
 Next action: Run /gsd-plan-phase 85 to begin Phase 85 (Rust Crash Safety — independent of Gen4 battery)

@@ -395,7 +395,8 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 85-01-PLAN.md — Add deny(clippy::unwrap_used) to lib.rs + per-module allow shields; convert bridge.rs test unwraps to expect
+
+- [x] 85-01-PLAN.md — Add deny(clippy::unwrap_used) to lib.rs + per-module allow shields; convert bridge.rs test unwraps to expect
 - [ ] 85-02-PLAN.md — Convert store.rs test unwraps to expect; remove store.rs allow shield
 - [ ] 85-03-PLAN.md — Fix 3 metrics.rs production unwrap sites; convert tests; remove allow shield
 - [ ] 85-04-PLAN.md — Convert capabilities.rs test unwraps to expect; remove allow shield
@@ -496,7 +497,7 @@ Plans:
 | 74–82 | v11.0 | Complete | 2026-06-14 |
 | 83 | 6/6 | Complete   | 2026-06-14 |
 | 84 | 3/3 | Complete   | 2026-06-14 |
-| 85 | v12.0 | Not started | — |
+| 85 | 1/6 | In Progress|  |
 | 86 | v12.0 | Not started | — |
 | 87 | v12.0 | Not started | — |
 | 88 | v12.0 | Not started | — |
@@ -539,7 +540,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 3/3 plans complete
+**Plans:** 1/6 plans executed
 Plans:
 **Wave 1**
 
