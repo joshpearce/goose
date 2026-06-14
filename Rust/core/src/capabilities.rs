@@ -1,3 +1,6 @@
+// Unconverted test .unwrap() calls remain in this file; shield removed in Plan 4.
+#![allow(clippy::unwrap_used)]
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

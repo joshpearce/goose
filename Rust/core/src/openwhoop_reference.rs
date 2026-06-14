@@ -1,3 +1,6 @@
+// Unconverted test .unwrap() calls remain in this file; shield removed in Plan 5.
+#![allow(clippy::unwrap_used)]
+
 //! OpenWhoop-derived WHOOP protocol references.
 //!
 //! Source snapshot:

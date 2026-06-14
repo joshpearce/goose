@@ -1,3 +1,6 @@
+// Unconverted production and test .unwrap() calls remain in this file; shield removed in Plan 3.
+#![allow(clippy::unwrap_used)]
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};

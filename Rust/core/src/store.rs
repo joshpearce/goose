@@ -1,3 +1,6 @@
+// Unconverted test .unwrap() calls remain in this file; shield removed in Plan 2.
+#![allow(clippy::unwrap_used)]
+
 use std::{collections::BTreeSet, path::Path};
 
 use rusqlite::{Connection, OpenFlags, OptionalExtension, params, params_from_iter};
