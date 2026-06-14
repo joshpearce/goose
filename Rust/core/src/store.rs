@@ -11,7 +11,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 21;
+pub const CURRENT_SCHEMA_VERSION: i64 = 22;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -1827,7 +1827,12 @@ impl GooseStore {
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (19);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (20);
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (21);
-            PRAGMA user_version = 21;
+
+            UPDATE decoded_frames SET device_type = 'GOOSE'
+            WHERE device_type IN ('MAVERICK', 'PUFFIN');
+
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (22);
+            PRAGMA user_version = 22;
             "#,
         )?;
         self.ensure_raw_evidence_columns()?;
@@ -9156,8 +9161,8 @@ mod exercise_session_tests {
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("failed to read user_version");
         assert_eq!(
-            version, 21,
-            "PRAGMA user_version should be 21 after v21 migration"
+            version, CURRENT_SCHEMA_VERSION,
+            "PRAGMA user_version should equal CURRENT_SCHEMA_VERSION after migration"
         );
     }
 
@@ -9246,9 +9251,9 @@ mod sync_schema_tests {
     }
 
     #[test]
-    fn test_schema_version_is_21() {
+    fn test_schema_version_is_current() {
         let store = make_store();
-        assert_eq!(store.schema_version().unwrap(), 21);
+        assert_eq!(store.schema_version().unwrap(), CURRENT_SCHEMA_VERSION);
     }
 
     #[test]
@@ -9710,15 +9715,15 @@ mod v20_migration_tests {
     }
 
     #[test]
-    fn test_schema_version_is_21() {
+    fn test_schema_version_is_current() {
         let store = open_migrated_store();
         let version: i64 = store
             .conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .expect("user_version");
         assert_eq!(
-            version, 21,
-            "PRAGMA user_version must be 21 after migration"
+            version, CURRENT_SCHEMA_VERSION,
+            "PRAGMA user_version must equal CURRENT_SCHEMA_VERSION after migration"
         );
     }
 
@@ -9785,6 +9790,117 @@ mod v20_migration_tests {
         assert_eq!(
             count, 1,
             "UNIQUE(source, metric_name, date) constraint must prevent duplicate rows"
+        );
+    }
+}
+
+#[cfg(test)]
+mod migration_step_22_tests {
+    use super::*;
+
+    // Seed an in-memory store with MAVERICK and PUFFIN decoded_frames rows,
+    // as if the DB were at schema version 21 before migration step 22 ran.
+    // Returns the store after migrate() has run (i.e., step 22 applied).
+    fn store_with_legacy_device_type_rows() -> GooseStore {
+        let store = GooseStore::open_in_memory().expect("open in-memory store");
+        // Insert test rows directly via the internal connection.
+        // FK enforcement is off for the in-memory DB at this point because
+        // migrate() already ran; use PRAGMA to insert without raw_evidence parent.
+        store
+            .conn
+            .execute_batch("PRAGMA foreign_keys = OFF;")
+            .expect("disable fk");
+        store
+            .conn
+            .execute_batch(
+                r#"
+                INSERT INTO decoded_frames (
+                    frame_id, evidence_id, device_type,
+                    raw_len, header_len, declared_len,
+                    payload_hex, payload_crc_hex,
+                    header_crc_valid, payload_crc_valid,
+                    parser_version, warnings_json
+                ) VALUES
+                    ('frame-mav-1', 'ev-mav-1', 'MAVERICK', 16, 8, 8, 'aa', 'bb', 1, 1, 'test/0.1', '[]'),
+                    ('frame-mav-2', 'ev-mav-1', 'MAVERICK', 16, 8, 8, 'aa', 'bb', 1, 1, 'test/0.1', '[]'),
+                    ('frame-puf-1', 'ev-puf-1', 'PUFFIN',   16, 8, 8, 'bb', 'cc', 1, 1, 'test/0.1', '[]'),
+                    ('frame-goose-1', 'ev-goose-1', 'GOOSE', 16, 8, 8, 'cc', 'dd', 1, 1, 'test/0.1', '[]');
+                "#,
+            )
+            .expect("insert legacy device_type rows");
+        store
+            .conn
+            .execute_batch("PRAGMA foreign_keys = ON;")
+            .expect("re-enable fk");
+
+        // Run migrate() again — step 22 UPDATE is the target; INSERT OR IGNORE makes it safe.
+        store.migrate().expect("second migrate for step 22");
+        store
+    }
+
+    fn count_device_type(store: &GooseStore, device_type: &str) -> i64 {
+        store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM decoded_frames WHERE device_type = ?1",
+                [device_type],
+                |row| row.get(0),
+            )
+            .expect("count device_type")
+    }
+
+    #[test]
+    fn test_migration_step_22_maverick_puffin_to_goose() {
+        let store = store_with_legacy_device_type_rows();
+
+        // Schema version must be 22 after migration.
+        assert_eq!(store.schema_version().expect("schema_version"), CURRENT_SCHEMA_VERSION);
+
+        // All MAVERICK and PUFFIN rows are replaced with GOOSE.
+        assert_eq!(
+            count_device_type(&store, "MAVERICK"),
+            0,
+            "MAVERICK rows must be 0 after migration step 22"
+        );
+        assert_eq!(
+            count_device_type(&store, "PUFFIN"),
+            0,
+            "PUFFIN rows must be 0 after migration step 22"
+        );
+
+        // 2 MAVERICK + 1 PUFFIN rows become GOOSE; 1 pre-existing GOOSE row is unchanged.
+        assert_eq!(
+            count_device_type(&store, "GOOSE"),
+            4,
+            "3 migrated (2 MAVERICK + 1 PUFFIN) + 1 pre-existing GOOSE row"
+        );
+    }
+
+    #[test]
+    fn test_migration_step_22_idempotent() {
+        let store = store_with_legacy_device_type_rows();
+
+        // After first migrate() (already run in helper), MAVERICK and PUFFIN are 0.
+        assert_eq!(count_device_type(&store, "MAVERICK"), 0);
+        assert_eq!(count_device_type(&store, "PUFFIN"), 0);
+
+        // Run migrate() a second time — UPDATE WHERE IN matches nothing; INSERT OR IGNORE is a no-op.
+        store.migrate().expect("second migrate must not error");
+
+        assert_eq!(
+            count_device_type(&store, "MAVERICK"),
+            0,
+            "MAVERICK count must remain 0 after second migrate() call"
+        );
+        assert_eq!(
+            count_device_type(&store, "PUFFIN"),
+            0,
+            "PUFFIN count must remain 0 after second migrate() call"
+        );
+        assert_eq!(
+            count_device_type(&store, "GOOSE"),
+            4,
+            "GOOSE count unchanged after second migrate() call"
         );
     }
 }

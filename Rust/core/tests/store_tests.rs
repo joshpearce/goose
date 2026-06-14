@@ -3294,3 +3294,4 @@ fn gravity_insert_empty_slice_is_noop() {
     let result = store.gravity_rows_between("device-A", 0.0, 1000.0).unwrap();
     assert_eq!(result.len(), 0);
 }
+
