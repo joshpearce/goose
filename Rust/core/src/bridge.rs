@@ -197,6 +197,8 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "activity.metrics_for_session_in_window",
     "activity.update_session",
     "apple_daily.upsert",
+    "battery.parse_cmd26_response",
+    "battery.parse_event48_payload",
     "biometrics.insert_v24_batch",
     "biometrics.spo2_from_raw",
     "biometrics.v24_between",
@@ -375,6 +377,99 @@ struct DeviceCapabilitiesArgs {
 fn device_capabilities_bridge(args: DeviceCapabilitiesArgs) -> GooseResult<serde_json::Value> {
     let caps = DeviceCapabilities::for_kind(args.device_kind);
     serde_json::to_value(caps).map_err(|e| GooseError::message(e.to_string()))
+}
+
+// --- Battery parsing (BAT-01 / BAT-02) ---
+//
+// All byte-level parsing is in Rust per D-02. Swift calls these bridge methods
+// and passes the result directly to applyBatteryLevel().
+
+/// Parse Event-48 battery percentage from a full event payload.
+///
+/// Byte layout (absolute payload offsets, BAT-01):
+///   0-1   packet_type + sequence
+///   2-3   event_id (u16 LE)
+///   4-7   timestamp_seconds (u32 LE)
+///   8-9   timestamp_subseconds (u16 LE)
+///   10-11 padding/reserved
+///   12+   event data body (data_hex in parse_event_payload uses payload[12..])
+///
+/// The battery raw u16 sits at ABSOLUTE offset 17, which is offset 5 within the
+/// data body (offset 12 + 5 = offset 17). Both anchors refer to the same byte.
+/// See also: parse_event48_battery_from_data() which uses the data-body anchor (5).
+///
+/// Guard (D-05): raw > 1100 is rejected (battery_pct_raw = raw / 10 would exceed 110%).
+fn parse_event48_battery(payload: &[u8]) -> GooseResult<u16> {
+    // Use absolute payload offset 17 (== data body offset 5; verified by unit tests).
+    let raw = crate::protocol::read_u16_le(payload, 17)
+        .ok_or_else(|| GooseError::message("event48 payload too short for battery offset 17"))?;
+    if raw > 1100 {
+        return Err(GooseError::message(format!(
+            "event48 battery raw={raw} exceeds sanity guard 1100"
+        )));
+    }
+    Ok(raw / 10)
+}
+
+/// Parse Event-48 battery percentage from the **data body** bytes (payload[12..]).
+///
+/// Identical logic to parse_event48_battery() but anchored at data-body offset 5
+/// instead of absolute payload offset 17. Used by compact_parsed_frame_summary()
+/// which receives data_hex (the data body, not the full payload) from ParsedPayload::Event.
+///
+/// The two offsets refer to the same physical byte:
+///   absolute payload offset 17 == data body offset 5 (because data body starts at offset 12).
+fn parse_event48_battery_from_data(data: &[u8]) -> Option<u16> {
+    let raw = crate::protocol::read_u16_le(data, 5)?;
+    if raw > 1100 {
+        return None;
+    }
+    Some(raw / 10)
+}
+
+/// Parse Cmd 26 (GET_BATTERY_LEVEL) response payload.
+///
+/// Byte layout (BAT-02):
+///   0     command number (26 / 0x1a)
+///   1     sequence
+///   2-3   battery raw u16 LE
+///   4     result code (1 = SUCCESS)
+///
+/// Guard (D-05): payload.len() >= 4 before reading bytes[2..4].
+fn parse_cmd26_battery(payload: &[u8]) -> GooseResult<u16> {
+    if payload.len() < 4 {
+        return Err(GooseError::message(format!(
+            "cmd26 payload too short: {} < 4",
+            payload.len()
+        )));
+    }
+    // payload[2..4] u16 LE / 10 (BAT-02)
+    let raw = u16::from(payload[2]) | u16::from(payload[3]) << 8;
+    Ok(raw / 10)
+}
+
+#[derive(Debug, Deserialize)]
+struct ParseEvent48BatteryArgs {
+    payload_hex: String,
+}
+
+fn parse_event48_battery_bridge(args: ParseEvent48BatteryArgs) -> GooseResult<serde_json::Value> {
+    let payload = hex::decode(&args.payload_hex)
+        .map_err(|e| GooseError::message(format!("invalid hex: {e}")))?;
+    let pct = parse_event48_battery(&payload)?;
+    Ok(json!({ "battery_pct": pct }))
+}
+
+#[derive(Debug, Deserialize)]
+struct ParseCmd26ResponseArgs {
+    payload_hex: String,
+}
+
+fn parse_cmd26_battery_bridge(args: ParseCmd26ResponseArgs) -> GooseResult<serde_json::Value> {
+    let payload = hex::decode(&args.payload_hex)
+        .map_err(|e| GooseError::message(format!("invalid hex: {e}")))?;
+    let pct = parse_cmd26_battery(&payload)?;
+    Ok(json!({ "battery_pct": pct }))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2809,6 +2904,14 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(debug_start_session_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "battery.parse_event48_payload" => request_args::<ParseEvent48BatteryArgs>(&request)
+            .and_then(parse_event48_battery_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "battery.parse_cmd26_response" => request_args::<ParseCmd26ResponseArgs>(&request)
+            .and_then(parse_cmd26_battery_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "device.capabilities" => request_args::<DeviceCapabilitiesArgs>(&request)
             .and_then(device_capabilities_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -3148,6 +3251,13 @@ fn compact_parsed_frame_summary(parsed: &ParsedFrame) -> serde_json::Value {
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "?".to_string());
             let event_name_text = event_name.as_deref().unwrap_or("unknown");
+            // event48_battery_pct: decode the data body hex and read raw u16 at data-body
+            // offset 5 (== absolute payload offset 17; see parse_event48_battery_from_data).
+            // Null on any failure — the summary builder never propagates errors (matches
+            // the r22_battery_pct pattern in the DataPacket branch above).
+            let event48_battery_pct: Option<u16> = hex::decode(data_hex)
+                .ok()
+                .and_then(|data| parse_event48_battery_from_data(&data));
             json!({
                 "packet_type": parsed.packet_type,
                 "packet_type_name": packet_type_name,
@@ -3157,6 +3267,7 @@ fn compact_parsed_frame_summary(parsed: &ParsedFrame) -> serde_json::Value {
                 "event_id": event_id,
                 "event_name": event_name,
                 "event_byte_count": data_hex.len() / 2,
+                "event48_battery_pct": event48_battery_pct,
                 "summary": format!("packet={packet_name}({packet}) seq={sequence} event={event_name_text}({event_id_text}) bytes={} warnings={warning_count}", data_hex.len() / 2),
             })
         }

@@ -1097,7 +1097,7 @@ fn history_hr_marker_offset(packet_k: u8) -> Option<usize> {
     }
 }
 
-fn read_u16_le(bytes: &[u8], offset: usize) -> Option<u16> {
+pub(crate) fn read_u16_le(bytes: &[u8], offset: usize) -> Option<u16> {
     Some(u16::from_le_bytes([
         *bytes.get(offset)?,
         *bytes.get(offset + 1)?,
