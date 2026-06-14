@@ -1741,10 +1741,10 @@ fn energy_validation_next_actions(issues: &[String]) -> Vec<EnergyRollupNextActi
     let mut actions = Vec::new();
     for issue in issues {
         let (scope, reason, action) = match issue.as_str() {
-            _ if official_label_policy_issue_action(issue).is_some() => (
+            _ if let Some(action) = official_label_policy_issue_action(issue) => (
                 "energy:validation",
                 issue.as_str(),
-                official_label_policy_issue_action(issue).unwrap(),
+                action,
             ),
             "no_energy_validation_label" => (
                 "energy:validation",
