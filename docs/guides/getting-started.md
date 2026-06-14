@@ -150,6 +150,19 @@ Apps installed via a free Apple ID expire after **7 days**. To refresh:
 
 A paid Apple Developer account ($99/year) eliminates the 7-day limit.
 
+#### Free Apple ID feature restrictions
+
+Some Goose features require entitlements that Apple's provisioning does not grant to free-account sideloads:
+
+| Feature | Free Apple ID | Paid account |
+|---|---|---|
+| Bluetooth (WHOOP data) | Works | Works |
+| HealthKit read (sleep, HR) | May be restricted | Works |
+| HealthKit write (workout export) | May be restricted | Works |
+| Live Activity / Dynamic Island | May not appear | Works |
+
+If HealthKit access is refused at the permission prompt or the Live Activity does not show after a workout starts, this is an Apple signing constraint — not a Goose bug. Building from source with your own paid account resolves it.
+
 ### Manual install (without a source)
 
 You can also install any release IPA directly:
