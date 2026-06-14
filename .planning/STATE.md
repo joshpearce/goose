@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 85-06-PLAN.md
-last_updated: "2026-06-14T20:25:07.997Z"
+stopped_at: Phase 85 executed and verified — human_needed (export_tests.rs pre-existing Phase 84 regression)
+last_updated: "2026-06-14T20:40:16.501Z"
 last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
@@ -125,9 +125,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T20:25:07.991Z
-Stopped at: Completed 85-06-PLAN.md
-Resume file: None
+Last session: 2026-06-14T20:40:16.489Z
+Stopped at: Phase 85 executed and verified — human_needed (export_tests.rs pre-existing Phase 84 regression)
+Resume file: .planning/phases/85-rust-crash-safety/85-VERIFICATION.md
 Next action: Run /gsd-verify-work 85 after resolving export_tests sensor_sample_rows pre-existing failures; then proceed to Phase 86 (bridge.rs split)
 
 ## Operator Next Steps
