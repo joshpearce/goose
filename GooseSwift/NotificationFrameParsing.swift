@@ -190,12 +190,15 @@ enum OvernightRawNotificationStorageClassifier {
 
   static func classify(_ event: GooseNotificationEvent) -> Classification {
     let headerBytes = Array(event.value.prefix(10))
-    guard headerBytes.count >= 9, headerBytes[0] == 0xaa else {
+    // Gen4 has a 4-byte header (sync + 2-byte len + header-CRC); packet_type is at byte 4.
+    // Gen5/Maverick have an 8-byte header; packet_type is at byte 8.
+    let headerLen = event.wireProtocol == .gen4 ? 4 : 8
+    guard headerBytes.count >= headerLen + 1, headerBytes[0] == 0xaa else {
       return Classification(packetType: nil, packetK: nil, compactKey: nil)
     }
 
-    let packetType = headerBytes[8]
-    let packetK = headerBytes.count > 9 ? headerBytes[9] : nil
+    let packetType = headerBytes[headerLen]
+    let packetK = headerBytes.count > headerLen + 1 ? headerBytes[headerLen + 1] : nil
     guard compactLivePacketTypes.contains(packetType),
           let packetK,
           compactLivePacketKs.contains(packetK) else {
