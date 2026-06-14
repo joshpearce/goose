@@ -25,6 +25,7 @@ struct HealthPreviewRouteHost: View {
   .environment(GooseAppModel(startBLE: false))
 }
 
+#if DEBUG
 #Preview("Health Monitor - Populated") {
   HealthPreviewRouteHost(route: .healthMonitor, state: .populated)
 }
@@ -147,3 +148,5 @@ struct HealthPreviewRouteHost: View {
 #Preview("Calibration - Missing") {
   HealthPreviewRouteHost(route: .calibration, state: .missing)
 }
+
+#endif
