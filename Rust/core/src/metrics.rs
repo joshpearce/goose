@@ -1078,29 +1078,27 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         errors.push("not_enough_valid_rr_intervals".to_string());
     }
 
-    // Hoist segment_count so it is available both inside and outside the output block
-    // (needed for provenance without a duplicate segment_rr_by_gaps call — CR-01 fix).
-    let segment_count_outer: usize = if !errors.is_empty() {
-        1
-    } else if has_timestamps && timestamps_aligned {
-        segment_rr_by_gaps(&valid, &valid_timestamps, 3.0).len()
-    } else {
-        1
-    };
+    // Compute segments once; share the Vec for RMSSD computation and .len() for provenance.
+    // IN-02 fix: avoid a redundant O(n) segment_rr_by_gaps call — compute once, use twice.
+    let (segments_hoisted, segment_count_outer): (Option<Vec<Vec<f64>>>, usize) =
+        if errors.is_empty() && has_timestamps && timestamps_aligned {
+            let segs = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
+            let count = segs.len();
+            (Some(segs), count)
+        } else if errors.is_empty() {
+            (Some(vec![valid.clone()]), 1)
+        } else {
+            (None, 1)
+        };
 
     let output = if errors.is_empty() {
         let mean_nn_ms = mean(&valid);
 
         // Segment-aware RMSSD (ALG-HRV-01): use gap segmentation when timestamps are
         // present and aligned; fall back to the legacy single-segment path otherwise.
-        let (segments, segment_count) = if has_timestamps && timestamps_aligned {
-            let segs = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
-            let count = segs.len();
-            (segs, count)
-        } else {
-            // Treat all valid intervals as a single segment for the ectopic filter.
-            (vec![valid.clone()], 1)
-        };
+        // Use pre-computed segments_hoisted to avoid a second O(n) allocation.
+        let segments = segments_hoisted.unwrap_or_else(|| vec![valid.clone()]);
+        let segment_count = segment_count_outer;
 
         if segment_count > 1 {
             quality_flags.push("rr_segment_gap_detected".to_string());
@@ -2561,6 +2559,9 @@ fn mean(values: &[f64]) -> f64 {
 
 #[allow(dead_code)]
 fn rmssd(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
     let mean_square = values
         .windows(2)
         .map(|pair| {
@@ -4256,13 +4257,10 @@ pub fn sol_from_hr(
     let mut run_start: Option<f64> = None;
 
     for (ts, hr) in &sorted {
-        let below = *hr <= threshold;
+        // NaN hr: `*hr <= threshold` is false for NaN (IEEE 754), so non-finite hr
+        // values automatically reset run_start via the else branch below.
+        let below = hr.is_finite() && *hr <= threshold;
         if below {
-            // WR-02 fix: also filter non-finite HR (ts is already filtered above).
-            if !hr.is_finite() {
-                run_start = None;
-                continue;
-            }
             let start = *run_start.get_or_insert(*ts);
             // Check if current run meets the duration requirement.
             // CR-01 fix: use >= sustained_minutes directly (no -1.0 sample-spacing assumption).
