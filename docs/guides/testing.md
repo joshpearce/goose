@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 15 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
+Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
 
 ---
 
@@ -102,7 +102,7 @@ cargo build --all-targets --locked
 
 ### Coverage
 
-No coverage threshold is configured. CI runs `cargo test --locked --no-fail-fast` and `cargo test --lib --locked` as blocking gates. As of v5.0: 128 passing, 0 failing.
+No coverage threshold is configured. CI runs `cargo build --lib` and `cargo test --lib` as blocking gates (see `rust-core.yml`). The full integration test suite (`cargo test -p goose-core --locked`) runs locally but is not part of the CI blocking check.
 
 ---
 
@@ -110,14 +110,14 @@ No coverage threshold is configured. CI runs `cargo test --locked --no-fail-fast
 
 ### Test framework
 
-pytest >= 8.0 with httpx >= 0.27 as the FastAPI `TestClient` transport. Test files are in `server/ingest/tests/`. Install test dependencies separately from the production image:
+pytest >= 9.0 with httpx >= 0.28 as the FastAPI `TestClient` transport. Test files are in `server/ingest/tests/`. Install test dependencies separately from the production image:
 
 ```bash
 cd server/ingest
 pip install -r requirements-dev.txt   # includes -r requirements.txt
 ```
 
-`requirements-dev.txt` adds `pytest>=8` and `httpx>=0.27` on top of the production stack.
+`requirements-dev.txt` adds `pytest>=9.0.3` and `httpx>=0.28.1` on top of the production stack.
 
 ### Running tests
 
@@ -192,7 +192,7 @@ pytest tests/ # integration tests self-manage the TimescaleDB container
 
 ### Test framework
 
-XCTest. The `GooseSwiftTests` unit test target is registered in `GooseSwift.xcodeproj` (product type `com.apple.product-type.bundle.unit-test`). Test files live in `GooseSwiftTests/` — 15 test files and 3 shared mock helpers, 69 test functions as of the current revision.
+XCTest. The `GooseSwiftTests` unit test target is registered in `GooseSwift.xcodeproj` (product type `com.apple.product-type.bundle.unit-test`). Test files live in `GooseSwiftTests/` — 16 test files and 3 shared mock helpers, 69 test functions as of the current revision.
 
 ### Running tests
 
@@ -342,9 +342,10 @@ Runs on a weekly schedule (Mondays, 07:00 UTC) and on pushes/PRs that touch depe
 Runs on every push and PR to `main`, and weekly (Mondays, 08:00 UTC).
 
 - Covers Swift (`GooseSwift/`) and Python (`server/`) source.
+- Swift job runs on `macos-26` (Xcode 26.4.1, iOS 26.x SDKs) to match the project's `IPHONEOS_DEPLOYMENT_TARGET = 26.0`.
 - Rust is excluded from CodeQL; advisories are handled by `cargo-audit`.
 
-The iOS XCTest suite (`GooseSwiftTests`) is not run in CI. Running `xcodebuild test` requires a booted iOS simulator, which is not provisioned in the GitHub Actions environment used by `swift-build.yml`. The `codeql.yml` workflow does perform static analysis of Swift source on `macos-26` (see below), but does not execute the unit tests.
+The iOS XCTest suite (`GooseSwiftTests`) is not run in CI. Running `xcodebuild test` requires a booted iOS simulator, which is not provisioned in the GitHub Actions environment used by `swift-build.yml`. The `codeql.yml` workflow does perform static analysis of Swift source on `macos-26` (see above), but does not execute the unit tests.
 
 ### `swift-build.yml` — Swift compile check
 
@@ -367,3 +368,4 @@ Steps:
 3. Install `server/ingest/requirements-dev.txt`.
 4. Confirm the Docker daemon is reachable (`docker info`).
 5. `pytest tests/ -v --tb=short` — all tests; the `conftest.py` fixtures self-manage the TimescaleDB container.
+6. **server-gate** — aggregates the pytest result; fails if the job fails or is cancelled.

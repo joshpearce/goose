@@ -489,7 +489,7 @@ Exercise sessions whose start date (UTC) falls within a date range.
 
 #### `POST /v1/backfill-workouts`
 
-Recompute exercise sessions over a historical date range by replaying `compute_day` for each date. Idempotent and safe to re-run, but may be slow for large ranges.
+Recompute exercise sessions over a historical date range by replaying `compute_day` for each date. Idempotent and safe to re-run, but may be slow for large ranges. Maximum range is 366 days.
 
 **Request body:**
 ```json
@@ -621,7 +621,7 @@ The `request_id` and `schema` fields are validated before dispatching. A missing
   "schema": "goose.bridge.response.v1",
   "request_id": "goose-swift-1700000000.0-1",
   "ok": true,
-  "result": { ... },
+  "result": { },
   "timing": {
     "method": "core.version",
     "method_elapsed_us": 42
@@ -668,9 +668,13 @@ let value = try bridge.requestValue(
   method: "storage.check",
   args: ["database_path": databasePath, "self_test": false]
 )
+
+// Async variants (dispatch to detached Task with .userInitiated priority)
+let result = try await bridge.requestAsync(method: "core.version")
+let value  = try await bridge.requestValueAsync(method: "storage.check", args: [...])
 ```
 
-`request()` returns `[String: Any]`. `requestValue()` returns `Any` (for methods that return non-object types). Both throw `GooseRustBridgeError` on failure. Async variants `requestAsync()` and `requestValueAsync()` are also available — they dispatch to a detached `Task` with `.userInitiated` priority, keeping calls off the calling actor.
+`request()` returns `[String: Any]`. `requestValue()` returns `Any` (for methods that return non-object types). Both throw `GooseRustBridgeError` on failure. The async variants `requestAsync()` and `requestValueAsync()` dispatch to a detached `Task` with `.userInitiated` priority, keeping calls off the calling actor.
 
 Every caller creates its own `GooseRustBridge` instance — the bridge is stateless and multiple instances are intentional. All methods that touch storage require `database_path` in `args`; the canonical path is resolved via `HealthDataStore.defaultDatabasePath()`.
 
@@ -1010,8 +1014,10 @@ The iOS app and server support a local WebSocket debug interface used during liv
 
 **URL pattern:**
 ```
-ws://127.0.0.1:8765/goose-debug/stream?token=<session-token>
+ws://127.0.0.1:8765/ws
 ```
+
+The `server/dashboard/server.py` script registers this route at `/ws` and binds to `127.0.0.1:8765`. This is a development/debug tool — not part of the production ingest path.
 
 The `debug.start_session` bridge method records the WebSocket bridge configuration:
 
@@ -1033,8 +1039,6 @@ bridge.request(
   ]
 )
 ```
-
-The `server/dashboard/server.py` script binds the dashboard WebSocket server to `127.0.0.1:8765`. This is a development/debug tool — not part of the production ingest path.
 
 The debug session lifecycle uses four bridge methods in sequence:
 1. `debug.start_session` — opens the session and records bridge config

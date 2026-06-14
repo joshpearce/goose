@@ -96,7 +96,7 @@ This fork is built on top of [b-nnett/goose](https://github.com/b-nnett/goose), 
 
 The BLE pairing model, on-wrist detection approach, and background sync architecture draw from [Noop](https://github.com/NoopApp/noop), an offline WHOOP companion that pioneered local-first WHOOP data access on iOS. Noop is not affiliated with Goose; this credit is here because it established many of the patterns this project builds on.
 
-The self-hosted server and biometric algorithm pipeline are adapted from [my-whoop](https://github.com/tigercraft4/my-whoop), a prior personal project for storing and analysing WHOOP data on a self-hosted FastAPI + TimescaleDB stack, itself forked from [johnmiddleton12/wearable](https://github.com/johnmiddleton12/wearable). The server in `server/ingest/` maintains API compatibility with my-whoop so existing deployments continue to work.
+The self-hosted server and biometric algorithm pipeline are adapted from [my-whoop](https://github.com/tigercraft4/my-whoop), a prior personal project for storing and analysing WHOOP data on a self-hosted FastAPI + TimescaleDB stack, itself forked from [johnmiddleton12/wearable](https://github.com/johnmiddleton12/wearable). The `server/ingest/` layer maintains API compatibility with my-whoop so existing deployments continue to work.
 
 ## Current Scope
 
@@ -117,7 +117,7 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 - macOS with Xcode installed.
 - iOS 26.0 SDK and an iOS 26.0 capable simulator/device.
 - Apple Developer signing configured for the `com.goose.app` bundle identifier (override via `Config/Local.xcconfig`).
-- Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source.
+- Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source (MSRV 1.96).
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
 
@@ -207,7 +207,7 @@ archives; Xcode generates them locally through `Scripts/build_ios_rust.sh`.
 Prerequisites:
 
 - Xcode command line tools.
-- Rust via `rustup`.
+- Rust via `rustup` (MSRV 1.96).
 - iOS Rust targets:
 
 ```bash

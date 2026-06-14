@@ -13,7 +13,7 @@ This guide walks you from zero to a running Goose build with a connected WHOOP d
 |---|---|---|
 | macOS with Xcode | Xcode with iOS 26 SDK | Required to build the app |
 | iOS 26 SDK | 26.0 | Must be installed inside Xcode |
-| Apple Developer account | Any (free or paid) | Required for signing; bundle ID is `com.goose.app` |
+| Apple Developer account | Any (free or paid) | Required for signing; bundle ID defaults to `com.goose.app` |
 | Rust toolchain | MSRV 1.96 | Install via [rustup.rs](https://rustup.rs) |
 | Cargo | Comes with rustup | Used by the Xcode build phase |
 | iOS Rust targets | See below | Three targets required |
@@ -60,6 +60,17 @@ GOOSE_SKIP_RUST_CORE_BUILD=1 xcodebuild ...
 ```
 
 This is not recommended if you have modified any Rust source files.
+
+### Signing configuration
+
+The committed `Config/Signing.xcconfig` sets `APP_BUNDLE_ID = com.goose.app`. To use your own bundle ID and team, create `Config/Local.xcconfig` (gitignored) with:
+
+```
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+APP_BUNDLE_ID = com.yourname.goose
+```
+
+Both targets (main app and Live Activity extension) derive their bundle IDs from `APP_BUNDLE_ID` automatically.
 
 ### Build from the command line
 
@@ -207,9 +218,9 @@ docker compose up -d --build
 
 This starts two containers:
 - `goose-db` — TimescaleDB 2.17.2-pg16 (PostgreSQL 16) with hypertables for biometric stream data.
-- `goose-ingest` — FastAPI ingest service, published on host port `8770` by default.
+- `goose-ingest` — FastAPI ingest service built from `server/ingest/Dockerfile`, published on host port `8770` by default.
 
-The schema is bootstrapped automatically on first start. Verify the stack is healthy:
+The schema is bootstrapped automatically on first start via `server/db/init.sql` and idempotently re-applied by the ingest service on each startup. Verify the stack is healthy:
 
 ```bash
 curl -s localhost:8770/healthz
