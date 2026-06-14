@@ -2673,7 +2673,7 @@ fn lipponen_tarvainen_filter(segment: &[f64]) -> Vec<f64> {
             continue;
         }
         window.sort_by(|a, b| a.total_cmp(b));
-        let median = window[window.len() / 2];
+        let median = window[(window.len() - 1) / 2];
         if (segment[i] - median).abs() <= ECTOPIC_THRESHOLD * median {
             result.push(segment[i]);
         }
