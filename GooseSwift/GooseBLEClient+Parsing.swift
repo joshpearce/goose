@@ -545,7 +545,7 @@ extension GooseBLEClient {
     strapClockStatus = "Not read"
     lastClockCommandFrameHex = ""
     lastClockResponsePayloadHex = ""
-    activeDeviceGeneration = .gen5
+    connectedCapabilities = nil
   }
 
   func resetRealtimeHeartRatePublishState() {
@@ -734,7 +734,7 @@ extension GooseBLEClient {
     let pageEnd = pageState?.pageEnd
     let pagesBehind = pageState?.pagesBehind
 
-    if status == "success", activeDeviceGeneration != .gen4 {
+    if status == "success", connectedCapabilities?.wireProtocol != .gen4 {
       historicalManager.historicalRangePageState = pageState
     } else if status != "pending" {
       historicalManager.historicalRangePageState = nil
@@ -745,7 +745,7 @@ extension GooseBLEClient {
     // not trusted there. Guarding on historicalSyncPagesTotal == nil keeps a
     // re-issued GET_DATA_RANGE within the same session from growing the
     // denominator and rewinding the progress ring.
-    if status == "success", activeDeviceGeneration != .gen4,
+    if status == "success", connectedCapabilities?.wireProtocol != .gen4,
        historicalSyncPagesTotal == nil,
        let pagesBehind, pagesBehind > 0, isHistoricalSyncing {
       historicalSyncPagesTotal = Int(pagesBehind)
@@ -1012,16 +1012,16 @@ extension GooseBLEClient {
   }
 
   func frames(in data: Data) -> [Data] {
-    switch activeDeviceGeneration {
+    switch connectedCapabilities?.wireProtocol {
     case .gen4: return Self.gen4Frames(in: data)
-    case .gen5: return Self.v5Frames(in: data)
+    default: return Self.v5Frames(in: data)
     }
   }
 
   func payload(in frame: Data) -> [UInt8]? {
-    switch activeDeviceGeneration {
+    switch connectedCapabilities?.wireProtocol {
     case .gen4: return Self.gen4Payload(in: frame)
-    case .gen5: return Self.v5Payload(in: frame)
+    default: return Self.v5Payload(in: frame)
     }
   }
 

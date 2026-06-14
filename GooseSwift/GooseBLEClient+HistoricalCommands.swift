@@ -65,7 +65,7 @@ extension GooseBLEClient {
     publishSyncToast(phase: .syncing, detail: toastDetail)
     // Gen4 ignores firstCommandOverride: the strap requires the cmd 34 → 22 → 23
     // sequence regardless of caller intent. See docs/gen4-historical-sync.md.
-    if activeDeviceGeneration == .gen4 {
+    if connectedCapabilities?.historicalSync == .pageSequence {
       record(
         source: "ble.sync",
         title: "historical_sync.started",
@@ -105,13 +105,13 @@ extension GooseBLEClient {
     let commandPayload: [UInt8]
     if kind == .historicalDataResult {
       commandPayload = historicalManager.pendingHistoryEndAckPayload ?? kind.payload
-    } else if activeDeviceGeneration == .gen4 && (kind == .getDataRange || kind == .sendHistoricalData) {
+    } else if connectedCapabilities?.historicalSync == .pageSequence && (kind == .getDataRange || kind == .sendHistoricalData) {
       commandPayload = [0x00]
     } else {
       commandPayload = kind.payload
     }
     let sequence = nextHistoricalSequence()
-    let frame = activeDeviceGeneration.buildCommandFrame(
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: commandPayload

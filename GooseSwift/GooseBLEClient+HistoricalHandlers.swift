@@ -77,9 +77,9 @@ extension GooseBLEClient {
     historicalManager.pendingHistoricalFrames.removeAll()
     let deviceUUID = selectedDeviceID?.uuidString
     let deviceType: String
-    switch activeDeviceGeneration {
-    case .gen4: deviceType = "GEN4"
-    case .gen5: deviceType = "MAVERICK"
+    switch connectedCapabilities?.historicalSync {
+    case .pageSequence: deviceType = "GEN4"
+    default: deviceType = connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
     }
     let frameObjects: [[String: Any]] = frames.map { f in
       [
@@ -450,7 +450,7 @@ extension GooseBLEClient {
     // the result-code slot is a Gen4 success ack, not Gen5 PENDING — so we
     // bypass the Gen5 result-code logic and immediately advance to cmd 23.
     // historicalManager.gen4HistoricalPageSeq was set by the preceding cmd 34 response.
-    if activeDeviceGeneration == .gen4 && pending.kind == .sendHistoricalData {
+    if connectedCapabilities?.historicalSync == .pageSequence && pending.kind == .sendHistoricalData {
       historicalManager.historicalCommandTimeoutWorkItem?.cancel()
       historicalManager.pendingHistoricalCommand = nil
       record(
@@ -564,7 +564,7 @@ extension GooseBLEClient {
 
     switch pending.kind {
     case .getDataRange:
-      if activeDeviceGeneration == .gen4 {
+      if connectedCapabilities?.historicalSync == .pageSequence {
         guard payload.count >= 14 else {
           failHistoricalSync("Gen4 cmd 34 response too short: \(payload.count) bytes payload=\(Data(payload).hexString)")
           return
@@ -590,7 +590,7 @@ extension GooseBLEClient {
         completeHistoricalSync(reason: "historical_range_poll_complete")
         return
       }
-      if activeDeviceGeneration != .gen4,
+      if connectedCapabilities?.historicalSync != .pageSequence,
          historicalManager.historicalRangePageState?.pagesBehind == 0 {
         completeHistoricalSync(reason: "historical_range_empty")
         return
@@ -669,7 +669,7 @@ extension GooseBLEClient {
       }
       historicalSyncBurstsCompleted += 1
       let ackPayload: [UInt8]
-      if activeDeviceGeneration == .gen4 {
+      if connectedCapabilities?.historicalSync == .pageSequence {
         historicalManager.gen4HistoricalPageSeq &+= 1
         ackPayload = gen4PageRequestPayload(seq: historicalManager.gen4HistoricalPageSeq)
         record(
