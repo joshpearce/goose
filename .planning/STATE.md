@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 85-02-PLAN.md
-last_updated: "2026-06-14T19:53:03.035Z"
+stopped_at: Completed 85-04-PLAN.md
+last_updated: "2026-06-14T19:56:09.402Z"
 last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 22
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 85 (rust-crash-safety) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-06-14 -- Phase 85 execution started
 
@@ -75,6 +75,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 84-02]: Event-48 battery dispatch gated on batteryViaEvent48 == true AND wireProtocol == .gen4 — Gen5 shares the batteryViaEvent48 flag so wireProtocol guard is mandatory
 - [Phase 84-03]: Cmd 26 auto-send gated on batteryViaCMD26 && wireProtocol == .gen4 — Gen5 also has batteryViaCMD26=true (RESEARCH Pitfall 5); historicalDirectWriteBridge reused; project.pbxproj must be manually updated when adding new Swift source files
 - [Phase ?]: [Phase 85-02]: store.rs test .unwrap() converted to .expect(); allow shield removed — store.rs now exposed to deny lint
+- [Phase ?]: [Phase 85-04]: capabilities.rs test .unwrap() converted to .expect() with call-site-specific messages; shield removal proves no production .unwrap() remains
 
 ### Roadmap Evolution
 
@@ -115,6 +116,7 @@ Items deferred from previous milestones:
 | Phase 85-rust-crash-safety P01 | 335 | 2 tasks | 9 files |
 | Phase 85 P02 | 8m | 1 tasks | 1 files |
 | Phase 85-rust-crash-safety P03 | 8m | 2 tasks | 1 files |
+| Phase 85-rust-crash-safety P04 | 5m | 1 tasks | 1 files |
 
 ## Quick Tasks Completed
 
@@ -125,8 +127,8 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T19:53:03.029Z
-Stopped at: Completed 85-02-PLAN.md
+Last session: 2026-06-14T19:56:09.397Z
+Stopped at: Completed 85-04-PLAN.md
 Resume file: None
 Next action: Run /gsd-plan-phase 85 to begin Phase 85 (Rust Crash Safety — independent of Gen4 battery)
 
