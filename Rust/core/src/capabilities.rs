@@ -1,6 +1,3 @@
-// Unconverted test .unwrap() calls remain in this file; shield removed in Plan 4.
-#![allow(clippy::unwrap_used)]
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -93,21 +90,27 @@ mod capabilities_tests {
     #[test]
     fn device_kind_screaming_snake_case_serde() {
         // DeviceKind serialises/deserialises with SCREAMING_SNAKE_CASE
-        let json = serde_json::to_string(&DeviceKind::Whoop4).unwrap();
+        let json = serde_json::to_string(&DeviceKind::Whoop4)
+            .expect("DeviceKind::Whoop4 should serialise to JSON");
         assert_eq!(json, r#""WHOOP4""#);
-        let json = serde_json::to_string(&DeviceKind::Whoop5).unwrap();
+        let json = serde_json::to_string(&DeviceKind::Whoop5)
+            .expect("DeviceKind::Whoop5 should serialise to JSON");
         assert_eq!(json, r#""WHOOP5""#);
-        let json = serde_json::to_string(&DeviceKind::HrMonitor).unwrap();
+        let json = serde_json::to_string(&DeviceKind::HrMonitor)
+            .expect("DeviceKind::HrMonitor should serialise to JSON");
         assert_eq!(json, r#""HR_MONITOR""#);
     }
 
     #[test]
     fn device_kind_deserialise_from_screaming_snake_case() {
-        let kind: DeviceKind = serde_json::from_str(r#""WHOOP4""#).unwrap();
+        let kind: DeviceKind = serde_json::from_str(r#""WHOOP4""#)
+            .expect("WHOOP4 JSON string should deserialise to DeviceKind::Whoop4");
         assert_eq!(kind, DeviceKind::Whoop4);
-        let kind: DeviceKind = serde_json::from_str(r#""WHOOP5""#).unwrap();
+        let kind: DeviceKind = serde_json::from_str(r#""WHOOP5""#)
+            .expect("WHOOP5 JSON string should deserialise to DeviceKind::Whoop5");
         assert_eq!(kind, DeviceKind::Whoop5);
-        let kind: DeviceKind = serde_json::from_str(r#""HR_MONITOR""#).unwrap();
+        let kind: DeviceKind = serde_json::from_str(r#""HR_MONITOR""#)
+            .expect("HR_MONITOR JSON string should deserialise to DeviceKind::HrMonitor");
         assert_eq!(kind, DeviceKind::HrMonitor);
     }
 
@@ -120,8 +123,10 @@ mod capabilities_tests {
     #[test]
     fn device_capabilities_serde_roundtrip() {
         let caps = DeviceCapabilities::for_kind(DeviceKind::Whoop5);
-        let json = serde_json::to_string(&caps).unwrap();
-        let decoded: DeviceCapabilities = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&caps)
+            .expect("DeviceCapabilities should serialise to JSON for roundtrip");
+        let decoded: DeviceCapabilities = serde_json::from_str(&json)
+            .expect("serialised DeviceCapabilities JSON should deserialise back cleanly");
         assert_eq!(caps, decoded);
     }
 }
