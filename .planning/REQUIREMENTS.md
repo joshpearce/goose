@@ -8,8 +8,8 @@
 
 ### Battery (SEED-002)
 
-- [ ] **BAT-01**: Gen4 real battery % via Event-48 (type 48) payload — offset 17 u16 LE / 10; guard raw ≤ 1100; displayed in UI replacing the always-100% value
-- [ ] **BAT-02**: Gen4 GET_BATTERY_LEVEL (cmd 26) response parsing — payload[2..4] u16 LE / 10; guard count ≥ 4; used as fallback when Event-48 not yet received
+- [x] **BAT-01**: Gen4 real battery % via Event-48 (type 48) payload — offset 17 u16 LE / 10; guard raw ≤ 1100; displayed in UI replacing the always-100% value
+- [x] **BAT-02**: Gen4 GET_BATTERY_LEVEL (cmd 26) response parsing — payload[2..4] u16 LE / 10; guard count ≥ 4; used as fallback when Event-48 not yet received
 
 ### Protocol Architecture (SEED-003)
 
@@ -60,8 +60,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BAT-01 | Phase 84 | Pending |
-| BAT-02 | Phase 84 | Pending |
+| BAT-01 | Phase 84 | Complete |
+| BAT-02 | Phase 84 | Complete |
 | PROTO-01 | Phase 83 | Complete |
 | PROTO-02 | Phase 83 | Complete |
 | PROTO-03 | Phase 83 | Complete |

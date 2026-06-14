@@ -214,7 +214,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 84-01-PLAN.md — Rust: parse_event48_battery + parse_cmd26_battery, two bridge methods, event48_battery_pct compact field, unit tests (BAT-01, BAT-02)
+- [x] 84-01-PLAN.md — Rust: parse_event48_battery + parse_cmd26_battery, two bridge methods, event48_battery_pct compact field, unit tests (BAT-01, BAT-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -487,7 +487,7 @@ Plans:
 | 67–73 | v10.0 | Complete | 2026-06-13 |
 | 74–82 | v11.0 | Complete | 2026-06-14 |
 | 83 | 6/6 | Complete   | 2026-06-14 |
-| 84 | v12.0 | Not started | — |
+| 84 | 1/3 | In Progress|  |
 | 85 | v12.0 | Not started | — |
 | 86 | v12.0 | Not started | — |
 | 87 | v12.0 | Not started | — |
@@ -531,7 +531,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 6/6 plans complete
+**Plans:** 1/3 plans executed
 Plans:
 **Wave 1**
 
