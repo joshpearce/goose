@@ -60,26 +60,26 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BAT-01 | TBD | Pending |
-| BAT-02 | TBD | Pending |
+| BAT-01 | Phase 84 | Pending |
+| BAT-02 | Phase 84 | Pending |
 | PROTO-01 | Phase 83 | Pending |
 | PROTO-02 | Phase 83 | Pending |
 | PROTO-03 | Phase 83 | Pending |
-| ARCH-01 | TBD | Pending |
-| ARCH-02 | TBD | Pending |
-| ARCH-03 | TBD | Pending |
-| ARCH-04 | TBD | Pending |
-| ARCH-05 | TBD | Pending |
-| ARCH-06 | TBD | Pending |
-| COMM-01 | TBD | Pending |
-| COMM-02 | TBD | Pending |
-| COMM-03 | TBD | Pending |
+| ARCH-01 | Phase 86 | Pending |
+| ARCH-02 | Phase 87 | Pending |
+| ARCH-03 | Phase 85 | Pending |
+| ARCH-04 | Phase 88 | Pending |
+| ARCH-05 | Phase 89 | Pending |
+| ARCH-06 | Phase 90 | Pending |
+| COMM-01 | Phase 86 | Pending |
+| COMM-02 | Phase 91 | Pending |
+| COMM-03 | Phase 91 | Pending |
 
 **Coverage:**
 - v1 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0 ✓ (roadmapper will assign phases)
+- Mapped to phases: 14/14 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-14*
-*Last updated: 2026-06-14 after milestone v12.0 goal gathering*
+*Last updated: 2026-06-14 — traceability filled after v12.0 roadmap creation (Phases 83-91)*

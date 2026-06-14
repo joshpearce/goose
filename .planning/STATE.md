@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: Code Health & Protocol Foundation
-status: planning
-last_updated: "2026-06-14T01:59:07.453Z"
+status: active
+last_updated: "2026-06-14"
 last_activity: 2026-06-14
 progress:
-  total_phases: 0
+  total_phases: 9
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v11.0 SHIPPED — v12.0 not yet defined
+**Current focus:** v12.0 active — Phase 83 Protocol Architecture Refactor is next
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 83 — Protocol Architecture Refactor
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-14 — Milestone v12.0 started
+Status: Ready for planning (83-CONTEXT.md complete; all design decisions finalised)
+Last activity: 2026-06-14 — v12.0 roadmap created (Phases 83-91)
+
+Progress: [Phase 83 of 91] ░░░░░░░░░░ 0% complete
 
 ## Performance Metrics
 
@@ -39,7 +41,7 @@ Last activity: 2026-06-14 — Milestone v12.0 started
 
 **Recent Trend:**
 
-- Last 5 plans: Phase 73 P02, Phase 73 P01, Phase 72 P02, Phase 71 P04, Phase 71 P03
+- Last 5 plans: Phase 82 P01, Phase 81 P01, Phase 80 P01, Phase 79 P02, Phase 79 P01
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -51,24 +53,24 @@ Last activity: 2026-06-14 — Milestone v12.0 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- v12.0 roadmap: Phase 83 uses 83-CONTEXT.md which has all design decisions finalised — run /gsd-plan-phase 83 directly without a research step
+- v12.0 roadmap: Phase 85 (ARCH-03, Rust crash safety) is independent of the PROTO phases and can start after Phase 82; sequenced here at Phase 85 to avoid merge conflicts with bridge.rs split
+- v12.0 roadmap: Phase 86 (bridge.rs split) depends on Phase 85 so the split inherits Result-typed handlers; COMM-01 collocated here because offset comments belong at the handler call sites
+- v12.0 roadmap: Phase 87 (store.rs split) follows Phase 86 to avoid merge conflicts in the dispatcher; ARCH-02 is cleanest when ARCH-01 boundary is stable
+- v12.0 roadmap: Phase 88 (Swift ownership) is independent of Rust refactor; sequenced after Phase 87 to allow parallel planning but avoid source conflicts
+- v12.0 roadmap: Phase 89 (BLE actor) depends on Phase 83 (DeviceCapabilities) and Phase 88 (ownership); both preconditions must be met for DeviceCatalog to be meaningful
+- v12.0 roadmap: Phase 90 (domain ViewModels) depends on Phase 88 and Phase 89; splits GooseAppModel only after ownership and actor boundaries are stable
+- v12.0 roadmap: Phase 91 (COMM-02/03 comments) follows Phase 87; threading comments safest after store split stabilises module boundaries; algorithm comments have no dependency but grouped here for a clean comment-only pass
+- v12.0 roadmap: BAT-01/BAT-02 grouped into Phase 84 (after Phase 83) because DeviceCapabilities.battery_via_event48 and battery_via_cmd26 fields are the correct dispatch mechanism
 - v11.0 roadmap: Phase 74 and 75 run in parallel from Phase 73 (no dependency between UX/i18n batch and BLE/sync batch of fork PRs)
 - v11.0 roadmap: Phase 76 (upstream PRs) depends on Phase 74 to avoid merge conflicts — UX changes land first
 - v11.0 roadmap: Phase 77 (audit) follows Phase 76 so it covers the freshest codebase state including all PR integrations
 - v11.0 roadmap: Phase 78 (PERF + BLE-REL) after audit so any performance findings from audit feed directly into the optimisation work
 - v11.0 roadmap: Phase 79 (polish + deferred) last — DEF-01/DEF-02 complete HAP-02/DATA-02 which were explicitly deferred from v10.0
-- v10.0 roadmap: HAP-04 (wake-window) kept in Phase 73 alongside HAP-03 but explicitly RE-gated — implementation must not begin until BTSnoop + Ghidra sessions complete
-- v10.0 roadmap: ARCH-01 (service layer) assigned to Phase 72 so GooseBLEHistoricalManager (Phase 68) exists to exercise the protocols at test-writing time
-- v10.0 roadmap: DATA-04 (HR decimation) grouped with Phase 71 (FEAT cluster) rather than Phase 69 (data foundation) — no schema dependency; it is a read-path optimisation
-- Phase 65 Plan 01: StateMachine<State: Hashable, Event> struct; GooseBLEBondingState promoted from Equatable to Hashable
-- Phase 64 Plan 01: GooseHRSanitizer static value type; WHOOP parity range 25-220 BPM; onHRSpike callback (not Combine); hrSpikeCount on @MainActor via Task hop
-- Phase 62 Plan 02: effectiveSince gate inside service (not call site); watermark writes on 2xx only per type; clearAllUploadWatermarks resets both keys + lastUploadAt
-- Phase 61 Plan 01: GooseBLEBondingManager is plain final class with callback (not @Observable); UserDefaults keys owned by manager type; .cancelled persists as notStarted
-- [Phase ?]: Callback pattern (not Combine) for GooseNetworkMonitor.onReachabilityChange — consistent with GooseBLEBondingManager
-- [Phase ?]: isReachable initialised to true to avoid false upload block before first async NWPath update
-- [Phase ?]: Upload exponential backoff capped at 60s per delay, 7 total attempts, prevents battery drain on persistent 5xx
 
 ### Roadmap Evolution
 
+- v12.0 Phases 83–91 defined 2026-06-14: Protocol refactor (83), Gen4 battery (84), Rust crash safety (85), bridge.rs split + protocol comments (86), store.rs split (87), Swift ownership (88), BLE actor (89), domain ViewModels (90), threading + algorithm comments (91)
 - v11.0 Phases 74–79 defined 2026-06-13: Fork PR integration (2 batches), upstream PR integration, codebase audit, performance + BLE reliability, polish + deferred features
 - v10.0 Phases 67–73 defined 2026-06-12: Protocol parity (Rust-only), BLE refactor + validator, data foundation, haptic primitive + Breathe, coaching/notifications/decimation cluster, screens + service layer, smart alarm + RE-gated wake-window
 - Phase 66 added (v9.0): Cap Sense / On-Wrist Detection — DEFERRED hardware gate (CAPSENSE-01)
@@ -76,7 +78,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- None — Phase 74 is the first v11.0 plan to write
+- None — Phase 83 is the first v12.0 plan to write
 
 ### Blockers/Concerns
 
@@ -103,14 +105,6 @@ Items deferred from previous milestones:
 | quick_task | historical-sync-direct-write | missing | v10.0 close |
 | quick_task | fix-imu-step-count | missing | v10.0 close |
 
-Items promoted from deferred to v11.0 active:
-
-| Requirement | Old Status | New Phase |
-|-------------|-----------|-----------|
-| HAP-02 (DEF-01) | deferred | Phase 79 |
-| DATA-02 (DEF-02) | deferred | Phase 79 |
-| SEED-001 (BLE-REL-01) | dormant seed | Phase 78 |
-
 ## Quick Tasks Completed
 
 | Date | Slug | Description | Commit |
@@ -120,12 +114,12 @@ Items promoted from deferred to v11.0 active:
 
 ## Session Continuity
 
-Last session: 2026-06-13
-Stopped at: v11.0 roadmap created (Phases 74-79)
+Last session: 2026-06-14
+Stopped at: v12.0 roadmap created (Phases 83-91)
 Resume file: None
-Next action: Run /gsd-plan-phase 74 to begin Fork PR Integration — UX, i18n & Auth
+Next action: Run /gsd-plan-phase 83 to begin Protocol Architecture Refactor (83-CONTEXT.md already complete — no research step needed)
 
 ## Operator Next Steps
 
-- Run /gsd-plan-phase 74 to start Phase 74 (Fork PR Integration — UX, i18n & Auth)
-- Phases 74 and 75 can be planned in parallel (no dependency between them)
+- Run /gsd-plan-phase 83 to start Phase 83 (Protocol Architecture Refactor — all design decisions in 83-CONTEXT.md)
+- Phase 85 (Rust Crash Safety) is independent and can be planned in parallel with Phase 83/84 if desired
