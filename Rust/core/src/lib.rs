@@ -22,6 +22,7 @@ pub mod algorithm_compare;
 pub mod baselines;
 pub mod bridge;
 pub mod calibration;
+pub mod capabilities;
 pub mod capture_correlation;
 pub mod capture_import;
 pub mod capture_sanitize;
