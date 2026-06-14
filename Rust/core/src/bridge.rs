@@ -24,6 +24,7 @@ use crate::{
         compare_stress_goose_to_reference,
     },
     baselines::{EwmaBaseline, EwmaTrustLevel},
+    capabilities::{DeviceCapabilities, DeviceKind},
     calibration::{
         CalibrationApplicationInput, CalibrationDataset, CalibrationOptions, CalibrationRecord,
         CalibrationReport, apply_calibration, calibration_run_record, evaluate_linear_calibration,
@@ -230,6 +231,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "debug.session_snapshot",
     "debug.start_command",
     "debug.start_session",
+    "device.capabilities",
     "diagnostics.perf_budget",
     "diagnostics.property_suite",
     "exercise.detect_sessions",
@@ -363,6 +365,16 @@ pub struct BridgeTiming {
 pub struct BridgeError {
     pub code: String,
     pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct DeviceCapabilitiesArgs {
+    device_kind: DeviceKind,
+}
+
+fn device_capabilities_bridge(args: DeviceCapabilitiesArgs) -> GooseResult<serde_json::Value> {
+    let caps = DeviceCapabilities::for_kind(args.device_kind);
+    serde_json::to_value(caps).map_err(|e| GooseError::message(e.to_string()))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2795,6 +2807,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
         }
         "debug.start_session" => request_args::<DebugStartSessionArgs>(&request)
             .and_then(debug_start_session_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "device.capabilities" => request_args::<DeviceCapabilitiesArgs>(&request)
+            .and_then(device_capabilities_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "debug.start_command" => request_args::<DebugStartCommandArgs>(&request)
@@ -9515,8 +9531,6 @@ where
 fn parse_device_type(value: &str) -> GooseResult<DeviceType> {
     match value {
         "GEN4" | "GEN_4" | "Gen4" | "gen4" => Ok(DeviceType::Gen4),
-        "MAVERICK" | "Maverick" | "maverick" => Ok(DeviceType::Maverick),
-        "PUFFIN" | "Puffin" | "puffin" => Ok(DeviceType::Puffin),
         "GOOSE" | "Goose" | "goose" => Ok(DeviceType::Goose),
         "HR_MONITOR" | "hr_monitor" => Ok(DeviceType::HrMonitor),
         other => Err(GooseError::message(format!(
@@ -10813,6 +10827,79 @@ mod tests {
         assert!(
             (value - 80.0).abs() < 0.001,
             "filtered row must be the whoop value (80.0), got {value}"
+        );
+    }
+
+    #[test]
+    fn test_parse_device_type_maverick_rejected() {
+        assert!(
+            parse_device_type("MAVERICK").is_err(),
+            "MAVERICK must be rejected by parse_device_type after D-10"
+        );
+        assert!(
+            parse_device_type("Maverick").is_err(),
+            "Maverick must be rejected by parse_device_type after D-10"
+        );
+        assert!(
+            parse_device_type("maverick").is_err(),
+            "maverick must be rejected by parse_device_type after D-10"
+        );
+    }
+
+    #[test]
+    fn test_parse_device_type_puffin_rejected() {
+        assert!(
+            parse_device_type("PUFFIN").is_err(),
+            "PUFFIN must be rejected by parse_device_type after D-10"
+        );
+        assert!(
+            parse_device_type("Puffin").is_err(),
+            "Puffin must be rejected by parse_device_type after D-10"
+        );
+        assert!(
+            parse_device_type("puffin").is_err(),
+            "puffin must be rejected by parse_device_type after D-10"
+        );
+    }
+
+    #[test]
+    fn test_parse_device_type_canonical_accepted() {
+        assert!(
+            parse_device_type("GEN4").is_ok(),
+            "GEN4 must be accepted"
+        );
+        assert!(
+            parse_device_type("GEN_4").is_ok(),
+            "GEN_4 must be accepted"
+        );
+        assert!(
+            parse_device_type("GOOSE").is_ok(),
+            "GOOSE must be accepted"
+        );
+        assert!(
+            parse_device_type("HR_MONITOR").is_ok(),
+            "HR_MONITOR must be accepted"
+        );
+    }
+
+    #[test]
+    fn test_device_capabilities_bridge_whoop4() {
+        use crate::capabilities::{DeviceCapabilities, DeviceKind};
+        let args = DeviceCapabilitiesArgs {
+            device_kind: DeviceKind::Whoop4,
+        };
+        let result = device_capabilities_bridge(args);
+        assert!(result.is_ok(), "device_capabilities_bridge should succeed for Whoop4");
+        let value = result.unwrap();
+        assert_eq!(
+            value["wire_protocol"].as_str().unwrap(),
+            "gen4",
+            "Whoop4 wire_protocol must be gen4"
+        );
+        assert_eq!(
+            value["historical_sync"].as_str().unwrap(),
+            "page_sequence",
+            "Whoop4 historical_sync must be page_sequence"
         );
     }
 }
