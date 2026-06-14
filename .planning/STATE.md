@@ -6,7 +6,7 @@ status: in_progress
 last_updated: "2026-06-13T22:35:00.000Z"
 last_activity: 2026-06-13
 progress:
-  total_phases: 6
+  total_phases: 9
   completed_phases: 6
   total_plans: 8
   completed_plans: 8
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v11.0 — All phases complete, lifecycle pending
+**Current focus:** v11.0 — Phase 80 (Resting HR Floor Filter)
 
 ## Current Position
 
-Phase: — (all complete)
+Phase: 80 — Resting HR Floor Filter
 Plan: —
-Status: All 6 phases complete — milestone audit pending
+Status: Phases 74-79 complete, phases 80-82 added from issue backlog — ready for Phase 80
 Last activity: 2026-06-14 — Phase 79 complete: Debug 3 tabs, Logs & Export, haptic Breathe, live strain
 
 ## Performance Metrics

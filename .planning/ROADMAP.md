@@ -140,6 +140,9 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 - [x] **Phase 77: Codebase Audit** - Full codebase map + deep review of phases 67-73 + fix all critical findings
 - [x] **Phase 78: Performance & BLE Reliability** - SQLite query optimisation, startup lazy-init, BLE auth retry (SEED-001)
 - [x] **Phase 79: Polish & Deferred Features** - Debug tab 3-tabs, Support rename, Breathe haptics, live strain accumulator
+- [ ] **Phase 80: Resting HR Floor Filter** - Fix anomalously low resting HR values from historical sync (issue #130)
+- [ ] **Phase 81: Battery Level Fix** - Fix battery always showing 100% for Gen4/Gen5 devices (issue #149, SEED-002)
+- [ ] **Phase 82: HealthKit Import Persistence** - Persist HealthKit imported data to SQLite (issue #150)
 
 ## Phase Details
 
@@ -210,6 +213,33 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 80: Resting HR Floor Filter
+**Goal**: Fix anomalously low resting HR values (e.g. 32 bpm) produced by historical sync by adding a physiological plausibility floor to the resting HR estimation pipeline
+**Depends on**: Phase 77
+**Requirements**: BUG-HR-01
+**Success Criteria** (what must be TRUE):
+  1. Resting HR values below 30 bpm are rejected from the estimation pipeline in `Rust/core/src/metric_features.rs`; EXPLAIN with: the existing filter at line ~4494 allows 25 bpm through — tighten to 30 bpm minimum consistent with WHOOP's documented range
+  2. Historical sync that previously produced 32 bpm now produces a plausible value (or no value if insufficient data)
+**Plans**: TBD
+
+### Phase 81: Battery Level Fix
+**Goal**: Fix battery level always showing 100% for Gen4/Gen5 WHOOP devices by correctly parsing the battery byte from BLE notifications
+**Depends on**: Phase 77
+**Requirements**: BUG-BAT-01
+**Success Criteria** (what must be TRUE):
+  1. Battery percentage from BLE R22/realtime notifications is correctly decoded and displayed — not always 100%
+  2. Both Gen4 and Gen5 device battery levels reflect the actual charge state
+**Plans**: TBD
+
+### Phase 82: HealthKit Import Persistence
+**Goal**: Persist HealthKit imported data (resting HR, HRV, workouts, sleep) to SQLite so it survives app relaunch
+**Depends on**: Phase 69
+**Requirements**: BUG-HK-01
+**Success Criteria** (what must be TRUE):
+  1. After "Import from Apple Health" and app relaunch, HealthKit-sourced metrics are visible in Health views — no re-import required
+  2. HealthKit data is written to the appropriate SQLite tables (apple_daily or metric_series) via the Rust bridge
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -239,6 +269,9 @@ Known deferred: BLE5-01/02 (hardware-gated, real WHOOP 5.0 device), HAP-04 (RE-g
 | 77. Codebase Audit | v11.0 | 3/3 | Complete | 2026-06-14 |
 | 78. Performance & BLE Reliability | v11.0 | 3/3 | Complete | 2026-06-14 |
 | 79. Polish & Deferred Features | v11.0 | 4/4 | Complete | 2026-06-14 |
+| 80. Resting HR Floor Filter | v11.0 | 0/TBD | Not started | - |
+| 81. Battery Level Fix | v11.0 | 0/TBD | Not started | - |
+| 82. HealthKit Import Persistence | v11.0 | 0/TBD | Not started | - |
 
 ## Backlog
 

@@ -49,11 +49,18 @@
 - HAP-04: Wake-window engine — RE-gated (BTSnoop STRAP_DRIVEN_ALARM_EXECUTED + Ghidra decompile SetAlarmInfoCommandPacketRev4)
 - CAPSENSE-01: Cap sense / on-wrist detection — hardware gate GATT UUID não identificado
 
+## BUG — Bugs adicionados ao backlog (issues #130, #149, #150)
+
+- [ ] **BUG-HR-01**: Resting HR não mostra valores implausíveis (< 30 bpm) originados por historical sync — filtro fisiológico aplicado em `metric_features.rs` (#130)
+- [ ] **BUG-BAT-01**: Nível de bateria reflecte o estado real (não sempre 100%) em dispositivos Gen4/Gen5 (#149)
+- [ ] **BUG-HK-01**: Dados importados via "Import from Apple Health" são persistidos em SQLite e sobrevivem ao relaunch (#150)
+
 ### Out of Scope (v11.0)
 - Server-side dashboard / analytics
 - Full Android app
 - Background URLSession para uploads suspensos
 - OAuth / 2FA
+- Sync data to Apple Home / Bevel integration (#109)
 
 ## Traceability
 
@@ -79,3 +86,6 @@
 | POL-02 | Phase 79 | Pending |
 | DEF-01 | Phase 79 | Pending |
 | DEF-02 | Phase 79 | Pending |
+| BUG-HR-01 | Phase 80 | Pending |
+| BUG-BAT-01 | Phase 81 | Pending |
+| BUG-HK-01 | Phase 82 | Pending |
