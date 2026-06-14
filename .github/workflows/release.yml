@@ -149,6 +149,7 @@ jobs:
           IPA_NAME: ${{ needs.build-ipa.outputs.ipa-name }}
           IPA_SIZE: ${{ needs.build-ipa.outputs.ipa-size }}
         with:
+          github-token: ${{ secrets.GH_PAT || github.token }}
           script: |
             const fs = require('fs');
             const tag = process.env.RELEASE_TAG;
@@ -236,16 +237,13 @@ jobs:
             // Keep sorted descending
             app.versions.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
 
-            try {
-              await github.rest.repos.createOrUpdateFileContents({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                path: 'altstore-source.json',
-                message: `chore(altstore): add ${tag} to source`,
-                content: Buffer.from(JSON.stringify(source, null, 2) + '\n').toString('base64'),
-                sha: sourceFile.data.sha,
-              });
-              core.info(`AltStore source updated with ${tag} → ${ipaURL}`);
-            } catch (e) {
-              core.warning(`altstore-source.json update skipped (branch protection): ${e.message}. Update manually.`);
-            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: 'altstore-source.json',
+              message: `chore(altstore): add ${tag} to source`,
+              content: Buffer.from(JSON.stringify(source, null, 2) + '\n').toString('base64'),
+              sha: sourceFile.data.sha,
+            });
+
+            core.info(`AltStore source updated with ${tag} → ${ipaURL}`);
