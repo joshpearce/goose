@@ -4,8 +4,8 @@ milestone: v12.0
 milestone_name: milestone
 status: completed
 stopped_at: Phase 85 context gathered
-last_updated: "2026-06-14T18:25:02.219Z"
-last_activity: 2026-06-14
+last_updated: "2026-06-14T19:36:03.883Z"
+last_activity: 2026-06-14 -- Phase 85 planning complete
 progress:
   total_phases: 9
   completed_phases: 2
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 Phase: 84 (gen4-battery) — EXECUTING
 Plan: 3 of 3
 Status: Complete
-Last activity: 2026-06-14
+Last activity: 2026-06-14 -- Phase 85 planning complete
 
 Progress: [██████████] 100%
 

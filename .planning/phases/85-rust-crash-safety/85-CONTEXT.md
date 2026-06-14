@@ -33,21 +33,6 @@ split (Phase 86); store.rs structural split (Phase 87); any Swift changes.
 <decisions>
 ## Implementation Decisions
 
-### Plan Decomposition (D-01)
-- **D-01:** 1 plan per module (granular) — enables focused code review per diff.
-  - Plan 1 (`bridge.rs` — 46 unwraps): Add `#![cfg_attr(not(test), deny(clippy::unwrap_used))]`
-    to `lib.rs`; add `#[allow(clippy::unwrap_used)]` to all other not-yet-converted modules;
-    convert all 46 `.unwrap()` in `bridge.rs`.
-  - Plan 2 (`store.rs` — 62 unwraps): Convert all 62 `.unwrap()` in `store.rs`; remove
-    the `#[allow]` from `store.rs`.
-  - Plan 3 (`metrics.rs` — 11 unwraps): Convert + remove allow.
-  - Plan 4 (`capabilities.rs` — 8 unwraps): Convert + remove allow.
-  - Plan 5 (small files — 6 unwraps across `energy_rollup.rs`, `exercise_detection.rs`,
-    `step_discovery.rs`, `openwhoop_reference.rs`): Convert all + remove their allows.
-  - Plan 6 (Gate): Verify no remaining `#[allow(clippy::unwrap_used)]` left, `cargo clippy`
-    passes zero violations, `cargo test --locked` passes.
-  Total: 6 plans.
-
 ### GooseError Variants (D-02)
 - **D-02:** Use `GooseError::message(format!("..."))` for all `.unwrap()` sites that do
   not fit the existing variants (`Io`, `Json`, `Hex`, `Sqlite`). No new GooseError variants
@@ -79,6 +64,7 @@ split (Phase 86); store.rs structural split (Phase 87); any Swift changes.
   to implement catch_unwind — only verify it exists in the gate plan.
 
 ### Claude's Discretion
+- **Plan structure (D-01):** 1 plan per module, 6 plans total (bridge.rs, store.rs, metrics.rs, capabilities.rs, small files, gate) — the planner chose this breakdown; executors follow the existing plan files.
 - Exact error message text for each `.unwrap()` site (descriptive context per call site)
 - Whether Option `.unwrap()` sites use `.ok_or_else(|| GooseError::message(...))` or
   `.ok_or(GooseError::message(...))` based on performance context
