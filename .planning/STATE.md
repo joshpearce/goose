@@ -1,10 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v12.0
-milestone_name: Code Health & Protocol Foundation
-status: active
-last_updated: "2026-06-14"
-last_activity: 2026-06-14
+milestone_name: milestone
+status: planning
+stopped_at: v12.0 roadmap created (Phases 83-91)
+last_updated: "2026-06-14T02:38:02.588Z"
+last_activity: 2026-06-14 — v12.0 roadmap created (Phases 83-91)
 progress:
   total_phases: 9
   completed_phases: 0
