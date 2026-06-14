@@ -1066,6 +1066,10 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     if invalid_interval_count > 0 {
         quality_flags.push("invalid_rr_interval_dropped".to_string());
     }
+    if valid.is_empty() {
+        // SWS window narrowing or range gate eliminated all intervals; guard against mean() on empty slice.
+        errors.push("no_valid_rr_intervals_after_range_gate".to_string());
+    }
     if valid.len() < 30 {
         quality_flags.push("low_interval_count".to_string());
     }
@@ -2549,6 +2553,9 @@ pub fn hrv_run_record(
 }
 
 fn mean(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
     values.iter().sum::<f64>() / values.len() as f64
 }
 
