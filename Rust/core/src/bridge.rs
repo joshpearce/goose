@@ -11015,6 +11015,102 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod battery_parse_tests {
+    use super::*;
+
+    // Helper: build an event payload Vec<u8> of `len` bytes with a u16 LE value
+    // at absolute payload offset 17 (== data-body offset 5).
+    fn event48_payload(len: usize, raw: u16) -> Vec<u8> {
+        let mut v = vec![0u8; len];
+        if len > 17 {
+            v[17] = (raw & 0xff) as u8;
+        }
+        if len > 18 {
+            v[18] = (raw >> 8) as u8;
+        }
+        v
+    }
+
+    // Helper: build a Cmd 26 response payload with a u16 LE at bytes [2..4].
+    fn cmd26_payload(len: usize, raw: u16) -> Vec<u8> {
+        let mut v = vec![0u8; len];
+        if len > 2 {
+            v[2] = (raw & 0xff) as u8;
+        }
+        if len > 3 {
+            v[3] = (raw >> 8) as u8;
+        }
+        v
+    }
+
+    // BAT-01 valid: raw=850 at offset 17 → battery_pct=85.
+    #[test]
+    fn event48_valid_85() {
+        let payload = event48_payload(30, 850);
+        let pct = parse_event48_battery(&payload).expect("should parse");
+        assert_eq!(pct, 85);
+    }
+
+    // BAT-01 boundary accept: raw=1100 is exactly the limit → battery_pct=110, no error.
+    #[test]
+    fn event48_boundary_accept_1100() {
+        let payload = event48_payload(30, 1100);
+        let pct = parse_event48_battery(&payload).expect("boundary 1100 should pass");
+        assert_eq!(pct, 110);
+    }
+
+    // BAT-01 guard reject: raw=1101 exceeds the guard → Err.
+    #[test]
+    fn event48_rejects_over_1100() {
+        let payload = event48_payload(30, 1101);
+        assert!(
+            parse_event48_battery(&payload).is_err(),
+            "raw=1101 should be rejected by guard"
+        );
+    }
+
+    // BAT-01 too short: payload shorter than 19 bytes cannot supply offset 17 → Err.
+    #[test]
+    fn event48_rejects_too_short() {
+        let payload = vec![0u8; 18]; // only 18 bytes; offset 17 needs bytes[17] and bytes[18]
+        assert!(
+            parse_event48_battery(&payload).is_err(),
+            "payload of 18 bytes should be rejected (cannot read offset 17+1)"
+        );
+    }
+
+    // BAT-02 valid: raw=850 at payload[2..4] → battery_pct=85.
+    #[test]
+    fn cmd26_valid_85() {
+        let payload = cmd26_payload(5, 850);
+        let pct = parse_cmd26_battery(&payload).expect("should parse");
+        assert_eq!(pct, 85);
+    }
+
+    // BAT-02 guard reject: payload of 3 bytes → Err.
+    #[test]
+    fn cmd26_rejects_short() {
+        let payload = cmd26_payload(3, 0);
+        assert!(
+            parse_cmd26_battery(&payload).is_err(),
+            "payload.len()=3 should be rejected"
+        );
+    }
+
+    // Bridge round-trip: hex-encode a valid Event-48 payload and call the bridge wrapper,
+    // asserting the returned JSON contains the expected battery_pct.
+    #[test]
+    fn event48_bridge_round_trip() {
+        let raw_payload = event48_payload(30, 850);
+        let payload_hex = hex::encode(&raw_payload);
+        let args = ParseEvent48BatteryArgs { payload_hex };
+        let result = parse_event48_battery_bridge(args).expect("bridge should succeed");
+        let battery_pct = result["battery_pct"].as_u64().expect("battery_pct must be present");
+        assert_eq!(battery_pct, 85);
+    }
+}
+
 #[cfg(target_os = "android")]
 pub mod android {
     use jni::JNIEnv;
