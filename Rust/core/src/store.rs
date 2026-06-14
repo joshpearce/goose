@@ -1,5 +1,3 @@
-// Unconverted test .unwrap() calls remain in this file; shield removed in Plan 2.
-#![allow(clippy::unwrap_used)]
 
 use std::{collections::BTreeSet, path::Path};
 
@@ -9016,11 +9014,11 @@ mod v24_biometric_tests {
 
         store
             .insert_v24_biometric_batch("device-A", &batch)
-            .unwrap();
+            .expect("v24 biometric batch insert should succeed");
 
         let window = store
             .v24_biometric_samples_between("device-A", 0.0, 2000.0)
-            .unwrap();
+            .expect("v24 biometric samples query should succeed");
 
         assert_eq!(window.spo2.len(), 1);
         assert_eq!(window.spo2[0].ts, 1000.0);
@@ -9053,14 +9051,14 @@ mod v24_biometric_tests {
         // Insert twice — second INSERT OR IGNORE should be a no-op.
         store
             .insert_v24_biometric_batch("device-A", &batch)
-            .unwrap();
+            .expect("v24 biometric batch first insert should succeed");
         store
             .insert_v24_biometric_batch("device-A", &batch)
-            .unwrap();
+            .expect("v24 biometric batch second insert (idempotent) should succeed");
 
         let window = store
             .v24_biometric_samples_between("device-A", 0.0, 2000.0)
-            .unwrap();
+            .expect("v24 biometric samples query should succeed");
 
         // Each table should have exactly 1 row.
         assert_eq!(
@@ -9093,11 +9091,11 @@ mod v24_biometric_tests {
 
         store
             .insert_v24_biometric_batch("device-A", &batch)
-            .unwrap();
+            .expect("v24 biometric batch insert with contact=0 should succeed");
 
         let window = store
             .v24_biometric_samples_between("device-A", 0.0, 3000.0)
-            .unwrap();
+            .expect("v24 biometric samples query should succeed");
 
         // Rows with contact=0 are stored; downstream gating is consumer responsibility.
         assert_eq!(window.spo2.len(), 1);
@@ -9174,12 +9172,12 @@ mod exercise_session_tests {
         let store = make_store();
         let row = make_row(1_000_000.0, 1_003_600.0);
 
-        let inserted = store.insert_exercise_session(&row).unwrap();
+        let inserted = store.insert_exercise_session(&row).expect("exercise session insert should succeed");
         assert!(inserted, "first insert should return true");
 
         let results = store
             .exercise_sessions_between("device-X", 900_000.0, 2_000_000.0)
-            .unwrap();
+            .expect("exercise sessions query should succeed");
         assert_eq!(results.len(), 1);
         let r = &results[0];
         assert_eq!(r.device_id, row.device_id);
@@ -9201,15 +9199,15 @@ mod exercise_session_tests {
         let store = make_store();
         let row = make_row(2_000_000.0, 2_003_600.0);
 
-        let first = store.insert_exercise_session(&row).unwrap();
-        let second = store.insert_exercise_session(&row).unwrap();
+        let first = store.insert_exercise_session(&row).expect("first exercise session insert should succeed");
+        let second = store.insert_exercise_session(&row).expect("second exercise session insert (idempotent) should succeed");
 
         assert!(first, "first insert should return true");
         assert!(!second, "duplicate insert should return false (OR IGNORE)");
 
         let results = store
             .exercise_sessions_between("device-X", 1_900_000.0, 3_000_000.0)
-            .unwrap();
+            .expect("exercise sessions query should succeed");
         assert_eq!(
             results.len(),
             1,
@@ -9223,17 +9221,17 @@ mod exercise_session_tests {
         // Insert 3 rows out of chronological order.
         store
             .insert_exercise_session(&make_row(3_000.0, 3_600.0))
-            .unwrap();
+            .expect("exercise session insert for ordering test should succeed");
         store
             .insert_exercise_session(&make_row(1_000.0, 1_600.0))
-            .unwrap();
+            .expect("exercise session insert for ordering test should succeed");
         store
             .insert_exercise_session(&make_row(2_000.0, 2_600.0))
-            .unwrap();
+            .expect("exercise session insert for ordering test should succeed");
 
         let results = store
             .exercise_sessions_between("device-X", 0.0, 10_000.0)
-            .unwrap();
+            .expect("exercise sessions ordering query should succeed");
         assert_eq!(results.len(), 3);
         assert!(
             results[0].start_ts < results[1].start_ts && results[1].start_ts < results[2].start_ts,
@@ -9256,7 +9254,7 @@ mod sync_schema_tests {
     #[test]
     fn test_schema_version_is_current() {
         let store = make_store();
-        assert_eq!(store.schema_version().unwrap(), CURRENT_SCHEMA_VERSION);
+        assert_eq!(store.schema_version().expect("schema_version query should succeed"), CURRENT_SCHEMA_VERSION);
     }
 
     #[test]
@@ -9269,7 +9267,7 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("sqlite_master count for hr_samples should succeed");
         assert_eq!(count, 1, "hr_samples table should exist");
     }
 
@@ -9283,7 +9281,7 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("sqlite_master count for rr_intervals should succeed");
         assert_eq!(count, 1, "rr_intervals table should exist");
     }
 
@@ -9297,7 +9295,7 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("sqlite_master count for events should succeed");
         assert_eq!(count, 1, "events table should exist");
     }
 
@@ -9311,7 +9309,7 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("sqlite_master count for battery should succeed");
         assert_eq!(count, 1, "battery table should exist");
     }
 
@@ -9325,14 +9323,14 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("sqlite_master count for upload_cursors should succeed");
         assert_eq!(count, 1, "upload_cursors table should exist");
     }
 
     #[test]
     fn test_synced_column_on_new_tables() {
         let store = make_store();
-        let cols = store.table_columns_unchecked("hr_samples").unwrap();
+        let cols = store.table_columns_unchecked("hr_samples").expect("table_columns_unchecked should succeed for hr_samples");
         assert!(
             cols.contains("synced"),
             "hr_samples should have synced column"
@@ -9348,7 +9346,7 @@ mod sync_schema_tests {
             "resp_samples",
             "gravity",
         ] {
-            let cols = store.table_columns_unchecked(table).unwrap();
+            let cols = store.table_columns_unchecked(table).expect("table_columns_unchecked should succeed for known table");
             assert!(
                 cols.contains("synced"),
                 "{table} should have synced column after migration"
@@ -9365,7 +9363,7 @@ mod sync_schema_tests {
                 "INSERT OR IGNORE INTO gravity (device_id, ts, x, y, z) VALUES ('dev-1', 1000.0, 1.0, 2.0, 3.0)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert gravity row should succeed");
         let synced: i64 = store
             .conn
             .query_row(
@@ -9373,7 +9371,7 @@ mod sync_schema_tests {
                 [],
                 |row| row.get(0),
             )
-            .unwrap();
+            .expect("conn query_row for gravity synced should succeed");
         assert_eq!(synced, 0, "synced should default to 0 for existing rows");
     }
 
@@ -9382,13 +9380,13 @@ mod sync_schema_tests {
         let store = make_store();
         store
             .upsert_upload_cursor("highwater", "hr_samples", "1000.0")
-            .unwrap();
+            .expect("upsert_upload_cursor highwater should succeed");
         store
             .upsert_upload_cursor("read", "hr_samples", "500.0")
-            .unwrap();
+            .expect("upsert_upload_cursor read should succeed");
 
-        let hw = store.get_upload_cursor("highwater", "hr_samples").unwrap();
-        let rd = store.get_upload_cursor("read", "hr_samples").unwrap();
+        let hw = store.get_upload_cursor("highwater", "hr_samples").expect("get_upload_cursor highwater should succeed");
+        let rd = store.get_upload_cursor("read", "hr_samples").expect("get_upload_cursor read should succeed");
 
         assert_eq!(hw.as_deref(), Some("1000.0"));
         assert_eq!(rd.as_deref(), Some("500.0"));
@@ -9417,7 +9415,7 @@ mod sync_methods_tests {
              VALUES (?1, 'test', ?2, 'test-device', '', '', 'standard')",
                 params![evidence_id, captured_at],
             )
-            .unwrap();
+            .expect("conn execute insert raw_evidence should succeed");
         // Build the ParsedPayload JSON for a NormalHistory DataPacket.
         // ParsedPayload uses #[serde(tag = "kind", rename_all = "snake_case")], so
         // DataPacket serialises as {"kind":"data_packet", <fields flat>} (internally tagged).
@@ -9433,7 +9431,7 @@ mod sync_methods_tests {
               parsed_payload_json, parser_version, warnings_json) \
              VALUES (?1, ?2, 'whoop5', 0, 0, 0, '', '', 1, 1, 40, 'REALTIME_DATA', 0, 0, ?3, 'test', '[]')",
             params![frame_id, evidence_id, payload_json],
-        ).unwrap();
+        ).expect("conn execute insert decoded_frames should succeed");
     }
 
     #[test]
@@ -9445,7 +9443,7 @@ mod sync_methods_tests {
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-1', 1000.0, 75)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert hr_samples should succeed");
         let rowid: i64 = store
             .conn
             .query_row(
@@ -9453,8 +9451,8 @@ mod sync_methods_tests {
                 [],
                 |r| r.get(0),
             )
-            .unwrap();
-        let affected = store.mark_synced_rows("hr_samples", &[rowid]).unwrap();
+            .expect("conn query_row for rowid should succeed");
+        let affected = store.mark_synced_rows("hr_samples", &[rowid]).expect("mark_synced_rows should succeed");
         assert_eq!(affected, 1);
         let synced: i64 = store
             .conn
@@ -9463,7 +9461,7 @@ mod sync_methods_tests {
                 params![rowid],
                 |r| r.get(0),
             )
-            .unwrap();
+            .expect("conn query_row for synced flag should succeed");
         assert_eq!(synced, 1, "synced should be 1 after mark_synced_rows");
     }
 
@@ -9488,22 +9486,22 @@ mod sync_methods_tests {
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 1.0, 60, 0)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert hr_samples synced=0 should succeed");
         store
             .conn
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 2.0, 61, 0)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert hr_samples synced=0 should succeed");
         store
             .conn
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 3.0, 62, 1)",
                 [],
             )
-            .unwrap();
-        let rows = store.rows_pending_upload("hr_samples", 10).unwrap();
+            .expect("conn execute insert hr_samples synced=1 should succeed");
+        let rows = store.rows_pending_upload("hr_samples", 10).expect("rows_pending_upload should succeed");
         assert_eq!(rows.len(), 2, "only synced=0 rows should be returned");
     }
 
@@ -9517,9 +9515,9 @@ mod sync_methods_tests {
                     "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', ?1, 70, 0)",
                     params![i as f64],
                 )
-                .unwrap();
+                .expect("conn execute insert hr_samples for limit test should succeed");
         }
-        let rows = store.rows_pending_upload("hr_samples", 3).unwrap();
+        let rows = store.rows_pending_upload("hr_samples", 3).expect("rows_pending_upload with limit should succeed");
         assert_eq!(rows.len(), 3, "limit=3 should return exactly 3 rows");
     }
 
@@ -9529,14 +9527,14 @@ mod sync_methods_tests {
         insert_test_hr_frame(&store, "dev-1", 1000, 75);
         let report = store
             .backfill_streams_from_decoded_frames("dev-1", 900.0, 1100.0)
-            .unwrap();
+            .expect("backfill_streams_from_decoded_frames should succeed");
         assert_eq!(report.hr_inserted, 1, "one HR row should be inserted");
         let count: i64 = store
             .conn
             .query_row("SELECT COUNT(*) FROM hr_samples WHERE synced=0", [], |r| {
                 r.get(0)
             })
-            .unwrap();
+            .expect("conn query_row for hr_samples count after backfill should succeed");
         assert_eq!(count, 1, "backfilled row must have synced=0 (not stranded)");
     }
 
@@ -9546,10 +9544,10 @@ mod sync_methods_tests {
         insert_test_hr_frame(&store, "dev-1", 2000, 80);
         let r1 = store
             .backfill_streams_from_decoded_frames("dev-1", 1900.0, 2100.0)
-            .unwrap();
+            .expect("backfill_streams_from_decoded_frames first call should succeed");
         let r2 = store
             .backfill_streams_from_decoded_frames("dev-1", 1900.0, 2100.0)
-            .unwrap();
+            .expect("backfill_streams_from_decoded_frames second call (idempotent) should succeed");
         assert_eq!(r1.hr_inserted, 1);
         assert_eq!(
             r2.hr_inserted, 0,
@@ -9558,7 +9556,7 @@ mod sync_methods_tests {
         let count: i64 = store
             .conn
             .query_row("SELECT COUNT(*) FROM hr_samples", [], |r| r.get(0))
-            .unwrap();
+            .expect("conn query_row for hr_samples count after two backfills should succeed");
         assert_eq!(count, 1, "exactly one row after two backfill calls");
     }
 
@@ -9569,25 +9567,25 @@ mod sync_methods_tests {
         store.conn.execute(
             "INSERT INTO gravity (device_id, ts, x, y, z, synced) VALUES ('d', 500.0, 0.0, 0.0, 1.0, 0)",
             [],
-        ).unwrap();
+        ).expect("conn execute insert gravity synced=0 row should succeed");
         store.conn.execute(
             "INSERT INTO gravity (device_id, ts, x, y, z, synced) VALUES ('d', 600.0, 0.0, 0.0, 1.0, 1)",
             [],
-        ).unwrap();
+        ).expect("conn execute insert gravity synced=1 row should succeed");
         // Prune all synced=1 rows older than ts=10000
-        let pruned = store.prune_synced_stream_rows("gravity", 10000.0).unwrap();
+        let pruned = store.prune_synced_stream_rows("gravity", 10000.0).expect("prune_synced_stream_rows should succeed");
         assert_eq!(pruned, 1, "should prune exactly 1 synced=1 row");
         let remaining: i64 = store
             .conn
             .query_row("SELECT COUNT(*) FROM gravity", [], |r| r.get(0))
-            .unwrap();
+            .expect("conn query_row for gravity count after prune should succeed");
         assert_eq!(remaining, 1, "synced=0 row must survive prune");
         let synced: i64 = store
             .conn
             .query_row("SELECT synced FROM gravity WHERE ts=500.0", [], |r| {
                 r.get(0)
             })
-            .unwrap();
+            .expect("conn query_row for surviving gravity synced flag should succeed");
         assert_eq!(synced, 0, "surviving row should still be synced=0");
     }
 
@@ -9609,12 +9607,12 @@ mod sync_methods_tests {
         let store = make_store();
         store
             .upsert_upload_cursor("highwater", "hr_samples", "1000")
-            .unwrap();
+            .expect("upsert_upload_cursor highwater should succeed");
         store
             .upsert_upload_cursor("read", "hr_samples", "2000")
-            .unwrap();
-        let hw = store.get_upload_cursor("highwater", "hr_samples").unwrap();
-        let rd = store.get_upload_cursor("read", "hr_samples").unwrap();
+            .expect("upsert_upload_cursor read should succeed");
+        let hw = store.get_upload_cursor("highwater", "hr_samples").expect("get_upload_cursor highwater should succeed");
+        let rd = store.get_upload_cursor("read", "hr_samples").expect("get_upload_cursor read should succeed");
         assert_eq!(
             hw.as_deref(),
             Some("1000"),
@@ -9645,12 +9643,12 @@ mod sync_methods_tests {
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 1.0, 70)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert pre-upload hr_samples should succeed");
 
         // Step 2: pre-capture — simulates what GooseUploadService does before building the
         // HTTP payload. rows_pending_upload returns all synced=0 rows at this moment.
         let pending_before: Vec<serde_json::Value> =
-            store.rows_pending_upload("hr_samples", 500).unwrap();
+            store.rows_pending_upload("hr_samples", 500).expect("rows_pending_upload before race window should succeed");
         let captured_ids: Vec<i64> = pending_before
             .iter()
             .filter_map(|r| r["rowid"].as_i64())
@@ -9669,10 +9667,10 @@ mod sync_methods_tests {
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 2.0, 72)",
                 [],
             )
-            .unwrap();
+            .expect("conn execute insert race-window hr_samples should succeed");
 
         // Step 4: mark only the pre-captured IDs (simulates post-2xx mark).
-        let affected = store.mark_synced_rows("hr_samples", &captured_ids).unwrap();
+        let affected = store.mark_synced_rows("hr_samples", &captured_ids).expect("mark_synced_rows for pre-captured IDs should succeed");
         assert_eq!(
             affected, 1,
             "exactly the pre-captured row should be marked synced"
@@ -9680,7 +9678,7 @@ mod sync_methods_tests {
 
         // Assertion A: exactly one row remains pending — the race-window row (ts=2.0).
         let pending_after: Vec<serde_json::Value> =
-            store.rows_pending_upload("hr_samples", 10).unwrap();
+            store.rows_pending_upload("hr_samples", 10).expect("rows_pending_upload after mark should succeed");
         assert_eq!(
             pending_after.len(),
             1,
@@ -9699,7 +9697,7 @@ mod sync_methods_tests {
             .query_row("SELECT synced FROM hr_samples WHERE ts=1.0", [], |r| {
                 r.get(0)
             })
-            .unwrap();
+            .expect("conn query_row for synced flag of pre-captured row should succeed");
         assert_eq!(
             synced_flag, 1i64,
             "pre-captured row must be synced=1 after mark_synced_rows"
