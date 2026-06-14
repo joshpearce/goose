@@ -1,16 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v12.0
-milestone_name: Code Health & Protocol Foundation
-status: executing
-last_updated: "2026-06-14T16:49:39.835Z"
+milestone_name: milestone
+status: completed
+stopped_at: Phase 85 context gathered
+last_updated: "2026-06-14T18:25:02.219Z"
 last_activity: 2026-06-14
 progress:
   total_phases: 9
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
   completed_plans: 9
-  percent: 100
+  percent: 22
 ---
 
 # Project State
@@ -120,9 +121,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T17:55:00.000Z
-Stopped at: Completed 84-03-PLAN.md — Phase 84 (gen4-battery) fully complete
-Resume file: None
+Last session: 2026-06-14T18:25:02.209Z
+Stopped at: Phase 85 context gathered
+Resume file: .planning/phases/85-rust-crash-safety/85-CONTEXT.md
 Next action: Run /gsd-plan-phase 85 to begin Phase 85 (Rust Crash Safety — independent of Gen4 battery)
 
 ## Operator Next Steps
