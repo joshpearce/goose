@@ -73,11 +73,9 @@ GooseAppModel.swift                         Core @Published state + owned object
 GooseAppModel+NotificationPipeline.swift    BLE notification handling
 GooseAppModel+ActivityRecording.swift       Activity session lifecycle
 GooseAppModel+ActivityTimeline.swift        Activity timeline refresh
+GooseAppModel+BandFirstSync.swift           Band first-sync coordination
 GooseAppModel+HealthCapture.swift           Health packet capture sessions
 GooseAppModel+Lifecycle.swift               App lifecycle events
-GooseAppModel+OvernightRun.swift            Overnight guard
-GooseAppModel+OvernightRecovery.swift       Overnight recovery state
-GooseAppModel+OvernightState.swift          Overnight guard state transitions
 GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
 GooseAppModel+SleepSync.swift               Band sleep session sync from BLE history
 GooseAppModel+Upload.swift                  Server upload trigger
@@ -91,11 +89,13 @@ GooseBLEClient+HistoricalCommands.swift     Historical sync command dispatch
 GooseBLEClient+HistoricalHandlers.swift     Historical sync response handling
 GooseBLEClient+HRMonitor.swift              HR monitor peripheral support
 GooseBLEClient+DebugAndSync.swift           Debug session + sync utilities
+GooseBLEClient+Haptics.swift                Haptic feedback on BLE events
 GooseBLEClient+UserActions.swift            User-facing BLE actions
 GooseBLEClient+VitalsAndLogging.swift       Vitals forwarding and BLE logging
 
 HealthDataStore.swift                       Metric query coordinator
 HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
+HealthDataStore+BaselineProgress.swift      EWMA baseline progress queries
 HealthDataStore+Cardio.swift                Cardio load queries
 HealthDataStore+CoachSummaries.swift        Coach summary queries
 HealthDataStore+Exercise.swift              Exercise session queries

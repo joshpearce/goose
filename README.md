@@ -21,30 +21,34 @@ The app and backend have had very little attention put into performance. The app
 
 Goose is a local-first WHOOP data and health metrics project. The iOS app connects to WHOOP bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views. An optional self-hosted server lets you persist decoded biometric streams outside the device.
 
-## What Shipped in v5.0
+## What Shipped in v11.0
 
-v5.0 is the first milestone where the full biometric pipeline is closed end to end.
+v11.0 is the most recent milestone.
 
-**Algorithms and metrics**
+**Fixes and health**
 
-- HRV accuracy: BLE-gap aware RMSSD computation with ectopic beat filter.
-- Sleep staging: Cole-Kripke activity-count classifier and 4-class AASM stage model (Wake / REM / Light / Deep).
-- Strain and calories: Ghidra-confirmed WHOOP coefficients for strain score and calorie expenditure.
-- Readiness Engine v1: ACWR (acute:chronic workload ratio) with Foster monotony over a 28-day strain window; outputs a readiness level and zone (optimal / rundown / primed).
+- Resting HR floor set to 30 bpm minimum.
+- Battery level fix: R22 battery level for Gen5; Gen4 0xFF guard.
+- HealthKit import persistence to SQLite.
 
-**Biometric decode**
+**BLE and protocol**
 
-- V24 packet decode for SpO2, skin temperature, respiration rate, and gravity2 streams.
-- Exercise detection from the decoded biometric stream.
+- BLE auth retry on reconnect.
+- Fork + upstream PR integration: units, localisation, BLE recovery, sync donut.
+
+**Debug and UI**
+
+- Debug 3-tab split, Logs & Export rename, Breathe haptics, live strain display.
+- Lazy init to reduce startup latency.
 
 **Upload sync infrastructure**
 
-- 6 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity2_samples`, `hr_samples`, `rr_intervals`.
-- Pending-upload queries and mark-synced operations are available on all 6 tables.
+- 10 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity`, `gravity2_samples`, `hr_samples`, `resp_samples`, `rr_intervals`, `skin_temp_samples`, `spo2_samples`.
+- Pending-upload queries and mark-synced operations are available on all 10 tables.
 
 **Rust core**
 
-- SQLite schema v19.
+- SQLite schema v21.
 - 45 integration test files in `Rust/core/tests/`.
 
 ## Project Layout
@@ -110,7 +114,7 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 
 - macOS with Xcode installed.
 - iOS 26.0 SDK and an iOS 26.0 capable simulator/device.
-- Apple Developer signing configured for the `com.tigercraft4.goose` bundle identifier.
+- Apple Developer signing configured for the `com.goose.app` bundle identifier (override via `Config/Local.xcconfig`).
 - Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source.
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
@@ -166,7 +170,7 @@ After a successful physical-device build, reinstall and launch:
 ```sh
 xcrun devicectl device uninstall app \
   --device <device-id> \
-  com.tigercraft4.goose
+  com.goose.app
 
 xcrun devicectl device install app \
   --device <device-id> \
@@ -175,7 +179,7 @@ xcrun devicectl device install app \
 xcrun devicectl device process launch \
   --device <device-id> \
   --terminate-existing \
-  com.tigercraft4.goose
+  com.goose.app
 ```
 
 ## Self-Hosted Server

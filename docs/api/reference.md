@@ -32,9 +32,9 @@ The server uses `secrets.compare_digest` for constant-time comparison, preventin
 
 The bridge does not use network authentication. It is called in-process via three C symbols from `libgoose_core.a`:
 
-- `goose_bridge_handle_json(request: *const c_char) -> *mut c_char`
-- `goose_bridge_free_string(ptr: *mut c_char)`
-- `goose_core_version_json() -> *const c_char`
+- `char *goose_core_version_json(void)`
+- `char *goose_bridge_handle_json(const char *request_json)`
+- `void goose_bridge_free_string(char *value)`
 
 All security is at the iOS app/OS level; the bridge is not exposed over any network interface.
 
@@ -670,7 +670,7 @@ let value = try bridge.requestValue(
 )
 ```
 
-`request()` returns `[String: Any]`. `requestValue()` returns `Any` (for methods that return non-object types). Both throw `GooseRustBridgeError` on failure.
+`request()` returns `[String: Any]`. `requestValue()` returns `Any` (for methods that return non-object types). Both throw `GooseRustBridgeError` on failure. Async variants `requestAsync()` and `requestValueAsync()` are also available — they dispatch to a detached `Task` with `.userInitiated` priority, keeping calls off the calling actor.
 
 Every caller creates its own `GooseRustBridge` instance — the bridge is stateless and multiple instances are intentional. All methods that touch storage require `database_path` in `args`; the canonical path is resolved via `HealthDataStore.defaultDatabasePath()`.
 
@@ -678,7 +678,7 @@ Every caller creates its own `GooseRustBridge` instance — the bridge is statel
 
 ### Method Catalogue
 
-The bridge supports 142 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
+The bridge supports 148 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
 
 #### Core / Discovery
 
@@ -767,6 +767,7 @@ The bridge supports 142 RPC methods at compile time. The full live list is avail
 | `metrics.hourly_activity_metrics` | `database_path`, `start_time_unix_ms`, `end_time_unix_ms` | List hourly activity metric rows |
 | `metrics.activity_unavailable_daily_status` | `database_path`, `date_key`, `timezone`, `start_time_unix_ms`, `end_time_unix_ms` | Mark activity as unavailable for a day |
 | `metrics.imu_step_count_v1` | `ImuStepCountInput` fields | Estimate step count from IMU data using algorithm v1 |
+| `metrics.imu_step_count_from_decoded_frames` | `database_path`, `start_ts: f64`, `end_ts: f64` | Read K10 accelerometer data from decoded_frames between two Unix timestamps, convert LSB→g, and feed to `imu_step_count_v1`. Works without server upload or a populated gravity table. |
 
 #### Metrics — Energy
 
@@ -891,6 +892,25 @@ Stream names passed to `sync.mark_synced` and `sync.rows_pending_upload` are val
 | `overnight.mirror_counts` | `database_path`, `session_id` | Count rows mirrored in an overnight session |
 | `upload.get_recent_decoded_streams` | `database_path` | Retrieve decoded streams (all synced=0 rows) for server upload |
 | `upload.get_raw_frames_for_upload` | `database_path` | Retrieve raw BLE frame batches pending upload to the server |
+
+#### Apple Health Daily / Journal / Workout Upsert
+
+These three namespaces store structured health data derived from external sources (HealthKit, user input) into the local SQLite database. All methods require `database_path`.
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `apple_daily.upsert` | `database_path`, `date: string (YYYY-MM-DD)`, `source: string`, `steps?`, `active_kcal?`, `basal_kcal?`, `avg_hr_bpm?`, `max_hr_bpm?`, `vo2max?`, `weight_kg?` | Upsert a daily summary row from Apple Health. All value fields are optional floats/ints. |
+| `journal.upsert` | `database_path`, `date: string`, `source: string`, `behaviors_json: string`, `notes?: string` | Upsert a journal entry for a date, storing behaviours as a JSON string. |
+| `workout.upsert` | `database_path`, `date: string`, `source: string`, `sport: string`, `start_time: string`, `end_time: string`, `duration_s: f64`, `activity_session_id?`, `avg_hr_bpm?`, `max_hr_bpm?`, `strain?`, `calories_kcal?`, `distance_m?`, `notes?`, `provenance?` | Upsert a workout record. `provenance` defaults to `{}`. |
+
+#### Metric Series
+
+Generic named time-series storage keyed by `(source, metric_name, date)`.
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `metric_series.upsert` | `database_path`, `source: string`, `metric_name: string`, `date: string (YYYY-MM-DD)`, `value: f64` | Upsert a single named metric value for a date. |
+| `metric_series.query_range` | `database_path`, `metric_name: string`, `start_date: string`, `end_date: string`, `source?: string` | Query stored metric values across a date range. Returns an array of `{source, metric_name, date, value}` rows, optionally filtered by source. |
 
 #### Commands
 

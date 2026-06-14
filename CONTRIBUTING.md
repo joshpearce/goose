@@ -14,7 +14,7 @@ See [Getting Started](docs/guides/getting-started.md) for prerequisites and firs
 ### Prerequisites
 
 - macOS with Xcode installed (iOS 26 SDK required)
-- Apple Developer account with signing configured for bundle ID `com.tigercraft4.goose`
+- Apple Developer account with signing configured for bundle ID `com.goose.app` (or a local override via `Config/Local.xcconfig`)
 - Rust toolchain via `rustup`
 - iOS Rust targets:
 
@@ -104,7 +104,7 @@ There are 45 integration test files in `Rust/core/tests/`, covering protocol par
 
 ### Swift unit tests
 
-The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 52 unit tests across 10 files covering upload payload construction, BLE types, HR monitor state, and coach provider logic. Run them from Xcode (Product → Test) or via `xcodebuild test`:
+The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 69 unit tests across 16 files covering BLE types, upload service, HR monitor state, coach providers (Claude, Gemini, custom endpoint, registry, keychain), wearable descriptors, workout entries, live activity attributes, historical range parsing, temperature formatting, trends fetch, and baseline progress. Run them from Xcode (Product → Test) or via `xcodebuild test`:
 
 ```bash
 xcodebuild test \
