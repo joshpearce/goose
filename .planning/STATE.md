@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: verifying
-stopped_at: Phase 87 context gathered
-last_updated: "2026-06-15T11:36:23.934Z"
+stopped_at: Phase 87 planned — 6 plans verified, ready for execute
+last_updated: "2026-06-15T11:52:37.646Z"
 last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 21
+  total_plans: 27
   completed_plans: 21
   percent: 44
 ---
@@ -127,9 +127,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-15T11:36:23.857Z
-Stopped at: Phase 87 context gathered
-Resume file: .planning/phases/87-store-rs-split/87-CONTEXT.md
+Last session: 2026-06-15T11:52:37.636Z
+Stopped at: Phase 87 planned — 6 plans verified, ready for execute
+Resume file: .planning/phases/87-store-rs-split/87-01-PLAN.md
 Next action: Run /gsd-verify-work 85 after resolving export_tests sensor_sample_rows pre-existing failures; then proceed to Phase 86 (bridge.rs split)
 
 ## Operator Next Steps
