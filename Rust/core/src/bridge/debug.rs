@@ -26,8 +26,8 @@ use crate::{
     },
     metrics::default_algorithm_preferences_for_scope,
     privacy_lint::lint_privacy_path,
-    storage_check::{StorageCheckOptions, check_storage_database},
     protocol::{DataPacketBodySummary, ParsedPayload},
+    storage_check::{StorageCheckOptions, check_storage_database},
     store::{
         AlgorithmPreferenceRecord, CommandValidationRecord, GooseStore, GravityRow,
         StepCounterSampleInput,
