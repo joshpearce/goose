@@ -27,7 +27,11 @@ use crate::{
     metrics::default_algorithm_preferences_for_scope,
     privacy_lint::lint_privacy_path,
     storage_check::{StorageCheckOptions, check_storage_database},
-    store::{AlgorithmPreferenceRecord, CommandValidationRecord, GooseStore, GravityRow},
+    protocol::{DataPacketBodySummary, ParsedPayload},
+    store::{
+        AlgorithmPreferenceRecord, CommandValidationRecord, GooseStore, GravityRow,
+        StepCounterSampleInput,
+    },
     ui_coverage::{UiCoverageAuditInput, run_ui_coverage_audit},
 };
 
@@ -40,6 +44,61 @@ use super::{
 // ---------------------------------------------------------------------------
 // Local helpers (copied from original bridge.rs — private there, duplicated here)
 // ---------------------------------------------------------------------------
+
+/// IMU LSB-to-g conversion factor for K10 raw motion accelerometer axes.
+/// WHOOP 5 IMU full-scale ±16 g, 16-bit signed — 32768 / 16 = 2048... but
+/// empirical capture shows 3900 LSB/g. Mirror the value used in metrics.rs.
+const IMU_LSB_PER_G: f64 = 3900.0;
+
+/// Parse an ISO-8601 UTC string to unix seconds (f64).
+/// Format: "YYYY-MM-DDTHH:MM:SS.mmmZ". Returns None on malformed input.
+fn unix_from_iso8601(s: &str) -> Option<f64> {
+    if s.len() < 19 {
+        return None;
+    }
+    let year: u32 = s[0..4].parse().ok()?;
+    let month: u32 = s[5..7].parse().ok()?;
+    let day: u32 = s[8..10].parse().ok()?;
+    let hour: u32 = s[11..13].parse().ok()?;
+    let minute: u32 = s[14..16].parse().ok()?;
+    let sec: u32 = s[17..19].parse().ok()?;
+    let millis: f64 = if s.len() > 20 && s.as_bytes().get(19) == Some(&b'.') {
+        let frac: &str = s[20..].trim_end_matches('Z');
+        let frac_digits: &str = frac
+            .split_once(|c: char| !c.is_ascii_digit())
+            .map_or(frac, |(d, _)| d);
+        if frac_digits.is_empty() {
+            0.0
+        } else {
+            let raw: f64 = frac_digits.parse().ok()?;
+            raw / 10f64.powi(frac_digits.len() as i32 - 3)
+        }
+    } else {
+        0.0
+    };
+    if !(1..=12).contains(&month)
+        || !(1..=31).contains(&day)
+        || hour > 23
+        || minute > 59
+        || sec > 59
+    {
+        return None;
+    }
+    // Days since Unix epoch (1970-01-01)
+    let days = days_since_epoch(year, month, day) as f64;
+    let time_secs = hour as f64 * 3600.0 + minute as f64 * 60.0 + sec as f64 + millis / 1000.0;
+    Some(days * 86400.0 + time_secs)
+}
+
+fn days_since_epoch(year: u32, month: u32, day: u32) -> u32 {
+    // Days from 1970-01-01 to year-month-day using Julian day number arithmetic.
+    let a = (14 - month) / 12;
+    let y = year + 4800 - a;
+    let m = month + 12 * a - 3;
+    let jdn = day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+    // Julian day number of 1970-01-01 is 2440588
+    jdn.saturating_sub(2_440_588)
+}
 
 fn iso8601_to_unix(s: &str) -> f64 {
     // Expected format: "2024-01-15T12:30:45.123Z" (26 chars minimum)
@@ -1345,19 +1404,387 @@ fn upload_get_recent_decoded_streams_bridge(
     args: UploadGetRecentDecodedStreamsArgs,
 ) -> GooseResult<serde_json::Value> {
     let store = open_bridge_store(&args.database_path)?;
+
+    // Convert unix timestamp to ISO-8601 for decoded_frames_between query
     let since_dt = chrono_from_unix(args.since_ts);
     let now_dt = chrono_now();
+
     let frames = store.decoded_frames_between(&since_dt, &now_dt)?;
-    // Return the raw decoded frames as a simple list; full stream extraction
-    // logic from the original bridge.rs is too large to inline here and uses
-    // protocol types. Return a minimal payload matching the RPC contract.
-    let count = frames.len();
-    Ok(json!({
-        "schema": "goose.upload-recent-decoded-streams.v1",
-        "since_ts": args.since_ts,
-        "frame_count": count,
-        "frames": serde_json::Value::Array(vec![]),
-    }))
+
+    let mut hr: Vec<serde_json::Value> = Vec::new();
+    let mut rr: Vec<serde_json::Value> = Vec::new();
+    let mut events: Vec<serde_json::Value> = Vec::new();
+    let battery: Vec<serde_json::Value> = Vec::new();
+    let mut spo2: Vec<serde_json::Value> = Vec::new();
+    let mut skin_temp: Vec<serde_json::Value> = Vec::new();
+    let mut resp: Vec<serde_json::Value> = Vec::new();
+    let mut gravity: Vec<serde_json::Value> = Vec::new();
+    let mut gravity2: Vec<serde_json::Value> = Vec::new();
+    let mut step: Vec<(f64, i64)> = Vec::new();
+
+    for frame in &frames {
+        // Skip CRC-failed frames (matches server-side rule)
+        if !frame.header_crc_valid || !frame.payload_crc_valid {
+            continue;
+        }
+
+        // CR-02: per-row device_id filtering is deferred to v3.0 multi-device tracking.
+        // The device_id field (iOS CoreBluetooth peripheral UUID) and device_model
+        // (sanitized BLE device name) live in different namespaces — a comparison
+        // between them always mismatches. For the current single-device case, all
+        // captured frames belong to the active device, so the time-window filter
+        // (since_ts) is the correct and sufficient filter.
+
+        let parsed: Option<ParsedPayload> =
+            serde_json::from_str(&frame.parsed_payload_json).unwrap_or(None);
+
+        match parsed {
+            Some(ParsedPayload::DataPacket {
+                packet_k,
+                timestamp_seconds,
+                body_summary,
+                ..
+            }) => {
+                // REALTIME_DATA (packet_k == Some(40 | 0x28)) — canonical HR stream
+                // HISTORICAL_DATA (packet_k == Some(47 | 0x2F)) — V24 biometric history
+                let ts_unix: Option<f64> = timestamp_seconds.map(|s| s as f64);
+
+                // Extract heart rate and RR intervals from the body_summary
+                if let Some(ref summary) = body_summary {
+                    match summary {
+                        DataPacketBodySummary::NormalHistory {
+                            hr_present,
+                            marker_value,
+                            ..
+                        } => {
+                            // Normal history packet: hr_present flag + marker_value = HR bpm
+                            if hr_present.unwrap_or(false)
+                                && let (Some(ts), Some(bpm)) = (ts_unix, marker_value)
+                            {
+                                hr.push(json!({"ts": ts, "bpm": *bpm}));
+                            }
+                        }
+                        DataPacketBodySummary::RawMotionK10 {
+                            heart_rate, axes, ..
+                        } => {
+                            // K10 raw motion carries an HR byte and three accel axes
+                            if let (Some(ts), Some(bpm)) = (ts_unix, heart_rate) {
+                                hr.push(json!({"ts": ts, "bpm": *bpm}));
+                            }
+                            // Extract accelerometer_x/y/z full_samples and convert
+                            // LSB → g via IMU_LSB_PER_G. Match axes by name (not offset)
+                            // to stay robust across any future reordering.
+                            let ax = axes
+                                .iter()
+                                .find(|a| a.name == "accelerometer_x")
+                                .and_then(|a| a.full_samples.as_ref());
+                            let ay = axes
+                                .iter()
+                                .find(|a| a.name == "accelerometer_y")
+                                .and_then(|a| a.full_samples.as_ref());
+                            let az = axes
+                                .iter()
+                                .find(|a| a.name == "accelerometer_z")
+                                .and_then(|a| a.full_samples.as_ref());
+                            // CR-02 fix: assign per-sample timestamp so the gravity time
+                            // series is recoverable. WHOOP 5 IMU samples at 50 Hz.
+                            const K10_SAMPLE_RATE_HZ: f64 = 50.0;
+                            if let (Some(xs), Some(ys), Some(zs), Some(ts_base)) =
+                                (ax, ay, az, ts_unix)
+                            {
+                                let n = xs.len().min(ys.len()).min(zs.len());
+                                for i in 0..n {
+                                    let sample_ts = ts_base + i as f64 / K10_SAMPLE_RATE_HZ;
+                                    gravity.push(json!({
+                                        "ts": sample_ts,
+                                        "x": xs[i] as f64 / IMU_LSB_PER_G,
+                                        "y": ys[i] as f64 / IMU_LSB_PER_G,
+                                        "z": zs[i] as f64 / IMU_LSB_PER_G,
+                                    }));
+                                }
+                            }
+                        }
+                        DataPacketBodySummary::R17OpticalOrLabradorFiltered { .. } => {
+                            // Optical/Labrador filtered — SpO2 raw ADC data
+                            // Raw interpretation requires calibration; skip for now
+                        }
+                        DataPacketBodySummary::RawMotionK21 { .. } => {
+                            // K21 gravity extraction is deferred: axis-to-physical mapping
+                            // unconfirmed (variable group_1_count/group_2_count, non-standard
+                            // axis naming). Only K10 accel axes (accelerometer_x/y/z) are
+                            // converted in this phase (IMU-03). K21 will be handled once
+                            // empirical K21 payload data is available to confirm the mapping.
+                        }
+                        DataPacketBodySummary::V24History {
+                            hr: v24_hr,
+                            rr_intervals_ms,
+                            skin_contact,
+                            spo2_red,
+                            spo2_ir,
+                            skin_temp_raw,
+                            resp_raw,
+                            gravity_x,
+                            gravity_y,
+                            gravity_z,
+                            gravity2_x,
+                            gravity2_y,
+                            gravity2_z,
+                            ..
+                        } => {
+                            // V24 biometric fields: wire into the same upload streams as
+                            // NormalHistory (hr, rr) plus the V24-only streams (spo2,
+                            // skin_temp, resp). sig_quality is stored via
+                            // insert_v24_biometric_batch and is NOT included in the upload
+                            // payload (POST /v1/ingest-decoded schema does not include it).
+                            let contact = skin_contact.unwrap_or(0) == 1;
+
+                            // HR — only when skin contact is established
+                            if contact && let (Some(ts), Some(bpm)) = (ts_unix, *v24_hr) {
+                                hr.push(json!({"ts": ts, "bpm": bpm}));
+                            }
+
+                            // RR intervals — accumulate with per-interval timestamps
+                            if let Some(ts_base) = ts_unix {
+                                let mut t = ts_base;
+                                for &ms in rr_intervals_ms.iter() {
+                                    rr.push(json!({"ts": t, "interval_ms": ms}));
+                                    t += ms as f64 / 1000.0;
+                                }
+                            }
+
+                            // SpO2 raw red/IR — only when in contact
+                            if contact {
+                                if let (Some(ts), Some(r), Some(i)) = (ts_unix, *spo2_red, *spo2_ir)
+                                {
+                                    spo2.push(json!({"ts": ts, "red": r, "ir": i, "contact": 1}));
+                                }
+
+                                // Skin temperature raw ADC
+                                if let (Some(ts), Some(raw)) = (ts_unix, *skin_temp_raw) {
+                                    skin_temp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+
+                                // Respiratory raw ADC
+                                if let (Some(ts), Some(raw)) = (ts_unix, *resp_raw) {
+                                    resp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+                            }
+
+                            // Primary gravity triplet (bytes 33–44 in V24 body, f32 LE, already in g units).
+                            // Single sample per V24 frame — no loop needed unlike K10 (50 Hz array).
+                            // No IMU_LSB_PER_G conversion: protocol.rs already parses as f32 in g units.
+                            if let (Some(ts), Some(x), Some(y), Some(z)) =
+                                (ts_unix, *gravity_x, *gravity_y, *gravity_z)
+                            {
+                                gravity.push(json!({
+                                    "ts": ts,
+                                    "x": x as f64,
+                                    "y": y as f64,
+                                    "z": z as f64,
+                                }));
+                            }
+
+                            // Secondary gravity triplet (bytes 49–60 in V24 body). Present only when
+                            // frame body length >= 60 (parsed as Option<f32> in protocol.rs).
+                            if let (Some(ts), Some(x2), Some(y2), Some(z2)) =
+                                (ts_unix, *gravity2_x, *gravity2_y, *gravity2_z)
+                            {
+                                gravity2.push(json!({
+                                    "ts": ts,
+                                    "x": x2 as f64,
+                                    "y": y2 as f64,
+                                    "z": z2 as f64,
+                                }));
+                            }
+                        }
+                        DataPacketBodySummary::R22Whoop5Hr { hr_bpm, .. } => {
+                            // R22 WHOOP 5.0 realtime packet: push HR into the same stream
+                            // as NormalHistory/V24 so the upload pipeline receives it.
+                            if let (Some(ts), Some(bpm)) = (ts_unix, *hr_bpm)
+                                && bpm > 0.0
+                            {
+                                hr.push(json!({"ts": ts, "bpm": bpm.round() as u16}));
+                            }
+                        }
+                        DataPacketBodySummary::V18History {
+                            hr: v18_hr,
+                            rr_intervals_ms,
+                            gravity_x,
+                            gravity_y,
+                            gravity_z,
+                            skin_temp_raw,
+                            step_motion_counter,
+                            ..
+                        } => {
+                            // V18 WHOOP 5.0 historical packet: push all biometric fields.
+                            // No skin_contact byte in v18 — HR/RR/gravity not gated on contact.
+
+                            // HR
+                            if let (Some(ts), Some(bpm)) = (ts_unix, *v18_hr) {
+                                hr.push(json!({"ts": ts, "bpm": bpm}));
+                            }
+
+                            // RR intervals — accumulate with per-interval timestamps
+                            if let Some(ts_base) = ts_unix {
+                                let mut t = ts_base;
+                                for &ms in rr_intervals_ms.iter() {
+                                    rr.push(json!({"ts": t, "interval_ms": ms}));
+                                    t += ms as f64 / 1000.0;
+                                }
+                            }
+
+                            // Gravity triplet (f32 LE, already in g units — no IMU_LSB_PER_G conversion)
+                            if let (Some(ts), Some(x), Some(y), Some(z)) =
+                                (ts_unix, *gravity_x, *gravity_y, *gravity_z)
+                            {
+                                gravity.push(json!({
+                                    "ts": ts,
+                                    "x": x as f64,
+                                    "y": y as f64,
+                                    "z": z as f64,
+                                }));
+                            }
+
+                            // Skin temperature — raw u16 persisted only when degC is within physiological gate.
+                            if let (Some(ts), Some(raw)) = (ts_unix, *skin_temp_raw) {
+                                let deg_c = raw as f32 / 128.0;
+                                if (5.0..=45.0).contains(&deg_c) {
+                                    skin_temp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+                            }
+
+                            // Step motion counter — accumulate (ts, count) for batch persist below.
+                            if let (Some(ts), Some(count)) = (ts_unix, *step_motion_counter) {
+                                step.push((ts, count as i64));
+                            }
+                        }
+                    }
+                }
+
+                let _ = packet_k; // used for routing above
+            }
+            Some(ParsedPayload::Event {
+                event_id,
+                event_name,
+                timestamp_seconds,
+                data_hex,
+                ..
+            }) => {
+                // EVENT packets: wall-clock unix seconds (real RTC, not device epoch)
+                let ts_unix: Option<f64> = timestamp_seconds.map(|s| s as f64);
+                let kind = event_name
+                    .clone()
+                    .or_else(|| event_id.map(|id| format!("event_{id}")));
+
+                events.push(json!({
+                    "ts": ts_unix,
+                    "kind": kind,
+                    "payload": {"data_hex": data_hex},
+                }));
+            }
+            _ => {
+                // Command, CommandResponse, Raw, None — no biometric streams to extract
+            }
+        }
+
+        // HR monitor branch: 0x2A37 standard GATT notifications stored with device_type == "HR_MONITOR".
+        // parsed_payload_json is "null" for these rows (parse_frame was bypassed in capture_import.rs),
+        // so the match above falls through to `_ => {}`. Gate on device_type string.
+        // D-01: bpm + rr_intervals embedded in hr entry. D-02: NOT pushed to top-level rr.
+        // D-03: captured_at parsed to f64 unix seconds via unix_from_iso8601 helper.
+        // T-08.1-01: hex::decode or parse_hr_measurement failures skip the frame silently.
+        if frame.device_type == "HR_MONITOR" {
+            let bytes = match hex::decode(&frame.payload_hex) {
+                Ok(b) => b,
+                Err(_) => continue,
+            };
+            let measurement = match crate::heart_rate_gatt_protocol::parse_hr_measurement(&bytes) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            // D-03: captured_at is "YYYY-MM-DDTHH:MM:SS.mmmZ" — parse to f64 unix seconds.
+            // T-08.1-02: on parse failure use null rather than panicking.
+            let ts_opt: Option<f64> = unix_from_iso8601(&frame.captured_at);
+            hr.push(json!({
+                "ts": ts_opt,
+                "bpm": measurement.hr_bpm,
+                "rr_intervals": measurement.rr_intervals_ms,
+            }));
+        }
+    }
+
+    // Persist gravity rows extracted from V24History / K10 frames into the gravity table.
+    // On empty vec, store returns Ok(0) immediately — no-op.
+    if !gravity.is_empty() {
+        let gravity_tuples: Vec<(f64, f64, f64, f64)> = gravity
+            .iter()
+            .filter_map(|v| {
+                let ts = v["ts"].as_f64()?;
+                let x = v["x"].as_f64()?;
+                let y = v["y"].as_f64()?;
+                let z = v["z"].as_f64()?;
+                Some((ts, x, y, z))
+            })
+            .collect();
+        let _ = store.insert_gravity_rows(&args.device_id, &gravity_tuples);
+    }
+
+    // Persist secondary gravity (gravity2) rows when present.
+    if !gravity2.is_empty() {
+        let gravity2_tuples: Vec<(f64, f64, f64, f64)> = gravity2
+            .iter()
+            .filter_map(|v| {
+                let ts = v["ts"].as_f64()?;
+                let x = v["x"].as_f64()?;
+                let y = v["y"].as_f64()?;
+                let z = v["z"].as_f64()?;
+                Some((ts, x, y, z))
+            })
+            .collect();
+        let _ = store.insert_gravity2_batch(&args.device_id, &gravity2_tuples);
+    }
+
+    // Persist step counter rows extracted from V18History frames.
+    for (ts, count) in &step {
+        let sample_time_unix_ms = (*ts * 1_000.0) as i64;
+        let sample_id = format!("v18_step:{}:{}", args.device_id, sample_time_unix_ms);
+        let provenance = serde_json::json!({
+            "source": "v18_historical_frame",
+            "device_id": args.device_id,
+        })
+        .to_string();
+        let _ = store.insert_step_counter_sample(StepCounterSampleInput {
+            sample_id: &sample_id,
+            sample_time_unix_ms,
+            counter_value: *count,
+            cadence_spm: None,
+            activity_state: None,
+            source_kind: "device_counter",
+            packet_family: "v18_history",
+            json_path: "body_summary.step_motion_counter",
+            frame_id: None,
+            evidence_id: None,
+            capture_session_id: None,
+            quality_flags_json: "[]",
+            provenance_json: &provenance,
+        });
+    }
+
+    let result = json!({
+        "hr": hr,
+        "rr": rr,
+        "events": events,
+        "battery": battery,
+        "spo2": spo2,
+        "skin_temp": skin_temp,
+        "resp": resp,
+        "gravity": gravity,
+        "gravity2": gravity2,
+        "frame_count": frames.len(),
+    });
+
+    serde_json::to_value(result)
+        .map_err(|error| GooseError::message(format!("upload streams serialize failed: {error}")))
 }
 
 fn upload_get_raw_frames_for_upload_bridge(
