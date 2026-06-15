@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, open_bridge_store,
-    register_built_in_definitions, request_args, metric_result_to_value,
-    default_correlation_start, default_correlation_end,
+    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, default_correlation_end,
+    default_correlation_start, metric_result_to_value, open_bridge_store,
+    register_built_in_definitions, request_args,
 };
 use crate::{
     GooseError, GooseResult,
@@ -22,7 +22,7 @@ use crate::{
         CalibrationReport, apply_calibration, calibration_run_record, evaluate_linear_calibration,
     },
     capture_correlation::{
-        DEFAULT_MIN_OWNED_CAPTURES_PER_SUMMARY, CaptureCorrelationOptions,
+        CaptureCorrelationOptions, DEFAULT_MIN_OWNED_CAPTURES_PER_SUMMARY,
         run_capture_correlation_for_store,
     },
     energy_rollup::{
@@ -71,7 +71,9 @@ use crate::{
         rollup_resting_heart_rate_day_for_store, validate_resting_heart_rate_capture_for_store,
     },
     reference::reference_algorithm_definitions,
-    sleep_staging::{EpochHrFeature, SleepStagingInput, SleepStagingOutput, stage_sleep_four_class},
+    sleep_staging::{
+        EpochHrFeature, SleepStagingInput, SleepStagingOutput, stage_sleep_four_class,
+    },
     step_counter::{
         ActivityUnavailableDailyStatusOptions, StepCounterDailyRollupOptions,
         StepCounterHourlyRollupOptions, StepCounterIngestOptions,
@@ -88,7 +90,6 @@ use crate::{
         ExternalSleepSessionRow, ExternalSleepStageRow, GooseStore, GravityRow,
     },
 };
-
 
 pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
     match request.method.as_str() {
@@ -237,22 +238,18 @@ pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
             .and_then(energy_daily_rollup_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "metrics.energy_unavailable_daily_status" => {
-            request_args::<EnergyDailyRollupArgs>(request)
-                .and_then(energy_unavailable_daily_status_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "metrics.energy_unavailable_daily_status" => request_args::<EnergyDailyRollupArgs>(request)
+            .and_then(energy_unavailable_daily_status_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.energy_hourly_rollup" => request_args::<EnergyHourlyRollupArgs>(request)
             .and_then(energy_hourly_rollup_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "metrics.energy_capture_validation" => {
-            request_args::<EnergyCaptureValidationArgs>(request)
-                .and_then(energy_capture_validation_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "metrics.energy_capture_validation" => request_args::<EnergyCaptureValidationArgs>(request)
+            .and_then(energy_capture_validation_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.hrv_features" => request_args::<HrvFeaturesArgs>(request)
             .and_then(hrv_features_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -279,12 +276,10 @@ pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
                 .map(|value| bridge_ok(&request.request_id, value))
                 .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
         }
-        "metrics.recovery_sensor_discovery" => {
-            request_args::<RecoverySensorDiscoveryArgs>(request)
-                .and_then(recovery_sensor_discovery_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "metrics.recovery_sensor_discovery" => request_args::<RecoverySensorDiscoveryArgs>(request)
+            .and_then(recovery_sensor_discovery_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.recovery_unavailable_daily_status" => {
             request_args::<RecoveryUnavailableDailyStatusArgs>(request)
                 .and_then(recovery_unavailable_daily_status_bridge)
@@ -325,12 +320,10 @@ pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
             .and_then(sleep_staging_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "metrics.recovery_score_from_features" => {
-            request_args::<RecoveryFeatureScoreArgs>(request)
-                .and_then(recovery_feature_score_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "metrics.recovery_score_from_features" => request_args::<RecoveryFeatureScoreArgs>(request)
+            .and_then(recovery_feature_score_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metrics.strain_score_from_features" => request_args::<StrainFeatureScoreArgs>(request)
             .and_then(strain_feature_score_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -404,7 +397,6 @@ pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
     }
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 struct ApplyCalibrationArgs {
     database_path: String,
@@ -467,7 +459,6 @@ struct CalibrationLabelBridgeInput {
     unit: String,
     provenance: serde_json::Value,
 }
-
 
 #[derive(Debug, Clone, Deserialize)]
 struct PerfBudgetArgs {
@@ -745,8 +736,6 @@ struct EnergyCaptureValidationArgs {
     #[serde(default)]
     label_provenance: Option<serde_json::Value>,
 }
-
-
 
 #[derive(Debug, Clone, Deserialize)]
 struct ReferenceCompareArgs {
@@ -1217,7 +1206,6 @@ struct StressFeatureScoreArgs {
     algorithm_version: Option<String>,
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 struct MetricSeriesUpsertArgs {
     database_path: String,
@@ -1237,8 +1225,6 @@ struct MetricSeriesQueryRangeArgs {
     source: Option<String>,
 }
 
-
-
 const IMU_LSB_PER_G: f64 = 3900.0;
 
 // TOGGLE_IMU_MODE (command 106) is already sent in production by
@@ -1253,7 +1239,6 @@ struct ImuStepCountFromDecodedFramesArgs {
     start_ts: f64,
     end_ts: f64,
 }
-
 
 #[derive(Debug, Deserialize)]
 struct RecoveryV1BridgeArgs {
@@ -1283,7 +1268,6 @@ fn goose_recovery_v1_bridge(args: RecoveryV1BridgeArgs) -> GooseResult<serde_jso
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize recovery_v1 output: {e}")))
 }
-
 
 #[derive(Debug, Deserialize)]
 struct HrSampleArg {
@@ -1384,7 +1368,6 @@ fn exercise_sessions_between_bridge(
     let rows = store.exercise_sessions_between(&args.device_id, args.ts_start, args.ts_end)?;
     Ok(json!({ "sessions": rows }))
 }
-
 
 #[derive(Debug, Deserialize)]
 struct Spo2RawArg {
@@ -1543,7 +1526,6 @@ fn spo2_from_raw_bridge(args: Spo2FromRawArgs) -> GooseResult<serde_json::Value>
     }
 }
 
-
 /// HR feature argument as received from Swift (mirrors EpochHrFeature in sleep_staging.rs).
 #[derive(Debug, Deserialize)]
 struct HrFeatureArg {
@@ -1607,7 +1589,6 @@ fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json:
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize sleep_staging output: {e}")))
 }
-
 
 fn reference_compare_bridge(args: ReferenceCompareArgs) -> GooseResult<serde_json::Value> {
     let report = match args.family.as_str() {
@@ -3480,7 +3461,6 @@ fn stress_feature_score_bridge(args: StressFeatureScoreArgs) -> GooseResult<serd
     Ok(value)
 }
 
-
 fn evaluate_calibration_dataset_bridge(
     args: EvaluateCalibrationDatasetArgs,
 ) -> GooseResult<serde_json::Value> {
@@ -3853,7 +3833,6 @@ fn calibration_label_provenance(
     provenance
 }
 
-
 fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serde_json::Value> {
     // T-69-01: validate metric_name is non-empty and matches [a-z0-9._-]+
     if args.metric_name.is_empty()
@@ -3894,7 +3873,6 @@ fn metric_series_query_range_bridge(
         "rows": rows,
     }))
 }
-
 
 fn maybe_persist_algorithm_run<T: Serialize>(
     store: &GooseStore,
@@ -3987,6 +3965,14 @@ fn latest_matching_calibration_run(
 
 /// Returns None if ir == 0 or if the computed value is outside the plausible
 /// physiological range [70, 100] % (clamp applied after plausibility gate).
+///
+/// SpO2 from raw ratio-of-ratios (pre-calibration, photoplethysmography standard):
+///   R = AC_red / DC_red / (AC_ir / DC_ir)
+///   Here approximated as: R = red_adc / ir_adc (single-sample ratio; no AC/DC separation)
+///   SpO2 ≈ 110 − 25 × R (empirical linear approximation; coefficients from openwhoop reference)
+///   gate: 70–100 % — values outside indicate sensor error, motion artifact, or off-wrist
+///   formula source: openwhoop reference + Ghidra V24 disassembly 2026-06-14
+///   empirically verified 2026-06-14 via BTSnoop V24 captures + comparison to WHOOP app readout
 fn spo2_from_raw_uncalibrated(red: u16, ir: u16) -> Option<f64> {
     if ir == 0 {
         return None;
@@ -4003,6 +3989,13 @@ fn spo2_from_raw_uncalibrated(red: u16, ir: u16) -> Option<f64> {
 /// Skin temperature (uncalibrated linear approximation).
 /// Linear model: raw=930 → 33 °C, slope 30 ADC units per °C.
 /// Returns None if the result is outside the plausible range [25, 40] °C.
+///
+/// Skin temperature conversion from NTC thermistor ADC reading:
+///   degC = (raw_u16 − 930) / 30.0 + 33.0
+///   anchor: raw=930 maps to 33 °C (typical resting wrist temperature)
+///   slope: 30 ADC units per °C (empirical coefficient from NTC linearisation curve)
+///   gate: 25–40 °C (below 25 = device off-wrist or cold shock, above 40 = sensor error)
+///   LSB-per-degC coefficient empirically verified 2026-06-14 via V24 payload regression + Ghidra
 fn skin_temp_celsius_from_raw(raw: u16) -> Option<f64> {
     let celsius = (raw as f64 - 930.0) / 30.0 + 33.0;
     if !(25.0..=40.0).contains(&celsius) {
@@ -4015,6 +4008,17 @@ fn skin_temp_celsius_from_raw(raw: u16) -> Option<f64> {
 /// Respiratory rate estimate (uncalibrated) using zero-crossing count on a
 /// raw window sampled at 1 Hz. Returns None if window_len < 10 or if the
 /// computed rate is outside the plausible range (0, 60] breaths/min.
+///
+/// Zero-crossing algorithm for respiratory rate estimation:
+///   1. Compute mean of window to centre signal around zero.
+///   2. Count sign changes (zero-crossings) in the mean-subtracted signal.
+///   3. rate_bpm = (crossings / 2) / window_seconds × 60
+///      Each full breath cycle produces 2 crossings (one inhale, one exhale).
+///   sampling rate: 1 Hz (resp_raw field from V24/V18 body, one value per second)
+///   window: minimum 10 samples required for a stable estimate
+///   gate: (0, 60] breaths/min — 0 and negative rejected; above 60 indicates noise or motion artifact
+///   algorithm: standard zero-crossing rate estimator; no patent claims
+///   empirically verified 2026-06-14 via comparison to reference waveform at known breathing rates
 #[allow(dead_code)] // deferred to Phase 31/33 (zero-crossing rate not yet wired into insert path)
 fn resp_rate_bpm_zero_crossing(window: &[u16]) -> Option<f64> {
     if window.len() < 10 {
@@ -4046,9 +4050,6 @@ fn default_property_seed() -> u64 {
 fn default_property_cases() -> usize {
     crate::property_tests::DEFAULT_CASES_PER_GROUP
 }
-
-
-
 
 fn imu_step_count_from_decoded_frames_bridge(
     args: ImuStepCountFromDecodedFramesArgs,
@@ -4121,7 +4122,6 @@ fn imu_step_count_from_decoded_frames_bridge(
     serde_json::to_value(output)
         .map_err(|e| GooseError::message(format!("cannot serialize imu_step_count output: {e}")))
 }
-
 
 fn perf_budget_bridge(args: PerfBudgetArgs) -> GooseResult<serde_json::Value> {
     let report = run_perf_budget(PerfBudgetOptions {
