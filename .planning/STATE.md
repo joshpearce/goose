@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 87 planned — 6 plans verified, ready for execute
-last_updated: "2026-06-15T12:29:15Z"
+stopped_at: Phase 87 Plan 02 complete — sleep domain in store/sleep.rs (commit 764cb04)
+last_updated: "2026-06-15T14:00:16.329Z"
 last_activity: 2026-06-15 -- Phase 87 Plan 02 complete — sleep domain moved to store/sleep.rs
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 27
-  completed_plans: 22
-  percent: 46
+  completed_plans: 26
+  percent: 44
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 87 (store-rs-split) — EXECUTING
-Plan: 2 of 6 (Plan 02 complete)
-Status: Executing Phase 87 — Wave 2 in progress
+Plan: 3 of 6 (Plan 02 complete)
+Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 87 Plan 02 complete — sleep domain moved to store/sleep.rs
 
 Progress: [██████████] 100%
@@ -118,6 +118,7 @@ Items deferred from previous milestones:
 | debug_session | export_tests-sensor_sample_rows-18_vs_19 | investigating | Phase 85 gate |
 | Phase 86 P04 | 25 min | 1 tasks | 1 files |
 | Phase 86-bridge-rs-split-protocol-comments P05 | 20 min | 2 tasks | 2 files |
+| Phase 87 P05 | 35 min | 1 tasks | 2 files |
 
 ## Quick Tasks Completed
 
@@ -128,7 +129,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-15T12:29:15Z
+Last session: 2026-06-15T14:00:16.323Z
 Stopped at: Phase 87 Plan 02 complete — sleep domain in store/sleep.rs (commit 764cb04)
 Resume file: .planning/phases/87-store-rs-split/87-03-PLAN.md
 Next action: Execute 87-03 (next domain split in Wave 2)

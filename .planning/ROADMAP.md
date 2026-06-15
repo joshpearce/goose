@@ -238,14 +238,14 @@ Plans:
 
 **Wave 1**
 
-- [ ] 87-01-PLAN.md — Create store/ skeleton: store/mod.rs (Arc<Mutex<Connection>>, immediate_transaction fix), git rm store.rs, update capture_import.rs + bridge call sites, 4 empty domain stubs (Wave 1)
+- [x] 87-01-PLAN.md — Create store/ skeleton: store/mod.rs (Arc<Mutex<Connection>>, immediate_transaction fix), git rm store.rs, update capture_import.rs + bridge call sites, 4 empty domain stubs (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 87-02-PLAN.md — Move 13 sleep methods to store/sleep.rs (Wave 2, parallel)
-- [ ] 87-03-PLAN.md — Move 25 capture methods to store/capture.rs (Wave 2, parallel)
-- [ ] 87-04-PLAN.md — Move ~49 metrics methods to store/metrics.rs (Wave 2, parallel)
-- [ ] 87-05-PLAN.md — Move 49 activity methods to store/activity.rs (Wave 2, parallel)
+- [x] 87-02-PLAN.md — Move 13 sleep methods to store/sleep.rs (Wave 2, parallel)
+- [x] 87-03-PLAN.md — Move 25 capture methods to store/capture.rs (Wave 2, parallel)
+- [x] 87-04-PLAN.md — Move ~49 metrics methods to store/metrics.rs (Wave 2, parallel)
+- [x] 87-05-PLAN.md — Move 49 activity methods to store/activity.rs (Wave 2, parallel)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -571,7 +571,7 @@ Plans:
 | 84 | 3/3 | Complete   | 2026-06-14 |
 | 85 | 6/6 | Complete   | 2026-06-14 |
 | 86 | 5/6 | In Progress|  |
-| 87 | v12.0 | Not started | — |
+| 87 | 5/6 | In Progress|  |
 | 88 | v12.0 | Not started | — |
 | 89 | v12.0 | Not started | — |
 | 90 | v12.0 | Not started | — |
