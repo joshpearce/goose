@@ -3,6 +3,8 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 build/
+Packages/**/.build/
+.claude/
 *.ipa
 *.dSYM
 *.xcarchive

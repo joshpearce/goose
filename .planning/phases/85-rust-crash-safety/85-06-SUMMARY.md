@@ -166,6 +166,11 @@ None — no external service configuration required.
 - Phase 86 (bridge.rs split) can proceed; the `deny(clippy::unwrap_used)` lint gate is active and will enforce crash safety on new code
 - `/gsd-verify-work` should be run after resolving the export_tests failures
 
+## Self-Check: PASSED
+
+- SUMMARY.md exists: `/Users/francisco/Documents/goose/.planning/phases/85-rust-crash-safety/85-06-SUMMARY.md` — FOUND
+- Final commit `ac14ebf` exists — FOUND
+
 ---
 *Phase: 85-rust-crash-safety*
 *Completed: 2026-06-14*

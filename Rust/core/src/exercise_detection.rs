@@ -501,7 +501,10 @@ mod tests {
             });
         }
         // Sort by ts
-        hr.sort_by(|a, b| a.ts.partial_cmp(&b.ts).expect("HrSample ts values must be finite (no NaN) in test fixtures"));
+        hr.sort_by(|a, b| {
+            a.ts.partial_cmp(&b.ts)
+                .expect("HrSample ts values must be finite (no NaN) in test fixtures")
+        });
 
         // Gravity: all samples active (> threshold)
         let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.30)).collect();

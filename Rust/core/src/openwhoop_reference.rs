@@ -460,9 +460,10 @@ mod tests {
         assert_eq!(gravity.status, GooseSummaryStatus::Conflicting);
         assert_eq!(gravity.goose_summary_kinds, &GOOSE_SUMMARIES_RAW_MOTION);
 
-        let spo2 =
-            openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage)
-                .expect("Gen5Spo2Percentage must be present in the OpenWhoop history field reference table");
+        let spo2 = openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage)
+            .expect(
+                "Gen5Spo2Percentage must be present in the OpenWhoop history field reference table",
+            );
         assert!(!spo2.gen4);
         assert!(spo2.gen5);
         assert_eq!(spo2.status, GooseSummaryStatus::NotDecoded);
