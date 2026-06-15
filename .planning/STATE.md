@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
-status: verifying
+status: executing
 stopped_at: Phase 87 planned — 6 plans verified, ready for execute
-last_updated: "2026-06-15T11:52:37.646Z"
-last_activity: 2026-06-14 -- Phase 85 execution started
+last_updated: "2026-06-15T12:29:15Z"
+last_activity: 2026-06-15 -- Phase 87 Plan 02 complete — sleep domain moved to store/sleep.rs
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 27
-  completed_plans: 21
-  percent: 44
+  completed_plans: 22
+  percent: 46
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** Phase 85 — rust-crash-safety
+**Current focus:** Phase 87 — store-rs-split
 
 ## Current Position
 
-Phase: 85 (rust-crash-safety) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-06-14 -- Phase 85 execution started
+Phase: 87 (store-rs-split) — EXECUTING
+Plan: 2 of 6 (Plan 02 complete)
+Status: Executing Phase 87 — Wave 2 in progress
+Last activity: 2026-06-15 -- Phase 87 Plan 02 complete — sleep domain moved to store/sleep.rs
 
 Progress: [██████████] 100%
 
@@ -77,6 +77,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 85-02]: store.rs test .unwrap() converted to .expect(); allow shield removed — store.rs now exposed to deny lint
 - [Phase ?]: [Phase 85-04]: capabilities.rs test .unwrap() converted to .expect() with call-site-specific messages; shield removal proves no production .unwrap() remains
 - [Phase 85-06]: Pre-existing export_tests failures (sensor_sample_rows 18 vs expected 19) confirmed not caused by Phase 85 — export_tests.rs was not modified during Phase 85; root cause is Phase 84 schema/fixture change; needs separate debug session
+- [Phase 87-02]: Made 9 store helper functions pub(super) to expose to sleep submodule without widening public API; pre-existing cargo test --locked failures in mod.rs test code confirmed unrelated to this split
 
 ### Roadmap Evolution
 
@@ -127,10 +128,10 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-15T11:52:37.636Z
-Stopped at: Phase 87 planned — 6 plans verified, ready for execute
-Resume file: .planning/phases/87-store-rs-split/87-01-PLAN.md
-Next action: Run /gsd-verify-work 85 after resolving export_tests sensor_sample_rows pre-existing failures; then proceed to Phase 86 (bridge.rs split)
+Last session: 2026-06-15T12:29:15Z
+Stopped at: Phase 87 Plan 02 complete — sleep domain in store/sleep.rs (commit 764cb04)
+Resume file: .planning/phases/87-store-rs-split/87-03-PLAN.md
+Next action: Execute 87-03 (next domain split in Wave 2)
 
 ## Operator Next Steps
 
