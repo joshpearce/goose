@@ -1,8 +1,9 @@
 ---
 status: root_cause_identified
-trigger: "WHOOP 5.0 enters semi-connected state — 'Authentication failed' but HR notifications still flowing; stream retry loop continues retrying against a failed auth state up to 12 times"
+trigger: "WHOOP 5.0 enters semi-connected state — 'Authentication failed' but HR notifications still flowing; auth retry timer stale-state unsafe; stream retry loop continues (writes blocked by connectionState guard, but not cancelled)"
 created: 2026-06-14
 updated: 2026-06-14
+cross_ai_review: "Codex o4-mini: PARTIALLY_CONFIRMED. Gemini: PARTIALLY_CONFIRMED. Both corrected two claims."
 ---
 
 ## Symptoms
@@ -80,13 +81,30 @@ func scheduleMovementHeartRateStreamRetryIfNeeded() {
 
 The stream retry guard has NO check on `ble.isReady` / `connectionState`. It fires every 8s up to retry_12, each time calling `startMovementHeartRateCapture()` → write to command characteristic → `insufficientAuthentication` → `authRetryPending` fires → 2.5s → fails again. Loop repeats.
 
-## Root Cause
+## Root Cause (revised after cross-AI review — Codex + Gemini both PARTIALLY_CONFIRMED)
 
-Two compounding issues:
+Three compounding issues:
 
-1. **Missing auth-state gate in stream retry** (`GooseAppModel+HealthCapture.swift:468`): `scheduleMovementHeartRateStreamRetryIfNeeded()` does not check whether the BLE connection is in a ready/authenticated state before scheduling the next retry. After auth failure, retries continue every 8s × 12 attempts = ~96 seconds of repeated failing writes.
+1. **Auth retry timer is stale-state unsafe — primary bug** (`GooseBLEClient+PeripheralDelegate.swift:332`):
+   The `DispatchQueue.main.asyncAfter(deadline: .now() + 2.5)` closure has no `DispatchWorkItem` to cancel it, no generation token, and no peripheral identity check. It unconditionally calls `updateConnectionState("Authentication failed — please reconnect WHOOP")` regardless of whether:
+   - The pairing completed successfully in the 2.5s window
+   - A subsequent write succeeded
+   - The peripheral disconnected and reconnected
+   This is the direct cause of the stuck UI: iOS may complete pairing and the state returns to "ready", but the pending closure fires 2.5s later and overwrites it with "Authentication failed".
 
-2. **Auth retry path does not surface iOS pairing dialog** (`GooseBLEClient+PeripheralDelegate.swift:332`): On `insufficientAuthentication`, CoreBluetooth will automatically prompt the iOS pairing dialog if the app retries the write. The current code waits 2.5s then emits an error instead of retrying the write — so the pairing dialog never appears and the device remains stuck.
+2. **Stream retry loop not cancelled on auth failure** (`GooseAppModel+HealthCapture.swift:466`, `handleBLEConnectionStateChange`):
+   `scheduleMovementHeartRateStreamRetryIfNeeded()` has no connection-readiness guard. When auth failure hits, it keeps scheduling retries every 8s × 12. However (correction from original analysis): the actual writes are blocked by `guard connectionState == "ready"` in `writeSensorStreamCommands()` at `GooseBLEClient+Commands.swift:437`, so retries produce `sensor.write.blocked` log events rather than new `insufficientAuthentication` errors. The loop is noisy but not harmful to the BLE stack. `handleBLEConnectionStateChange` does not cancel `healthPacketCaptureStreamRetryWorkItem` on non-ready transitions — confirmed design gap.
+
+3. **Original command frame not replayed after auth** (`GooseBLEClient+PeripheralDelegate.swift:332`):
+   After `insufficientAuthentication`, iOS automatically prompts the pairing dialog on the first write attempt — the app does NOT need to replay to trigger pairing. However, the original write data is lost whether or not pairing succeeds; the app must replay the frame to complete the command. Current code emits an error instead of replaying — so commands remain permanently pending after auth.
+
+## Correction to original analysis
+
+❌ **Original claim:** "stream retries issue writes after auth failure and re-trigger insufficientAuthentication"
+✅ **Correct:** stream retries are blocked at `writeSensorStreamCommands()` guard (`connectionState == "ready"`). They produce `sensor.write.blocked` log noise, not additional ATT errors.
+
+❌ **Original claim:** "replaying the write is what triggers the iOS pairing dialog"
+✅ **Correct:** the first write that returns `insufficientAuthentication` is the trigger. Replay is needed to complete the application command after pairing, not to initiate pairing.
 
 ## Fix Direction
 
