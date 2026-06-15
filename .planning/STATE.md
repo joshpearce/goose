@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 86-04-PLAN.md
-last_updated: "2026-06-15T09:21:34.133Z"
+stopped_at: Phase 86 complete — all tests pass, gate approved
+last_updated: "2026-06-15T11:22:24.241Z"
 last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 21
-  completed_plans: 20
-  percent: 33
+  completed_plans: 21
+  percent: 44
 ---
 
 # Project State
@@ -127,9 +127,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-15T09:21:34.127Z
-Stopped at: Completed 86-04-PLAN.md
-Resume file: None
+Last session: 2026-06-15T11:22:24.231Z
+Stopped at: Phase 86 complete — all tests pass, gate approved
+Resume file: .planning/phases/86-bridge-rs-split-protocol-comments/86-06-SUMMARY.md
 Next action: Run /gsd-verify-work 85 after resolving export_tests sensor_sample_rows pre-existing failures; then proceed to Phase 86 (bridge.rs split)
 
 ## Operator Next Steps
