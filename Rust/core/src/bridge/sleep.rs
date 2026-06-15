@@ -6,6 +6,8 @@ use super::{
     default_raw_notification_source, default_decode_status,
     empty_json_object, json_object_string, open_bridge_store, request_args,
 };
+use rusqlite::{Connection, OptionalExtension, params};
+
 use crate::{
     GooseError, GooseResult,
     health_sync::{
@@ -472,14 +474,14 @@ fn external_sleep_history_import_bridge(
 ) -> GooseResult<serde_json::Value> {
     let store = open_bridge_store(&args.database_path)?;
     let (inserted_sessions, unchanged_sessions, inserted_stages, unchanged_stages) = store
-        .immediate_transaction(|store| {
+        .immediate_transaction(|conn| {
             let mut inserted_sessions = 0usize;
             let mut unchanged_sessions = 0usize;
             for session in &args.sessions {
                 let stage_summary_json =
                     json_object_string("stage_summary", &session.stage_summary)?;
                 let provenance_json = json_object_string("provenance", &session.provenance)?;
-                if store.insert_external_sleep_session(ExternalSleepSessionInput {
+                if insert_external_sleep_session_conn(conn, ExternalSleepSessionInput {
                     sleep_id: &session.sleep_id,
                     source: &session.source,
                     platform: &session.platform,
@@ -507,7 +509,7 @@ fn external_sleep_history_import_bridge(
                         stage.stage_id, stage.stage_kind
                     )));
                 };
-                if store.insert_external_sleep_stage(ExternalSleepStageInput {
+                if insert_external_sleep_stage_conn(conn, ExternalSleepStageInput {
                     stage_id: &stage.stage_id,
                     sleep_id: &stage.sleep_id,
                     stage_kind,
@@ -734,6 +736,188 @@ fn sleep_v1_evidence_folder_bridge(
             "cannot serialize sleep v1 evidence folder report: {error}"
         ))
     })
+}
+
+/// Insert an external sleep session using a raw `&Connection` (for use inside
+/// `immediate_transaction` where the store mutex is already held).
+/// Mirrors the logic of `GooseStore::insert_external_sleep_session` but operates
+/// on the already-locked connection rather than re-acquiring the mutex.
+fn insert_external_sleep_session_conn(
+    conn: &Connection,
+    input: ExternalSleepSessionInput<'_>,
+) -> GooseResult<bool> {
+    // Check for an existing row with the same sleep_id.
+    let existing: Option<(String, String, String, Option<String>, i64, i64, Option<String>, String, f64, String)> = conn
+        .query_row(
+            r#"
+            SELECT
+                sleep_id, source, platform, platform_record_id,
+                start_time_unix_ms, end_time_unix_ms,
+                timezone, stage_summary_json, confidence, provenance_json
+            FROM external_sleep_sessions
+            WHERE sleep_id = ?1
+            "#,
+            params![input.sleep_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, Option<String>>(3)?,
+                    row.get::<_, i64>(4)?,
+                    row.get::<_, i64>(5)?,
+                    row.get::<_, Option<String>>(6)?,
+                    row.get::<_, String>(7)?,
+                    row.get::<_, f64>(8)?,
+                    row.get::<_, String>(9)?,
+                ))
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)?;
+
+    if let Some((
+        ex_sleep_id, ex_source, ex_platform, ex_platform_record_id,
+        ex_start, ex_end, ex_timezone, ex_stage_summary, ex_confidence, ex_provenance,
+    )) = existing
+    {
+        let same = ex_sleep_id == input.sleep_id
+            && ex_source == input.source
+            && ex_platform == input.platform
+            && ex_platform_record_id == input.platform_record_id.map(str::to_string)
+            && ex_start == input.start_time_unix_ms
+            && ex_end == input.end_time_unix_ms
+            && ex_timezone == input.timezone.map(str::to_string)
+            && ex_stage_summary == input.stage_summary_json
+            && (ex_confidence - input.confidence).abs() < f64::EPSILON
+            && ex_provenance == input.provenance_json;
+        if same {
+            return Ok(false);
+        }
+        return Err(GooseError::message(format!(
+            "external sleep session {} already exists with different metadata",
+            input.sleep_id
+        )));
+    }
+
+    conn.execute(
+        r#"
+        INSERT INTO external_sleep_sessions (
+            sleep_id, source, platform, platform_record_id,
+            start_time_unix_ms, end_time_unix_ms, duration_ms,
+            timezone, stage_summary_json, confidence, provenance_json
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+        "#,
+        params![
+            input.sleep_id,
+            input.source,
+            input.platform,
+            input.platform_record_id,
+            input.start_time_unix_ms,
+            input.end_time_unix_ms,
+            input.end_time_unix_ms - input.start_time_unix_ms,
+            input.timezone,
+            input.stage_summary_json,
+            input.confidence,
+            input.provenance_json,
+        ],
+    )?;
+    Ok(true)
+}
+
+/// Insert an external sleep stage using a raw `&Connection` (for use inside
+/// `immediate_transaction` where the store mutex is already held).
+/// Mirrors the logic of `GooseStore::insert_external_sleep_stage`.
+fn insert_external_sleep_stage_conn(
+    conn: &Connection,
+    input: ExternalSleepStageInput<'_>,
+) -> GooseResult<bool> {
+    // Validate that the parent session exists.
+    let session_exists: bool = conn
+        .query_row(
+            "SELECT 1 FROM external_sleep_sessions WHERE sleep_id = ?1",
+            params![input.sleep_id],
+            |_| Ok(true),
+        )
+        .optional()
+        .map_err(GooseError::from)?
+        .unwrap_or(false);
+
+    if !session_exists {
+        return Err(GooseError::message(format!(
+            "external sleep session {} not found",
+            input.sleep_id
+        )));
+    }
+
+    // Check for an existing row with the same stage_id.
+    let existing: Option<(String, String, String, i64, i64, f64, String)> = conn
+        .query_row(
+            r#"
+            SELECT
+                stage_id, sleep_id, stage_kind,
+                start_time_unix_ms, end_time_unix_ms,
+                confidence, provenance_json
+            FROM external_sleep_stages
+            WHERE stage_id = ?1
+            "#,
+            params![input.stage_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, i64>(3)?,
+                    row.get::<_, i64>(4)?,
+                    row.get::<_, f64>(5)?,
+                    row.get::<_, String>(6)?,
+                ))
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)?;
+
+    if let Some((
+        ex_stage_id, ex_sleep_id, ex_stage_kind,
+        ex_start, ex_end, ex_confidence, ex_provenance,
+    )) = existing
+    {
+        let same = ex_stage_id == input.stage_id
+            && ex_sleep_id == input.sleep_id
+            && ex_stage_kind == input.stage_kind
+            && ex_start == input.start_time_unix_ms
+            && ex_end == input.end_time_unix_ms
+            && (ex_confidence - input.confidence).abs() < f64::EPSILON
+            && ex_provenance == input.provenance_json;
+        if same {
+            return Ok(false);
+        }
+        return Err(GooseError::message(format!(
+            "external sleep stage {} already exists with different metadata",
+            input.stage_id
+        )));
+    }
+
+    conn.execute(
+        r#"
+        INSERT INTO external_sleep_stages (
+            stage_id, sleep_id, stage_kind,
+            start_time_unix_ms, end_time_unix_ms, duration_ms,
+            confidence, provenance_json
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+        "#,
+        params![
+            input.stage_id,
+            input.sleep_id,
+            input.stage_kind,
+            input.start_time_unix_ms,
+            input.end_time_unix_ms,
+            input.end_time_unix_ms - input.start_time_unix_ms,
+            input.confidence,
+            input.provenance_json,
+        ],
+    )?;
+    Ok(true)
 }
 
 fn canonical_external_sleep_stage(stage: &str) -> Option<&'static str> {
