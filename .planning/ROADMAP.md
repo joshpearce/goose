@@ -570,7 +570,7 @@ Plans:
 | 83 | 6/6 | Complete   | 2026-06-14 |
 | 84 | 3/3 | Complete   | 2026-06-14 |
 | 85 | 6/6 | Complete   | 2026-06-14 |
-| 86 | 5/6 | In Progress|  |
+| 86 | 6/6 | Complete   | 2026-06-15 |
 | 87 | 5/6 | In Progress|  |
 | 88 | v12.0 | Not started | — |
 | 89 | v12.0 | Not started | — |
