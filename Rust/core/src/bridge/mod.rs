@@ -193,6 +193,9 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "ui_coverage.audit",
     "upload.get_raw_frames_for_upload",
     "upload.get_recent_decoded_streams",
+    "validation.local_health_manifest_review",
+    "validation.local_health_manifest_runbook",
+    "validation.local_health_manifest_scaffold",
     "workout.upsert",
 ];
 
@@ -947,21 +950,104 @@ fn escape_json_string(value: &str) -> String {
 mod tests {
     use super::*;
 
-    /// Guard against drift between [`BRIDGE_METHODS`] and the dispatcher.
+    /// Guard against drift between [`BRIDGE_METHODS`] and the actual dispatch arms
+    /// across all 5 domain files.
     ///
-    /// The source-scan approach no longer works after the bridge/ split because
-    /// the methods are now routed via prefix matching rather than explicit match
-    /// arms. This placeholder keeps the test name registered so tooling that
-    /// watches for this test does not raise a missing-test alarm.
+    /// Reads all 5 domain files via `include_str!` (compile-time, zero runtime I/O)
+    /// and scans for Rust match arm lines of the form `"namespace.method" =>` or the
+    /// multi-line variant where the method name is alone on its line followed by `|`
+    /// or `=>` on the next. mod.rs is excluded from the scan because the test block
+    /// itself contains quoted strings in comments that would produce false positives;
+    /// the small set of methods handled inline in mod.rs is enumerated explicitly.
     ///
-    /// Plan 86-03 will replace this placeholder with a prefix-coverage check
-    /// that verifies every method in BRIDGE_METHODS is covered by at least one
-    /// routing arm in handle_bridge_request_inner.
+    /// Asserts set-equality with `BRIDGE_METHODS`, catching both:
+    ///   - methods listed in BRIDGE_METHODS with no dispatch arm (silent drop)
+    ///   - dispatch arms not registered in BRIDGE_METHODS (undocumented method)
     #[test]
     fn bridge_methods_constant_matches_dispatcher() {
-        // Placeholder — updated in Plan 86-03.
-        // The prefix router in handle_bridge_request_inner covers all BRIDGE_METHODS
-        // namespaces; full verification deferred to Plan 86-03.
+        // Domain files contain explicit match arms for their namespaces.
+        // mod.rs is intentionally excluded — scanning it would pick up quoted
+        // strings from comments and docstrings in the test block itself.
+        let domain_source = concat!(
+            include_str!("metrics.rs"),
+            include_str!("sleep.rs"),
+            include_str!("capture.rs"),
+            include_str!("activity.rs"),
+            include_str!("debug.rs"),
+        );
+
+        // Methods handled inline in mod.rs via equality guards rather than
+        // delegated match arms in a domain file. Update this list when
+        // handle_bridge_request_inner gains a new inline equality guard.
+        let inline_methods: std::collections::HashSet<&str> = [
+            "core.version",
+            "core.list_methods",
+            "openwhoop.reference_report",
+            "battery.parse_event48_payload",
+            "battery.parse_cmd26_response",
+        ]
+        .into_iter()
+        .collect();
+
+        // Scan domain files for match arm lines.
+        //
+        // Pattern A (single-line):   "namespace.method" =>
+        //   trimmed starts with `"`, content after first closing `"` is `=>` or `|`
+        //
+        // Pattern A2 (multi-line first token):
+        //   "namespace.method"
+        //   | "alias" =>
+        //   trimmed starts with `"`, and the rest after the closing `"` is empty
+        //   (the `|` / `=>` is on the next line).
+        //
+        // Only strings containing `.` are collected (namespace.method pattern).
+        let mut found_methods: std::collections::HashSet<&str> = Default::default();
+        for line in domain_source.lines() {
+            let trimmed = line.trim_start();
+            if !trimmed.starts_with('"') {
+                continue;
+            }
+            let after_first_quote = &trimmed[1..];
+            let close = match after_first_quote.find('"') {
+                Some(i) => i,
+                None => continue,
+            };
+            let method = &after_first_quote[..close];
+            if !method.contains('.') {
+                continue;
+            }
+            let rest = after_first_quote[close + 1..].trim();
+            if rest.starts_with("=>") || rest.starts_with('|') || rest.is_empty() {
+                found_methods.insert(method);
+            }
+        }
+
+        // Merge domain-scanned methods with the inline-mod.rs set.
+        let found_methods: std::collections::HashSet<&str> =
+            found_methods.union(&inline_methods).copied().collect();
+
+        // Every BRIDGE_METHODS entry must have a dispatch arm and vice-versa.
+        let bridge_methods: std::collections::HashSet<&str> =
+            BRIDGE_METHODS.iter().copied().collect();
+
+        let mut missing_arms: Vec<&&str> = bridge_methods
+            .difference(&found_methods)
+            .collect();
+        missing_arms.sort();
+
+        let mut extra_arms: Vec<&&str> = found_methods
+            .difference(&bridge_methods)
+            .collect();
+        extra_arms.sort();
+
+        assert!(
+            missing_arms.is_empty(),
+            "Methods in BRIDGE_METHODS with no dispatch arm: {missing_arms:?}"
+        );
+        assert!(
+            extra_arms.is_empty(),
+            "Dispatch arms not in BRIDGE_METHODS: {extra_arms:?}"
+        );
     }
 
     /// Belt-and-braces: `BRIDGE_METHODS` is documented as sorted; verify it.
