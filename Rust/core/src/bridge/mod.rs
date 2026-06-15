@@ -998,14 +998,20 @@ mod tests {
         let result = response.result.expect("result payload");
         assert_eq!(result["schema"], BRIDGE_METHODS_LIST_SCHEMA);
         assert_eq!(
-            result["count"].as_u64().expect("result.count must be a u64 integer") as usize,
+            result["count"]
+                .as_u64()
+                .expect("result.count must be a u64 integer") as usize,
             BRIDGE_METHODS.len()
         );
         let methods: Vec<String> = result["methods"]
             .as_array()
             .expect("result.methods must be a JSON array")
             .iter()
-            .map(|v| v.as_str().expect("each method entry must be a JSON string").to_string())
+            .map(|v| {
+                v.as_str()
+                    .expect("each method entry must be a JSON string")
+                    .to_string()
+            })
             .collect();
         let expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
         assert_eq!(methods, expected);
@@ -1030,7 +1036,7 @@ mod tests {
         let mut p = vec![0u8; len.max(7)];
         p[0] = 36; // COMMAND_RESPONSE
         p[2] = 26; // GET_BATTERY_LEVEL
-        p[4] = 1;  // SUCCESS
+        p[4] = 1; // SUCCESS
         p[5] = (raw_battery & 0xFF) as u8;
         p[6] = (raw_battery >> 8) as u8;
         p.truncate(len);
@@ -1099,7 +1105,9 @@ mod tests {
         let payload_hex = hex::encode(&raw_payload);
         let args = ParseEvent48BatteryArgs { payload_hex };
         let result = parse_event48_battery_bridge(args).expect("bridge should succeed");
-        let battery_pct = result["battery_pct"].as_u64().expect("battery_pct must be present");
+        let battery_pct = result["battery_pct"]
+            .as_u64()
+            .expect("battery_pct must be present");
         assert_eq!(battery_pct, 85);
     }
 }
