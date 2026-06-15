@@ -4,13 +4,13 @@ milestone: v12.0
 milestone_name: milestone
 status: verifying
 stopped_at: Phase 86 planned — 6 plans verified, ready for execute
-last_updated: "2026-06-14T23:35:13.092Z"
+last_updated: "2026-06-15T00:57:52.031Z"
 last_activity: 2026-06-14 -- Phase 85 execution started
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 21
-  completed_plans: 15
+  completed_plans: 17
   percent: 33
 ---
 
@@ -125,7 +125,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-14T23:35:13.082Z
+Last session: 2026-06-15T00:57:52.025Z
 Stopped at: Phase 86 planned — 6 plans verified, ready for execute
 Resume file: .planning/phases/86-bridge-rs-split-protocol-comments/86-01-PLAN.md
 Next action: Run /gsd-verify-work 85 after resolving export_tests sensor_sample_rows pre-existing failures; then proceed to Phase 86 (bridge.rs split)

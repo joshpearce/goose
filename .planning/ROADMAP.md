@@ -254,11 +254,11 @@ Plans:
 
 **Wave 1**
 
-- [ ] 86-01-PLAN.md — Create bridge/ skeleton: mod.rs router shell + 5 domain stubs, delete bridge.rs (Wave 1)
+- [x] 86-01-PLAN.md — Create bridge/ skeleton: mod.rs router shell + 5 domain stubs, delete bridge.rs (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 86-02-PLAN.md — Fill bridge/metrics.rs, bridge/sleep.rs, bridge/capture.rs with domain arms (Wave 2, parallel)
+- [x] 86-02-PLAN.md — Fill bridge/metrics.rs, bridge/sleep.rs, bridge/capture.rs with domain arms (Wave 2, parallel)
 - [ ] 86-03-PLAN.md — Fill bridge/activity.rs, bridge/debug.rs with domain arms + validation.* aliases (Wave 2, parallel)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -540,7 +540,7 @@ Plans:
 | 83 | 6/6 | Complete   | 2026-06-14 |
 | 84 | 3/3 | Complete   | 2026-06-14 |
 | 85 | 6/6 | Complete   | 2026-06-14 |
-| 86 | v12.0 | Not started | — |
+| 86 | 2/6 | In Progress|  |
 | 87 | v12.0 | Not started | — |
 | 88 | v12.0 | Not started | — |
 | 89 | v12.0 | Not started | — |
@@ -582,7 +582,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 6/6 plans complete
+**Plans:** 2/6 plans executed
 Plans:
 **Wave 1**
 

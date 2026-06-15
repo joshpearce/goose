@@ -19,7 +19,7 @@
 
 ### Architecture — Rust (SEED-004 Fase A+B)
 
-- [ ] **ARCH-01**: bridge.rs 509-arm `match` dispatcher → `BridgeRouter` trait + handlers split into domain files (`bridge/metrics.rs`, `bridge/sleep.rs`, `bridge/capture.rs`, `bridge/activity.rs`, `bridge/debug.rs`); bridge.rs reduced to ~100 lines of routing
+- [x] **ARCH-01**: bridge.rs 509-arm `match` dispatcher → `BridgeRouter` trait + handlers split into domain files (`bridge/metrics.rs`, `bridge/sleep.rs`, `bridge/capture.rs`, `bridge/activity.rs`, `bridge/debug.rs`); bridge.rs reduced to ~100 lines of routing
 - [ ] **ARCH-02**: store.rs 140 public methods → domain stores sharing `Arc<Connection>` (`SleepStore`, `CaptureStore`, `MetricsStore`, `ActivityStore`) in `store/` subdirectory; runtime schema version validation on SQLite open
 - [x] **ARCH-03**: 133 `.unwrap()` calls in production code (bridge.rs 71, store.rs 62) → `Result<_, GooseError>`; `#[cfg_attr(not(test), deny(clippy::unwrap_used))]` added; `catch_unwind` safety net on bridge dispatcher entry point
 
@@ -65,7 +65,7 @@
 | PROTO-01 | Phase 83 | Complete |
 | PROTO-02 | Phase 83 | Complete |
 | PROTO-03 | Phase 83 | Complete |
-| ARCH-01 | Phase 86 | Pending |
+| ARCH-01 | Phase 86 | Complete |
 | ARCH-02 | Phase 87 | Pending |
 | ARCH-03 | Phase 85 | Complete |
 | ARCH-04 | Phase 88 | Pending |
