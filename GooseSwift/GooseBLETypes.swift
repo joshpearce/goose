@@ -236,7 +236,7 @@ enum WhoopGeneration: CustomStringConvertible {
   var helloFrame: Data {
     switch self {
     case .gen5: return GooseHello.clientHelloFrame
-    case .gen4: return buildCommandFrame(sequence: 0x23, command: 145, data: [])
+    case .gen4: return buildCommandFrame(sequence: 0x23, command: 145, data: [0x01])
     }
   }
 
