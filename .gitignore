@@ -32,5 +32,5 @@ server/**/__pycache__/
 server/**/*.pyc
 server/**/*.pyo
 
-# Private reverse-engineering notes
-RE-REFERENCE.md
+# Local protocol research notes — not for version control
+re-assets/
