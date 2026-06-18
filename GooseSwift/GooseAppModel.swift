@@ -5,49 +5,12 @@ import UIKit
 
 @MainActor @Observable
 final class GooseAppModel {
-  var onboardingComplete = false
   var rustStatus = "Rust bridge not checked"
   var helloSummary = "Client hello not prepared"
-  var packetImportRevision = 0
-  var packetImportStatus = "No packet import"
-  var activityPersistenceStatus = "No activity stored"
-  var homeActivityTimelineItems: [ActivityTimelineItem] = []
-  var homeActivityTimelineStatus = "Activity timeline not loaded"
-  var activityDetectionStatus = "Watching for movement packets"
-  var movementPacketValidationStatus = "Not run"
-  var movementPacketValidationIsRunning = false
-  var heartRateHourlyRanges: [HeartRateHourlyRange] = []
-  var heartRateStorageStatus = "No HR samples stored"
-  var healthPacketCaptureSessionID: String?
-  var healthPacketCaptureStatus = "No health packet capture"
-  var healthPacketCaptureStartedAt: Date?
-  var healthPacketCaptureFrameCount = 0
-  var healthPacketCaptureTargetSummary = "No health packet capture"
-  var healthPacketCaptureLastPacketSummary = "No packets captured"
-  var healthPacketCaptureFamilyRows: [HealthPacketCaptureFamily] = []
-  var respiratoryPacketWatchActive = false
-  var respiratoryPacketWatchStatus = "Not watching K18 respiratory history"
-  var serverReachable: Bool? = nil
-  private(set) var isNetworkReachable: Bool = true
-  private(set) var hrSpikeCount: Int = 0
-  var liveWorkoutStrain: Double = 0
-  var scheduledAlarmTime: Date? = nil    // HAP-03
-  var alarmIsArmed: Bool = false         // HAP-03
-  var apnsDeviceToken: String? = nil
-  var uploadErrorState: String? = nil
-  var hasPendingUploadAfterReconnect: Bool = false
-  var lastUploadAt: Date? = nil
-  var pendingBatchCount: Int = 0
-  var lastSyncedCount: Int? = nil
-  var syncPendingRowCount: Int = 0
-  var serverImportInProgress: Bool = false
-  var serverImportLastFrameCount: Int? = nil
-  var connectionTestRunning: Bool = false
-  var connectionTestResult: String? = nil
-  // SYNC-04: owned by the @MainActor GooseAppModel; only read and written on the main actor.
-  // Set from connect/disconnect handling in GooseAppModel+Lifecycle.swift.
-  // BLE-thread code must not touch this property directly.
-  var connectedDeviceGeneration: String? = nil
+
+  let bleState = BLEState()
+  let syncState = SyncState()
+  let healthState = HealthState()
 
   let healthStore: HealthDataStore
 
@@ -114,9 +77,6 @@ final class GooseAppModel {
   var autoStartRespiratoryPacketWatchAttempt = 0
   var passiveActivityCaptureWorkItem: DispatchWorkItem?
   var healthPacketCaptureFamilyRowsByID: [String: HealthPacketCaptureFamily] = [:]
-  // Stored property so @Observable tracks changes and SwiftUI views invalidate correctly.
-  // Kept in sync with GooseBLEBondingManager via the onBondingStateChange callback in init().
-  var bondingState: GooseBLEBondingState = .notStarted
   var lastParsedFrameSummary: String { packetMonitor.lastParsedFrameSummary }
   var movementPacketStatus: String { packetMonitor.movementPacketStatus }
   var latestWhoopEventStatus: String { packetMonitor.latestWhoopEventStatus }
@@ -318,7 +278,7 @@ final class GooseAppModel {
         guard let self, self.activeActivityPersistence != nil else { return }
         await self.strainAccumulator.ingest(bpm: bpm, date: capturedAt)
         if let load = await self.strainAccumulator.pollIfReady(now: capturedAt) {
-          Task { @MainActor [weak self] in self?.liveWorkoutStrain = load }
+          Task { @MainActor [weak self] in self?.bleState.liveWorkoutStrain = load }
         }
       }
     }
@@ -331,7 +291,7 @@ final class GooseAppModel {
       )
     }
     ble.onHRSpike = { [weak self] _, _ in
-      Task { @MainActor in self?.hrSpikeCount += 1 }
+      Task { @MainActor in self?.bleState.incrementHRSpikeCount() }
     }
     // Override the default onBondingStateChange set in GooseBLEClient.init() so we can
     // (a) keep driving connectionState via updateConnectionState, and
@@ -340,7 +300,7 @@ final class GooseAppModel {
     ble.bondingManager.onBondingStateChange = { [weak self] newState in
       guard let self else { return }
       self.ble.updateConnectionState(newState.connectionStateString)
-      self.bondingState = newState
+      self.bleState.bondingState = newState
     }
     ble.onConnectionStateChange = { [weak self] state in
       Task { @MainActor in
@@ -362,7 +322,7 @@ final class GooseAppModel {
     configureUploadService()
     networkMonitor.onReachabilityChange = { [weak self] reachable in
       Task { @MainActor in
-        self?.isNetworkReachable = reachable
+        self?.syncState.applyNetworkReachability(reachable)
         self?.handleReachabilityChange(reachable)
       }
     }
