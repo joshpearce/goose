@@ -11,22 +11,22 @@ extension GooseAppModel {
   func configureUploadService() {
     uploadService.onStatusUpdate = { [weak self] status in
       // Called on @MainActor via Task { @MainActor in ... } in GooseUploadService
-      self?.lastUploadAt = status.lastUploadTimestamp
-      self?.pendingBatchCount = status.pendingBatchCount
-      self?.lastSyncedCount = status.lastSyncedCount
-      self?.syncPendingRowCount = status.pendingRowCount
-      self?.uploadErrorState = status.uploadErrorState
+      self?.syncState.lastUploadAt = status.lastUploadTimestamp
+      self?.syncState.pendingBatchCount = status.pendingBatchCount
+      self?.syncState.lastSyncedCount = status.lastSyncedCount
+      self?.syncState.syncPendingRowCount = status.pendingRowCount
+      self?.syncState.uploadErrorState = status.uploadErrorState
     }
   }
 
   // Called by GooseAppDelegate when APNs registration succeeds.
   // Stores the device token, logs it, and triggers a deferred upload if network is available.
   func setAPNSDeviceToken(_ token: String?) {
-    apnsDeviceToken = token
+    syncState.apnsDeviceToken = token
     ble.record(source: "app.apns", title: "token.registered")
-    if isNetworkReachable, hasPendingUploadAfterReconnect {
-      hasPendingUploadAfterReconnect = false
-      uploadErrorState = nil
+    if syncState.isNetworkReachable, syncState.hasPendingUploadAfterReconnect {
+      syncState.hasPendingUploadAfterReconnect = false
+      syncState.uploadErrorState = nil
       triggerManualUpload()
     }
   }
@@ -39,16 +39,16 @@ extension GooseAppModel {
   }
 
   func triggerBackfillAndUpload() {
-    guard apnsDeviceToken != nil else {
+    guard syncState.apnsDeviceToken != nil else {
       ble.record(level: .warn, source: "upload.gate", title: "skip.no_apns_token")
       return
     }
-    guard isNetworkReachable else {
-      hasPendingUploadAfterReconnect = true
+    guard syncState.isNetworkReachable else {
+      syncState.hasPendingUploadAfterReconnect = true
       ble.record(level: .info, source: "upload.gate", title: "skip.offline")
       return
     }
-    let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-7 * 24 * 3600)
+    let sinceTimestamp = syncState.lastUploadAt ?? Date().addingTimeInterval(-7 * 24 * 3600)
     if let whoopID = ble.activeDeviceIdentifier {
       let whoopType = ble.connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
       uploadService.triggerBackfill(deviceID: whoopID, deviceType: whoopType, sinceTimestamp: sinceTimestamp)
@@ -56,16 +56,16 @@ extension GooseAppModel {
   }
 
   func triggerManualUpload() {
-    guard apnsDeviceToken != nil else {
+    guard syncState.apnsDeviceToken != nil else {
       ble.record(level: .warn, source: "upload.gate", title: "skip.no_apns_token")
       return
     }
-    guard isNetworkReachable else {
-      hasPendingUploadAfterReconnect = true
+    guard syncState.isNetworkReachable else {
+      syncState.hasPendingUploadAfterReconnect = true
       ble.record(level: .info, source: "upload.gate", title: "skip.offline")
       return
     }
-    let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-24 * 3600)
+    let sinceTimestamp = syncState.lastUploadAt ?? Date().addingTimeInterval(-24 * 3600)
 
     if let whoopID = ble.activeDeviceIdentifier {
       let whoopType = ble.connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
@@ -90,17 +90,17 @@ extension GooseAppModel {
   // Resets lastUploadAt so the next upload falls back to the default lookback window.
   func clearAllUploadWatermarks() {
     GooseUploadWatermark.clearAllWatermarks()
-    lastUploadAt = nil
+    syncState.lastUploadAt = nil
   }
 
   func triggerUpload(for result: CaptureFrameWriteResult, deviceEvent: GooseNotificationEvent) {
     guard result.pass, result.errorDescription == nil else { return }
-    guard apnsDeviceToken != nil else {
+    guard syncState.apnsDeviceToken != nil else {
       ble.record(level: .warn, source: "upload.gate", title: "skip.no_apns_token")
       return
     }
-    guard isNetworkReachable else {
-      hasPendingUploadAfterReconnect = true
+    guard syncState.isNetworkReachable else {
+      syncState.hasPendingUploadAfterReconnect = true
       ble.record(level: .info, source: "upload.gate", title: "skip.offline")
       return
     }
@@ -128,13 +128,13 @@ extension GooseAppModel {
   //
   // Safe on a fresh install — capture.import_frame_batch is idempotent.
   func importHistoricalDataFromServer() {
-    guard !serverImportInProgress else { return }
+    guard !syncState.serverImportInProgress else { return }
     let serverURLString = UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL) ?? ""
     guard !serverURLString.isEmpty, let baseURL = URL(string: serverURLString) else { return }
     guard let token = (try? RemoteServerKeychain.loadToken()) ?? nil, !token.isEmpty else { return }
     let db = HealthDataStore.defaultDatabasePath()
     let bridge = GooseRustBridge()
-    serverImportInProgress = true
+    syncState.serverImportInProgress = true
 
     Task.detached(priority: .utility) { [weak self] in
       guard let self else { return }
@@ -147,13 +147,13 @@ extension GooseAppModel {
             (devResp as? HTTPURLResponse)?.statusCode == 200,
             let devJson = try? JSONSerialization.jsonObject(with: devData) as? [[String: Any]]
       else {
-        await MainActor.run { [weak self] in self?.serverImportInProgress = false }
+        await MainActor.run { [weak self] in self?.syncState.serverImportInProgress = false }
         return
       }
 
       let deviceIDs = devJson.compactMap { $0["device_id"] as? String }
       guard !deviceIDs.isEmpty else {
-        await MainActor.run { [weak self] in self?.serverImportInProgress = false }
+        await MainActor.run { [weak self] in self?.syncState.serverImportInProgress = false }
         return
       }
 
@@ -261,8 +261,8 @@ extension GooseAppModel {
 
       let frames = totalFrames
       await MainActor.run { [weak self] in
-        self?.serverImportInProgress = false
-        self?.serverImportLastFrameCount = frames
+        self?.syncState.serverImportInProgress = false
+        self?.syncState.serverImportLastFrameCount = frames
         self?.ble.record(
           level: .debug,
           source: "import.server",
@@ -285,18 +285,18 @@ extension GooseAppModel {
   // Manual connection test — hits /healthz then /v1/devices (auth-gated).
   // Reports inline result via connectionTestResult.
   func testServerConnection() {
-    guard !connectionTestRunning else { return }
+    guard !syncState.connectionTestRunning else { return }
     let serverURLString = UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL) ?? ""
     guard !serverURLString.isEmpty, let baseURL = URL(string: serverURLString) else {
-      connectionTestResult = "No server URL configured."
+      syncState.connectionTestResult = "No server URL configured."
       return
     }
     guard let token = (try? RemoteServerKeychain.loadToken()) ?? nil, !token.isEmpty else {
-      connectionTestResult = "No API token configured."
+      syncState.connectionTestResult = "No API token configured."
       return
     }
-    connectionTestRunning = true
-    connectionTestResult = nil
+    syncState.connectionTestRunning = true
+    syncState.connectionTestResult = nil
     Task.detached(priority: .utility) { [weak self] in
       guard let self else { return }
       // Step 1: /healthz
@@ -305,8 +305,8 @@ extension GooseAppModel {
       guard let (_, healthzResp) = try? await URLSession.shared.data(for: healthzReq),
             (healthzResp as? HTTPURLResponse)?.statusCode == 200 else {
         await MainActor.run { [weak self] in
-          self?.connectionTestRunning = false
-          self?.connectionTestResult = "❌ Server unreachable"
+          self?.syncState.connectionTestRunning = false
+          self?.syncState.connectionTestResult = "❌ Server unreachable"
         }
         return
       }
@@ -329,9 +329,9 @@ extension GooseAppModel {
         result = "⚠️ Server reachable · Auth check failed"
       }
       await MainActor.run { [weak self] in
-        self?.connectionTestRunning = false
-        self?.connectionTestResult = result
-        self?.serverReachable = result.hasPrefix("✅") || result.hasPrefix("⚠️")
+        self?.syncState.connectionTestRunning = false
+        self?.syncState.connectionTestResult = result
+        self?.syncState.serverReachable = result.hasPrefix("✅") || result.hasPrefix("⚠️")
       }
     }
   }
@@ -342,7 +342,7 @@ extension GooseAppModel {
     let serverURLString = UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL) ?? ""
     guard !serverURLString.isEmpty else { return }
     GooseAppModel._didRunHealthCheck = true
-    Task { @MainActor in self.serverReachable = nil }
+    Task { @MainActor in self.syncState.serverReachable = nil }
     runHealthCheck(serverURLString: serverURLString)
   }
 
@@ -361,7 +361,7 @@ extension GooseAppModel {
     DispatchQueue.global(qos: .utility).async { [weak self] in
       guard let self else { return }
       guard let url = URL(string: serverURLString + "/healthz") else {
-        Task { @MainActor in self.serverReachable = false }
+        Task { @MainActor in self.syncState.serverReachable = false }
         return
       }
       var request = URLRequest(url: url)
@@ -383,7 +383,7 @@ extension GooseAppModel {
         self?.ble.record(level: .debug, source: "upload.health", title: logTitle, body: logBody)
       }
 
-      Task { @MainActor in self.serverReachable = isReachable }
+      Task { @MainActor in self.syncState.serverReachable = isReachable }
     }
   }
 }

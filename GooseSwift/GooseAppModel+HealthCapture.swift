@@ -51,15 +51,15 @@ extension GooseAppModel {
         }
         switch result {
         case .success(let refresh):
-          self.homeActivityTimelineItems = refresh.items
-          self.homeActivityTimelineStatus = refresh.status
+          self.healthState.homeActivityTimelineItems = refresh.items
+          self.healthState.homeActivityTimelineStatus = refresh.status
           self.ble.record(
             source: "activity.timeline",
             title: "home.refresh.ok",
             body: "\(refresh.status) | \(Self.captureTimestampFormatter.string(from: dayStart))-\(Self.captureTimestampFormatter.string(from: dayEnd))"
           )
         case .failure(let error):
-          self.homeActivityTimelineStatus = "Activity timeline failed"
+          self.healthState.homeActivityTimelineStatus = "Activity timeline failed"
           self.ble.record(level: .warn, source: "activity.timeline", title: "home.refresh.failed", body: String(describing: error))
         }
       }
