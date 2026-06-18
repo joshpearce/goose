@@ -3,7 +3,6 @@ import SwiftUI
 struct AppShellView: View {
   @EnvironmentObject private var router: AppRouter
   @Environment(GooseAppModel.self) private var model
-  @State private var healthStore = HealthDataStore()
   @State private var homeHealthPath: [HealthRoute] = []
   @State private var homeSelectedDate = Date()
 
@@ -16,18 +15,6 @@ struct AppShellView: View {
         }
         .tag(tab)
       }
-    }
-    .onAppear {
-      model.healthStore = healthStore
-      model.onHistoricalSyncCompleted = {
-        Task {
-          await healthStore.runPacketInputs()
-        }
-      }
-    }
-    .onDisappear {
-      model.healthStore = nil
-      model.onHistoricalSyncCompleted = nil
     }
   }
 
@@ -49,7 +36,7 @@ struct AppShellView: View {
       NavigationStack(path: $homeHealthPath) {
         tabContent(for: tab)
           .navigationDestination(for: HealthRoute.self) { route in
-            HealthRouteDestinationView(route: route, store: healthStore, selectedDate: $homeSelectedDate)
+            HealthRouteDestinationView(route: route, store: model.healthStore, selectedDate: $homeSelectedDate)
           }
       }
     } else if tab == .health {
@@ -72,16 +59,16 @@ struct AppShellView: View {
     switch tab {
     case .home:
       HomeDashboardView(
-        healthStore: healthStore,
+        healthStore: model.healthStore,
         selectedDate: $homeSelectedDate,
         openHealthRoute: openHomeHealthRoute
       )
     case .health:
-      HealthView(store: healthStore)
+      HealthView(store: model.healthStore)
     case .coach:
-      CoachView(healthStore: healthStore)
+      CoachView(healthStore: model.healthStore)
     case .more:
-      MoreView(healthStore: healthStore)
+      MoreView(healthStore: model.healthStore)
     }
   }
 
