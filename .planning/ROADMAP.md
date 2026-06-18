@@ -579,7 +579,11 @@ Plans:
   2. `metric_features.rs` carries comments for Banister eTRIMP (1.92/1.67 coefficients), EWMA alpha (0.0483 = 14-night half-life), and Cole-Kripke scale (0.001), each with bibliographic reference
   3. The iOS build and `cargo test --locked` pass clean; no source changes beyond comment additions
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 91-01-PLAN.md — Swift threading invariant comments (COMM-02): GooseRustBridge, CaptureFrameWriteQueue, OvernightSQLiteMirrorQueue, GooseAppModel
+- [ ] 91-02-PLAN.md — Rust algorithm coefficient comments (COMM-03): Banister eTRIMP, EWMA alpha, Cole-Kripke scale
 
 ## Progress
 
