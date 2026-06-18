@@ -244,7 +244,7 @@ enum WhoopGeneration: CustomStringConvertible {
   func buildCommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
     switch self {
     case .gen5:
-      return GooseBLEClient.buildV5CommandFrame(sequence: sequence, command: command, data: data)
+      return CoreBluetoothBLETransport.buildV5CommandFrame(sequence: sequence, command: command, data: data)
     case .gen4:
       return Self.buildGen4CommandFrame(sequence: sequence, command: command, data: data)
     }
@@ -260,14 +260,14 @@ enum WhoopGeneration: CustomStringConvertible {
   /// 65-byte args field (not a multiple of 4), proving no padding is applied.
   /// Our unpadded frames also round-trip cleanly with the strap.
   private static func buildGen4CommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
-    var payload: [UInt8] = [GooseBLEClient.V5PacketType.command, sequence, command]
+    var payload: [UInt8] = [CoreBluetoothBLETransport.V5PacketType.command, sequence, command]
     payload.append(contentsOf: data)
     let totalLen = payload.count + 4
     let lenBytes: [UInt8] = [UInt8(totalLen & 0xff), UInt8((totalLen >> 8) & 0xff)]
     let headerCRC = crc8(lenBytes)
     var frame: [UInt8] = [0xaa, lenBytes[0], lenBytes[1], headerCRC]
     frame.append(contentsOf: payload)
-    let payloadCRC = GooseBLEClient.crc32(payload)
+    let payloadCRC = CoreBluetoothBLETransport.crc32(payload)
     frame.append(contentsOf: [
       UInt8(payloadCRC & 0xff),
       UInt8((payloadCRC >> 8) & 0xff),

@@ -58,7 +58,7 @@ struct RootView: View {
 }
 
 private struct SyncToastHost: View {
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
 
   var body: some View {
     @Bindable var ble = ble

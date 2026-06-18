@@ -2,7 +2,7 @@ import CoreBluetooth
 import Foundation
 import OSLog
 
-extension GooseBLEClient: CBPeripheralDelegate {
+extension CoreBluetoothBLETransport: CBPeripheralDelegate {
   func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
     if dispatchCoreBluetoothDelegateToMainIfNeeded({ [weak self] in
       self?.peripheral(peripheral, didDiscoverServices: error)

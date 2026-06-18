@@ -196,7 +196,7 @@ struct OnboardingPermissionStep: View {
 }
 
 struct OnboardingConnectStep: View {
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
@@ -348,7 +348,7 @@ struct OnboardingStandardActionBar: View {
 }
 
 struct OnboardingConnectActionBar: View {
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
   let onBack: () -> Void
   let readyTitle: String
   let onComplete: () -> Void

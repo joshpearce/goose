@@ -51,7 +51,7 @@ final class GooseAppModel {
 
   let healthStore: HealthDataStore
 
-  let ble: GooseBLEClient
+  let ble: CoreBluetoothBLETransport
   let packetMonitor = PacketMonitorModel()
   let activitySession = ActivitySessionModel()
   let activityLocationTracker = ActivityLocationTracker()
@@ -254,7 +254,7 @@ final class GooseAppModel {
 
   init(startBLE: Bool = true) {
     healthStore = HealthDataStore()
-    ble = GooseBLEClient(startCentral: startBLE)
+    ble = CoreBluetoothBLETransport(startCentral: startBLE)
     whoopDataSignalPipeline = WhoopDataSignalPipeline(
       ble: ble,
       packetUIStateAggregator: packetUIStateAggregator,

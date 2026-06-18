@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func nextDebugSequence() -> UInt8 {
     let sequence = nextDebugCommandSequence
     nextDebugCommandSequence = nextDebugCommandSequence == 159 ? 120 : nextDebugCommandSequence + 1

@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func ensureCentral() {
     if central == nil {
       record(source: "ble", title: "central.create")

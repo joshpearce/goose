@@ -6,7 +6,7 @@ import UIKit
 struct FitnessSummaryView: View {
   let activity: ActivityKind
   @ObservedObject var session: ActivitySessionModel
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
   @ObservedObject var locationTracker: ActivityLocationTracker
   let onDone: () -> Void
   @AppStorage(OnboardingStorage.unitSystem) private var unitSystemRaw = MoreProfileUnitSystem.imperial.rawValue

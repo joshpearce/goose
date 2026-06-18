@@ -610,7 +610,7 @@ extension GooseAppModel {
 
   nonisolated static func recordSkippedParsedFrameMainHandling(
     _ result: ParsedNotificationFrameResult,
-    ble: GooseBLEClient,
+    ble: any BLETransport,
     packetUIStateAggregator: PacketUIStateAggregator
   ) {
     let event = result.event

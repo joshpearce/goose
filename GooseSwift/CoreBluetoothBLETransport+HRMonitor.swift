@@ -9,7 +9,7 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
   var hrPeripheral: CBPeripheral?
   var hrConnectionState: String = "disconnected"
   var connectedDeviceName: String?
-  weak var owner: GooseBLEClient?
+  weak var owner: CoreBluetoothBLETransport?
 
   // Reconnect backoff state — all mutations must run on callbackQueue (the BLE queue).
   var reconnectBackoff = ReconnectBackoff()
@@ -258,7 +258,7 @@ final class GooseBLEHRMonitorManager: NSObject, CBCentralManagerDelegate, CBPeri
 }
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func startHRMonitorScan() {
     hrMonitorManager.owner = self
     hrMonitorManager.start(queue: coreBluetoothQueue)

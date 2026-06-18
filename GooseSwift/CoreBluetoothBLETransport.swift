@@ -4,7 +4,7 @@ import Observation
 import OSLog
 
 
-@Observable final class GooseBLEClient: NSObject, @unchecked Sendable {
+@Observable final class CoreBluetoothBLETransport: NSObject, BLETransport, @unchecked Sendable {
   var bluetoothState = "not requested"
   var connectionState = "disconnected"
   var isScanning = false
@@ -112,10 +112,10 @@ import OSLog
   let coreBluetoothQueue = DispatchQueue(label: "com.goose.swift.corebluetooth", qos: .utility)
   let realtimeVitalsQueue = DispatchQueue(label: "com.goose.swift.realtime-vitals", qos: .userInitiated)
   let diagnosticLogQueue = DispatchQueue(label: "com.goose.swift.diagnostic-log", qos: .utility)
-  let bleUIStateAggregator = BLEUIStateAggregator(publishInterval: GooseBLEClient.bleUIStatePublishInterval)
+  let bleUIStateAggregator = BLEUIStateAggregator(publishInterval: CoreBluetoothBLETransport.bleUIStatePublishInterval)
   let messageStore = GooseMessageStore(
-    maximumMessages: GooseBLEClient.maximumDisplayedMessages,
-    flushInterval: GooseBLEClient.displayedMessageFlushInterval
+    maximumMessages: CoreBluetoothBLETransport.maximumDisplayedMessages,
+    flushInterval: CoreBluetoothBLETransport.displayedMessageFlushInterval
   )
   let hrMonitorManager = GooseBLEHRMonitorManager()
   let bondingManager = GooseBLEBondingManager()
@@ -207,18 +207,18 @@ import OSLog
       return nil
     }
     guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble.log setup failed: Application Support directory unavailable")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble.log setup failed: Application Support directory unavailable")
       return nil
     }
     let gooseDirectory = directory.appendingPathComponent("GooseSwift", isDirectory: true)
     let url = gooseDirectory.appendingPathComponent("goose-ble.log")
     do {
-      try GooseBLEClient.prepareDiagnosticLogDirectory(gooseDirectory)
+      try CoreBluetoothBLETransport.prepareDiagnosticLogDirectory(gooseDirectory)
       if FileManager.default.fileExists(atPath: url.path) {
         try FileManager.default.removeItem(at: url)
       }
     } catch {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble.log setup failed: \(String(describing: error))")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble.log setup failed: \(String(describing: error))")
       return nil
     }
     return url
@@ -231,31 +231,31 @@ import OSLog
       return nil
     }
     guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble-live.log mirror setup failed: Documents directory unavailable")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble-live.log mirror setup failed: Documents directory unavailable")
       return nil
     }
     let gooseDirectory = directory.appendingPathComponent("GooseSwift", isDirectory: true)
     let url = gooseDirectory.appendingPathComponent("goose-ble-live.log")
     do {
-      try GooseBLEClient.prepareDiagnosticLogFile(at: url, directory: gooseDirectory)
+      try CoreBluetoothBLETransport.prepareDiagnosticLogFile(at: url, directory: gooseDirectory)
     } catch {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble-live.log mirror setup failed: \(String(describing: error))")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble-live.log mirror setup failed: \(String(describing: error))")
       return nil
     }
     return url
   }()
   let overnightSideChannelLogURL: URL? = {
     guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble-live.log setup failed: Documents directory unavailable")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble-live.log setup failed: Documents directory unavailable")
       return nil
     }
     let gooseDirectory = directory.appendingPathComponent("GooseSwift", isDirectory: true)
     let url = gooseDirectory.appendingPathComponent("goose-ble-live.log")
     do {
-      try GooseBLEClient.prepareDiagnosticLogFile(at: url, directory: gooseDirectory)
+      try CoreBluetoothBLETransport.prepareDiagnosticLogFile(at: url, directory: gooseDirectory)
       return url
     } catch {
-      GooseBLEClient.recordDiagnosticLogSetupWarning("goose-ble-live.log setup failed: \(String(describing: error))")
+      CoreBluetoothBLETransport.recordDiagnosticLogSetupWarning("goose-ble-live.log setup failed: \(String(describing: error))")
       return nil
     }
   }()
@@ -517,10 +517,10 @@ import OSLog
       case .get:
         return []
       case .set(let date):
-        let timestamp = GooseBLEClient.clockTimestampParts(for: date)
+        let timestamp = CoreBluetoothBLETransport.clockTimestampParts(for: date)
         var bytes: [UInt8] = []
-        GooseBLEClient.appendUInt32LE(timestamp.seconds, to: &bytes)
-        GooseBLEClient.appendUInt32LE(timestamp.subseconds, to: &bytes)
+        CoreBluetoothBLETransport.appendUInt32LE(timestamp.seconds, to: &bytes)
+        CoreBluetoothBLETransport.appendUInt32LE(timestamp.subseconds, to: &bytes)
         return bytes
       }
     }
@@ -657,7 +657,7 @@ import OSLog
       if bytes.count < 8 {
         bytes.append(contentsOf: repeatElement(UInt8(0), count: 8 - bytes.count))
       }
-      GooseBLEClient.appendUInt16LE(loopControl, to: &bytes)
+      CoreBluetoothBLETransport.appendUInt16LE(loopControl, to: &bytes)
       bytes.append(overallLoop)
       bytes.append(durationSeconds)
       return bytes
@@ -720,9 +720,9 @@ import OSLog
         return [4, alarmID]
       case .set(let alarmID, let date, let pattern):
         var bytes: [UInt8] = [4, alarmID]
-        let timestamp = GooseBLEClient.alarmTimestampParts(for: date)
-        GooseBLEClient.appendUInt32LE(timestamp.seconds, to: &bytes)
-        GooseBLEClient.appendUInt16LE(timestamp.subseconds, to: &bytes)
+        let timestamp = CoreBluetoothBLETransport.alarmTimestampParts(for: date)
+        CoreBluetoothBLETransport.appendUInt32LE(timestamp.seconds, to: &bytes)
+        CoreBluetoothBLETransport.appendUInt16LE(timestamp.subseconds, to: &bytes)
         bytes.append(contentsOf: pattern.payloadBytes)
         return bytes
       case .run(let alarmID):

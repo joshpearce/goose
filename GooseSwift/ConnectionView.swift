@@ -12,7 +12,7 @@ struct ConnectionView: View {
 private struct ConnectionContentView: View {
   @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var messageStore: GooseMessageStore
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
 
   var body: some View {
     List {

@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func beginHistoricalSync(
     trigger: String,
     automatic: Bool,

@@ -18,7 +18,7 @@ final class GooseBLEHistoricalManager {
 
   // MARK: - Pending command and frames
 
-  var pendingHistoricalCommand: GooseBLEClient.PendingHistoricalCommand?
+  var pendingHistoricalCommand: CoreBluetoothBLETransport.PendingHistoricalCommand?
   var pendingHistoricalFrames: [(hex: String, capturedAt: String)] = []
 
   // MARK: - Packet tracking
@@ -29,7 +29,7 @@ final class GooseBLEHistoricalManager {
   var historicalRangePendingResponses = 0
   var historicalRangeRetryCount = 0
   var historicalTransferRequestAttemptCount = 0
-  var historicalRangePageState: GooseBLEClient.HistoricalRangePageState?
+  var historicalRangePageState: CoreBluetoothBLETransport.HistoricalRangePageState?
 
   // MARK: - Ack and metadata flags
 

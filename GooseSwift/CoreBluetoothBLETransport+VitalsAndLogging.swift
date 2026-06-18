@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func recordLiveHeartRate(_ bpm: Int, source: String, at date: Date = Date()) {
     guard GooseHRSanitizer.sanitize(bpm) != nil else {
       record(level: .warn, source: source, title: "heart_rate.spike_rejected", body: "\(bpm) bpm outside \(GooseHRSanitizer.minValidBPM)-\(GooseHRSanitizer.maxValidBPM)")

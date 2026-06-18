@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func buzz(loops: Int) {
     guard let activePeripheral, let commandCharacteristic else {
       record(source: "ble.haptic", title: "buzz.blocked", body: "no active peripheral or characteristic")

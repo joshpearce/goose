@@ -5,7 +5,7 @@ import UIKit
 
 struct SleepDataBridgeSection: View {
   @Environment(HealthDataStore.self) private var healthStore
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -88,7 +88,7 @@ enum SleepAlarmConfirmation: Identifiable {
 }
 
 struct SleepAlarmBridgeSection: View {
-  var ble: GooseBLEClient
+  var ble: CoreBluetoothBLETransport
   @State private var alarmTime = defaultWakeTime()
   @State private var pendingConfirmation: SleepAlarmConfirmation?
   private let alarmID = 1
@@ -205,7 +205,7 @@ struct SleepAlarmBridgeSection: View {
       return .live("WHOOP alarm event")
     }
     if ble.canWriteAlarm {
-      return .live("GooseBLEClient alarm write")
+      return .live("(CoreBluetoothBLETransport) alarm write")
     }
     return .unavailable(ble.alarmWriteSupportSummary)
   }

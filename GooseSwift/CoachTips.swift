@@ -112,7 +112,7 @@ enum CoachTipFactory {
     }
   }
 
-  static func sleepTip(healthStore: HealthDataStore, ble: GooseBLEClient) -> CoachInlineTip {
+  static func sleepTip(healthStore: HealthDataStore, ble: (CoreBluetoothBLETransport)) -> CoachInlineTip {
     let snapshot = healthStore.snapshot(for: .sleep)
     let schedule = healthStore.sleepV1ScheduleSummary()
     let debt = healthStore.sleepV1DebtSummary()

@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 
-extension GooseBLEClient {
+extension CoreBluetoothBLETransport {
   func handleHistoricalSyncValue(_ value: Data, characteristic: CBCharacteristic) {
     guard isHistoricalSyncing else {
       return
@@ -42,8 +42,8 @@ extension GooseBLEClient {
       // async notification pipeline that causes jetsam kills on long syncs (WHOOP pattern:
       // createWhoopStatusPacketEntityWithData → immediate CoreData write per packet).
       let hex = frame.map { String(format: "%02x", $0) }.joined()
-      let capturedAtISO = GooseBLEClient.diagnosticLogFormatterLock.withLock {
-        GooseBLEClient.diagnosticLogFormatter.string(from: Date())
+      let capturedAtISO = CoreBluetoothBLETransport.diagnosticLogFormatterLock.withLock {
+        CoreBluetoothBLETransport.diagnosticLogFormatter.string(from: Date())
       }
       historicalManager.pendingHistoricalFrames.append((hex: hex, capturedAt: capturedAtISO))
       historicalManager.lastHandledWasHistoricalDataPacket = true

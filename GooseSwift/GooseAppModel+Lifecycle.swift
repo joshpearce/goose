@@ -125,11 +125,11 @@ extension GooseAppModel {
       if let uuid = ble.connectedPeripheralUUID {
         captureFrameWriteQueue.currentDeviceUUID = uuid
         let deviceModel = ble.activeDeviceName
-        var map = UserDefaults.standard.data(forKey: GooseBLEClient.DefaultsKey.deviceUUIDMap)
+        var map = UserDefaults.standard.data(forKey: CoreBluetoothBLETransport.DefaultsKey.deviceUUIDMap)
           .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: String] } ?? [:]
         map[uuid] = deviceModel
         if let data = try? JSONSerialization.data(withJSONObject: map) {
-          UserDefaults.standard.set(data, forKey: GooseBLEClient.DefaultsKey.deviceUUIDMap)
+          UserDefaults.standard.set(data, forKey: CoreBluetoothBLETransport.DefaultsKey.deviceUUIDMap)
         }
       }
     } else {

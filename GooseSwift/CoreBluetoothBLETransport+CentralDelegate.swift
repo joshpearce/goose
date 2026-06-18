@@ -2,7 +2,7 @@ import CoreBluetooth
 import Foundation
 import OSLog
 
-extension GooseBLEClient: CBCentralManagerDelegate {
+extension CoreBluetoothBLETransport: CBCentralManagerDelegate {
   func centralManager(
     _ central: CBCentralManager,
     willRestoreState dict: [String: Any]
