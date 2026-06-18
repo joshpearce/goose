@@ -336,7 +336,11 @@ Plans:
   3. `DeviceCatalog` struct centralises all Gen4/Gen5 branching — no `if capabilities.historicalSync == .pageSequence` guards scattered across extension files
   4. The iOS build compiles without new warnings; existing BLE session behaviour is unchanged from the user's perspective
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
+- [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
+- [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
 
 ---
 
@@ -534,7 +538,11 @@ Plans:
   3. `DeviceCatalog` struct centralises all Gen4/Gen5 branching — no `if capabilities.historicalSync == .pageSequence` guards scattered across extension files
   4. The iOS build compiles without new warnings; existing BLE session behaviour is unchanged from the user's perspective
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
+- [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
+- [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
 
 ### Phase 90: Domain ViewModels
 
