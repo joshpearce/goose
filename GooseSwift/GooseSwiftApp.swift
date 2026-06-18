@@ -36,6 +36,9 @@ struct GooseSwiftApp: App {
     WindowGroup {
       RootView()
         .environment(model)
+        .environment(model.bleState)
+        .environment(model.syncState)
+        .environment(model.healthState)
         .environmentObject(model.packetMonitor)
         .environmentObject(model.ble.messageStore)
         .environmentObject(router)
