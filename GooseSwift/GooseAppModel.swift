@@ -283,7 +283,7 @@ final class GooseAppModel {
         guard let self, self.activeActivityPersistence != nil else { return }
         await self.strainAccumulator.ingest(bpm: bpm, date: capturedAt)
         if let load = await self.strainAccumulator.pollIfReady(now: capturedAt) {
-          Task { @MainActor [weak self] in self?.liveWorkoutStrain = load }
+          Task { @MainActor [weak self] in self?.bleState.liveWorkoutStrain = load }
         }
       }
     }
@@ -296,7 +296,7 @@ final class GooseAppModel {
       )
     }
     ble.onHRSpike = { [weak self] _, _ in
-      Task { @MainActor in self?.hrSpikeCount += 1 }
+      Task { @MainActor in self?.bleState.incrementHRSpikeCount() }
     }
     // Override the default onBondingStateChange set in GooseBLEClient.init() so we can
     // (a) keep driving connectionState via updateConnectionState, and
@@ -305,7 +305,7 @@ final class GooseAppModel {
     ble.bondingManager.onBondingStateChange = { [weak self] newState in
       guard let self else { return }
       self.ble.updateConnectionState(newState.connectionStateString)
-      self.bondingState = newState
+      self.bleState.bondingState = newState
     }
     ble.onConnectionStateChange = { [weak self] state in
       Task { @MainActor in
@@ -327,7 +327,7 @@ final class GooseAppModel {
     configureUploadService()
     networkMonitor.onReachabilityChange = { [weak self] reachable in
       Task { @MainActor in
-        self?.isNetworkReachable = reachable
+        self?.syncState.applyNetworkReachability(reachable)
         self?.handleReachabilityChange(reachable)
       }
     }
