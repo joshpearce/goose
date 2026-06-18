@@ -316,7 +316,10 @@ Plans:
   2. `AppShellView` no longer declares `@StateObject private var healthStore`; it receives the store via `.environmentObject(model.healthStore)` injected from `GooseSwiftApp`
   3. Weak back-references from HealthDataStore to GooseAppModel and all circular closures are eliminated; the iOS build compiles without new warnings
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
+- [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
 **UI hint**: yes
 
 ---
@@ -513,7 +516,10 @@ Plans:
   2. `AppShellView` no longer declares `@StateObject private var healthStore`; it receives the store via `.environmentObject(model.healthStore)` injected from `GooseSwiftApp`
   3. Weak back-references from HealthDataStore to GooseAppModel and all circular closures are eliminated; the iOS build compiles without new warnings
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
+- [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
 **UI hint**: yes
 
 ### Phase 89: BLE Actor Refactor
