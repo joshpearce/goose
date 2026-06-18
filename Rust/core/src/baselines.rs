@@ -14,6 +14,9 @@ use crate::{GooseResult, store::GooseStore};
 
 /// EWMA alpha (14-night half-life constant: 1 - 0.5^(1/14) ≈ 0.0483).
 /// ALG-ALIGN-01: aligned with my-whoop EWMA_ALPHA = 0.0483.
+// ALGO: α = 1 - 0.5^(1/n) for n=14 nights; Morton et al. "Modelling Training and Overtraining."
+// J Sports Sci 1990; Coggan A. "Training and Racing with a Power Meter." 2003.
+// Imported and used by ewma_baseline_update in store/metrics.rs.
 pub const ALPHA: f64 = 0.0483;
 
 /// Minimum nights before z-score is non-None (cold-start guard).
