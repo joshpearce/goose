@@ -355,7 +355,12 @@ Plans:
   2. High-frequency BLE HR updates (1 Hz) no longer trigger redraws in views that only observe `SyncState` or `HealthState`
   3. The iOS build compiles without new warnings; all existing UI screens remain functional
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
+- [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
+- [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
+- [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
 **UI hint**: yes
 
 ---
@@ -555,7 +560,12 @@ Plans:
   2. High-frequency BLE HR updates (1 Hz) no longer trigger redraws in views that only observe `SyncState` or `HealthState`
   3. The iOS build compiles without new warnings; all existing UI screens remain functional
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
+- [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
+- [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
+- [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
 **UI hint**: yes
 
 ### Phase 91: Threading & Algorithm Comments
