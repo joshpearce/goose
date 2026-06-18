@@ -97,7 +97,8 @@ final class CoachChatModel {
   func send(
     _ prompt: String,
     healthStore: HealthDataStore,
-    appModel: GooseAppModel
+    appModel: GooseAppModel,
+    healthState: HealthState
   ) {
     let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedPrompt.isEmpty, !streamState.isStreaming else { return }
@@ -108,9 +109,9 @@ final class CoachChatModel {
 
     // Bind tool context for ChatGPT provider (Pitfall 4 — tool calls stay internal)
     if let chatGPT = provider as? ChatGPTCoachProvider {
-      chatGPT.toolContextProvider = { [weak healthStore, weak appModel] in
-        guard let healthStore, let appModel else { return [:] }
-        return CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel)
+      chatGPT.toolContextProvider = { [weak healthStore, weak appModel, weak healthState] in
+        guard let healthStore, let appModel, let healthState else { return [:] }
+        return CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState)
       }
     }
 
@@ -121,7 +122,7 @@ final class CoachChatModel {
     errorMessage = nil
     persistConversation()
 
-    let systemPrompt = buildSystemPrompt(healthStore: healthStore, appModel: appModel)
+    let systemPrompt = buildSystemPrompt(healthStore: healthStore, appModel: appModel, healthState: healthState)
     let currentMessages = messages.filter { !($0.id == assistantID) }
     let preset = activePreset
 
@@ -156,8 +157,8 @@ final class CoachChatModel {
     }
   }
 
-  private func buildSystemPrompt(healthStore: HealthDataStore, appModel: GooseAppModel) -> String {
-    let context = CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel)
+  private func buildSystemPrompt(healthStore: HealthDataStore, appModel: GooseAppModel, healthState: HealthState) -> String {
+    let context = CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState)
     guard JSONSerialization.isValidJSONObject(context),
           let data = try? JSONSerialization.data(withJSONObject: context, options: [.sortedKeys]),
           let json = String(data: data, encoding: .utf8) else {
