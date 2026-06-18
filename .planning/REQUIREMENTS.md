@@ -25,15 +25,15 @@
 
 ### Architecture — Swift (SEED-004 Fase C)
 
-- [ ] **ARCH-04**: `HealthDataStore` owned by `GooseAppModel` (strong reference); `AppShellView` no longer creates `@StateObject private var healthStore`; `GooseSwiftApp` injects via `.environmentObject(model.healthStore)`; weak back-reference and circular closures eliminated
-- [ ] **ARCH-05**: `GooseBLEClient` refactored to `BLETransport` protocol + `BLESessionCoordinator` actor + `DeviceCatalog` struct; all Gen4/Gen5 branching centralised in `DeviceCatalog`; `CoreBluetoothBLETransport` concrete implementation
-- [ ] **ARCH-06**: `GooseAppModel` split into domain `@Observable` objects (`BLEState`, `SyncState`, `HealthState`); SwiftUI views observe only the relevant domain object; high-frequency BLE updates (HR at 1Hz) no longer invalidate unrelated views
+- [x] **ARCH-04**: `HealthDataStore` owned by `GooseAppModel` (strong reference); `AppShellView` no longer creates `@StateObject private var healthStore`; `GooseSwiftApp` injects via `.environmentObject(model.healthStore)`; weak back-reference and circular closures eliminated
+- [x] **ARCH-05**: `GooseBLEClient` refactored to `BLETransport` protocol + `BLESessionCoordinator` actor + `DeviceCatalog` struct; all Gen4/Gen5 branching centralised in `DeviceCatalog`; `CoreBluetoothBLETransport` concrete implementation
+- [x] **ARCH-06**: `GooseAppModel` split into domain `@Observable` objects (`BLEState`, `SyncState`, `HealthState`); SwiftUI views observe only the relevant domain object; high-frequency BLE updates (HR at 1Hz) no longer invalidate unrelated views
 
 ### Code Comments (SEED-005)
 
 - [x] **COMM-01**: Protocol offset comments added at each WHOOP wire-format decode site in `protocol.rs` and `bridge.rs` — Event-48 battery layout (offsets 17/21/26), cmd 26 response, R22 battery_pct field; includes empirical verification date and source reference
-- [ ] **COMM-02**: Threading invariant comments added at `GooseRustBridge` usage sites and frame reassembly buffer — explains synchronous FFI, multiple-instance pattern, `@MainActor` dispatch requirement, `NSLock` guards
-- [ ] **COMM-03**: Algorithm coefficient comments added in `metric_features.rs` for Banister eTRIMP (1.92/1.67 gender coefficients), EWMA alpha (0.0483 = 14-night half-life), Cole-Kripke scale (0.001); includes bibliographic references
+- [x] **COMM-02**: Threading invariant comments added at `GooseRustBridge` usage sites and frame reassembly buffer — explains synchronous FFI, multiple-instance pattern, `@MainActor` dispatch requirement, `NSLock` guards
+- [x] **COMM-03**: Algorithm coefficient comments added in `metric_features.rs` for Banister eTRIMP (1.92/1.67 gender coefficients), EWMA alpha (0.0483 = 14-night half-life), Cole-Kripke scale (0.001); includes bibliographic references
 
 ## v2 Requirements
 
@@ -68,12 +68,12 @@
 | ARCH-01 | Phase 86 | Complete |
 | ARCH-02 | Phase 87 | Complete |
 | ARCH-03 | Phase 85 | Complete |
-| ARCH-04 | Phase 88 | Pending |
-| ARCH-05 | Phase 89 | Pending |
-| ARCH-06 | Phase 90 | Pending |
+| ARCH-04 | Phase 88 | Complete |
+| ARCH-05 | Phase 89 | Complete |
+| ARCH-06 | Phase 90 | Complete |
 | COMM-01 | Phase 86 | Complete |
-| COMM-02 | Phase 91 | Pending |
-| COMM-03 | Phase 91 | Pending |
+| COMM-02 | Phase 91 | Complete |
+| COMM-03 | Phase 91 | Complete |
 
 **Coverage:**
 
