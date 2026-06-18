@@ -1,38 +1,30 @@
-use rusqlite::{OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde_json::Value;
 
-use crate::{GooseError, GooseResult};
 use super::{
-    GooseStore,
-    DailyActivityMetricInput, DailyActivityMetricRow,
-    HourlyActivityMetricInput, HourlyActivityMetricRow,
-    DailyRecoveryMetricInput, DailyRecoveryMetricRow,
-    MetricProvenanceInput, MetricProvenanceRow,
-    MetricDebugFeatureInput, MetricDebugFeatureRow,
     AlgorithmDefinitionRecord, AlgorithmPreferenceRecord, AlgorithmRunRecord,
-    MetricValueRecord, MetricComponentRecord,
-    CalibrationRunRecord, CalibrationRunTimes, CalibrationLabelInput, CalibrationLabelRow,
-    CommandValidationRecord, GravityRow,
-    V24BiometricBatch, V24BiometricWindow, Spo2SampleRow, SkinTempSampleRow, RespSampleRow,
-    SigQualitySampleRow,
-    finite_json_number, metric_output_unit,
-    validate_required, validate_non_negative, validate_window_order, validate_json,
-    validate_json_object, validate_command_report_json, bool_to_i64,
-    is_allowed_calibration_label_source,
-    validate_daily_activity_metric_input, validate_hourly_activity_metric_input,
-    validate_daily_recovery_metric_input,
-    validate_metric_provenance_input, validate_metric_debug_feature_input,
-    daily_activity_metric_from_row, hourly_activity_metric_from_row,
-    daily_recovery_metric_from_row, metric_provenance_from_row, metric_debug_feature_from_row,
-    algorithm_preference_from_row, command_validation_record_from_row, calibration_label_from_row,
+    CalibrationLabelInput, CalibrationLabelRow, CalibrationRunRecord, CalibrationRunTimes,
+    CommandValidationRecord, DailyActivityMetricInput, DailyActivityMetricRow,
+    DailyRecoveryMetricInput, DailyRecoveryMetricRow, GooseStore, GravityRow,
+    HourlyActivityMetricInput, HourlyActivityMetricRow, MetricComponentRecord,
+    MetricDebugFeatureInput, MetricDebugFeatureRow, MetricProvenanceInput, MetricProvenanceRow,
+    MetricValueRecord, RespSampleRow, SigQualitySampleRow, SkinTempSampleRow, Spo2SampleRow,
+    V24BiometricBatch, V24BiometricWindow, algorithm_preference_from_row, bool_to_i64,
+    calibration_label_from_row, command_validation_record_from_row, daily_activity_metric_from_row,
+    daily_recovery_metric_from_row, finite_json_number, hourly_activity_metric_from_row,
+    is_allowed_calibration_label_source, metric_debug_feature_from_row, metric_output_unit,
+    metric_provenance_from_row, validate_command_report_json, validate_daily_activity_metric_input,
+    validate_daily_recovery_metric_input, validate_hourly_activity_metric_input, validate_json,
+    validate_json_object, validate_metric_debug_feature_input, validate_metric_provenance_input,
+    validate_non_negative, validate_required, validate_window_order,
 };
+use crate::{GooseError, GooseResult};
 
 impl GooseStore {
     pub fn insert_daily_activity_metric(
         &self,
         input: DailyActivityMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_daily_activity_metric_input(&input)?;
         if let Some(existing) = self.daily_activity_metric(input.daily_metric_id)? {
             let same = existing.date_key == input.date_key
@@ -58,6 +50,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             INSERT INTO daily_activity_metrics (
@@ -103,7 +99,10 @@ impl GooseStore {
         &self,
         input: DailyActivityMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_daily_activity_metric_input(&input)?;
         let changed = conn.execute(
             r#"
@@ -180,11 +179,13 @@ impl GooseStore {
         &self,
         daily_metric_id: &str,
     ) -> GooseResult<Option<DailyActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("daily_metric_id", daily_metric_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     daily_metric_id,
                     date_key,
@@ -206,11 +207,11 @@ impl GooseStore {
                 FROM daily_activity_metrics
                 WHERE daily_metric_id = ?1
                 "#,
-                params![daily_metric_id],
-                daily_activity_metric_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![daily_metric_id],
+            daily_activity_metric_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn daily_activity_metrics_between(
@@ -218,7 +219,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<DailyActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -260,7 +264,6 @@ impl GooseStore {
         &self,
         input: HourlyActivityMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_hourly_activity_metric_input(&input)?;
         if let Some(existing) = self.hourly_activity_metric(input.hourly_metric_id)? {
             let same = existing.date_key == input.date_key
@@ -286,6 +289,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             INSERT INTO hourly_activity_metrics (
@@ -331,7 +338,10 @@ impl GooseStore {
         &self,
         input: HourlyActivityMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_hourly_activity_metric_input(&input)?;
         let changed = conn.execute(
             r#"
@@ -408,11 +418,13 @@ impl GooseStore {
         &self,
         hourly_metric_id: &str,
     ) -> GooseResult<Option<HourlyActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("hourly_metric_id", hourly_metric_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     hourly_metric_id,
                     date_key,
@@ -434,11 +446,11 @@ impl GooseStore {
                 FROM hourly_activity_metrics
                 WHERE hourly_metric_id = ?1
                 "#,
-                params![hourly_metric_id],
-                hourly_activity_metric_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![hourly_metric_id],
+            hourly_activity_metric_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn hourly_activity_metrics_between(
@@ -446,7 +458,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<HourlyActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -488,9 +503,13 @@ impl GooseStore {
         &self,
         input: DailyRecoveryMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_daily_recovery_metric_input(&input)?;
-        if let Some(existing) = self.daily_recovery_metric(input.daily_metric_id)? {
+        if let Some(existing) = Self::daily_recovery_metric_with_conn(&conn, input.daily_metric_id)?
+        {
             let same = existing.date_key == input.date_key
                 && existing.timezone == input.timezone
                 && existing.start_time_unix_ms == input.start_time_unix_ms
@@ -559,7 +578,10 @@ impl GooseStore {
         &self,
         input: DailyRecoveryMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_daily_recovery_metric_input(&input)?;
         let changed = conn.execute(
             r#"
@@ -632,15 +654,12 @@ impl GooseStore {
         Ok(changed > 0)
     }
 
-    pub fn daily_recovery_metric(
-        &self,
+    fn daily_recovery_metric_with_conn(
+        conn: &Connection,
         daily_metric_id: &str,
     ) -> GooseResult<Option<DailyRecoveryMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        validate_required("daily_metric_id", daily_metric_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     daily_metric_id,
                     date_key,
@@ -662,11 +681,50 @@ impl GooseStore {
                 FROM daily_recovery_metrics
                 WHERE daily_metric_id = ?1
                 "#,
-                params![daily_metric_id],
-                daily_recovery_metric_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![daily_metric_id],
+            daily_recovery_metric_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
+    }
+
+    pub fn daily_recovery_metric(
+        &self,
+        daily_metric_id: &str,
+    ) -> GooseResult<Option<DailyRecoveryMetricRow>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        validate_required("daily_metric_id", daily_metric_id)?;
+        conn.query_row(
+            r#"
+                SELECT
+                    daily_metric_id,
+                    date_key,
+                    timezone,
+                    start_time_unix_ms,
+                    end_time_unix_ms,
+                    resting_hr_bpm,
+                    hrv_rmssd_ms,
+                    respiratory_rate_rpm,
+                    oxygen_saturation_percent,
+                    skin_temperature_delta_c,
+                    source_kind,
+                    confidence,
+                    inputs_json,
+                    quality_flags_json,
+                    provenance_json,
+                    created_at,
+                    updated_at
+                FROM daily_recovery_metrics
+                WHERE daily_metric_id = ?1
+                "#,
+            params![daily_metric_id],
+            daily_recovery_metric_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn daily_recovery_metrics_between(
@@ -674,7 +732,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<DailyRecoveryMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -717,7 +778,10 @@ impl GooseStore {
     /// Used by `baselines::EwmaBaseline::fold_history` to reconstruct EWMA state
     /// without requiring a new SQLite table (ALG-SLP-02).
     pub fn daily_recovery_metrics_all_ordered(&self) -> GooseResult<Vec<DailyRecoveryMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let mut statement = conn.prepare(
             r#"
             SELECT
@@ -768,7 +832,10 @@ impl GooseStore {
         hrv_rmssd: f64,
         rhr_bpm: f64,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("date_key", date_key)?;
         if !hrv_rmssd.is_finite() {
             return Err(GooseError::message(
@@ -783,7 +850,7 @@ impl GooseStore {
 
         // BEGIN EXCLUSIVE to prevent concurrent double-update on the same date (T-24-04).
         conn.execute_batch("BEGIN EXCLUSIVE TRANSACTION")?;
-        let result = self.ewma_baseline_update_inner(date_key, hrv_rmssd, rhr_bpm);
+        let result = Self::ewma_baseline_update_inner(&conn, date_key, hrv_rmssd, rhr_bpm);
         match result {
             Ok(wrote) => {
                 conn.execute_batch("COMMIT")?;
@@ -797,12 +864,11 @@ impl GooseStore {
     }
 
     fn ewma_baseline_update_inner(
-        &self,
+        conn: &rusqlite::Connection,
         date_key: &str,
         hrv_rmssd: f64,
         rhr_bpm: f64,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         // Check if an identical row already exists for this date_key (idempotency guard).
         let existing: Option<(Option<f64>, Option<f64>)> = conn
             .query_row(
@@ -882,7 +948,6 @@ impl GooseStore {
     }
 
     pub fn insert_metric_provenance(&self, input: MetricProvenanceInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_metric_provenance_input(self, &input)?;
         if let Some(existing) = self.metric_provenance(input.provenance_id)? {
             let same = existing.metric_scope == input.metric_scope
@@ -902,6 +967,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             INSERT INTO metric_provenance (
@@ -932,7 +1001,10 @@ impl GooseStore {
     }
 
     pub fn upsert_metric_provenance(&self, input: MetricProvenanceInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_metric_provenance_input(self, &input)?;
         let changed = conn.execute(
             r#"
@@ -984,11 +1056,13 @@ impl GooseStore {
         &self,
         provenance_id: &str,
     ) -> GooseResult<Option<MetricProvenanceRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("provenance_id", provenance_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     provenance_id,
                     metric_scope,
@@ -1003,11 +1077,11 @@ impl GooseStore {
                 FROM metric_provenance
                 WHERE provenance_id = ?1
                 "#,
-                params![provenance_id],
-                metric_provenance_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![provenance_id],
+            metric_provenance_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn metric_provenance_for_metric(
@@ -1015,7 +1089,10 @@ impl GooseStore {
         metric_scope: &str,
         metric_id: &str,
     ) -> GooseResult<Vec<MetricProvenanceRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("metric_scope", metric_scope)?;
         validate_required("metric_id", metric_id)?;
         let mut statement = conn.prepare(
@@ -1047,7 +1124,6 @@ impl GooseStore {
         &self,
         input: MetricDebugFeatureInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_metric_debug_feature_input(&input)?;
         if let Some(existing) = self.metric_debug_feature(input.feature_id)? {
             let same = existing.metric_family == input.metric_family
@@ -1069,6 +1145,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             INSERT INTO metric_debug_features (
@@ -1106,11 +1186,13 @@ impl GooseStore {
         &self,
         feature_id: &str,
     ) -> GooseResult<Option<MetricDebugFeatureRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("feature_id", feature_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     feature_id,
                     metric_family,
@@ -1127,11 +1209,11 @@ impl GooseStore {
                 FROM metric_debug_features
                 WHERE feature_id = ?1
                 "#,
-                params![feature_id],
-                metric_debug_feature_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![feature_id],
+            metric_debug_feature_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn metric_debug_features_between(
@@ -1140,7 +1222,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<MetricDebugFeatureRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("metric_family", metric_family)?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
@@ -1179,7 +1264,10 @@ impl GooseStore {
         &self,
         definition: &AlgorithmDefinitionRecord,
     ) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("algorithm_id", &definition.algorithm_id)?;
         validate_required("version", &definition.version)?;
         validate_required("metric_family", &definition.metric_family)?;
@@ -1247,10 +1335,12 @@ impl GooseStore {
         algorithm_id: &str,
         version: &str,
     ) -> GooseResult<Option<AlgorithmDefinitionRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row(
-                r#"
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row(
+            r#"
                 SELECT
                     algorithm_id,
                     version,
@@ -1267,33 +1357,32 @@ impl GooseStore {
                 FROM algorithm_definitions
                 WHERE algorithm_id = ?1 AND version = ?2
                 "#,
-                params![algorithm_id, version],
-                |row| {
-                    Ok(AlgorithmDefinitionRecord {
-                        algorithm_id: row.get(0)?,
-                        version: row.get(1)?,
-                        metric_family: row.get(2)?,
-                        display_name: row.get(3)?,
-                        implementation: row.get(4)?,
-                        license: row.get(5)?,
-                        input_schema: row.get(6)?,
-                        output_schema: row.get(7)?,
-                        input_requirements_json: row.get(8)?,
-                        params_json: row.get(9)?,
-                        quality_gates_json: row.get(10)?,
-                        status: row.get(11)?,
-                    })
-                },
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![algorithm_id, version],
+            |row| {
+                Ok(AlgorithmDefinitionRecord {
+                    algorithm_id: row.get(0)?,
+                    version: row.get(1)?,
+                    metric_family: row.get(2)?,
+                    display_name: row.get(3)?,
+                    implementation: row.get(4)?,
+                    license: row.get(5)?,
+                    input_schema: row.get(6)?,
+                    output_schema: row.get(7)?,
+                    input_requirements_json: row.get(8)?,
+                    params_json: row.get(9)?,
+                    quality_gates_json: row.get(10)?,
+                    status: row.get(11)?,
+                })
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn set_algorithm_preference(
         &self,
         preference: &AlgorithmPreferenceRecord,
     ) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("scope", &preference.scope)?;
         validate_required("metric_family", &preference.metric_family)?;
         validate_required("algorithm_id", &preference.algorithm_id)?;
@@ -1317,6 +1406,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO algorithm_preferences (
@@ -1345,36 +1438,41 @@ impl GooseStore {
         scope: &str,
         metric_family: &str,
     ) -> GooseResult<Option<AlgorithmPreferenceRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("scope", scope)?;
         validate_required("metric_family", metric_family)?;
 
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT scope, metric_family, algorithm_id, version
                 FROM algorithm_preferences
                 WHERE scope = ?1 AND metric_family = ?2
                 "#,
-                params![scope, metric_family],
-                |row| {
-                    Ok(AlgorithmPreferenceRecord {
-                        scope: row.get(0)?,
-                        metric_family: row.get(1)?,
-                        algorithm_id: row.get(2)?,
-                        version: row.get(3)?,
-                    })
-                },
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![scope, metric_family],
+            |row| {
+                Ok(AlgorithmPreferenceRecord {
+                    scope: row.get(0)?,
+                    metric_family: row.get(1)?,
+                    algorithm_id: row.get(2)?,
+                    version: row.get(3)?,
+                })
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn algorithm_preferences(
         &self,
         scope: Option<&str>,
     ) -> GooseResult<Vec<AlgorithmPreferenceRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if let Some(scope) = scope {
             validate_required("scope", scope)?;
             let mut statement = conn.prepare(
@@ -1404,7 +1502,6 @@ impl GooseStore {
     }
 
     pub fn insert_algorithm_run(&self, run: &AlgorithmRunRecord) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("run_id", &run.run_id)?;
         validate_required("algorithm_id", &run.algorithm_id)?;
         validate_required("version", &run.version)?;
@@ -1414,8 +1511,15 @@ impl GooseStore {
         validate_json("quality_flags_json", &run.quality_flags_json)?;
         validate_json("provenance_json", &run.provenance_json)?;
 
-        let changed = conn.execute(
-            r#"
+        // Scope conn so it's dropped before calling insert_metric_rows_for_algorithm_run
+        // (which acquires its own lock — holding conn here would deadlock).
+        let changed = {
+            let conn = self
+                .conn
+                .lock()
+                .map_err(|_| GooseError::message("store mutex poisoned"))?;
+            conn.execute(
+                r#"
             INSERT OR IGNORE INTO algorithm_runs (
                 run_id,
                 algorithm_id,
@@ -1427,17 +1531,18 @@ impl GooseStore {
                 provenance_json
             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
             "#,
-            params![
-                run.run_id,
-                run.algorithm_id,
-                run.version,
-                run.start_time,
-                run.end_time,
-                run.output_json,
-                run.quality_flags_json,
-                run.provenance_json,
-            ],
-        )?;
+                params![
+                    run.run_id,
+                    run.algorithm_id,
+                    run.version,
+                    run.start_time,
+                    run.end_time,
+                    run.output_json,
+                    run.quality_flags_json,
+                    run.provenance_json,
+                ],
+            )?
+        }; // conn dropped here — insert_metric_rows_for_algorithm_run acquires its own lock
         if changed > 0 {
             self.insert_metric_rows_for_algorithm_run(run)?;
         }
@@ -1445,7 +1550,6 @@ impl GooseStore {
     }
 
     fn insert_metric_rows_for_algorithm_run(&self, run: &AlgorithmRunRecord) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         let definition = self
             .algorithm_definition(&run.algorithm_id, &run.version)?
             .ok_or_else(|| {
@@ -1461,6 +1565,10 @@ impl GooseStore {
             return Ok(());
         };
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         for (name, value) in output_object {
             if name == "algorithm_id" || name == "algorithm_version" || name == "components" {
                 continue;
@@ -1540,10 +1648,12 @@ impl GooseStore {
     }
 
     pub fn algorithm_run(&self, run_id: &str) -> GooseResult<Option<AlgorithmRunRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row(
-                r#"
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row(
+            r#"
                 SELECT
                     run_id,
                     algorithm_id,
@@ -1556,22 +1666,22 @@ impl GooseStore {
                 FROM algorithm_runs
                 WHERE run_id = ?1
                 "#,
-                params![run_id],
-                |row| {
-                    Ok(AlgorithmRunRecord {
-                        run_id: row.get(0)?,
-                        algorithm_id: row.get(1)?,
-                        version: row.get(2)?,
-                        start_time: row.get(3)?,
-                        end_time: row.get(4)?,
-                        output_json: row.get(5)?,
-                        quality_flags_json: row.get(6)?,
-                        provenance_json: row.get(7)?,
-                    })
-                },
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![run_id],
+            |row| {
+                Ok(AlgorithmRunRecord {
+                    run_id: row.get(0)?,
+                    algorithm_id: row.get(1)?,
+                    version: row.get(2)?,
+                    start_time: row.get(3)?,
+                    end_time: row.get(4)?,
+                    output_json: row.get(5)?,
+                    quality_flags_json: row.get(6)?,
+                    provenance_json: row.get(7)?,
+                })
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn algorithm_runs_overlapping(
@@ -1579,7 +1689,10 @@ impl GooseStore {
         start: &str,
         end: &str,
     ) -> GooseResult<Vec<AlgorithmRunRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("start", start)?;
         validate_required("end", end)?;
 
@@ -1617,7 +1730,10 @@ impl GooseStore {
     }
 
     pub fn metric_values_for_run(&self, run_id: &str) -> GooseResult<Vec<MetricValueRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("run_id", run_id)?;
         let mut statement = conn.prepare(
             r#"
@@ -1655,7 +1771,10 @@ impl GooseStore {
         &self,
         run_id: &str,
     ) -> GooseResult<Vec<MetricComponentRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("run_id", run_id)?;
         let mut statement = conn.prepare(
             r#"
@@ -1686,7 +1805,10 @@ impl GooseStore {
     }
 
     pub fn insert_calibration_run(&self, run: &CalibrationRunRecord) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("calibration_run_id", &run.calibration_run_id)?;
         validate_required("algorithm_id", &run.algorithm_id)?;
         validate_required("version", &run.version)?;
@@ -1730,10 +1852,12 @@ impl GooseStore {
         &self,
         calibration_run_id: &str,
     ) -> GooseResult<Option<CalibrationRunRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row(
-                r#"
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row(
+            r#"
                 SELECT
                     calibration_run_id,
                     algorithm_id,
@@ -1747,25 +1871,25 @@ impl GooseStore {
                 FROM calibration_runs
                 WHERE calibration_run_id = ?1
                 "#,
-                params![calibration_run_id],
-                |row| {
-                    Ok(CalibrationRunRecord {
-                        calibration_run_id: row.get(0)?,
-                        algorithm_id: row.get(1)?,
-                        version: row.get(2)?,
-                        times: CalibrationRunTimes {
-                            train_start: row.get(3)?,
-                            train_end: row.get(4)?,
-                            holdout_start: row.get(5)?,
-                            holdout_end: row.get(6)?,
-                        },
-                        metrics_json: row.get(7)?,
-                        params_json: row.get(8)?,
-                    })
-                },
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![calibration_run_id],
+            |row| {
+                Ok(CalibrationRunRecord {
+                    calibration_run_id: row.get(0)?,
+                    algorithm_id: row.get(1)?,
+                    version: row.get(2)?,
+                    times: CalibrationRunTimes {
+                        train_start: row.get(3)?,
+                        train_end: row.get(4)?,
+                        holdout_start: row.get(5)?,
+                        holdout_end: row.get(6)?,
+                    },
+                    metrics_json: row.get(7)?,
+                    params_json: row.get(8)?,
+                })
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn calibration_runs_overlapping(
@@ -1773,7 +1897,10 @@ impl GooseStore {
         start: &str,
         end: &str,
     ) -> GooseResult<Vec<CalibrationRunRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("start", start)?;
         validate_required("end", end)?;
 
@@ -1815,7 +1942,6 @@ impl GooseStore {
     }
 
     pub fn insert_calibration_label(&self, input: CalibrationLabelInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("label_id", input.label_id)?;
         validate_required("metric_family", input.metric_family)?;
         validate_required("label_source", input.label_source)?;
@@ -1858,6 +1984,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO calibration_labels (
@@ -1884,11 +2014,13 @@ impl GooseStore {
     }
 
     pub fn calibration_label(&self, label_id: &str) -> GooseResult<Option<CalibrationLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("label_id", label_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     label_id,
                     metric_family,
@@ -1900,11 +2032,11 @@ impl GooseStore {
                 FROM calibration_labels
                 WHERE label_id = ?1
                 "#,
-                params![label_id],
-                calibration_label_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![label_id],
+            calibration_label_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn calibration_labels_between(
@@ -1912,7 +2044,10 @@ impl GooseStore {
         start: &str,
         end: &str,
     ) -> GooseResult<Vec<CalibrationLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("start", start)?;
         validate_required("end", end)?;
         let mut statement = conn.prepare(
@@ -1939,7 +2074,10 @@ impl GooseStore {
         &self,
         record: &CommandValidationRecord,
     ) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("command", &record.command)?;
         validate_required("risk_gate", &record.risk_gate)?;
         validate_command_report_json(record)?;
@@ -1971,24 +2109,29 @@ impl GooseStore {
         &self,
         command: &str,
     ) -> GooseResult<Option<CommandValidationRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("command", command)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT command, risk_gate, direct_send_ready, report_json
                 FROM command_validation_records
                 WHERE command = ?1
                 "#,
-                params![command],
-                command_validation_record_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![command],
+            command_validation_record_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn command_validation_records(&self) -> GooseResult<Vec<CommandValidationRecord>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let mut statement = conn.prepare(
             r#"
             SELECT command, risk_gate, direct_send_ready, report_json
@@ -2006,7 +2149,10 @@ impl GooseStore {
         device_id: &str,
         rows: &[(f64, f64, f64, f64)],
     ) -> GooseResult<usize> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if rows.is_empty() {
             return Ok(0);
@@ -2028,7 +2174,10 @@ impl GooseStore {
         ts_start: f64,
         ts_end: f64,
     ) -> GooseResult<Vec<GravityRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if ts_end < ts_start {
             return Err(GooseError::message(
@@ -2056,7 +2205,10 @@ impl GooseStore {
         device_id: &str,
         rows: &[(f64, f64, f64, f64)],
     ) -> GooseResult<usize> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if rows.is_empty() {
             return Ok(0);
@@ -2078,7 +2230,10 @@ impl GooseStore {
         ts_start: f64,
         ts_end: f64,
     ) -> GooseResult<Vec<GravityRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if ts_end < ts_start {
             return Err(GooseError::message(
@@ -2109,7 +2264,10 @@ impl GooseStore {
         ts_start: f64,
         ts_end: f64,
     ) -> GooseResult<Vec<RespSampleRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if ts_end < ts_start {
             return Err(GooseError::message(
@@ -2172,7 +2330,10 @@ impl GooseStore {
         ts_start: f64,
         ts_end: f64,
     ) -> GooseResult<V24BiometricWindow> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if ts_end < ts_start {
             return Err(GooseError::message("ts_end must be >= ts_start"));
@@ -2234,7 +2395,12 @@ impl GooseStore {
             })?
             .collect::<Result<Vec<_>, _>>()?
         };
-        Ok(V24BiometricWindow { spo2, skin_temp, resp, sig_quality })
+        Ok(V24BiometricWindow {
+            spo2,
+            skin_temp,
+            resp,
+            sig_quality,
+        })
     }
 
     pub fn insert_metric_series(
@@ -2244,7 +2410,10 @@ impl GooseStore {
         date: &str,
         value: f64,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let rows = conn.execute(
             "INSERT OR IGNORE INTO metric_series (source, metric_name, date, value)
              VALUES (?1, ?2, ?3, ?4)",
@@ -2260,7 +2429,10 @@ impl GooseStore {
         end_date: &str,
         source: Option<&str>,
     ) -> GooseResult<Vec<serde_json::Value>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let rows: Vec<serde_json::Value> = if let Some(src) = source {
             let mut stmt = conn.prepare(
                 "SELECT date, value FROM metric_series \

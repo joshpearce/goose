@@ -5,15 +5,14 @@ use rusqlite::{OptionalExtension, params, params_from_iter};
 use crate::{GooseError, GooseResult};
 
 use super::{
-    ActivityIntervalInput, ActivityIntervalRow, ActivityLabelInput, ActivityLabelRow,
-    ActivityMetricInput, ActivityMetricRow, ActivitySessionInput, ActivitySessionRow,
-    DebugCommandRow, DebugEventRow, DebugSessionRow, ExerciseSessionRow, GooseStore,
-    validate_allowed, validate_confidence, validate_json, validate_json_object, validate_non_negative,
-    validate_optional_required, validate_required, validate_window_order,
-    bool_to_i64,
     ALLOWED_ACTIVITY_DETECTION_METHODS, ALLOWED_ACTIVITY_INTERVAL_TYPES,
     ALLOWED_ACTIVITY_LABEL_TYPES, ALLOWED_ACTIVITY_METRIC_UNITS, ALLOWED_ACTIVITY_SYNC_STATUSES,
-    ALLOWED_ACTIVITY_TYPES,
+    ALLOWED_ACTIVITY_TYPES, ActivityIntervalInput, ActivityIntervalRow, ActivityLabelInput,
+    ActivityLabelRow, ActivityMetricInput, ActivityMetricRow, ActivitySessionInput,
+    ActivitySessionRow, DebugCommandRow, DebugEventRow, DebugSessionRow, ExerciseSessionRow,
+    GooseStore, bool_to_i64, validate_allowed, validate_confidence, validate_json,
+    validate_json_object, validate_non_negative, validate_optional_required, validate_required,
+    validate_window_order,
 };
 
 // --- Local validation helpers ---
@@ -68,8 +67,14 @@ fn validate_activity_session_input(input: &ActivitySessionInput<'_>) -> GooseRes
     validate_window_order(input.start_time_unix_ms, input.end_time_unix_ms)?;
     validate_required("activity_type", input.activity_type)?;
     validate_activity_type(input.activity_type)?;
-    validate_optional_required("external_activity_type_code", input.external_activity_type_code)?;
-    validate_optional_required("external_activity_type_name", input.external_activity_type_name)?;
+    validate_optional_required(
+        "external_activity_type_code",
+        input.external_activity_type_code,
+    )?;
+    validate_optional_required(
+        "external_activity_type_name",
+        input.external_activity_type_name,
+    )?;
     validate_optional_required("custom_label", input.custom_label)?;
     validate_confidence("confidence", input.confidence)?;
     validate_required("detection_method", input.detection_method)?;
@@ -266,7 +271,10 @@ impl GooseStore {
             )));
         }
 
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO activity_sessions (
@@ -331,7 +339,10 @@ impl GooseStore {
             return Ok(false);
         }
 
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             UPDATE activity_sessions
@@ -370,7 +381,10 @@ impl GooseStore {
     }
 
     pub fn delete_activity_session(&self, session_id: &str) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         let changed = conn.execute(
             "DELETE FROM activity_sessions WHERE session_id = ?1",
@@ -380,11 +394,13 @@ impl GooseStore {
     }
 
     pub fn activity_session(&self, session_id: &str) -> GooseResult<Option<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     session_id,
                     source,
@@ -404,11 +420,11 @@ impl GooseStore {
                 FROM activity_sessions
                 WHERE session_id = ?1
                 "#,
-                params![session_id],
-                activity_session_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![session_id],
+            activity_session_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn activity_sessions_between(
@@ -416,7 +432,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -456,7 +475,10 @@ impl GooseStore {
         &self,
         activity_type: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("activity_type", activity_type)?;
         validate_activity_type(activity_type)?;
         let mut statement = conn.prepare(
@@ -491,7 +513,10 @@ impl GooseStore {
         &self,
         source: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("source", source)?;
         let mut statement = conn.prepare(
             r#"
@@ -525,7 +550,10 @@ impl GooseStore {
         &self,
         sync_status: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("sync_status", sync_status)?;
         validate_sync_status(sync_status)?;
         let mut statement = conn.prepare(
@@ -560,7 +588,10 @@ impl GooseStore {
         &self,
         custom_label: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("custom_label", custom_label)?;
         let mut statement = conn.prepare(
             r#"
@@ -594,7 +625,10 @@ impl GooseStore {
         &self,
         external_activity_type_code: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("external_activity_type_code", external_activity_type_code)?;
         let mut statement = conn.prepare(
             r#"
@@ -631,7 +665,10 @@ impl GooseStore {
         &self,
         external_activity_type_name: &str,
     ) -> GooseResult<Vec<ActivitySessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("external_activity_type_name", external_activity_type_name)?;
         let mut statement = conn.prepare(
             r#"
@@ -712,9 +749,13 @@ impl GooseStore {
         &self,
         input: &ActivityMetricInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let changed = conn.execute(
-            r#"
+        let changed = {
+            let conn = self
+                .conn
+                .lock()
+                .map_err(|_| GooseError::message("store mutex poisoned"))?;
+            conn.execute(
+                r#"
             INSERT OR IGNORE INTO activity_metrics (
                 metric_id,
                 activity_session_id,
@@ -727,18 +768,19 @@ impl GooseStore {
                 provenance_json
             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
             "#,
-            params![
-                input.metric_id,
-                input.activity_session_id,
-                input.metric_name,
-                input.value,
-                input.unit,
-                input.start_time_unix_ms,
-                input.end_time_unix_ms,
-                input.quality_flags_json,
-                input.provenance_json,
-            ],
-        )?;
+                params![
+                    input.metric_id,
+                    input.activity_session_id,
+                    input.metric_name,
+                    input.value,
+                    input.unit,
+                    input.start_time_unix_ms,
+                    input.end_time_unix_ms,
+                    input.quality_flags_json,
+                    input.provenance_json,
+                ],
+            )?
+        };
         if changed > 0 {
             return Ok(true);
         }
@@ -768,11 +810,13 @@ impl GooseStore {
     }
 
     pub fn activity_metric(&self, metric_id: &str) -> GooseResult<Option<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("metric_id", metric_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     metric_id,
                     activity_session_id,
@@ -787,18 +831,21 @@ impl GooseStore {
                 FROM activity_metrics
                 WHERE metric_id = ?1
                 "#,
-                params![metric_id],
-                activity_metric_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![metric_id],
+            activity_metric_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn activity_metrics_for_session(
         &self,
         activity_session_id: &str,
     ) -> GooseResult<Vec<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("activity_session_id", activity_session_id)?;
         if self.activity_session(activity_session_id)?.is_none() {
             return Err(GooseError::message(format!(
@@ -833,7 +880,10 @@ impl GooseStore {
         &self,
         activity_session_ids: &[String],
     ) -> GooseResult<Vec<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if activity_session_ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -876,7 +926,10 @@ impl GooseStore {
         &self,
         metric_name: &str,
     ) -> GooseResult<Vec<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("metric_name", metric_name)?;
         let mut statement = conn.prepare(
             r#"
@@ -907,7 +960,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("activity_session_id", activity_session_id)?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
@@ -951,7 +1007,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<ActivityMetricRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -1009,7 +1068,10 @@ impl GooseStore {
             )));
         }
         let duration_ms = input.end_time_unix_ms - input.start_time_unix_ms;
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO activity_intervals (
@@ -1040,11 +1102,13 @@ impl GooseStore {
     }
 
     pub fn activity_interval(&self, interval_id: &str) -> GooseResult<Option<ActivityIntervalRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("interval_id", interval_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     interval_id,
                     activity_session_id,
@@ -1059,18 +1123,21 @@ impl GooseStore {
                 FROM activity_intervals
                 WHERE interval_id = ?1
                 "#,
-                params![interval_id],
-                activity_interval_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![interval_id],
+            activity_interval_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn activity_intervals_for_session(
         &self,
         activity_session_id: &str,
     ) -> GooseResult<Vec<ActivityIntervalRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("activity_session_id", activity_session_id)?;
         if self.activity_session(activity_session_id)?.is_none() {
             return Err(GooseError::message(format!(
@@ -1106,7 +1173,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<ActivityIntervalRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -1162,7 +1232,10 @@ impl GooseStore {
                 input.label_id
             )));
         }
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO activity_labels (
@@ -1189,11 +1262,13 @@ impl GooseStore {
     }
 
     pub fn activity_label(&self, label_id: &str) -> GooseResult<Option<ActivityLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("label_id", label_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     label_id,
                     activity_session_id,
@@ -1206,18 +1281,21 @@ impl GooseStore {
                 FROM activity_labels
                 WHERE label_id = ?1
                 "#,
-                params![label_id],
-                activity_label_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![label_id],
+            activity_label_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn activity_labels_for_session(
         &self,
         activity_session_id: &str,
     ) -> GooseResult<Vec<ActivityLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("activity_session_id", activity_session_id)?;
         if self.activity_session(activity_session_id)?.is_none() {
             return Err(GooseError::message(format!(
@@ -1247,7 +1325,10 @@ impl GooseStore {
     }
 
     pub fn activity_labels_by_type(&self, label_type: &str) -> GooseResult<Vec<ActivityLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("label_type", label_type)?;
         validate_activity_label_type(label_type)?;
         let mut statement = conn.prepare(
@@ -1274,7 +1355,6 @@ impl GooseStore {
     // ---- Debug sessions ----
 
     pub fn insert_debug_session(&self, session: &DebugSessionRow) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", &session.session_id)?;
         validate_required("bridge_url", &session.bridge_url)?;
         validate_required("bind_host", &session.bind_host)?;
@@ -1290,6 +1370,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO debug_sessions (
@@ -1318,11 +1402,13 @@ impl GooseStore {
     }
 
     pub fn debug_session(&self, session_id: &str) -> GooseResult<Option<DebugSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     session_id,
                     started_at_unix_ms,
@@ -1335,11 +1421,11 @@ impl GooseStore {
                 FROM debug_sessions
                 WHERE session_id = ?1
                 "#,
-                params![session_id],
-                debug_session_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![session_id],
+            debug_session_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn debug_sessions_between(
@@ -1347,7 +1433,10 @@ impl GooseStore {
         start_unix_ms: i64,
         end_unix_ms: i64,
     ) -> GooseResult<Vec<DebugSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_unix_ms", start_unix_ms)?;
         validate_positive("end_unix_ms", end_unix_ms)?;
         let mut statement = conn.prepare(
@@ -1375,7 +1464,6 @@ impl GooseStore {
     // ---- Debug commands ----
 
     pub fn insert_debug_command(&self, command: &DebugCommandRow) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("command_id", &command.command_id)?;
         validate_required("session_id", &command.session_id)?;
         validate_required("schema", &command.schema)?;
@@ -1393,6 +1481,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO debug_commands (
@@ -1419,11 +1511,13 @@ impl GooseStore {
     }
 
     pub fn debug_command(&self, command_id: &str) -> GooseResult<Option<DebugCommandRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("command_id", command_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     command_id,
                     session_id,
@@ -1435,18 +1529,21 @@ impl GooseStore {
                 FROM debug_commands
                 WHERE command_id = ?1
                 "#,
-                params![command_id],
-                debug_command_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![command_id],
+            debug_command_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn debug_commands_for_session(
         &self,
         session_id: &str,
     ) -> GooseResult<Vec<DebugCommandRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         let mut statement = conn.prepare(
             r#"
@@ -1473,7 +1570,10 @@ impl GooseStore {
         start_unix_ms: i64,
         end_unix_ms: i64,
     ) -> GooseResult<Vec<DebugCommandRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_unix_ms", start_unix_ms)?;
         validate_positive("end_unix_ms", end_unix_ms)?;
         let mut statement = conn.prepare(
@@ -1500,13 +1600,16 @@ impl GooseStore {
     // ---- Debug events ----
 
     pub fn next_debug_event_sequence(&self, session_id: &str) -> GooseResult<i64> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         if self.debug_session(session_id)?.is_none() {
             return Err(GooseError::message(format!(
                 "debug session {session_id} not found"
             )));
         }
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let max_sequence: Option<i64> = conn.query_row(
             "SELECT MAX(sequence) FROM debug_events WHERE session_id = ?1",
             params![session_id],
@@ -1526,7 +1629,10 @@ impl GooseStore {
         validate_positive("sequence", event.sequence)?;
         validate_non_negative("time_unix_ms", event.time_unix_ms)?;
 
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let previous: Option<(i64, i64)> = conn
             .query_row(
                 r#"
@@ -1587,7 +1693,10 @@ impl GooseStore {
     }
 
     pub fn debug_events_for_session(&self, session_id: &str) -> GooseResult<Vec<DebugEventRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         let mut statement = conn.prepare(
             r#"
@@ -1617,7 +1726,10 @@ impl GooseStore {
         start_unix_ms: i64,
         end_unix_ms: i64,
     ) -> GooseResult<Vec<DebugEventRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_unix_ms", start_unix_ms)?;
         validate_positive("end_unix_ms", end_unix_ms)?;
         let mut statement = conn.prepare(
@@ -1650,7 +1762,10 @@ impl GooseStore {
         after_sequence: i64,
         limit: Option<usize>,
     ) -> GooseResult<Vec<DebugEventRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         validate_non_negative("after_sequence", after_sequence)?;
         let limit = i64::try_from(limit.unwrap_or(1000))
@@ -1686,7 +1801,10 @@ impl GooseStore {
     // ---- Table introspection ----
 
     pub fn table_count(&self, table: &str) -> GooseResult<i64> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if !super::is_known_table(table) {
             return Err(GooseError::message(format!("unknown table: {table}")));
         }
@@ -1702,16 +1820,20 @@ impl GooseStore {
     }
 
     pub fn foreign_keys_enabled(&self) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let enabled: i64 = conn
-            .query_row("PRAGMA foreign_keys", [], |row| row.get(0))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let enabled: i64 = conn.query_row("PRAGMA foreign_keys", [], |row| row.get(0))?;
         Ok(enabled != 0)
     }
 
     pub fn integrity_check(&self) -> GooseResult<String> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row("PRAGMA integrity_check", [], |row| row.get(0))
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row("PRAGMA integrity_check", [], |row| row.get(0))
             .map_err(GooseError::from)
     }
 
@@ -1791,7 +1913,10 @@ impl GooseStore {
         ts_start: f64,
         ts_end: f64,
     ) -> GooseResult<Vec<ExerciseSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("device_id", device_id)?;
         if ts_end < ts_start {
             return Err(GooseError::message("ts_end must be >= ts_start"));
@@ -1831,7 +1956,10 @@ impl GooseStore {
         behaviors_json: &str,
         notes: Option<&str>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let rows = conn.execute(
             "INSERT OR REPLACE INTO journal (date, source, behaviors_json, notes)
              VALUES (?1, ?2, ?3, ?4)",
@@ -1857,7 +1985,10 @@ impl GooseStore {
         notes: Option<&str>,
         provenance_json: &str,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let rows = conn.execute(
             "INSERT OR REPLACE INTO workout
              (date, source, sport, start_time, end_time, duration_s,
@@ -1896,7 +2027,10 @@ impl GooseStore {
         vo2max: Option<f64>,
         weight_kg: Option<f64>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let rows = conn.execute(
             "INSERT OR REPLACE INTO apple_daily
              (date, source, steps, active_kcal, basal_kcal, avg_hr_bpm, max_hr_bpm, vo2max, weight_kg)

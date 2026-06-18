@@ -1,11 +1,15 @@
-use std::{collections::BTreeSet, path::Path, sync::{Arc, Mutex}};
+use std::{
+    collections::BTreeSet,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 mod activity;
 mod capture;
 mod metrics;
 mod sleep;
 
-use rusqlite::{Connection, OpenFlags, OptionalExtension, params, params_from_iter};
+use rusqlite::{Connection, OpenFlags, params};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -1061,7 +1065,9 @@ impl GooseStore {
     pub fn open(path: &Path) -> GooseResult<Self> {
         let conn = Connection::open(path)?;
         configure_read_write_connection(&conn)?;
-        let store = Self { conn: Arc::new(Mutex::new(conn)) };
+        let store = Self {
+            conn: Arc::new(Mutex::new(conn)),
+        };
         store.migrate()?;
         Ok(store)
     }
@@ -1069,7 +1075,9 @@ impl GooseStore {
     pub fn open_existing_current(path: &Path) -> GooseResult<Self> {
         let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
         configure_read_write_connection(&conn)?;
-        let store = Self { conn: Arc::new(Mutex::new(conn)) };
+        let store = Self {
+            conn: Arc::new(Mutex::new(conn)),
+        };
         let schema_version = store.schema_version()?;
         if schema_version != CURRENT_SCHEMA_VERSION {
             return Err(GooseError::message(format!(
@@ -1082,13 +1090,17 @@ impl GooseStore {
     pub fn open_read_only(path: &Path) -> GooseResult<Self> {
         let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         configure_read_only_connection(&conn)?;
-        Ok(Self { conn: Arc::new(Mutex::new(conn)) })
+        Ok(Self {
+            conn: Arc::new(Mutex::new(conn)),
+        })
     }
 
     pub fn open_in_memory() -> GooseResult<Self> {
         let conn = Connection::open_in_memory()?;
         configure_read_write_connection(&conn)?;
-        let store = Self { conn: Arc::new(Mutex::new(conn)) };
+        let store = Self {
+            conn: Arc::new(Mutex::new(conn)),
+        };
         store.migrate()?;
         Ok(store)
     }
@@ -1097,7 +1109,10 @@ impl GooseStore {
     where
         F: FnOnce(&Connection) -> GooseResult<T>,
     {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute_batch("BEGIN IMMEDIATE TRANSACTION")?;
         match operation(&conn) {
             Ok(value) => {
@@ -1112,8 +1127,14 @@ impl GooseStore {
     }
 
     pub fn migrate(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn.execute_batch(
+        // Lock conn only for the schema SQL, then drop it before calling ensure_* helpers
+        // (each of which re-acquires the lock independently — holding it here would deadlock).
+        {
+            let conn = self
+                .conn
+                .lock()
+                .map_err(|_| GooseError::message("store mutex poisoned"))?;
+            conn.execute_batch(
             r#"
             PRAGMA foreign_keys = ON;
 
@@ -1842,6 +1863,7 @@ impl GooseStore {
             PRAGMA user_version = 22;
             "#,
         )?;
+        } // conn lock released here — ensure_* each re-acquire independently
         self.ensure_raw_evidence_columns()?;
         self.ensure_decoded_frame_columns()?;
         self.ensure_algorithm_definition_columns()?;
@@ -1853,13 +1875,18 @@ impl GooseStore {
     }
 
     pub fn schema_version(&self) -> GooseResult<i64> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        Ok(conn
-            .query_row("PRAGMA user_version", [], |row| row.get(0))?)
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
     }
 
     pub(super) fn ensure_overnight_mirror_tables(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute_batch(
             r#"
             CREATE TABLE IF NOT EXISTS overnight_sync_sessions (
@@ -1952,14 +1979,19 @@ impl GooseStore {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn upsert_overnight_sync_session(
         &self,
         input: &OvernightSyncSessionInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         Self::upsert_overnight_sync_session_with_conn(&conn, input)
     }
 
+    #[allow(dead_code)]
     pub(super) fn upsert_overnight_sync_session_with_conn(
         conn: &Connection,
         input: &OvernightSyncSessionInput<'_>,
@@ -2063,14 +2095,19 @@ impl GooseStore {
         Ok(changed > 0)
     }
 
+    #[allow(dead_code)]
     fn insert_overnight_raw_notification(
         &self,
         input: &OvernightRawNotificationInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         Self::insert_overnight_raw_notification_with_conn(&conn, input)
     }
 
+    #[allow(dead_code)]
     pub(super) fn insert_overnight_raw_notification_with_conn(
         conn: &Connection,
         input: &OvernightRawNotificationInput<'_>,
@@ -2135,14 +2172,19 @@ impl GooseStore {
         Ok(changed > 0)
     }
 
+    #[allow(dead_code)]
     fn insert_overnight_historical_range_poll(
         &self,
         input: &OvernightHistoricalRangePollInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         Self::insert_overnight_historical_range_poll_with_conn(&conn, input)
     }
 
+    #[allow(dead_code)]
     pub(super) fn insert_overnight_historical_range_poll_with_conn(
         conn: &Connection,
         input: &OvernightHistoricalRangePollInput<'_>,
@@ -2200,13 +2242,15 @@ impl GooseStore {
         )?;
         Ok(changed > 0)
     }
-
 }
 
 impl GooseStore {
     fn ensure_raw_evidence_columns(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let columns = self.table_columns_unchecked("raw_evidence")?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let columns = Self::table_columns_from_conn(&conn, "raw_evidence")?;
         for (column, ddl) in [
             (
                 "capture_session_id",
@@ -2215,8 +2259,7 @@ impl GooseStore {
             ("device_uuid", "device_uuid TEXT"),
         ] {
             if !columns.contains(column) {
-                conn
-                    .execute(&format!("ALTER TABLE raw_evidence ADD COLUMN {ddl}"), [])?;
+                conn.execute(&format!("ALTER TABLE raw_evidence ADD COLUMN {ddl}"), [])?;
             }
         }
         conn.execute(
@@ -2228,8 +2271,11 @@ impl GooseStore {
     }
 
     fn ensure_decoded_frame_columns(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let columns = self.table_columns_unchecked("decoded_frames")?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let columns = Self::table_columns_from_conn(&conn, "decoded_frames")?;
         for (column, ddl) in [
             ("packet_type_name", "packet_type_name TEXT"),
             (
@@ -2239,16 +2285,18 @@ impl GooseStore {
             ("device_uuid", "device_uuid TEXT"),
         ] {
             if !columns.contains(column) {
-                conn
-                    .execute(&format!("ALTER TABLE decoded_frames ADD COLUMN {ddl}"), [])?;
+                conn.execute(&format!("ALTER TABLE decoded_frames ADD COLUMN {ddl}"), [])?;
             }
         }
         Ok(())
     }
 
     fn ensure_algorithm_definition_columns(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let columns = self.table_columns_unchecked("algorithm_definitions")?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let columns = Self::table_columns_from_conn(&conn, "algorithm_definitions")?;
         for (column, ddl) in [
             ("display_name", "display_name TEXT NOT NULL DEFAULT ''"),
             ("implementation", "implementation TEXT NOT NULL DEFAULT ''"),
@@ -2274,8 +2322,11 @@ impl GooseStore {
     }
 
     fn ensure_daily_activity_metric_multi_row_source_kind(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        if !self.daily_activity_metrics_has_source_kind_unique_constraint()? {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        if !Self::table_has_source_kind_constraint_with_conn(&conn, "daily_activity_metrics")? {
             return Ok(());
         }
 
@@ -2355,13 +2406,17 @@ impl GooseStore {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn daily_activity_metrics_has_source_kind_unique_constraint(&self) -> GooseResult<bool> {
         self.table_has_source_kind_unique_constraint("daily_activity_metrics")
     }
 
     fn ensure_daily_recovery_metric_multi_row_source_kind(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        if !self.daily_recovery_metrics_has_source_kind_unique_constraint()? {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        if !Self::table_has_source_kind_constraint_with_conn(&conn, "daily_recovery_metrics")? {
             return Ok(());
         }
 
@@ -2441,12 +2496,17 @@ impl GooseStore {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn daily_recovery_metrics_has_source_kind_unique_constraint(&self) -> GooseResult<bool> {
         self.table_has_source_kind_unique_constraint("daily_recovery_metrics")
     }
 
+    #[allow(dead_code)]
     fn table_has_source_kind_unique_constraint(&self, table: &str) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let mut statement = conn.prepare(&format!("PRAGMA index_list({table})"))?;
         let rows = statement.query_map([], |row| {
             Ok((row.get::<_, String>(1)?, row.get::<_, i64>(2)? != 0))
@@ -2456,7 +2516,7 @@ impl GooseStore {
             if !unique {
                 continue;
             }
-            let columns = self.index_columns_unchecked(&index_name)?;
+            let columns = Self::index_columns_from_conn(&conn, &index_name)?;
             let column_names = columns.iter().map(String::as_str).collect::<Vec<_>>();
             if column_names == ["date_key", "timezone", "source_kind"] {
                 return Ok(true);
@@ -2466,8 +2526,11 @@ impl GooseStore {
     }
 
     fn ensure_step_counter_sample_columns(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        let columns = self.table_columns_unchecked("step_counter_samples")?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let columns = Self::table_columns_from_conn(&conn, "step_counter_samples")?;
         for (column, ddl) in [
             ("cadence_spm", "cadence_spm REAL"),
             ("activity_state", "activity_state TEXT"),
@@ -2483,25 +2546,66 @@ impl GooseStore {
     }
 
     fn table_columns_unchecked(&self, table: &str) -> GooseResult<BTreeSet<String>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        Self::table_columns_from_conn(&conn, table)
+    }
+
+    #[allow(dead_code)]
+    fn index_columns_unchecked(&self, index_name: &str) -> GooseResult<Vec<String>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        Self::index_columns_from_conn(&conn, index_name)
+    }
+
+    // Connection-taking variants — used inside methods that already hold self.conn.lock()
+    // to avoid mutex re-entrancy deadlocks.
+    fn table_columns_from_conn(conn: &Connection, table: &str) -> GooseResult<BTreeSet<String>> {
         let mut statement = conn.prepare(&format!("PRAGMA table_info({table})"))?;
         let rows = statement.query_map([], |row| row.get::<_, String>(1))?;
         rows.collect::<Result<BTreeSet<_>, _>>()
             .map_err(GooseError::from)
     }
 
-    fn index_columns_unchecked(&self, index_name: &str) -> GooseResult<Vec<String>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+    fn index_columns_from_conn(conn: &Connection, index_name: &str) -> GooseResult<Vec<String>> {
         let escaped = index_name.replace('\'', "''");
-        let mut statement = conn
-            .prepare(&format!("PRAGMA index_info('{escaped}')"))?;
+        let mut statement = conn.prepare(&format!("PRAGMA index_info('{escaped}')"))?;
         let rows = statement.query_map([], |row| row.get::<_, String>(2))?;
         rows.collect::<Result<Vec<_>, _>>()
             .map_err(GooseError::from)
     }
 
+    fn table_has_source_kind_constraint_with_conn(
+        conn: &Connection,
+        table: &str,
+    ) -> GooseResult<bool> {
+        let mut statement = conn.prepare(&format!("PRAGMA index_list({table})"))?;
+        let rows = statement.query_map([], |row| {
+            Ok((row.get::<_, String>(1)?, row.get::<_, i64>(2)? != 0))
+        })?;
+        for row in rows {
+            let (index_name, unique) = row?;
+            if !unique {
+                continue;
+            }
+            let columns = Self::index_columns_from_conn(conn, &index_name)?;
+            let column_names = columns.iter().map(String::as_str).collect::<Vec<_>>();
+            if column_names == ["date_key", "timezone", "source_kind"] {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     fn ensure_synced_columns(&self) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let synced_ddl = "synced INTEGER NOT NULL DEFAULT 0";
         for table in &[
             "spo2_samples",
@@ -2511,15 +2615,13 @@ impl GooseStore {
             "gravity2_samples",
             "exercise_sessions",
         ] {
-            let columns = self.table_columns_unchecked(table)?;
+            let columns = Self::table_columns_from_conn(&conn, table)?;
             if !columns.contains("synced") {
-                conn
-                    .execute(&format!("ALTER TABLE {table} ADD COLUMN {synced_ddl}"), [])?;
+                conn.execute(&format!("ALTER TABLE {table} ADD COLUMN {synced_ddl}"), [])?;
             }
         }
         Ok(())
     }
-
 }
 
 pub(super) fn finite_json_number(value: &Value) -> Option<f64> {
@@ -2895,15 +2997,10 @@ fn validate_optional_non_negative_f64(name: &str, value: Option<f64>) -> GooseRe
     Ok(())
 }
 
-fn validate_positive(name: &str, value: i64) -> GooseResult<()> {
-    if value <= 0 {
-        Err(GooseError::message(format!("{name} must be positive")))
-    } else {
-        Ok(())
-    }
-}
-
-pub(super) fn validate_window_order(start_time_unix_ms: i64, end_time_unix_ms: i64) -> GooseResult<()> {
+pub(super) fn validate_window_order(
+    start_time_unix_ms: i64,
+    end_time_unix_ms: i64,
+) -> GooseResult<()> {
     if end_time_unix_ms <= start_time_unix_ms {
         Err(GooseError::message(
             "end_time_unix_ms must be greater than start_time_unix_ms",
@@ -2922,38 +3019,6 @@ fn validate_allowed(name: &str, value: &str, allowed: &[&str]) -> GooseResult<()
             allowed.join(", ")
         )))
     }
-}
-
-fn validate_activity_type(activity_type: &str) -> GooseResult<()> {
-    validate_allowed("activity_type", activity_type, &ALLOWED_ACTIVITY_TYPES)
-}
-
-fn validate_sync_status(sync_status: &str) -> GooseResult<()> {
-    validate_allowed("sync_status", sync_status, &ALLOWED_ACTIVITY_SYNC_STATUSES)
-}
-
-fn validate_activity_detection_method(detection_method: &str) -> GooseResult<()> {
-    validate_allowed(
-        "detection_method",
-        detection_method,
-        &ALLOWED_ACTIVITY_DETECTION_METHODS,
-    )
-}
-
-fn validate_activity_interval_type(interval_type: &str) -> GooseResult<()> {
-    validate_allowed(
-        "interval_type",
-        interval_type,
-        &ALLOWED_ACTIVITY_INTERVAL_TYPES,
-    )
-}
-
-fn validate_activity_label_type(label_type: &str) -> GooseResult<()> {
-    validate_allowed("label_type", label_type, &ALLOWED_ACTIVITY_LABEL_TYPES)
-}
-
-pub(super) fn validate_activity_metric_unit(unit: &str) -> GooseResult<()> {
-    validate_allowed("unit", unit, &ALLOWED_ACTIVITY_METRIC_UNITS)
 }
 
 pub(super) fn validate_metric_source_kind(source_kind: &str) -> GooseResult<()> {
@@ -3000,7 +3065,10 @@ pub(super) fn validate_confidence(name: &str, confidence: f64) -> GooseResult<()
     Ok(())
 }
 
-pub(super) fn validate_unavailable_metric_confidence(source_kind: &str, confidence: f64) -> GooseResult<()> {
+pub(super) fn validate_unavailable_metric_confidence(
+    source_kind: &str,
+    confidence: f64,
+) -> GooseResult<()> {
     if source_kind == "unavailable" && confidence != 0.0 {
         return Err(GooseError::message(
             "unavailable formatted metrics must have confidence 0.0",
@@ -3021,56 +3089,9 @@ pub(super) fn validate_unavailable_metric_provenance_confidence(
     Ok(())
 }
 
-fn validate_activity_session_input(
-    _store: &GooseStore,
-    input: &ActivitySessionInput<'_>,
+pub(super) fn validate_daily_activity_metric_input(
+    input: &DailyActivityMetricInput<'_>,
 ) -> GooseResult<()> {
-    validate_required("session_id", input.session_id)?;
-    validate_required("source", input.source)?;
-    validate_non_negative("start_time_unix_ms", input.start_time_unix_ms)?;
-    validate_non_negative("end_time_unix_ms", input.end_time_unix_ms)?;
-    validate_window_order(input.start_time_unix_ms, input.end_time_unix_ms)?;
-    validate_required("activity_type", input.activity_type)?;
-    validate_activity_type(input.activity_type)?;
-    validate_optional_required(
-        "external_activity_type_code",
-        input.external_activity_type_code,
-    )?;
-    validate_optional_required(
-        "external_activity_type_name",
-        input.external_activity_type_name,
-    )?;
-    validate_optional_required("custom_label", input.custom_label)?;
-    validate_confidence("confidence", input.confidence)?;
-    validate_required("detection_method", input.detection_method)?;
-    validate_activity_detection_method(input.detection_method)?;
-    validate_required("sync_status", input.sync_status)?;
-    validate_sync_status(input.sync_status)?;
-    validate_json_object("provenance_json", input.provenance_json)?;
-    Ok(())
-}
-
-fn validate_activity_metric_input(
-    _store: &GooseStore,
-    input: &ActivityMetricInput<'_>,
-) -> GooseResult<()> {
-    validate_required("metric_id", input.metric_id)?;
-    validate_required("activity_session_id", input.activity_session_id)?;
-    validate_required("metric_name", input.metric_name)?;
-    if !input.value.is_finite() {
-        return Err(GooseError::message("value must be finite"));
-    }
-    validate_required("unit", input.unit)?;
-    validate_activity_metric_unit(input.unit)?;
-    validate_non_negative("start_time_unix_ms", input.start_time_unix_ms)?;
-    validate_non_negative("end_time_unix_ms", input.end_time_unix_ms)?;
-    validate_window_order(input.start_time_unix_ms, input.end_time_unix_ms)?;
-    validate_json("quality_flags_json", input.quality_flags_json)?;
-    validate_json_object("provenance_json", input.provenance_json)?;
-    Ok(())
-}
-
-pub(super) fn validate_daily_activity_metric_input(input: &DailyActivityMetricInput<'_>) -> GooseResult<()> {
     validate_required("daily_metric_id", input.daily_metric_id)?;
     validate_required("date_key", input.date_key)?;
     validate_required("timezone", input.timezone)?;
@@ -3106,7 +3127,9 @@ pub(super) fn validate_daily_activity_metric_input(input: &DailyActivityMetricIn
     Ok(())
 }
 
-pub(super) fn validate_hourly_activity_metric_input(input: &HourlyActivityMetricInput<'_>) -> GooseResult<()> {
+pub(super) fn validate_hourly_activity_metric_input(
+    input: &HourlyActivityMetricInput<'_>,
+) -> GooseResult<()> {
     validate_required("hourly_metric_id", input.hourly_metric_id)?;
     validate_required("date_key", input.date_key)?;
     validate_required("timezone", input.timezone)?;
@@ -3142,7 +3165,9 @@ pub(super) fn validate_hourly_activity_metric_input(input: &HourlyActivityMetric
     Ok(())
 }
 
-pub(super) fn validate_daily_recovery_metric_input(input: &DailyRecoveryMetricInput<'_>) -> GooseResult<()> {
+pub(super) fn validate_daily_recovery_metric_input(
+    input: &DailyRecoveryMetricInput<'_>,
+) -> GooseResult<()> {
     validate_required("daily_metric_id", input.daily_metric_id)?;
     validate_required("date_key", input.date_key)?;
     validate_required("timezone", input.timezone)?;
@@ -3303,7 +3328,9 @@ fn validate_metric_provenance_target(
     Ok(())
 }
 
-pub(super) fn validate_metric_debug_feature_input(input: &MetricDebugFeatureInput<'_>) -> GooseResult<()> {
+pub(super) fn validate_metric_debug_feature_input(
+    input: &MetricDebugFeatureInput<'_>,
+) -> GooseResult<()> {
     validate_required("feature_id", input.feature_id)?;
     validate_required("metric_family", input.metric_family)?;
     validate_required("feature_name", input.feature_name)?;
@@ -3322,7 +3349,9 @@ pub(super) fn validate_metric_debug_feature_input(input: &MetricDebugFeatureInpu
     Ok(())
 }
 
-pub(super) fn validate_step_counter_sample_input(input: &StepCounterSampleInput<'_>) -> GooseResult<()> {
+pub(super) fn validate_step_counter_sample_input(
+    input: &StepCounterSampleInput<'_>,
+) -> GooseResult<()> {
     validate_required("sample_id", input.sample_id)?;
     validate_non_negative("sample_time_unix_ms", input.sample_time_unix_ms)?;
     validate_non_negative("counter_value", input.counter_value)?;
@@ -3345,41 +3374,9 @@ pub(super) fn validate_step_counter_sample_input(input: &StepCounterSampleInput<
     Ok(())
 }
 
-fn validate_activity_interval_input(
-    _store: &GooseStore,
-    input: &ActivityIntervalInput<'_>,
+pub(super) fn validate_external_sleep_session_input(
+    input: &ExternalSleepSessionInput<'_>,
 ) -> GooseResult<()> {
-    validate_required("interval_id", input.interval_id)?;
-    validate_required("activity_session_id", input.activity_session_id)?;
-    validate_required("interval_type", input.interval_type)?;
-    validate_activity_interval_type(input.interval_type)?;
-    validate_non_negative("start_time_unix_ms", input.start_time_unix_ms)?;
-    validate_non_negative("end_time_unix_ms", input.end_time_unix_ms)?;
-    validate_window_order(input.start_time_unix_ms, input.end_time_unix_ms)?;
-    validate_non_negative("sequence", input.sequence)?;
-    validate_json_object("metadata_json", input.metadata_json)?;
-    validate_json_object("provenance_json", input.provenance_json)?;
-    Ok(())
-}
-
-fn validate_activity_label_input(
-    _store: &GooseStore,
-    input: &ActivityLabelInput<'_>,
-) -> GooseResult<()> {
-    validate_required("label_id", input.label_id)?;
-    validate_required("activity_session_id", input.activity_session_id)?;
-    validate_required("label_type", input.label_type)?;
-    validate_activity_label_type(input.label_type)?;
-    validate_required("value", input.value)?;
-    validate_required("source", input.source)?;
-    if let Some(confidence) = input.confidence {
-        validate_confidence("confidence", confidence)?;
-    }
-    validate_json_object("provenance_json", input.provenance_json)?;
-    Ok(())
-}
-
-pub(super) fn validate_external_sleep_session_input(input: &ExternalSleepSessionInput<'_>) -> GooseResult<()> {
     validate_required("sleep_id", input.sleep_id)?;
     validate_required("source", input.source)?;
     validate_required("platform", input.platform)?;
@@ -3425,7 +3422,9 @@ pub(super) fn validate_external_sleep_stage_input(
     Ok(())
 }
 
-pub(super) fn validate_sleep_correction_label_input(input: &SleepCorrectionLabelInput<'_>) -> GooseResult<()> {
+pub(super) fn validate_sleep_correction_label_input(
+    input: &SleepCorrectionLabelInput<'_>,
+) -> GooseResult<()> {
     validate_required("label_id", input.label_id)?;
     validate_optional_required("sleep_id", input.sleep_id)?;
     validate_required("label_type", input.label_type)?;
@@ -3495,7 +3494,9 @@ pub(super) fn command_validation_record_from_row(
     })
 }
 
-pub(super) fn calibration_label_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CalibrationLabelRow> {
+pub(super) fn calibration_label_from_row(
+    row: &rusqlite::Row<'_>,
+) -> rusqlite::Result<CalibrationLabelRow> {
     Ok(CalibrationLabelRow {
         label_id: row.get(0)?,
         metric_family: row.get(1)?,
@@ -3507,7 +3508,9 @@ pub(super) fn calibration_label_from_row(row: &rusqlite::Row<'_>) -> rusqlite::R
     })
 }
 
-pub(super) fn capture_session_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CaptureSessionRow> {
+pub(super) fn capture_session_from_row(
+    row: &rusqlite::Row<'_>,
+) -> rusqlite::Result<CaptureSessionRow> {
     Ok(CaptureSessionRow {
         session_id: row.get(0)?,
         source: row.get(1)?,
@@ -3527,41 +3530,6 @@ pub(super) fn bool_to_i64(value: bool) -> i64 {
 
 fn i64_to_bool(value: i64) -> bool {
     value != 0
-}
-
-fn activity_session_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ActivitySessionRow> {
-    Ok(ActivitySessionRow {
-        session_id: row.get(0)?,
-        source: row.get(1)?,
-        start_time_unix_ms: row.get(2)?,
-        end_time_unix_ms: row.get(3)?,
-        duration_ms: row.get(4)?,
-        activity_type: row.get(5)?,
-        external_activity_type_code: row.get(6)?,
-        external_activity_type_name: row.get(7)?,
-        custom_label: row.get(8)?,
-        confidence: row.get(9)?,
-        detection_method: row.get(10)?,
-        sync_status: row.get(11)?,
-        provenance_json: row.get(12)?,
-        created_at: row.get(13)?,
-        updated_at: row.get(14)?,
-    })
-}
-
-fn activity_metric_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ActivityMetricRow> {
-    Ok(ActivityMetricRow {
-        metric_id: row.get(0)?,
-        activity_session_id: row.get(1)?,
-        metric_name: row.get(2)?,
-        value: row.get(3)?,
-        unit: row.get(4)?,
-        start_time_unix_ms: row.get(5)?,
-        end_time_unix_ms: row.get(6)?,
-        quality_flags_json: row.get(7)?,
-        provenance_json: row.get(8)?,
-        created_at: row.get(9)?,
-    })
 }
 
 pub(super) fn daily_activity_metric_from_row(
@@ -3636,7 +3604,9 @@ pub(super) fn daily_recovery_metric_from_row(
     })
 }
 
-pub(super) fn metric_provenance_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<MetricProvenanceRow> {
+pub(super) fn metric_provenance_from_row(
+    row: &rusqlite::Row<'_>,
+) -> rusqlite::Result<MetricProvenanceRow> {
     Ok(MetricProvenanceRow {
         provenance_id: row.get(0)?,
         metric_scope: row.get(1)?,
@@ -3670,7 +3640,9 @@ pub(super) fn metric_debug_feature_from_row(
     })
 }
 
-pub(super) fn step_counter_sample_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<StepCounterSampleRow> {
+pub(super) fn step_counter_sample_from_row(
+    row: &rusqlite::Row<'_>,
+) -> rusqlite::Result<StepCounterSampleRow> {
     Ok(StepCounterSampleRow {
         sample_id: row.get(0)?,
         sample_time_unix_ms: row.get(1)?,
@@ -3686,34 +3658,6 @@ pub(super) fn step_counter_sample_from_row(row: &rusqlite::Row<'_>) -> rusqlite:
         quality_flags_json: row.get(11)?,
         provenance_json: row.get(12)?,
         created_at: row.get(13)?,
-    })
-}
-
-fn activity_interval_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ActivityIntervalRow> {
-    Ok(ActivityIntervalRow {
-        interval_id: row.get(0)?,
-        activity_session_id: row.get(1)?,
-        interval_type: row.get(2)?,
-        start_time_unix_ms: row.get(3)?,
-        end_time_unix_ms: row.get(4)?,
-        duration_ms: row.get(5)?,
-        sequence: row.get(6)?,
-        metadata_json: row.get(7)?,
-        provenance_json: row.get(8)?,
-        created_at: row.get(9)?,
-    })
-}
-
-fn activity_label_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ActivityLabelRow> {
-    Ok(ActivityLabelRow {
-        label_id: row.get(0)?,
-        activity_session_id: row.get(1)?,
-        label_type: row.get(2)?,
-        value: row.get(3)?,
-        source: row.get(4)?,
-        confidence: row.get(5)?,
-        provenance_json: row.get(6)?,
-        created_at: row.get(7)?,
     })
 }
 
@@ -3767,46 +3711,6 @@ pub(super) fn sleep_correction_label_from_row(
         confidence: row.get(7)?,
         provenance_json: row.get(8)?,
         created_at: row.get(9)?,
-    })
-}
-
-fn debug_session_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DebugSessionRow> {
-    Ok(DebugSessionRow {
-        session_id: row.get(0)?,
-        started_at_unix_ms: row.get(1)?,
-        bridge_url: row.get(2)?,
-        bind_host: row.get(3)?,
-        token_required: i64_to_bool(row.get(4)?),
-        token_present: i64_to_bool(row.get(5)?),
-        remote_bind_enabled: i64_to_bool(row.get(6)?),
-        visible_remote_bind_toggle: i64_to_bool(row.get(7)?),
-    })
-}
-
-fn debug_command_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DebugCommandRow> {
-    Ok(DebugCommandRow {
-        command_id: row.get(0)?,
-        session_id: row.get(1)?,
-        schema: row.get(2)?,
-        command: row.get(3)?,
-        args_json: row.get(4)?,
-        dry_run: i64_to_bool(row.get(5)?),
-        received_at_unix_ms: row.get(6)?,
-    })
-}
-
-fn debug_event_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DebugEventRow> {
-    Ok(DebugEventRow {
-        session_id: row.get(0)?,
-        sequence: row.get(1)?,
-        schema: row.get(2)?,
-        time_unix_ms: row.get(3)?,
-        source: row.get(4)?,
-        level: row.get(5)?,
-        topic: row.get(6)?,
-        message: row.get(7)?,
-        command_id: row.get(8)?,
-        data_json: row.get(9)?,
     })
 }
 
@@ -4049,7 +3953,8 @@ mod exercise_session_tests {
         let store = make_store();
         let version: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("failed to read user_version");
         assert_eq!(
@@ -4164,7 +4069,8 @@ mod sync_schema_tests {
         let store = make_store();
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='hr_samples'",
                 [],
@@ -4179,7 +4085,8 @@ mod sync_schema_tests {
         let store = make_store();
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='rr_intervals'",
                 [],
@@ -4194,7 +4101,8 @@ mod sync_schema_tests {
         let store = make_store();
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='events'",
                 [],
@@ -4209,7 +4117,8 @@ mod sync_schema_tests {
         let store = make_store();
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='battery'",
                 [],
@@ -4224,7 +4133,8 @@ mod sync_schema_tests {
         let store = make_store();
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='upload_cursors'",
                 [],
@@ -4278,7 +4188,8 @@ mod sync_schema_tests {
             .expect("conn execute insert gravity row should succeed");
         let synced: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT synced FROM gravity WHERE device_id='dev-1' AND ts=1000.0",
                 [],
@@ -4326,7 +4237,8 @@ mod sync_methods_tests {
         let captured_at = format!("1970-01-01T00:{:02}:{:02}.000Z", ts_unix / 60, ts_unix % 60);
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT OR IGNORE INTO raw_evidence \
              (evidence_id, source, captured_at, device_model, payload_hex, sha256, sensitivity) \
@@ -4357,7 +4269,8 @@ mod sync_methods_tests {
         let store = make_store();
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-1', 1000.0, 75)",
                 [],
@@ -4365,7 +4278,8 @@ mod sync_methods_tests {
             .expect("conn execute insert hr_samples should succeed");
         let rowid: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT rowid FROM hr_samples WHERE device_id='dev-1' AND ts=1000.0",
                 [],
@@ -4378,7 +4292,8 @@ mod sync_methods_tests {
         assert_eq!(affected, 1);
         let synced: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT synced FROM hr_samples WHERE rowid=?1",
                 params![rowid],
@@ -4405,7 +4320,8 @@ mod sync_methods_tests {
         let store = make_store();
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 1.0, 60, 0)",
                 [],
@@ -4413,7 +4329,8 @@ mod sync_methods_tests {
             .expect("conn execute insert hr_samples synced=0 should succeed");
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 2.0, 61, 0)",
                 [],
@@ -4421,7 +4338,8 @@ mod sync_methods_tests {
             .expect("conn execute insert hr_samples synced=0 should succeed");
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', 3.0, 62, 1)",
                 [],
@@ -4439,7 +4357,8 @@ mod sync_methods_tests {
         for i in 0..5i64 {
             store
                 .conn
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .execute(
                     "INSERT INTO hr_samples (device_id, ts, bpm, synced) VALUES ('d', ?1, 70, 0)",
                     params![i as f64],
@@ -4462,7 +4381,8 @@ mod sync_methods_tests {
         assert_eq!(report.hr_inserted, 1, "one HR row should be inserted");
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("SELECT COUNT(*) FROM hr_samples WHERE synced=0", [], |r| {
                 r.get(0)
             })
@@ -4487,7 +4407,8 @@ mod sync_methods_tests {
         );
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("SELECT COUNT(*) FROM hr_samples", [], |r| r.get(0))
             .expect("conn query_row for hr_samples count after two backfills should succeed");
         assert_eq!(count, 1, "exactly one row after two backfill calls");
@@ -4512,13 +4433,15 @@ mod sync_methods_tests {
         assert_eq!(pruned, 1, "should prune exactly 1 synced=1 row");
         let remaining: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("SELECT COUNT(*) FROM gravity", [], |r| r.get(0))
             .expect("conn query_row for gravity count after prune should succeed");
         assert_eq!(remaining, 1, "synced=0 row must survive prune");
         let synced: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("SELECT synced FROM gravity WHERE ts=500.0", [], |r| {
                 r.get(0)
             })
@@ -4580,7 +4503,8 @@ mod sync_methods_tests {
         // Step 1: insert the "pre-upload" row — exists before the HTTP request begins.
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 1.0, 70)",
                 [],
@@ -4606,7 +4530,8 @@ mod sync_methods_tests {
         // pre-capture but before mark_synced_rows is called.
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute(
                 "INSERT INTO hr_samples (device_id, ts, bpm) VALUES ('dev-race', 2.0, 72)",
                 [],
@@ -4641,7 +4566,8 @@ mod sync_methods_tests {
         // Assertion B: the pre-captured row is now synced=1.
         let synced_flag: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("SELECT synced FROM hr_samples WHERE ts=1.0", [], |r| {
                 r.get(0)
             })
@@ -4668,7 +4594,8 @@ mod v20_migration_tests {
         let store = open_migrated_store();
         let version: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .expect("user_version");
         assert_eq!(
@@ -4683,7 +4610,8 @@ mod v20_migration_tests {
         for table in &["journal", "workout", "apple_daily", "metric_series"] {
             let count: i64 = store
                 .conn
-                .lock().unwrap()
+                .lock()
+                .unwrap()
                 .query_row(
                     "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
                     [table],
@@ -4701,7 +4629,8 @@ mod v20_migration_tests {
         store.migrate().expect("second migration must not error");
         let count: i64 = store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM goose_schema_migrations WHERE version=20",
                 [],
@@ -4763,7 +4692,8 @@ mod migration_step_22_tests {
         // migrate() already ran; use PRAGMA to insert without raw_evidence parent.
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute_batch("PRAGMA foreign_keys = OFF;")
             .expect("disable fk");
         store
@@ -4787,7 +4717,8 @@ mod migration_step_22_tests {
             .expect("insert legacy device_type rows");
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .execute_batch("PRAGMA foreign_keys = ON;")
             .expect("re-enable fk");
 
@@ -4799,7 +4730,8 @@ mod migration_step_22_tests {
     fn count_device_type(store: &GooseStore, device_type: &str) -> i64 {
         store
             .conn
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .query_row(
                 "SELECT COUNT(*) FROM decoded_frames WHERE device_type = ?1",
                 [device_type],

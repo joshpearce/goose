@@ -6,36 +6,14 @@ use crate::{
 };
 
 use super::{
-    GooseStore,
-    BackfillReport,
-    CaptureSessionInput,
-    CaptureSessionRow,
-    DecodedFrameInput,
-    DecodedFrameRow,
-    OvernightHistoricalRangePollInput,
-    OvernightMirrorCounts,
-    OvernightMirrorReport,
-    OvernightRawNotificationInput,
-    OvernightSyncSessionInput,
-    RawEvidenceInput,
-    RawEvidencePayloadRetentionReport,
-    RawEvidenceRow,
-    RrIntervalRow,
-    StepCounterSampleInput,
-    StepCounterSampleRow,
-    STREAM_ALLOWLIST,
-    bool_to_i64,
-    capture_session_from_row,
-    decoded_frame_from_row,
-    device_type_name,
-    sha256_hex,
-    step_counter_sample_from_row,
-    unix_f64_to_iso8601,
-    validate_json_object,
-    validate_non_negative,
-    validate_required,
-    validate_step_counter_sample_input,
-    validate_window_order,
+    BackfillReport, CaptureSessionInput, CaptureSessionRow, DecodedFrameInput, DecodedFrameRow,
+    GooseStore, OvernightHistoricalRangePollInput, OvernightMirrorCounts, OvernightMirrorReport,
+    OvernightRawNotificationInput, OvernightSyncSessionInput, RawEvidenceInput,
+    RawEvidencePayloadRetentionReport, RawEvidenceRow, RrIntervalRow, STREAM_ALLOWLIST,
+    StepCounterSampleInput, StepCounterSampleRow, bool_to_i64, capture_session_from_row,
+    decoded_frame_from_row, device_type_name, sha256_hex, step_counter_sample_from_row,
+    unix_f64_to_iso8601, validate_json_object, validate_non_negative, validate_required,
+    validate_step_counter_sample_input, validate_window_order,
 };
 
 impl GooseStore {
@@ -95,9 +73,12 @@ impl GooseStore {
     }
 
     pub fn overnight_mirror_counts(&self, session_id: &str) -> GooseResult<OvernightMirrorCounts> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         self.ensure_overnight_mirror_tables()?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let session_exists: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM overnight_sync_sessions WHERE session_id = ?1)",
             params![session_id],
@@ -129,7 +110,10 @@ impl GooseStore {
     }
 
     pub fn insert_raw_evidence(&self, input: RawEvidenceInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("evidence_id", input.evidence_id)?;
         validate_required("source", input.source)?;
         validate_required("captured_at", input.captured_at)?;
@@ -172,8 +156,8 @@ impl GooseStore {
             return Ok(true);
         }
 
-        let mut statement = conn
-            .prepare_cached("SELECT sha256 FROM raw_evidence WHERE evidence_id = ?1")?;
+        let mut statement =
+            conn.prepare_cached("SELECT sha256 FROM raw_evidence WHERE evidence_id = ?1")?;
         let existing_sha256: Option<String> = statement
             .query_row(params![input.evidence_id], |row| row.get(0))
             .optional()?;
@@ -191,7 +175,10 @@ impl GooseStore {
     }
 
     pub fn insert_decoded_frame(&self, input: DecodedFrameInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("frame_id", input.frame_id)?;
         validate_required("evidence_id", input.evidence_id)?;
         validate_required("parser_version", input.parser_version)?;
@@ -249,7 +236,6 @@ impl GooseStore {
     }
 
     pub fn start_capture_session(&self, input: CaptureSessionInput<'_>) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", input.session_id)?;
         validate_required("source", input.source)?;
         validate_required("device_model", input.device_model)?;
@@ -277,6 +263,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let changed = conn.execute(
             r#"
             INSERT INTO capture_sessions (
@@ -311,7 +301,10 @@ impl GooseStore {
         session_id: &str,
         active_device_id: &str,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         validate_required("active_device_id", active_device_id)?;
         let changed = conn.execute(
@@ -332,7 +325,10 @@ impl GooseStore {
         ended_at_unix_ms: i64,
         frame_count: i64,
     ) -> GooseResult<CaptureSessionRow> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
         validate_non_negative("ended_at_unix_ms", ended_at_unix_ms)?;
         validate_non_negative("frame_count", frame_count)?;
@@ -363,11 +359,13 @@ impl GooseStore {
     }
 
     pub fn capture_session(&self, session_id: &str) -> GooseResult<Option<CaptureSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("session_id", session_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     session_id,
                     source,
@@ -381,11 +379,11 @@ impl GooseStore {
                 FROM capture_sessions
                 WHERE session_id = ?1
                 "#,
-                params![session_id],
-                capture_session_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![session_id],
+            capture_session_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn capture_sessions_between(
@@ -393,7 +391,10 @@ impl GooseStore {
         start_unix_ms: i64,
         end_unix_ms: i64,
     ) -> GooseResult<Vec<CaptureSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_unix_ms", start_unix_ms)?;
         validate_non_negative("end_unix_ms", end_unix_ms)?;
         if end_unix_ms < start_unix_ms {
@@ -431,7 +432,10 @@ impl GooseStore {
         &self,
         input: StepCounterSampleInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_step_counter_sample_input(&input)?;
         if let Some(existing) = self.step_counter_sample(input.sample_id)? {
             let same = existing.sample_time_unix_ms == input.sample_time_unix_ms
@@ -496,11 +500,13 @@ impl GooseStore {
         &self,
         sample_id: &str,
     ) -> GooseResult<Option<StepCounterSampleRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("sample_id", sample_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     sample_id,
                     sample_time_unix_ms,
@@ -519,11 +525,11 @@ impl GooseStore {
                 FROM step_counter_samples
                 WHERE sample_id = ?1
                 "#,
-                params![sample_id],
-                step_counter_sample_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![sample_id],
+            step_counter_sample_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn step_counter_samples_between(
@@ -531,7 +537,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<StepCounterSampleRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -567,10 +576,12 @@ impl GooseStore {
     }
 
     pub fn raw_evidence(&self, evidence_id: &str) -> GooseResult<Option<RawEvidenceRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row(
-                r#"
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row(
+            r#"
                 SELECT
                     evidence_id,
                     source,
@@ -584,27 +595,30 @@ impl GooseStore {
                 FROM raw_evidence
                 WHERE evidence_id = ?1
                 "#,
-                params![evidence_id],
-                |row| {
-                    Ok(RawEvidenceRow {
-                        evidence_id: row.get(0)?,
-                        source: row.get(1)?,
-                        captured_at: row.get(2)?,
-                        device_model: row.get(3)?,
-                        payload_hex: row.get(4)?,
-                        sha256: row.get(5)?,
-                        sensitivity: row.get(6)?,
-                        capture_session_id: row.get(7)?,
-                        device_uuid: row.get(8)?,
-                    })
-                },
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![evidence_id],
+            |row| {
+                Ok(RawEvidenceRow {
+                    evidence_id: row.get(0)?,
+                    source: row.get(1)?,
+                    captured_at: row.get(2)?,
+                    device_model: row.get(3)?,
+                    payload_hex: row.get(4)?,
+                    sha256: row.get(5)?,
+                    sensitivity: row.get(6)?,
+                    capture_session_id: row.get(7)?,
+                    device_uuid: row.get(8)?,
+                })
+            },
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn raw_evidence_between(&self, start: &str, end: &str) -> GooseResult<Vec<RawEvidenceRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("start", start)?;
         validate_required("end", end)?;
 
@@ -644,7 +658,10 @@ impl GooseStore {
     }
 
     pub fn raw_evidence_payload_bytes(&self) -> GooseResult<i64> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         Ok(conn.query_row(
             r#"
             SELECT COALESCE(SUM(LENGTH(payload_hex) / 2), 0)
@@ -660,7 +677,10 @@ impl GooseStore {
         &self,
         limit_bytes: i64,
     ) -> GooseResult<RawEvidencePayloadRetentionReport> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("limit_bytes", limit_bytes)?;
         let before_bytes = self.raw_evidence_payload_bytes()?;
         if before_bytes <= limit_bytes {
@@ -719,7 +739,10 @@ impl GooseStore {
         start: &str,
         end: &str,
     ) -> GooseResult<Vec<DecodedFrameRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("start", start)?;
         validate_required("end", end)?;
 
@@ -759,11 +782,13 @@ impl GooseStore {
     }
 
     pub fn decoded_frame(&self, frame_id: &str) -> GooseResult<Option<DecodedFrameRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("frame_id", frame_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     decoded_frames.frame_id,
                     decoded_frames.evidence_id,
@@ -789,11 +814,11 @@ impl GooseStore {
                     ON raw_evidence.evidence_id = decoded_frames.evidence_id
                 WHERE decoded_frames.frame_id = ?1
                 "#,
-                params![frame_id],
-                decoded_frame_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![frame_id],
+            decoded_frame_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn upsert_upload_cursor(
@@ -802,7 +827,10 @@ impl GooseStore {
         stream: &str,
         value: &str,
     ) -> GooseResult<()> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             "INSERT OR REPLACE INTO upload_cursors (namespace, stream, value) VALUES (?1, ?2, ?3)",
             params![namespace, stream, value],
@@ -811,22 +839,27 @@ impl GooseStore {
     }
 
     pub fn get_upload_cursor(&self, namespace: &str, stream: &str) -> GooseResult<Option<String>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
-        conn
-            .query_row(
-                "SELECT value FROM upload_cursors WHERE namespace=?1 AND stream=?2",
-                params![namespace, stream],
-                |row| row.get(0),
-            )
-            .optional()
-            .map_err(GooseError::from)
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.query_row(
+            "SELECT value FROM upload_cursors WHERE namespace=?1 AND stream=?2",
+            params![namespace, stream],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     /// Mark specific rows in a stream table as synced=1 by rowid.
     /// The stream name must be in STREAM_ALLOWLIST to prevent SQL injection via table name
     /// interpolation (T-29-03 mitigation). row_ids are fully parameterised.
     pub fn mark_synced_rows(&self, stream: &str, row_ids: &[i64]) -> GooseResult<usize> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if !STREAM_ALLOWLIST.contains(&stream) {
             return Err(GooseError::message(format!("unknown stream: {stream}")));
         }
@@ -851,7 +884,10 @@ impl GooseStore {
         stream: &str,
         limit: i64,
     ) -> GooseResult<Vec<serde_json::Value>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if !STREAM_ALLOWLIST.contains(&stream) {
             return Err(GooseError::message(format!("unknown stream: {stream}")));
         }
@@ -900,7 +936,6 @@ impl GooseStore {
         start_ts: f64,
         end_ts: f64,
     ) -> GooseResult<BackfillReport> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         let start_iso = unix_f64_to_iso8601(start_ts);
         let end_iso = unix_f64_to_iso8601(end_ts);
         let frames = self.decoded_frames_between(&start_iso, &end_iso)?;
@@ -969,9 +1004,6 @@ impl GooseStore {
         let rr_to_insert = rr_rows.clone();
         let device_id_owned = device_id.to_string();
 
-        // Drop the lock before calling immediate_transaction which will re-acquire it
-        drop(conn);
-
         self.immediate_transaction(|conn| {
             let mut hr_inserted = 0usize;
             for (ts, bpm) in &hr_to_insert {
@@ -1002,7 +1034,10 @@ impl GooseStore {
         start_ts: f64,
         end_ts: f64,
     ) -> GooseResult<Vec<RrIntervalRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         let mut stmt = conn.prepare(
             "SELECT device_id, ts, interval_ms, synced FROM rr_intervals \
              WHERE ts >= ?1 AND ts < ?2 ORDER BY ts",
@@ -1029,7 +1064,10 @@ impl GooseStore {
     /// at the call site by the upload pipeline which checks synced=1 before any stream
     /// table DELETE.
     pub fn prune_synced_stream_rows(&self, stream: &str, older_than_ts: f64) -> GooseResult<usize> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         if !STREAM_ALLOWLIST.contains(&stream) {
             return Err(GooseError::message(format!("unknown stream: {stream}")));
         }

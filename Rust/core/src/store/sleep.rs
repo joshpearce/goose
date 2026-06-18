@@ -3,22 +3,12 @@ use rusqlite::{OptionalExtension, params};
 use crate::{GooseError, GooseResult};
 
 use super::{
-    GooseStore,
-    ExternalSleepSessionInput,
-    ExternalSleepSessionRow,
-    ExternalSleepStageInput,
-    ExternalSleepStageRow,
-    SleepCorrectionLabelInput,
-    SleepCorrectionLabelRow,
-    validate_required,
-    validate_non_negative,
-    validate_window_order,
-    validate_external_sleep_session_input,
-    validate_external_sleep_stage_input,
-    validate_sleep_correction_label_input,
-    external_sleep_session_from_row,
-    external_sleep_stage_from_row,
-    sleep_correction_label_from_row,
+    ExternalSleepSessionInput, ExternalSleepSessionRow, ExternalSleepStageInput,
+    ExternalSleepStageRow, GooseStore, SleepCorrectionLabelInput, SleepCorrectionLabelRow,
+    external_sleep_session_from_row, external_sleep_stage_from_row,
+    sleep_correction_label_from_row, validate_external_sleep_session_input,
+    validate_external_sleep_stage_input, validate_non_negative, validate_required,
+    validate_sleep_correction_label_input, validate_window_order,
 };
 
 impl GooseStore {
@@ -26,7 +16,6 @@ impl GooseStore {
         &self,
         input: ExternalSleepSessionInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_external_sleep_session_input(&input)?;
 
         if let Some(existing) = self.external_sleep_session(input.sleep_id)? {
@@ -49,6 +38,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO external_sleep_sessions (
@@ -86,11 +79,13 @@ impl GooseStore {
         &self,
         sleep_id: &str,
     ) -> GooseResult<Option<ExternalSleepSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("sleep_id", sleep_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     sleep_id,
                     source,
@@ -108,11 +103,11 @@ impl GooseStore {
                 FROM external_sleep_sessions
                 WHERE sleep_id = ?1
                 "#,
-                params![sleep_id],
-                external_sleep_session_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![sleep_id],
+            external_sleep_session_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn external_sleep_sessions_between(
@@ -120,7 +115,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<ExternalSleepSessionRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
@@ -158,7 +156,6 @@ impl GooseStore {
         &self,
         input: ExternalSleepStageInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_external_sleep_stage_input(self, &input)?;
 
         if let Some(existing) = self.external_sleep_stage(input.stage_id)? {
@@ -178,6 +175,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO external_sleep_stages (
@@ -209,11 +210,13 @@ impl GooseStore {
         &self,
         stage_id: &str,
     ) -> GooseResult<Option<ExternalSleepStageRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("stage_id", stage_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     stage_id,
                     sleep_id,
@@ -227,18 +230,21 @@ impl GooseStore {
                 FROM external_sleep_stages
                 WHERE stage_id = ?1
                 "#,
-                params![stage_id],
-                external_sleep_stage_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![stage_id],
+            external_sleep_stage_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn external_sleep_stages_for_session(
         &self,
         sleep_id: &str,
     ) -> GooseResult<Vec<ExternalSleepStageRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("sleep_id", sleep_id)?;
         let mut statement = conn.prepare(
             r#"
@@ -266,7 +272,6 @@ impl GooseStore {
         &self,
         input: SleepCorrectionLabelInput<'_>,
     ) -> GooseResult<bool> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_sleep_correction_label_input(&input)?;
         if let Some(existing) = self.sleep_correction_label(input.label_id)? {
             if existing.sleep_id == input.sleep_id.map(str::to_string)
@@ -286,6 +291,10 @@ impl GooseStore {
             )));
         }
 
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         conn.execute(
             r#"
             INSERT INTO sleep_correction_labels (
@@ -319,11 +328,13 @@ impl GooseStore {
         &self,
         label_id: &str,
     ) -> GooseResult<Option<SleepCorrectionLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_required("label_id", label_id)?;
-        conn
-            .query_row(
-                r#"
+        conn.query_row(
+            r#"
                 SELECT
                     label_id,
                     sleep_id,
@@ -338,11 +349,11 @@ impl GooseStore {
                 FROM sleep_correction_labels
                 WHERE label_id = ?1
                 "#,
-                params![label_id],
-                sleep_correction_label_from_row,
-            )
-            .optional()
-            .map_err(GooseError::from)
+            params![label_id],
+            sleep_correction_label_from_row,
+        )
+        .optional()
+        .map_err(GooseError::from)
     }
 
     pub fn sleep_correction_labels_between(
@@ -350,7 +361,10 @@ impl GooseStore {
         start_time_unix_ms: i64,
         end_time_unix_ms: i64,
     ) -> GooseResult<Vec<SleepCorrectionLabelRow>> {
-        let conn = self.conn.lock().map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
         validate_non_negative("start_time_unix_ms", start_time_unix_ms)?;
         validate_non_negative("end_time_unix_ms", end_time_unix_ms)?;
         validate_window_order(start_time_unix_ms, end_time_unix_ms)?;
