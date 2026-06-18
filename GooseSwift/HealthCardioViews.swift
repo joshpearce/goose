@@ -5,11 +5,11 @@ import UIKit
 
 struct CardioLoadSheet: View {
   @Environment(\.dismiss) private var dismiss
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     NavigationStack {
-      CardioLoadDetailSurface(store: store, closeAction: { dismiss() })
+      CardioLoadDetailSurface(closeAction: { dismiss() })
     }
     .presentationDetents([.large])
     .presentationDragIndicator(.hidden)
@@ -17,15 +17,15 @@ struct CardioLoadSheet: View {
 }
 
 struct CardioLoadView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
-    CardioLoadDetailSurface(store: store, closeAction: nil)
+    CardioLoadDetailSurface(closeAction: nil)
   }
 }
 
 struct CardioLoadDetailSurface: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   let closeAction: (() -> Void)?
   @State private var selectedRange = "30D"
   @State private var selectedDayID: String?
@@ -101,7 +101,7 @@ struct CardioLoadDetailSurface: View {
   }
 
   private var visibleDays: [CardioLoadDay] {
-    store.cardioLoadPoints(range: selectedRange)
+    healthStore.cardioLoadPoints(range: selectedRange)
   }
 
   private var displayedDay: CardioLoadDay? {

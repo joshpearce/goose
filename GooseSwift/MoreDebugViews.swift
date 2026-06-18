@@ -3,11 +3,10 @@ import SwiftUI
 struct MoreDebugView: View {
   @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: MoreDataStore
-  var healthStore: HealthDataStore
 
   var body: some View {
     TabView {
-      MoreDebugStatusTab(store: store, healthStore: healthStore)
+      MoreDebugStatusTab(store: store)
         .tabItem { Label("Status", systemImage: "antenna.radiowaves.left.and.right") }
 
       MoreDebugCaptureTab(store: store)
@@ -30,7 +29,7 @@ private struct MoreDebugStatusTab: View {
   @Environment(GooseAppModel.self) private var model
   @Environment(BLEState.self) private var bleState
   @ObservedObject var store: MoreDataStore
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     List {

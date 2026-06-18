@@ -147,7 +147,7 @@ final class MoreDataStore: ObservableObject {
     rawExportEnd = end
   }
 
-  func refreshRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
+  func refreshRouteStatus(ble: any BLETransport, model: GooseAppModel) {
     let newStatus = MoreRouteStatus(
       profile: OnboardingProfileSnapshot().hasRequiredDetails ? .ready : .pending,
       device: ble.connectionState == "ready" ? .ready : .pending,
@@ -223,7 +223,7 @@ final class MoreDataStore: ObservableObject {
     return captureStatus
   }
 
-  func liveNotificationCaptureSummary(ble: GooseBLEClient) -> String {
+  func liveNotificationCaptureSummary(ble: any BLETransport) -> String {
     if ble.connectionState == "ready" {
       return "Ready; notifications are mirrored through GooseBLEClient.onNotification"
     }
@@ -233,7 +233,7 @@ final class MoreDataStore: ObservableObject {
     return liveCaptureStatus
   }
 
-  func startCapture(ble: GooseBLEClient) {
+  func startCapture(ble: any BLETransport) {
     guard captureSessionID == nil else {
       captureStatus = "Capture already active"
       return

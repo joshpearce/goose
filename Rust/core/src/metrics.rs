@@ -1052,7 +1052,12 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
             valid.push(*interval);
             if timestamps_aligned {
                 // Safety: index is valid because we verified lengths match above.
-                valid_timestamps.push(working_timestamps_opt.as_ref().unwrap()[i]);
+                valid_timestamps.push(
+                    working_timestamps_opt
+                        .as_ref()
+                        .expect("timestamps_aligned guard ensures Some — lengths verified above")
+                        [i],
+                );
             }
         } else {
             invalid_interval_count += 1;
@@ -1062,6 +1067,10 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
     if invalid_interval_count > 0 {
         quality_flags.push("invalid_rr_interval_dropped".to_string());
     }
+    if valid.is_empty() {
+        // SWS window narrowing or range gate eliminated all intervals; guard against mean() on empty slice.
+        errors.push("no_valid_rr_intervals_after_range_gate".to_string());
+    }
     if valid.len() < 30 {
         quality_flags.push("low_interval_count".to_string());
     }
@@ -1070,29 +1079,27 @@ pub fn goose_hrv_v0(input: &HrvInput) -> AlgorithmRunResult<HrvOutput> {
         errors.push("not_enough_valid_rr_intervals".to_string());
     }
 
-    // Hoist segment_count so it is available both inside and outside the output block
-    // (needed for provenance without a duplicate segment_rr_by_gaps call — CR-01 fix).
-    let segment_count_outer: usize = if !errors.is_empty() {
-        1
-    } else if has_timestamps && timestamps_aligned {
-        segment_rr_by_gaps(&valid, &valid_timestamps, 3.0).len()
-    } else {
-        1
-    };
+    // Compute segments once; share the Vec for RMSSD computation and .len() for provenance.
+    // IN-02 fix: avoid a redundant O(n) segment_rr_by_gaps call — compute once, use twice.
+    let (segments_hoisted, segment_count_outer): (Option<Vec<Vec<f64>>>, usize) =
+        if errors.is_empty() && has_timestamps && timestamps_aligned {
+            let segs = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
+            let count = segs.len();
+            (Some(segs), count)
+        } else if errors.is_empty() {
+            (Some(vec![valid.clone()]), 1)
+        } else {
+            (None, 1)
+        };
 
     let output = if errors.is_empty() {
         let mean_nn_ms = mean(&valid);
 
         // Segment-aware RMSSD (ALG-HRV-01): use gap segmentation when timestamps are
         // present and aligned; fall back to the legacy single-segment path otherwise.
-        let (segments, segment_count) = if has_timestamps && timestamps_aligned {
-            let segs = segment_rr_by_gaps(&valid, &valid_timestamps, 3.0);
-            let count = segs.len();
-            (segs, count)
-        } else {
-            // Treat all valid intervals as a single segment for the ectopic filter.
-            (vec![valid.clone()], 1)
-        };
+        // Use pre-computed segments_hoisted to avoid a second O(n) allocation.
+        let segments = segments_hoisted.unwrap_or_else(|| vec![valid.clone()]);
+        let segment_count = segment_count_outer;
 
         if segment_count > 1 {
             quality_flags.push("rr_segment_gap_detected".to_string());
@@ -2014,7 +2021,7 @@ pub fn estimate_hrmax_from_history(hr_history: &[f64]) -> Option<f64> {
     if finite.len() < 600 {
         return None;
     }
-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    finite.sort_by(|a, b| a.total_cmp(b));
     let len = finite.len();
     // CR-01 fix: nearest-rank P99.5 is ceil(0.995*n) - 1 (0-indexed).
     let index = ((0.995 * len as f64).ceil() as usize)
@@ -2545,11 +2552,17 @@ pub fn hrv_run_record(
 }
 
 fn mean(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
     values.iter().sum::<f64>() / values.len() as f64
 }
 
 #[allow(dead_code)]
 fn rmssd(values: &[f64]) -> f64 {
+    if values.len() < 2 {
+        return 0.0;
+    }
     let mean_square = values
         .windows(2)
         .map(|pair| {
@@ -3601,12 +3614,12 @@ fn sleep_cardiovascular_score(input: &SleepV1Input, baseline: Option<&SleepBasel
         baseline_window.average_sleep_hr_trend_bpm_per_hour,
     );
 
-    if trend_score.is_some() {
+    if let Some(ts) = trend_score {
         let base = dip_score * 0.35
             + average_hr_score * 0.20
             + min_hr_score * 0.15
             + dip_vs_baseline_score * 0.15
-            + trend_score.unwrap() * 0.15;
+            + ts * 0.15;
         pre_sleep_hr_score
             .map(|score| base * 0.90 + score * 0.10)
             .unwrap_or(base)
@@ -4245,13 +4258,10 @@ pub fn sol_from_hr(
     let mut run_start: Option<f64> = None;
 
     for (ts, hr) in &sorted {
-        let below = *hr <= threshold;
+        // NaN hr: `*hr <= threshold` is false for NaN (IEEE 754), so non-finite hr
+        // values automatically reset run_start via the else branch below.
+        let below = hr.is_finite() && *hr <= threshold;
         if below {
-            // WR-02 fix: also filter non-finite HR (ts is already filtered above).
-            if !hr.is_finite() {
-                run_start = None;
-                continue;
-            }
             let start = *run_start.get_or_insert(*ts);
             // Check if current run meets the duration requirement.
             // CR-01 fix: use >= sustained_minutes directly (no -1.0 sample-spacing assumption).
@@ -4517,7 +4527,9 @@ mod recovery_v1_tests {
             sleep_performance_fraction: None,
         };
         let output_neutral = goose_recovery_v1(&input_neutral, &baseline_neutral);
-        let score_neutral = output_neutral.score_0_to_100.unwrap();
+        let score_neutral = output_neutral
+            .score_0_to_100
+            .expect("recovery score must be Some for valid input");
 
         // Scenario: RHR is below baseline mean → lower than usual → BETTER → should raise score.
         let baseline_good = make_baseline(hrv, rhr);
@@ -4530,7 +4542,9 @@ mod recovery_v1_tests {
             sleep_performance_fraction: None,
         };
         let output_good = goose_recovery_v1(&input_good, &baseline_good);
-        let score_good = output_good.score_0_to_100.unwrap();
+        let score_good = output_good
+            .score_0_to_100
+            .expect("recovery score must be Some for valid input");
 
         assert!(
             score_good > score_neutral,
@@ -4905,7 +4919,9 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 0.8).abs() < 1e-9, "acwr must be 0.8, got {acwr}");
         assert_eq!(out.acwr_zone, "optimal", "acwr=0.8 must map to 'optimal'");
     }
@@ -4923,7 +4939,9 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 1.3).abs() < 1e-9, "acwr must be 1.3, got {acwr}");
         assert_eq!(out.acwr_zone, "optimal", "acwr=1.3 must map to 'optimal'");
     }
@@ -4941,7 +4959,9 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!((acwr - 1.5).abs() < 1e-6, "acwr must be 1.5, got {acwr}");
         assert_eq!(out.acwr_zone, "danger", "acwr=1.5 must map to 'danger'");
         assert_eq!(
@@ -4959,7 +4979,9 @@ mod readiness_tests {
         // chronic=(21*5+7*21)/28=(105+147)/28=252/28=9.0; acute=21; acwr=21/9=2.333>1.5 → Rundown
         let input = split_input(5.0, 21.0);
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!(acwr >= 1.5, "acwr must be >=1.5, got {acwr}");
         assert_eq!(out.level, ReadinessLevel::Rundown);
     }
@@ -4971,7 +4993,9 @@ mod readiness_tests {
         // chronic=(210+7)/28=217/28=7.75; acute=1.0; acwr=1/7.75≈0.129 → Strained
         let input = split_input(10.0, 1.0);
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!(acwr < 0.8, "acwr must be <0.8, got {acwr}");
         assert_eq!(
             out.level,
@@ -5069,7 +5093,9 @@ mod readiness_tests {
             daily_strain: pairs,
         };
         let out = goose_readiness_v1(&input);
-        let acwr = out.acwr.unwrap();
+        let acwr = out
+            .acwr
+            .expect("acwr must be Some when sufficient strain data is provided");
         assert!(
             acwr > 1.3 && acwr < 1.5,
             "acwr must be in caution zone (1.3-1.5), got {acwr}"

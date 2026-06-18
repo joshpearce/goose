@@ -13,7 +13,7 @@
 - ✅ **v9.0 BLE Reliability & Protocol Parity** — Phases 61-65+66 (shipped 2026-06-11)
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
 - ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
-- **v12.0 TBD** — (next milestone, not yet defined)
+- **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (active)
 
 ## Phases
 
@@ -152,9 +152,434 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
 
 </details>
 
-### v12.0 TBD
+<details>
+<summary>v12.0 Code Health & Protocol Foundation (Phases 83-91) — ACTIVE</summary>
 
-Next milestone scope not yet defined.
+### Phase Details
+
+#### Phase 83: Protocol Architecture Refactor
+
+**Goal**: Swift and Rust share a clean typed model of device identity and wire protocol — eliminating 17 string comparisons and 8 generation guards
+**Depends on**: Phase 82
+**Requirements**: PROTO-01, PROTO-02, PROTO-03
+**Success Criteria** (what must be TRUE):
+
+  1. `WireProtocol { Gen4, Gen5 }` Rust enum exists and Swift uses enum checks instead of `rustDeviceType == "GEN4"` string comparisons in frame reassembly
+  2. Bridge method `device.capabilities(device_kind)` returns a `DeviceCapabilities` JSON object; GooseBLEClient caches it as `connectedCapabilities` after GATT discovery
+  3. DB migration runs automatically on open and all MAVERICK/PUFFIN rows become GOOSE; `parse_device_type("MAVERICK")` returns an error after migration
+  4. `cargo test --locked` passes clean and the iOS build compiles without new warnings
+
+**Plans**: 6 plansPlans:
+**Wave 1**
+
+- [x] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
+- [x] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 83-03-PLAN.md — Bridge: device.capabilities method, BRIDGE_METHODS update, parse_device_type rejection (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 83-04-PLAN.md — Swift types: WireProtocol enum, DeviceCapabilities, connectedCapabilities, GATT discovery call (Wave 3)
+- [x] 83-05-PLAN.md — Swift guards: all 23 activeDeviceGeneration + 11 rustDeviceType sites across 9 files (Wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 83-06-PLAN.md — Phase gate: cargo test --locked full suite + iOS build verification (Wave 4)
+
+**Cross-cutting constraints:**
+
+- cargo test --locked passes with no regressions
+- CURRENT_SCHEMA_VERSION is 22 in store.rs
+- iOS build compiles without new warnings
+
+**Context**: `.planning/phases/83-protocol-architecture-refactor-gen4-gen5-capability-model/83-CONTEXT.md` (design decisions finalised — read before planning)
+
+---
+
+#### Phase 84: Gen4 Battery
+
+**Goal**: The app displays the real battery percentage for Gen4 WHOOP devices from the wire protocol instead of a hardcoded or unavailable value
+**Depends on**: Phase 83 (DeviceCapabilities.battery_via_event48 / battery_via_cmd26 fields are required for correct dispatch)
+**Requirements**: BAT-01, BAT-02
+**Success Criteria** (what must be TRUE):
+
+  1. Event-48 payload (type 48) is parsed: offset 17 u16 LE / 10 with raw ≤ 1100 guard; result published to the battery UI for Gen4 devices
+  2. Cmd 26 response is parsed: payload[2..4] u16 LE / 10 with count ≥ 4 guard; used as fallback when Event-48 has not yet been received in the session
+  3. `cargo test --locked` includes at least one test for each parsing path (valid payload, boundary guard, fallback trigger)
+
+**Plans**: 3 plans
+Plans:
+
+**Wave 1**
+
+- [x] 84-01-PLAN.md — Rust: parse_event48_battery + parse_cmd26_battery, two bridge methods, event48_battery_pct compact field, unit tests (BAT-01, BAT-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 84-02-PLAN.md — Swift Event-48: event48BatteryPct compact/interpretation fields + Gen4-gated dispatch via applyBatteryLevel (BAT-01)
+- [x] 84-03-PLAN.md — Swift Cmd 26: BatteryCommandKind, auto-send on Gen4 connection, handleCmd26BatteryResponse via Rust bridge (BAT-02)
+
+---
+
+#### Phase 85: Rust Crash Safety
+
+**Goal**: Production Rust code cannot silently panic — every error path surfaces as a typed Result and the bridge entry point is guarded by catch_unwind
+**Depends on**: Phase 82 (independent of PROTO work; can run in parallel with Phase 83/84 if desired)
+**Requirements**: ARCH-03
+**Success Criteria** (what must be TRUE):
+
+  1. `#[cfg_attr(not(test), deny(clippy::unwrap_used))]` is present in the crate and `cargo clippy` passes with zero unwrap violations in production code
+  2. bridge.rs dispatcher entry point is wrapped in `catch_unwind`; panics are caught and returned as an error JSON response rather than crashing the process
+  3. All 133 former `.unwrap()` sites in bridge.rs and store.rs return `Result<_, GooseError>` with a specific error variant; `cargo test --locked` passes
+
+**Plans**: 6 plans
+
+**Wave 1**
+
+- [x] 87-01-PLAN.md — Create store/ skeleton: store/mod.rs (Arc<Mutex<Connection>>, immediate_transaction fix), git rm store.rs, update capture_import.rs + bridge call sites, 4 empty domain stubs (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 87-02-PLAN.md — Move 13 sleep methods to store/sleep.rs (Wave 2, parallel)
+- [x] 87-03-PLAN.md — Move 25 capture methods to store/capture.rs (Wave 2, parallel)
+- [x] 87-04-PLAN.md — Move ~49 metrics methods to store/metrics.rs (Wave 2, parallel)
+- [x] 87-05-PLAN.md — Move 49 activity methods to store/activity.rs (Wave 2, parallel)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 87-06-PLAN.md — Gate: cargo test --locked + cargo clippy --lib + human checkpoint (Wave 3)
+
+---
+
+#### Phase 86: bridge.rs Split + Protocol Comments
+
+**Goal**: bridge.rs is a thin router (≤ 100 lines) delegating to per-domain handler files; every WHOOP wire-format decode site carries an offset comment explaining the protocol layout
+**Depends on**: Phase 85 (ARCH-03 must complete first so the split inherits Result-typed handlers; COMM-01 collocated here because offset comments belong at the handler call sites)
+**Requirements**: ARCH-01, COMM-01
+**Success Criteria** (what must be TRUE):
+
+  1. bridge.rs is reduced to a routing layer (≤ 100 lines); domain handlers exist as separate files (`bridge/metrics.rs`, `bridge/sleep.rs`, `bridge/capture.rs`, `bridge/activity.rs`, `bridge/debug.rs`)
+  2. `BridgeRouter` trait (or equivalent dispatch mechanism) is defined and all 509 former match arms are handled via domain files
+  3. Each WHOOP wire-format decode site (Event-48 battery layout, cmd 26 response, R22 battery_pct field) carries a comment with byte offsets, data type, empirical verification date, and source reference
+  4. `cargo test --locked` passes with the reorganised module structure; no regressions in existing tests
+
+**Plans**: 6 plans
+
+**Wave 1**
+
+- [x] 86-01-PLAN.md — Create bridge/ skeleton: mod.rs router shell + 5 domain stubs, delete bridge.rs (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 86-02-PLAN.md — Fill bridge/metrics.rs, bridge/sleep.rs, bridge/capture.rs with domain arms (Wave 2, parallel)
+- [x] 86-03-PLAN.md — Fill bridge/activity.rs, bridge/debug.rs with domain arms + validation.* aliases (Wave 2, parallel)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 86-04-PLAN.md — Update include_str! scanner to scan all 5 domain files (Option A multi-file) (Wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 86-05-PLAN.md — Add COMM-01 offset comments: 11 sites in protocol.rs + 3 in bridge/metrics.rs (Wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 86-06-PLAN.md — Phase gate: cargo test --locked + clippy + human checkpoint (Wave 5)
+
+---
+
+#### Phase 87: store.rs Split
+
+**Goal**: store.rs 140 public methods are reorganised into domain stores that share a connection; the schema version is validated on every SQLite open
+**Depends on**: Phase 86 (bridge split must be complete before store split to avoid merge conflicts in the dispatcher)
+**Requirements**: ARCH-02
+**Success Criteria** (what must be TRUE):
+
+  1. Domain stores exist as separate files (`store/sleep.rs`, `store/capture.rs`, `store/metrics.rs`, `store/activity.rs`) sharing `Arc<Connection>`
+  2. Runtime schema version validation runs on SQLite open and returns an error if the on-disk schema version does not match the expected version
+  3. All existing Rust integration tests pass (`cargo test --locked`) with the reorganised store module; no public API regressions visible to Swift
+
+**Plans**: TBD
+
+---
+
+#### Phase 88: Swift Ownership — HealthDataStore
+
+**Goal**: HealthDataStore is owned by GooseAppModel with a strong reference; AppShellView no longer creates or owns the store; circular back-references are eliminated
+**Depends on**: Phase 82 (independent of Rust refactor phases; can be planned after Phase 87 ships or in parallel if no merge conflicts)
+**Requirements**: ARCH-04
+**Success Criteria** (what must be TRUE):
+
+  1. `GooseAppModel` holds `let healthStore: HealthDataStore` as a strong reference initialised during model init
+  2. `AppShellView` no longer declares `@StateObject private var healthStore`; it receives the store via `.environmentObject(model.healthStore)` injected from `GooseSwiftApp`
+  3. Weak back-references from HealthDataStore to GooseAppModel and all circular closures are eliminated; the iOS build compiles without new warnings
+
+**Plans**: 2 plans
+Plans:
+- [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
+- [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+**UI hint**: yes
+
+---
+
+#### Phase 89: BLE Actor Refactor
+
+**Goal**: GooseBLEClient is replaced by a BLETransport protocol and BLESessionCoordinator actor; all Gen4/Gen5 capability branching is centralised in DeviceCatalog
+**Depends on**: Phase 83 (DeviceCapabilities from Phase 83 is the source of truth for Gen4/Gen5 branching in DeviceCatalog)
+**Requirements**: ARCH-05
+**Success Criteria** (what must be TRUE):
+
+  1. `BLETransport` protocol exists with `CoreBluetoothBLETransport` as the concrete implementation; `GooseBLEClient` is either renamed or replaced
+  2. `BLESessionCoordinator` actor manages session lifecycle; BLE callbacks are dispatched through the actor isolation boundary
+  3. `DeviceCatalog` struct centralises all Gen4/Gen5 branching — no `if capabilities.historicalSync == .pageSequence` guards scattered across extension files
+  4. The iOS build compiles without new warnings; existing BLE session behaviour is unchanged from the user's perspective
+
+**Plans**: 3 plans
+Plans:
+- [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
+- [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
+- [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
+
+---
+
+#### Phase 90: Domain ViewModels
+
+**Goal**: GooseAppModel is decomposed into domain-scoped Observable objects so high-frequency BLE updates do not invalidate unrelated SwiftUI views
+**Depends on**: Phase 88, Phase 89 (ownership and actor refactors must be in place before splitting GooseAppModel)
+**Requirements**: ARCH-06
+**Success Criteria** (what must be TRUE):
+
+  1. `BLEState`, `SyncState`, and `HealthState` exist as separate `@Observable` objects; SwiftUI views import only the domain object they need
+  2. High-frequency BLE HR updates (1 Hz) no longer trigger redraws in views that only observe `SyncState` or `HealthState`
+  3. The iOS build compiles without new warnings; all existing UI screens remain functional
+
+**Plans**: 4 plans
+Plans:
+- [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
+- [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
+- [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
+- [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+**UI hint**: yes
+
+---
+
+#### Phase 91: Threading & Algorithm Comments
+
+**Goal**: Threading invariants and algorithm coefficients are documented at their source in Swift and Rust so future contributors understand the synchronisation model and the empirical basis of each constant
+**Depends on**: Phase 87 (COMM-02 Swift threading comments; COMM-03 algorithm comments in Rust — both are safest to land after the store split stabilises module boundaries)
+**Requirements**: COMM-02, COMM-03
+**Success Criteria** (what must be TRUE):
+
+  1. `GooseRustBridge` usage sites and the frame reassembly buffer carry comments explaining: synchronous FFI contract, multiple-instance pattern, `@MainActor` dispatch requirement, and `NSLock` guard scope
+  2. `metric_features.rs` carries comments for Banister eTRIMP (1.92/1.67 coefficients), EWMA alpha (0.0483 = 14-night half-life), and Cole-Kripke scale (0.001), each with bibliographic reference
+  3. The iOS build and `cargo test --locked` pass clean; no source changes beyond comment additions
+
+**Plans**: TBD
+
+</details>
+
+## Phase Details
+
+### Phase 83: Protocol Architecture Refactor
+
+**Goal**: Swift and Rust share a clean typed model of device identity and wire protocol — eliminating 17 string comparisons and 8 generation guards
+**Depends on**: Phase 82
+**Requirements**: PROTO-01, PROTO-02, PROTO-03
+**Success Criteria** (what must be TRUE):
+
+  1. `WireProtocol { Gen4, Gen5 }` Rust enum exists and Swift uses enum checks instead of `rustDeviceType == "GEN4"` string comparisons in frame reassembly
+  2. Bridge method `device.capabilities(device_kind)` returns a `DeviceCapabilities` JSON object; GooseBLEClient caches it as `connectedCapabilities` after GATT discovery
+  3. DB migration runs automatically on open and all MAVERICK/PUFFIN rows become GOOSE; `parse_device_type("MAVERICK")` returns an error after migration
+  4. `cargo test --locked` passes clean and the iOS build compiles without new warnings
+
+**Plans**: 6 plans
+Plans:
+
+- [x] 83-01-PLAN.md — Rust foundation: WireProtocol enum, DeviceType methods, capabilities.rs module (Wave 1)
+- [x] 83-02-PLAN.md — DB migration step 22: MAVERICK/PUFFIN → GOOSE, CURRENT_SCHEMA_VERSION bump (Wave 1)
+- [x] 83-03-PLAN.md — Bridge: device.capabilities method, BRIDGE_METHODS update, parse_device_type rejection (Wave 2)
+- [x] 83-04-PLAN.md — Swift types: WireProtocol enum, DeviceCapabilities, connectedCapabilities, GATT discovery call (Wave 3)
+- [x] 83-05-PLAN.md — Swift guards: all 23 activeDeviceGeneration + 11 rustDeviceType sites across 9 files (Wave 3)
+- [x] 83-06-PLAN.md — Phase gate: cargo test --locked full suite + iOS build verification (Wave 4)
+
+**Context**: `.planning/phases/83-protocol-architecture-refactor-gen4-gen5-capability-model/83-CONTEXT.md`
+
+### Phase 84: Gen4 Battery
+
+**Goal**: The app displays the real battery percentage for Gen4 WHOOP devices from the wire protocol instead of a hardcoded or unavailable value
+**Depends on**: Phase 83
+**Requirements**: BAT-01, BAT-02
+**Success Criteria** (what must be TRUE):
+
+  1. Event-48 payload (type 48) is parsed: offset 17 u16 LE / 10 with raw ≤ 1100 guard; result published to the battery UI for Gen4 devices
+  2. Cmd 26 response is parsed: payload[2..4] u16 LE / 10 with count ≥ 4 guard; used as fallback when Event-48 has not yet been received in the session
+  3. `cargo test --locked` includes at least one test for each parsing path (valid payload, boundary guard, fallback trigger)
+
+**Plans**: 3 plans
+Plans:
+
+**Wave 1**
+
+- [x] 84-01-PLAN.md — Rust: parse_event48_battery + parse_cmd26_battery, two bridge methods, event48_battery_pct compact field, unit tests (BAT-01, BAT-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 84-02-PLAN.md — Swift Event-48: event48BatteryPct compact/interpretation fields + Gen4-gated dispatch via applyBatteryLevel (BAT-01)
+- [x] 84-03-PLAN.md — Swift Cmd 26: BatteryCommandKind, auto-send on Gen4 connection, handleCmd26BatteryResponse via Rust bridge (BAT-02)
+
+### Phase 85: Rust Crash Safety
+
+**Goal**: Production Rust code cannot silently panic — every error path surfaces as a typed Result and the bridge entry point is guarded by catch_unwind
+**Depends on**: Phase 82
+**Requirements**: ARCH-03
+**Success Criteria** (what must be TRUE):
+
+  1. `#[cfg_attr(not(test), deny(clippy::unwrap_used))]` is present in the crate and `cargo clippy` passes with zero unwrap violations in production code
+  2. bridge.rs dispatcher entry point is wrapped in `catch_unwind`; panics are caught and returned as an error JSON response rather than crashing the process
+  3. All 133 former `.unwrap()` sites in bridge.rs and store.rs return `Result<_, GooseError>` with a specific error variant; `cargo test --locked` passes
+
+**Plans**: 6 plans
+
+Plans:
+
+- [x] 85-01-PLAN.md — Add deny(clippy::unwrap_used) to lib.rs + per-module allow shields; convert bridge.rs test unwraps to expect
+- [x] 85-02-PLAN.md — Convert store.rs test unwraps to expect; remove store.rs allow shield
+- [x] 85-03-PLAN.md — Fix 3 metrics.rs production unwrap sites; convert tests; remove allow shield
+- [x] 85-04-PLAN.md — Convert capabilities.rs test unwraps to expect; remove allow shield
+- [x] 85-05-PLAN.md — Fix 2 production unwrap sites (energy_rollup, step_discovery); convert small-file tests; remove allow shields
+- [x] 85-06-PLAN.md — Gate: cargo clippy --lib -D unwrap_used = 0; verify catch_unwind exists; cargo test --locked passes
+
+### Phase 86: bridge.rs Split + Protocol Comments
+
+**Goal**: bridge.rs is a thin router (≤ 100 lines) delegating to per-domain handler files; every WHOOP wire-format decode site carries an offset comment explaining the protocol layout
+**Depends on**: Phase 85
+**Requirements**: ARCH-01, COMM-01
+**Success Criteria** (what must be TRUE):
+
+  1. bridge.rs is reduced to a routing layer (≤ 100 lines); domain handlers exist as separate files (`bridge/metrics.rs`, `bridge/sleep.rs`, `bridge/capture.rs`, `bridge/activity.rs`, `bridge/debug.rs`)
+  2. `BridgeRouter` trait (or equivalent dispatch mechanism) is defined and all 509 former match arms are handled via domain files
+  3. Each WHOOP wire-format decode site (Event-48 battery layout, cmd 26 response, R22 battery_pct field) carries a comment with byte offsets, data type, empirical verification date, and source reference
+  4. `cargo test --locked` passes with the reorganised module structure; no regressions in existing tests
+
+**Plans**: 6 plans
+
+**Wave 1**
+
+- [x] 86-01-PLAN.md — Create bridge/ skeleton: bridge/mod.rs router + 5 empty domain stubs, delete bridge.rs (Wave 1)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 86-02-PLAN.md — Fill metrics.rs, sleep.rs, capture.rs domain handlers (Wave 2)
+- [x] 86-03-PLAN.md — Fill activity.rs, debug.rs + validation.* alias arms (Wave 2)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [x] 86-04-PLAN.md — Update include_str! self-scanner test to multi-file concatenation (Wave 3)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [x] 86-05-PLAN.md — COMM-01 protocol offset comments: 11 sites in protocol.rs + 3 in bridge/metrics.rs (Wave 4)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [x] 86-06-PLAN.md — Gate: cargo test --locked + cargo clippy --lib + human checkpoint (Wave 5)
+
+### Phase 87: store.rs Split
+
+**Goal**: store.rs 140 public methods are reorganised into domain stores that share a connection; the schema version is validated on every SQLite open
+**Depends on**: Phase 86
+**Requirements**: ARCH-02
+**Success Criteria** (what must be TRUE):
+
+  1. Domain stores exist as separate files (`store/sleep.rs`, `store/capture.rs`, `store/metrics.rs`, `store/activity.rs`) sharing `Arc<Connection>`
+  2. Runtime schema version validation runs on SQLite open and returns an error if the on-disk schema version does not match the expected version
+  3. All existing Rust integration tests pass (`cargo test --locked`) with the reorganised store module; no public API regressions visible to Swift
+
+**Plans**: 6 plans
+
+**Wave 1**
+
+- [ ] 87-01-PLAN.md — Create store/ skeleton: store/mod.rs (Arc<Mutex<Connection>>, immediate_transaction fix), git rm store.rs, update capture_import.rs + bridge call sites, 4 empty domain stubs (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 87-02-PLAN.md — Move 13 sleep methods to store/sleep.rs (Wave 2, parallel)
+- [ ] 87-03-PLAN.md — Move 25 capture methods to store/capture.rs (Wave 2, parallel)
+- [ ] 87-04-PLAN.md — Move ~49 metrics methods to store/metrics.rs (Wave 2, parallel)
+- [ ] 87-05-PLAN.md — Move 49 activity methods to store/activity.rs (Wave 2, parallel)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 87-06-PLAN.md — Gate: cargo test --locked + cargo clippy --lib + human checkpoint (Wave 3)
+
+### Phase 88: Swift Ownership — HealthDataStore
+
+**Goal**: HealthDataStore is owned by GooseAppModel with a strong reference; AppShellView no longer creates or owns the store; circular back-references are eliminated
+**Depends on**: Phase 82
+**Requirements**: ARCH-04
+**Success Criteria** (what must be TRUE):
+
+  1. `GooseAppModel` holds `let healthStore: HealthDataStore` as a strong reference initialised during model init
+  2. `AppShellView` no longer declares `@StateObject private var healthStore`; it receives the store via `.environmentObject(model.healthStore)` injected from `GooseSwiftApp`
+  3. Weak back-references from HealthDataStore to GooseAppModel and all circular closures are eliminated; the iOS build compiles without new warnings
+
+**Plans**: 2 plans
+Plans:
+- [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
+- [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+**UI hint**: yes
+
+### Phase 89: BLE Actor Refactor
+
+**Goal**: GooseBLEClient is replaced by a BLETransport protocol and BLESessionCoordinator actor; all Gen4/Gen5 capability branching is centralised in DeviceCatalog
+**Depends on**: Phase 83, Phase 88
+**Requirements**: ARCH-05
+**Success Criteria** (what must be TRUE):
+
+  1. `BLETransport` protocol exists with `CoreBluetoothBLETransport` as the concrete implementation; `GooseBLEClient` is either renamed or replaced
+  2. `BLESessionCoordinator` actor manages session lifecycle; BLE callbacks are dispatched through the actor isolation boundary
+  3. `DeviceCatalog` struct centralises all Gen4/Gen5 branching — no `if capabilities.historicalSync == .pageSequence` guards scattered across extension files
+  4. The iOS build compiles without new warnings; existing BLE session behaviour is unchanged from the user's perspective
+
+**Plans**: 3 plans
+Plans:
+- [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
+- [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
+- [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
+
+### Phase 90: Domain ViewModels
+
+**Goal**: GooseAppModel is decomposed into domain-scoped Observable objects so high-frequency BLE updates do not invalidate unrelated SwiftUI views
+**Depends on**: Phase 88, Phase 89
+**Requirements**: ARCH-06
+**Success Criteria** (what must be TRUE):
+
+  1. `BLEState`, `SyncState`, and `HealthState` exist as separate `@Observable` objects; SwiftUI views import only the domain object they need
+  2. High-frequency BLE HR updates (1 Hz) no longer trigger redraws in views that only observe `SyncState` or `HealthState`
+  3. The iOS build compiles without new warnings; all existing UI screens remain functional
+
+**Plans**: 4 plans
+Plans:
+- [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
+- [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
+- [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
+- [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+**UI hint**: yes
+
+### Phase 91: Threading & Algorithm Comments
+
+**Goal**: Threading invariants and algorithm coefficients are documented at their source in Swift and Rust so future contributors understand the synchronisation model and the empirical basis of each constant
+**Depends on**: Phase 87
+**Requirements**: COMM-02, COMM-03
+**Success Criteria** (what must be TRUE):
+
+  1. `GooseRustBridge` usage sites and the frame reassembly buffer carry comments explaining: synchronous FFI contract, multiple-instance pattern, `@MainActor` dispatch requirement, and `NSLock` guard scope
+  2. `metric_features.rs` carries comments for Banister eTRIMP (1.92/1.67 coefficients), EWMA alpha (0.0483 = 14-night half-life), and Cole-Kripke scale (0.001), each with bibliographic reference
+  3. The iOS build and `cargo test --locked` pass clean; no source changes beyond comment additions
+
+**Plans**: TBD
 
 ## Progress
 
@@ -166,6 +591,15 @@ Next milestone scope not yet defined.
 | 61–65 | v9.0 | Complete | 2026-06-11 |
 | 67–73 | v10.0 | Complete | 2026-06-13 |
 | 74–82 | v11.0 | Complete | 2026-06-14 |
+| 83 | 6/6 | Complete   | 2026-06-14 |
+| 84 | 3/3 | Complete   | 2026-06-14 |
+| 85 | 6/6 | Complete   | 2026-06-14 |
+| 86 | 6/6 | Complete   | 2026-06-15 |
+| 87 | 6/6 | Complete   | 2026-06-18 |
+| 88 | 2/2 | Complete   | 2026-06-18 |
+| 89 | 3/3 | Complete   | 2026-06-18 |
+| 90 | v12.0 | Not started | — |
+| 91 | v12.0 | Not started | — |
 
 ## Backlog
 
@@ -202,7 +636,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 2/2 plans complete
+**Plans:** 5/6 plans executed
 Plans:
 **Wave 1**
 

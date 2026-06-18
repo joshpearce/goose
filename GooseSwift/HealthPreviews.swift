@@ -9,10 +9,13 @@ struct HealthPreviewRouteHost: View {
   let state: HealthPreviewState
 
   var body: some View {
-    NavigationStack {
-      HealthRouteDetailView(route: route, previewState: state)
+    let previewStore = HealthDataStore()
+    previewStore.applyPreviewState(state)
+    return NavigationStack {
+      HealthRouteDetailView(route: route)
     }
     .environment(GooseAppModel(startBLE: false))
+    .environment(previewStore)
     .environmentObject(AppRouter())
   }
 }
@@ -20,9 +23,10 @@ struct HealthPreviewRouteHost: View {
 
 #Preview("Health Landing") {
   NavigationStack {
-    HealthView(store: HealthDataStore())
+    HealthView()
   }
   .environment(GooseAppModel(startBLE: false))
+  .environment(HealthDataStore())
 }
 
 #if DEBUG
@@ -115,33 +119,33 @@ struct HealthPreviewRouteHost: View {
 #Preview("Home — Disconnected") {
   NavigationStack {
     HomeDashboardView(
-      healthStore: HealthDataStore(),
       selectedDate: .constant(Date()),
       openHealthRoute: { _ in }
     )
   }
   .environment(GooseAppModel(startBLE: false))
+  .environment(HealthDataStore())
   .environmentObject(AppRouter())
 }
 
 #Preview("Home — Populated") {
-  let store = HealthDataStore()
   NavigationStack {
     HomeDashboardView(
-      healthStore: store,
       selectedDate: .constant(Date()),
       openHealthRoute: { _ in }
     )
   }
   .environment(GooseAppModel(startBLE: false))
+  .environment(HealthDataStore())
   .environmentObject(AppRouter())
 }
 
 #Preview("More — Default") {
   NavigationStack {
-    MoreView(healthStore: HealthDataStore())
+    MoreView()
   }
   .environment(GooseAppModel(startBLE: false))
+  .environment(HealthDataStore())
   .environmentObject(AppRouter())
 }
 

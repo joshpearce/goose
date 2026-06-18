@@ -155,7 +155,7 @@ enum CodexLocalToolContext {
     ]
   }
 
-  private static func devicePayload(_ ble: GooseBLEClient) -> [String: Any] {
+  private static func devicePayload(_ ble: any BLETransport) -> [String: Any] {
     [
       "connection": ble.connectionState,
       "reconnect": ble.reconnectState,

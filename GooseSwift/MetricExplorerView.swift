@@ -14,7 +14,7 @@ private struct MetricRow: Identifiable {
 // MARK: - MetricExplorerView
 
 struct MetricExplorerView: View {
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   // MARK: - Data
 

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::capabilities::DeviceKind;
 use crate::{GooseError, GooseResult};
 
 pub const FRAME_START: u8 = 0xaa;
@@ -27,6 +28,8 @@ pub const COMMAND_GET_HELLO: u8 = 145;
 pub enum DeviceType {
     Gen4,
     Maverick,
+    /// Hardware code name with no known generation mapping — likely unshipped.
+    /// Parses as Gen5-family wire format (8-byte header).
     Puffin,
     Goose,
     HrMonitor,
@@ -51,6 +54,10 @@ impl DeviceType {
                 if buffer.len() < 4 {
                     None
                 } else {
+                    // Stream reassembly: Gen4 payload length at buffer[1..=2] u16 LE
+                    //   header offset 1 — same byte position as parse_frame Gen4 declared_len
+                    //   total frame = payload_len + 4 (4-byte Gen4 header)
+                    //   empirically verified 2026-06-14 via Ghidra + BTSnoop
                     Some(u16::from_le_bytes([buffer[1], buffer[2]]) as usize + 4)
                 }
             }
@@ -61,11 +68,48 @@ impl DeviceType {
                 if buffer.len() < 8 {
                     None
                 } else {
+                    // Stream reassembly: Gen5-family payload length at buffer[2..=3] u16 LE
+                    //   header offset 2 — same byte position as parse_frame Gen5 declared_len
+                    //   total frame = payload_len + 8 (8-byte Gen5 header)
+                    //   empirically verified 2026-06-14 via Ghidra + BTSnoop
                     Some(u16::from_le_bytes([buffer[2], buffer[3]]) as usize + 8)
                 }
             }
         }
     }
+
+    pub fn wire_protocol(self) -> WireProtocol {
+        match self {
+            DeviceType::Gen4 => WireProtocol::Gen4,
+            DeviceType::Maverick
+            | DeviceType::Puffin
+            | DeviceType::Goose
+            | DeviceType::HrMonitor => WireProtocol::Gen5,
+        }
+    }
+
+    /// Returns true for all devices that use the 8-byte Gen5-family frame header.
+    pub fn is_gen5_family(self) -> bool {
+        matches!(
+            self,
+            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor
+        )
+    }
+
+    pub fn device_kind(self) -> DeviceKind {
+        match self {
+            DeviceType::Gen4 => DeviceKind::Whoop4,
+            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
+            DeviceType::HrMonitor => DeviceKind::HrMonitor,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WireProtocol {
+    Gen4,
+    Gen5,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -300,7 +344,19 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
     }
 
     let declared_len = match device_type {
+        // Gen4 frame header layout (4 bytes total):
+        //   byte 0: frame_start (0xaa)
+        //   bytes 1–2: payload length u16 LE (excludes the 4-byte header itself)
+        //   byte 3: CRC8 of bytes 1–2
+        //   empirically verified 2026-06-14 via Ghidra + BTSnoop (WHOOP 4.0 captures)
         DeviceType::Gen4 => u16::from_le_bytes([frame[1], frame[2]]) as usize,
+        // Gen5-family frame header layout (8 bytes total):
+        //   byte 0: frame_start (0xaa)
+        //   byte 1: flags / version byte (Gen5 addition — absent in Gen4)
+        //   bytes 2–3: payload length u16 LE (same role as Gen4 bytes 1–2, shifted by 1)
+        //   bytes 4–5: reserved / padding (observed all-zero in BTSnoop captures)
+        //   bytes 6–7: CRC16 Modbus of bytes 0–5 (expanded header coverage vs. Gen4 CRC8)
+        //   empirically verified 2026-06-14 via Ghidra + BTSnoop (WHOOP 5.0 Maverick captures)
         DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor => {
             u16::from_le_bytes([frame[2], frame[3]]) as usize
         }
@@ -314,6 +370,8 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
     let header_crc_valid = match device_type {
         DeviceType::Gen4 => crc8(&frame[1..3]) == frame[3],
         DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor => {
+            // Gen5 frame trailer: bytes 6–7 = CRC16 Modbus of the first 6 header bytes
+            //   CRC covers bytes 0–5 (frame_start through reserved); empirically verified 2026-06-14
             let actual = u16::from_le_bytes([frame[6], frame[7]]);
             crc16_modbus(&frame[..6]) == actual
         }
@@ -657,9 +715,17 @@ fn parse_r22_payload(payload: &[u8]) -> ParsedPayload {
             warnings,
         };
     }
+    // offset 1: u8, battery_pct direct (0–100); no scaling required
+    //   R22 is WHOOP 5.0 realtime BLE handle (characteristic 0x0022 on WHOOP 5.0 GAP profile)
+    //   empirically verified via BTSnoop; field name confirmed in openwhoop reference
     let battery_pct = payload[1];
+    // offsets 2–3: u16 LE, hr_milli_bpm; hr_bpm = raw / 10.0 (millibeats per minute)
+    //   minimum payload guard: len ≥ 4 checked above — guard comment explains the unconditional index
+    //   empirically verified via BTSnoop capture 2026-06-14
     let hr_milli_bpm = u16::from_le_bytes([payload[2], payload[3]]);
     let hr_bpm = hr_milli_bpm as f32 / 10.0;
+    // offsets 4–5: [u8; 2], purpose unknown — empirical; conditional on len ≥ 6
+    //   content may carry sub-second HR data or motion artifact flag (unconfirmed via Ghidra 2026-06-14)
     let extra = if payload.len() >= 6 {
         Some([payload[4], payload[5]])
     } else {
@@ -690,6 +756,15 @@ fn parse_r22_payload(payload: &[u8]) -> ParsedPayload {
 fn parse_k10_raw_motion_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
     let mut axes = Vec::new();
     let mut warnings = Vec::new();
+    // K10 payload accelerometer/gyroscope layout (byte offsets into payload, each axis = 100 × i16 LE samples):
+    //   accelerometer_x: offset 85,   200 bytes (100 samples × 2 bytes)
+    //   accelerometer_y: offset 285,  200 bytes
+    //   accelerometer_z: offset 485,  200 bytes
+    //   gyroscope_x:     offset 688,  200 bytes (gap at 685–687 = 3 padding bytes observed)
+    //   gyroscope_y:     offset 888,  200 bytes
+    //   gyroscope_z:     offset 1088, 200 bytes
+    //   sampling rate: 25 Hz assumed from WHOOP protocol RE; 100 samples ≈ 4 seconds per K10 packet
+    //   empirically verified 2026-06-14 via Ghidra disassembly + BTSnoop (WHOOP 4.0 K10 frames)
     for (name, offset) in [
         ("accelerometer_x", 85),
         ("accelerometer_y", 285),
@@ -754,6 +829,25 @@ fn read_f32_le(data: &[u8], offset: usize) -> Option<f32> {
     Some(f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
 }
 
+/// V24 history payload body layout (offsets relative to `data`, i.e. body start = payload[3]):
+///   offset 14:    u8,   hr (beats per minute, unsigned)
+///   offset 15:    u8,   rr_count (number of RR intervals following, max 4)
+///   offsets 16–23: u16 LE × 4, rr_intervals_ms (zero-padded if rr_count < 4)
+///   offset 26:    u16 LE, ppg_green (raw PPG channel 1 — green LED)
+///   offset 28:    u16 LE, ppg_red_ir (raw PPG channel 2 — red/IR shared)
+///   offsets 33–44: f32 LE × 3, gravity_x / gravity_y / gravity_z (m/s², 9.8 = 1 g)
+///   offset 48:    u8,   skin_contact (0 = off-wrist, 1 = on-wrist)
+///   offsets 49–60: f32 LE × 3, gravity2_x / gravity2_y / gravity2_z (second triplet, conditional on len ≥ 60)
+///   offset 61:    u16 LE, spo2_red (raw red LED photodiode ADC count)
+///   offset 63:    u16 LE, spo2_ir (raw infrared LED photodiode ADC count)
+///   offset 65:    u16 LE, skin_temp_raw; degC = (raw − 930) / 30 + 33 (NTC linearisation)
+///   offset 67:    u16 LE, ambient (ambient light rejection channel, raw ADC)
+///   offset 69:    u16 LE, led1 (LED driver current reading, raw)
+///   offset 71:    u16 LE, led2 (LED driver current reading, raw)
+///   offset 73:    u16 LE, resp_raw (respiration signal; zero-crossing algorithm applied at metrics layer)
+///   offset 75:    u16 LE, sig_quality (signal quality score, higher = better)
+/// Guard: len ≥ 77 required (offset 75 + 2 bytes); short payloads return empty variant with warning.
+/// empirically verified 2026-06-14 via Ghidra disassembly + BTSnoop (WHOOP 5.0 Maverick V24 frames)
 fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
     let data = payload.get(3..).unwrap_or(&[]);
     let mut warnings = Vec::new();
@@ -894,13 +988,20 @@ fn parse_v18_body(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>
         .filter(|&v| v != 0)
         .collect::<Vec<u16>>();
 
+    // offsets 45/49/53 (body-relative): f32 LE × 3, gravity_x / gravity_y / gravity_z
+    //   units: m/s²; 9.8 = 1 g; same axis order as V24 first gravity triplet
+    //   empirically verified 2026-06-14 via Ghidra + BTSnoop (WHOOP 4.0 V18 frames)
     let gravity_x = read_f32_le(data, 45);
     let gravity_y = read_f32_le(data, 49);
     let gravity_z = read_f32_le(data, 53);
 
     let step_motion_counter = read_u16_le(data, 57);
 
-    // skin_temp_raw stored as raw u16; degC = raw / 128.0, gate 5..=45 applied at persistence site.
+    // offset 73 (body-relative): u16 LE, skin_temp_raw
+    //   body starts at payload[3] (3-byte data-packet header skipped above)
+    //   degC = raw / 128.0 (LSBs per degree Celsius from NTC thermistor linearisation)
+    //   gate 5–45°C applied at persistence site; values outside range indicate off-wrist or sensor error
+    //   empirically verified 2026-06-14 via Ghidra + BTSnoop
     let skin_temp_raw = read_u16_le(data, 73);
 
     (
@@ -1061,7 +1162,7 @@ fn history_hr_marker_offset(packet_k: u8) -> Option<usize> {
     }
 }
 
-fn read_u16_le(bytes: &[u8], offset: usize) -> Option<u16> {
+pub(crate) fn read_u16_le(bytes: &[u8], offset: usize) -> Option<u16> {
     Some(u16::from_le_bytes([
         *bytes.get(offset)?,
         *bytes.get(offset + 1)?,
@@ -1082,6 +1183,87 @@ fn read_i16_le(bytes: &[u8], offset: usize) -> Option<i16> {
         *bytes.get(offset)?,
         *bytes.get(offset + 1)?,
     ]))
+}
+
+#[cfg(test)]
+mod wire_protocol_tests {
+    use super::*;
+    use crate::capabilities::DeviceKind;
+
+    #[test]
+    fn wire_protocol_gen4() {
+        assert_eq!(DeviceType::Gen4.wire_protocol(), WireProtocol::Gen4);
+    }
+
+    #[test]
+    fn wire_protocol_goose_is_gen5() {
+        assert_eq!(DeviceType::Goose.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_maverick_is_gen5() {
+        assert_eq!(DeviceType::Maverick.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_puffin_is_gen5() {
+        assert_eq!(DeviceType::Puffin.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn wire_protocol_hr_monitor_is_gen5() {
+        assert_eq!(DeviceType::HrMonitor.wire_protocol(), WireProtocol::Gen5);
+    }
+
+    #[test]
+    fn is_gen5_family_gen4_false() {
+        assert!(!DeviceType::Gen4.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_goose_true() {
+        assert!(DeviceType::Goose.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_maverick_true() {
+        assert!(DeviceType::Maverick.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_puffin_true() {
+        assert!(DeviceType::Puffin.is_gen5_family());
+    }
+
+    #[test]
+    fn is_gen5_family_hr_monitor_true() {
+        assert!(DeviceType::HrMonitor.is_gen5_family());
+    }
+
+    #[test]
+    fn device_kind_gen4_is_whoop4() {
+        assert_eq!(DeviceType::Gen4.device_kind(), DeviceKind::Whoop4);
+    }
+
+    #[test]
+    fn device_kind_goose_is_whoop5() {
+        assert_eq!(DeviceType::Goose.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_maverick_is_whoop5() {
+        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_puffin_is_whoop5() {
+        assert_eq!(DeviceType::Puffin.device_kind(), DeviceKind::Whoop5);
+    }
+
+    #[test]
+    fn device_kind_hr_monitor() {
+        assert_eq!(DeviceType::HrMonitor.device_kind(), DeviceKind::HrMonitor);
+    }
 }
 
 pub fn padding_len(length: usize) -> usize {

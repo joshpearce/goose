@@ -4,20 +4,20 @@ import SwiftUI
 import UIKit
 
 struct SleepDataBridgeSection: View {
-  var store: HealthDataStore
-  var ble: GooseBLEClient
+  @Environment(HealthDataStore.self) private var healthStore
+  var ble: any BLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HealthSectionTitle("Sleep Data")
       VStack(spacing: 8) {
         HealthInfoRow(row: HealthSummaryRow("Band history", value: "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packetText)", source: .live("WHOOP historical sync"), systemImage: "antenna.radiowaves.left.and.right"))
-        HealthInfoRow(row: HealthSummaryRow("Band sleep import", value: store.bandSleepImportStatus, source: .bridge("band historical packets"), systemImage: "square.stack.3d.up"))
-        HealthInfoRow(row: HealthSummaryRow("Goose sleep score", value: store.sleepFeatureScoreSummary(), source: store.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
+        HealthInfoRow(row: HealthSummaryRow("Band sleep import", value: healthStore.bandSleepImportStatus, source: .bridge("band historical packets"), systemImage: "square.stack.3d.up"))
+        HealthInfoRow(row: HealthSummaryRow("Goose sleep score", value: healthStore.sleepFeatureScoreSummary(), source: healthStore.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
       }
       HStack(spacing: 10) {
         Button {
-          store.markBandSleepSyncRequested(
+          healthStore.markBandSleepSyncRequested(
             automatic: false,
             canSync: ble.canSyncHistorical,
             detail: ble.historicalSyncStatus
@@ -33,7 +33,7 @@ struct SleepDataBridgeSection: View {
         .disabled(!ble.canSyncHistorical)
 
         Button {
-          Task { await store.refreshSleepAfterBandSync(packetCount: ble.historicalPacketCount) }
+          Task { await healthStore.refreshSleepAfterBandSync(packetCount: ble.historicalPacketCount) }
         } label: {
           Label("Refresh Score", systemImage: "chart.xyaxis.line")
             .frame(maxWidth: .infinity)
@@ -88,7 +88,7 @@ enum SleepAlarmConfirmation: Identifiable {
 }
 
 struct SleepAlarmBridgeSection: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @State private var alarmTime = defaultWakeTime()
   @State private var pendingConfirmation: SleepAlarmConfirmation?
   private let alarmID = 1
@@ -205,7 +205,7 @@ struct SleepAlarmBridgeSection: View {
       return .live("WHOOP alarm event")
     }
     if ble.canWriteAlarm {
-      return .live("GooseBLEClient alarm write")
+      return .live("(CoreBluetoothBLETransport) alarm write")
     }
     return .unavailable(ble.alarmWriteSupportSummary)
   }

@@ -6,7 +6,7 @@ import UIKit
 struct RecoveryV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
   @Environment(GooseAppModel.self) private var model
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingDatePicker = false
@@ -37,11 +37,11 @@ struct RecoveryV2OverviewPage: View {
           LazyVStack(alignment: .leading, spacing: 0) {
             SleepV2ScrollOffsetProbe()
 
-            if store.packetScoreStatus.hasPrefix("Extracting") {
+            if healthStore.packetScoreStatus.hasPrefix("Extracting") {
               ProgressView()
                 .tint(palette.accent)
                 .frame(height: heroHeight)
-            } else if store.recoveryV1IsCalibrating {
+            } else if healthStore.recoveryV1IsCalibrating {
               RecoveryV2CalibratingHero(
                 palette: palette,
                 dateLabel: dateLabel,
@@ -58,7 +58,7 @@ struct RecoveryV2OverviewPage: View {
                   gaugeLabel: "Recovery",
                   onDateTap: { showingDatePicker = true }
                 )
-                if let trustLabel = store.recoveryV1TrustLabel {
+                if let trustLabel = healthStore.recoveryV1TrustLabel {
                   Text(trustLabel)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.secondaryText)
@@ -67,7 +67,7 @@ struct RecoveryV2OverviewPage: View {
                     .background(.thinMaterial, in: Capsule())
                     .padding(.top, 6)
                 }
-                if let bandColor = store.recoveryV1Result?.bandColor {
+                if let bandColor = healthStore.recoveryV1Result?.bandColor {
                   Capsule()
                     .fill(bandColor.opacity(0.82))
                     .frame(width: 48, height: 6)
@@ -83,7 +83,7 @@ struct RecoveryV2OverviewPage: View {
                   palette: palette,
                   systemImage: "waveform.path.ecg",
                   label: "Resting HRV",
-                  value: store.recoveryHRVDisplayText(for: selectedDate)
+                  value: healthStore.recoveryHRVDisplayText(for: selectedDate)
                 )
                 .frame(height: 96)
 
@@ -91,7 +91,7 @@ struct RecoveryV2OverviewPage: View {
                   palette: palette,
                   systemImage: "heart.fill",
                   label: "Resting HR",
-                  value: store.recoveryRestingHRDisplayText(for: selectedDate)
+                  value: healthStore.recoveryRestingHRDisplayText(for: selectedDate)
                 )
                 .frame(height: 96)
 
@@ -99,7 +99,7 @@ struct RecoveryV2OverviewPage: View {
                   palette: palette,
                   systemImage: "lungs.fill",
                   label: "Respiratory Rate",
-                  value: store.recoveryRespiratoryRateDisplayText(for: selectedDate)
+                  value: healthStore.recoveryRespiratoryRateDisplayText(for: selectedDate)
                 )
                 .frame(height: 96)
 
@@ -107,7 +107,7 @@ struct RecoveryV2OverviewPage: View {
                   palette: palette,
                   systemImage: "drop.fill",
                   label: "Oxygen Saturation",
-                  value: store.recoveryOxygenSaturationDisplayText(for: selectedDate)
+                  value: healthStore.recoveryOxygenSaturationDisplayText(for: selectedDate)
                 )
                 .frame(height: 96)
               }
@@ -116,14 +116,14 @@ struct RecoveryV2OverviewPage: View {
                 palette: palette,
                 systemImage: "thermometer.medium",
                 label: "Wrist Temperature",
-                value: store.recoveryWristTemperatureDisplayText(for: selectedDate)
+                value: healthStore.recoveryWristTemperatureDisplayText(for: selectedDate)
               )
               .frame(height: 96)
 
-              ReadinessLevelCard(palette: palette, result: store.readinessResult)
+              ReadinessLevelCard(palette: palette, result: healthStore.readinessResult)
                 .frame(height: 96)
 
-              if let v24 = store.v24BiometricsResult, !v24.isEmpty {
+              if let v24 = healthStore.v24BiometricsResult, !v24.isEmpty {
                 V24BiometricsCard(palette: palette, result: v24)
               }
 
@@ -131,7 +131,7 @@ struct RecoveryV2OverviewPage: View {
                 palette: palette,
                 systemImage: "target",
                 label: "Target Strain Today",
-                value: store.strainTargetDisplayText()
+                value: healthStore.strainTargetDisplayText()
               )
               .frame(height: 96)
 
@@ -191,7 +191,7 @@ struct RecoveryV2OverviewPage: View {
       ScoreDatePickerSheet(
         title: "Recovery",
         routes: [.recovery],
-        snapshots: [store.snapshot(for: .recovery)],
+        snapshots: [healthStore.snapshot(for: .recovery)],
         selectedDate: $selectedDate
       )
     }
@@ -200,26 +200,26 @@ struct RecoveryV2OverviewPage: View {
     }
     .onAppear {
       Task {
-        await store.loadBridgeCatalogsIfNeeded()
-        await store.runPacketScores()
-        await store.runRecoveryV1()
-        await store.runReadinessV1()
-        await store.runV24Biometrics()
+        await healthStore.loadBridgeCatalogsIfNeeded()
+        await healthStore.runPacketScores()
+        await healthStore.runRecoveryV1()
+        await healthStore.runReadinessV1()
+        await healthStore.runV24Biometrics()
       }
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       Task {
-        await store.runPacketScores()
-        await store.runRecoveryV1()
-        await store.runReadinessV1()
-        await store.runV24Biometrics()
+        await healthStore.runPacketScores()
+        await healthStore.runRecoveryV1()
+        await healthStore.runReadinessV1()
+        await healthStore.runV24Biometrics()
       }
     }
   }
 
   private var selectedSnapshot: HealthMetricSnapshot {
     ScoreDateTimeline.datedSnapshot(
-      from: store.snapshot(for: .recovery),
+      from: healthStore.snapshot(for: .recovery),
       date: selectedDate
     )
   }
@@ -229,7 +229,7 @@ struct RecoveryV2OverviewPage: View {
       return selectedScore
     }
     return Calendar.current.isDate(selectedDate, inSameDayAs: Date())
-      ? store.recoveryScoreDisplayValue()
+      ? healthStore.recoveryScoreDisplayValue()
       : 0
   }
 
@@ -238,7 +238,7 @@ struct RecoveryV2OverviewPage: View {
   }
 
   private var recoveryTrendRows: [HealthMetricSnapshot] {
-    store.recoveryTrendOverviewRows()
+    healthStore.recoveryTrendOverviewRows()
   }
 
   private var dateLabel: String {
@@ -248,7 +248,7 @@ struct RecoveryV2OverviewPage: View {
   }
 
   private var coachTip: CoachInlineTip {
-    CoachTipFactory.metricTip(route: .recovery, healthStore: store, appModel: model)
+    CoachTipFactory.metricTip(route: .recovery, healthStore: healthStore, appModel: model)
   }
 
   private func openCoachTip() {
@@ -313,7 +313,7 @@ struct RecoveryV2CalibratingHero: View {
 struct StressV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
   @Environment(GooseAppModel.self) private var model
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingDatePicker = false
@@ -461,7 +461,7 @@ struct StressV2OverviewPage: View {
   }
 
   private var summary: StressAlgorithmSummary {
-    store.stressAlgorithmSummary(for: selectedDate)
+    healthStore.stressAlgorithmSummary(for: selectedDate)
   }
 
   private var stressScore: Int {
@@ -469,7 +469,7 @@ struct StressV2OverviewPage: View {
   }
 
   private var trendRows: [HealthMetricSnapshot] {
-    Calendar.current.isDate(selectedDate, inSameDayAs: Date()) ? store.trendRows(for: .stress) : []
+    Calendar.current.isDate(selectedDate, inSameDayAs: Date()) ? healthStore.trendRows(for: .stress) : []
   }
 
   private var dateLabel: String {
@@ -493,7 +493,7 @@ struct StressV2OverviewPage: View {
   }
 
   private var coachTip: CoachInlineTip {
-    CoachTipFactory.metricTip(route: .stress, healthStore: store, appModel: model)
+    CoachTipFactory.metricTip(route: .stress, healthStore: healthStore, appModel: model)
   }
 
   private func openCoachTip() {

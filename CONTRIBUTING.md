@@ -5,6 +5,8 @@ This project moves quickly. Small, focused changes are easiest to review.
 
 Want to talk to other contributors? [Join the discussion on GitHub](https://github.com/tigercraft4/goose/discussions).
 
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
 ---
 
 ## Development Environment Setup
@@ -14,7 +16,7 @@ See [Getting Started](docs/guides/getting-started.md) for prerequisites and firs
 ### Prerequisites
 
 - macOS with Xcode installed (iOS 26 SDK required)
-- Apple Developer account with signing configured for bundle ID `com.tigercraft4.goose`
+- Apple Developer account with signing configured for bundle ID `com.goose.app` (defined in `Config/Signing.xcconfig`; override locally via `Config/Local.xcconfig`)
 - Rust toolchain via `rustup`
 - iOS Rust targets:
 
@@ -97,14 +99,14 @@ The pre-built `.a` archives at `Rust/iphoneos/libgoose_core.a` and `Rust/iphones
 The Rust test suite runs on any platform (including Linux/CI):
 
 ```bash
-cargo test -p goose-core --locked --no-fail-fast
+cargo test --lib --verbose
 ```
 
-There are 45 integration test files in `Rust/core/tests/`, covering protocol parsing, metric algorithms, storage, BLE simulation, sleep staging, biometric pipeline, and exercise detection. Recent additions include `v24_biometric_bridge_tests.rs`, `v24_biometric_protocol_tests.rs`, and `exercise_detection_tests.rs`. CI runs these automatically on every pull request that touches `Rust/core/` via the `Rust Core CI` workflow (`.github/workflows/rust-core-ci.yml`).
+There are 45 integration test files in `Rust/core/tests/`, covering protocol parsing, metric algorithms, storage, BLE simulation, sleep staging, biometric pipeline, and exercise detection. CI runs these automatically on every pull request that touches `Rust/core/` via the `rust-core` workflow (`.github/workflows/rust-core.yml`).
 
 ### Swift unit tests
 
-The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 52 unit tests across 10 files covering upload payload construction, BLE types, HR monitor state, and coach provider logic. Run them from Xcode (Product → Test) or via `xcodebuild test`:
+The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 69 unit tests across 16 files covering BLE types, upload service, HR monitor state, coach providers (Claude, Gemini, custom endpoint, registry, keychain), wearable descriptors, workout entries, live activity attributes, historical range parsing, temperature formatting, trends fetch, and baseline progress. Run them from Xcode (Product → Test) or via `xcodebuild test`:
 
 ```bash
 xcodebuild test \
@@ -135,7 +137,7 @@ There is no formatter config file. Match the surrounding file's style exactly. R
 
 ### Rust
 
-- Edition 2024, MSRV 1.96.
+- Edition 2024, MSRV 1.94.
 - Run `cargo clippy` and `cargo fmt` before submitting. Clippy is non-blocking in CI but warnings should not be introduced.
 - Follow the existing module structure under `Rust/core/src/`.
 
@@ -147,11 +149,13 @@ These rules apply whenever touching `GooseRustBridge` or adding bridge call site
 
 - **Always pass `database_path` in every bridge call that accesses storage.** The Rust side is stateless; all persistence goes through the path argument. Use `HealthDataStore.defaultDatabasePath()` to resolve it.
 - **Never call `GooseRustBridge` from `@MainActor` inline.** `goose_bridge_handle_json` is synchronous and blocks the calling thread. Always dispatch to a background `DispatchQueue` first, then return to `@MainActor` via `Task { @MainActor in ... }`.
-- **Do not create ad-hoc `GooseRustBridge()` instances per call site.** Use the instance already owned by the relevant coordinator (`GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`). If a new long-lived coordinator needs bridge access, give it its own instance — the bridge is intentionally not a singleton.
+- **`GooseRustBridge` is not a singleton.** Long-lived coordinators (`GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`, `GooseBLEClient`, `GooseUploadService`, `MoreDataStore`, `NotificationFrameParsing`) each own their own instance. Short-lived local instances are also acceptable for one-off bridge calls in background contexts. Do not introduce a shared singleton.
 
 ---
 
 ## PR Guidelines
+
+Use the [Enhancement PR template](.github/PULL_REQUEST_TEMPLATE/enhancement.md) when opening a pull request. The checklist there is the authoritative review gate. Beyond the template:
 
 - Keep changes close to the feature or bug you are working on. Avoid bundling unrelated fixes.
 - Match the existing SwiftUI style before introducing new patterns.

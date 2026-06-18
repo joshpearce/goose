@@ -4,12 +4,12 @@ import SwiftUI
 import UIKit
 
 struct EnergyBankView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     List {
       Section {
-        HealthHero(snapshot: store.snapshot(for: .energyBank), subtitle: "Energy charge, drain, stress, and sleep contribution")
+        HealthHero(snapshot: healthStore.snapshot(for: .energyBank), subtitle: "Energy charge, drain, stress, and sleep contribution")
           .listRowInsets(EdgeInsets())
           .listRowBackground(Color.clear)
       }
@@ -36,7 +36,7 @@ struct EnergyBankView: View {
   }
 
   private var summary: EnergyBankAlgorithmSummary {
-    store.energyBankAlgorithmSummary()
+    healthStore.energyBankAlgorithmSummary()
   }
 
   private var selectedPoint: EnergyStressPoint? {
@@ -49,19 +49,19 @@ struct EnergyBankView: View {
 }
 
 struct AlgorithmsHealthView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     List {
       Section("Primary Selection") {
-        ForEach(store.algorithmFamilies, id: \.self) { family in
-          let algorithms = store.algorithms(for: family)
+        ForEach(healthStore.algorithmFamilies, id: \.self) { family in
+          let algorithms = healthStore.algorithms(for: family)
           if algorithms.isEmpty {
-            HealthInfoRow(row: HealthSummaryRow(family.uppercased(), value: "No algorithms registered", source: store.catalogSource, systemImage: "function"))
+            HealthInfoRow(row: HealthSummaryRow(family.uppercased(), value: "No algorithms registered", source: healthStore.catalogSource, systemImage: "function"))
           } else {
             Picker(family.uppercased(), selection: Binding(
-              get: { store.selectedAlgorithmByFamily[family] ?? algorithms[0].id },
-              set: { store.selectAlgorithm($0, for: family) }
+              get: { healthStore.selectedAlgorithmByFamily[family] ?? algorithms[0].id },
+              set: { healthStore.selectAlgorithm($0, for: family) }
             )) {
               ForEach(algorithms) { algorithm in
                 Text(algorithm.displayName).tag(algorithm.id)
@@ -72,13 +72,13 @@ struct AlgorithmsHealthView: View {
       }
 
       Section("Algorithm Definitions") {
-        ForEach(store.algorithmDefinitions) { definition in
+        ForEach(healthStore.algorithmDefinitions) { definition in
           HealthInfoRow(row: HealthSummaryRow(definition.displayName, value: "\(definition.family) | \(definition.status) | \(definition.provider)", source: definition.source, systemImage: "function"))
         }
       }
 
       Section("Reference Definitions") {
-        ForEach(store.referenceDefinitions) { definition in
+        ForEach(healthStore.referenceDefinitions) { definition in
           HealthInfoRow(row: HealthSummaryRow(definition.displayName, value: "\(definition.family) | \(definition.status)", source: definition.source, systemImage: "scalemass"))
         }
       }
@@ -89,13 +89,13 @@ struct AlgorithmsHealthView: View {
 }
 
 struct ReferenceComparisonsView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     List {
       Section {
         Button {
-          store.runReferenceComparisons()
+          healthStore.runReferenceComparisons()
         } label: {
           Label("Run Reference Comparisons", systemImage: "compare.arrows")
         }
@@ -105,7 +105,7 @@ struct ReferenceComparisonsView: View {
       }
       Section("Comparisons") {
         ForEach(["hrv", "sleep", "strain", "stress"], id: \.self) { family in
-          HealthInfoRow(row: HealthSummaryRow(family.uppercased(), value: store.referenceComparisonSummary(family), source: store.referenceComparisonSource(family), systemImage: "scalemass"))
+          HealthInfoRow(row: HealthSummaryRow(family.uppercased(), value: healthStore.referenceComparisonSummary(family), source: healthStore.referenceComparisonSource(family), systemImage: "scalemass"))
         }
       }
     }
@@ -115,12 +115,13 @@ struct ReferenceComparisonsView: View {
 }
 
 struct CalibrationHealthView: View {
-  @Bindable var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
-    List {
+    @Bindable var bindable = healthStore
+    return List {
       Section("Target") {
-        Picker("Family", selection: $store.calibrationTargetFamily) {
+        Picker("Family", selection: $bindable.calibrationTargetFamily) {
           ForEach(["recovery", "sleep", "strain", "stress", "hrv"], id: \.self) { family in
             Text(family.uppercased()).tag(family)
           }
@@ -130,12 +131,12 @@ struct CalibrationHealthView: View {
 
       Section("Actions") {
         Button {
-          store.importCalibrationLabels()
+          healthStore.importCalibrationLabels()
         } label: {
           Label("Import Labels", systemImage: "square.and.arrow.down")
         }
         Button {
-          store.calibrate()
+          healthStore.calibrate()
         } label: {
           Label("Calibrate", systemImage: "slider.horizontal.3")
         }
@@ -143,12 +144,12 @@ struct CalibrationHealthView: View {
 
       Section("Calibration") {
         HealthInfoRow(row: HealthSummaryRow("Dataset", value: "No calibration dataset", source: .unavailable("calibration dataset not wired"), systemImage: "folder"))
-        HealthInfoRow(row: HealthSummaryRow("User labels", value: store.calibrationLabelSummary(), source: .unavailable("calibration labels not imported from real source"), systemImage: "tag"))
-        HealthInfoRow(row: HealthSummaryRow("Holdout", value: store.calibrationSummary(), source: .unavailable("calibration holdout not computed"), systemImage: "chart.xyaxis.line"))
-        HealthInfoRow(row: HealthSummaryRow("Calibrated score", value: store.calibratedScoreSummary(), source: .unavailable("calibrated score not computed"), systemImage: "checkmark.seal"))
+        HealthInfoRow(row: HealthSummaryRow("User labels", value: healthStore.calibrationLabelSummary(), source: .unavailable("calibration labels not imported from real source"), systemImage: "tag"))
+        HealthInfoRow(row: HealthSummaryRow("Holdout", value: healthStore.calibrationSummary(), source: .unavailable("calibration holdout not computed"), systemImage: "chart.xyaxis.line"))
+        HealthInfoRow(row: HealthSummaryRow("Calibrated score", value: healthStore.calibratedScoreSummary(), source: .unavailable("calibrated score not computed"), systemImage: "checkmark.seal"))
         HealthInfoRow(row: HealthSummaryRow("Label policy", value: "No real label source wired", source: .unavailable("label policy pending"), systemImage: "text.badge.checkmark"))
-        HealthInfoRow(row: HealthSummaryRow("Next action", value: store.calibrationNextActionSummary(), source: .unavailable("calibration action pending"), systemImage: "arrow.triangle.2.circlepath"))
-        ForEach(store.calibrationIssues(), id: \.self) { issue in
+        HealthInfoRow(row: HealthSummaryRow("Next action", value: healthStore.calibrationNextActionSummary(), source: .unavailable("calibration action pending"), systemImage: "arrow.triangle.2.circlepath"))
+        ForEach(healthStore.calibrationIssues(), id: \.self) { issue in
           HealthInfoRow(row: HealthSummaryRow("Issue", value: issue, source: .unavailable("calibration issue"), systemImage: "exclamationmark.triangle"))
         }
       }

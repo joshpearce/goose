@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CoachChatScreen: View {
   var chat: CoachChatModel
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   var appModel: GooseAppModel
   @Binding var draft: String
   let scrollToBottomRequestID: Int

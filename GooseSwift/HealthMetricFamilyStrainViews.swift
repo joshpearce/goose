@@ -6,8 +6,8 @@ import UIKit
 struct HealthMetricFamilyView: View {
   @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
+  @Environment(HealthDataStore.self) private var healthStore
   let route: HealthRoute
-  var store: HealthDataStore
   var externalSelectedDate: Binding<Date>? = nil
   @State private var selectedTrend: HealthMetricSnapshot?
   @State private var selectedPrimarySleep: PrimarySleepDetail?
@@ -17,13 +17,13 @@ struct HealthMetricFamilyView: View {
 
   var body: some View {
     if route == .sleep {
-      SleepV2OverviewPage(store: store, ble: model.ble, selectedDate: selectedDateBinding)
+      SleepV2OverviewPage(ble: model.ble, selectedDate: selectedDateBinding)
     } else if route == .recovery {
-      RecoveryV2OverviewPage(store: store, selectedDate: selectedDateBinding)
+      RecoveryV2OverviewPage(selectedDate: selectedDateBinding)
     } else if route == .strain {
-      StrainV2OverviewPage(store: store, selectedDate: selectedDateBinding)
+      StrainV2OverviewPage(selectedDate: selectedDateBinding)
     } else if route == .stress {
-      StressV2OverviewPage(store: store, selectedDate: selectedDateBinding)
+      StressV2OverviewPage(selectedDate: selectedDateBinding)
     } else {
       metricFamilyBody
     }
@@ -43,13 +43,13 @@ struct HealthMetricFamilyView: View {
         }
 
         if route == .sleep {
-          SleepDataBridgeSection(store: store, ble: model.ble)
+          SleepDataBridgeSection(ble: model.ble)
           SleepAlarmBridgeSection(ble: model.ble)
         }
 
         if route == .stress {
-          StressDailyChart(summary: store.stressAlgorithmSummary())
-          StressBreakdownRows(summary: store.stressAlgorithmSummary())
+          StressDailyChart(summary: healthStore.stressAlgorithmSummary())
+          StressBreakdownRows(summary: healthStore.stressAlgorithmSummary())
         }
 
         if route == .strain {
@@ -58,7 +58,7 @@ struct HealthMetricFamilyView: View {
 
         if route == .sleep {
           SleepTimelineSection(
-            session: store.primarySleep(),
+            session: healthStore.primarySleep(),
             onAddSleep: { showAddSleepUnavailable = true },
             onSelectPrimarySleep: { selectedPrimarySleep = $0 }
           )
@@ -75,7 +75,7 @@ struct HealthMetricFamilyView: View {
         }
 
         HealthSectionTitle("Trends")
-        ForEach(store.trendRows(for: route)) { snapshot in
+        ForEach(healthStore.trendRows(for: route)) { snapshot in
           Button {
             selectedTrend = snapshot
           } label: {
@@ -111,19 +111,19 @@ struct HealthMetricFamilyView: View {
       ScoreDatePickerSheet(
         title: route.title,
         routes: [route],
-        snapshots: [store.snapshot(for: route)],
+        snapshots: [healthStore.snapshot(for: route)],
         selectedDate: selectedDateBinding
       )
     }
     .alert("Add Sleep Unavailable", isPresented: $showAddSleepUnavailable) {
       Button("OK", role: .cancel) {}
     } message: {
-      Text(store.sleepTimelineEmptyActionSummary())
+      Text(healthStore.sleepTimelineEmptyActionSummary())
     }
   }
 
   private var selectedSnapshot: HealthMetricSnapshot {
-    ScoreDateTimeline.datedSnapshot(from: store.snapshot(for: route), date: selectedDateBinding.wrappedValue)
+    ScoreDateTimeline.datedSnapshot(from: healthStore.snapshot(for: route), date: selectedDateBinding.wrappedValue)
   }
 
   private var selectedDateBinding: Binding<Date> {
@@ -139,7 +139,7 @@ struct HealthMetricFamilyView: View {
   }
 
   private var coachTip: CoachInlineTip {
-    CoachTipFactory.metricTip(route: route, healthStore: store, appModel: model)
+    CoachTipFactory.metricTip(route: route, healthStore: healthStore, appModel: model)
   }
 
   private func openCoachTip() {
@@ -161,9 +161,9 @@ struct HealthMetricFamilyView: View {
     switch route {
     case .sleep:
       return [
-        HealthSummaryRow("Quality", value: primarySleepQualitySummary, source: store.packetScoreSource("sleep score output"), systemImage: "bed.double"),
-        HealthSummaryRow("Time in bed", value: store.primarySleep()?.timeInBedText ?? "No data", source: store.packetScoreSource("sleep window"), systemImage: "clock"),
-        HealthSummaryRow("Time asleep", value: store.primarySleep()?.durationText ?? "No data", source: store.packetScoreSource("sleep window"), systemImage: "moon.zzz"),
+        HealthSummaryRow("Quality", value: primarySleepQualitySummary, source: healthStore.packetScoreSource("sleep score output"), systemImage: "bed.double"),
+        HealthSummaryRow("Time in bed", value: healthStore.primarySleep()?.timeInBedText ?? "No data", source: healthStore.packetScoreSource("sleep window"), systemImage: "clock"),
+        HealthSummaryRow("Time asleep", value: healthStore.primarySleep()?.durationText ?? "No data", source: healthStore.packetScoreSource("sleep window"), systemImage: "moon.zzz"),
         HealthSummaryRow("Sleep Needed", value: "No target sleep input", source: .unavailable("sleep need requires target sleep amount and band sleep history"), systemImage: "alarm"),
         HealthSummaryRow("Alarm", value: model.ble.alarmDisplaySummary, source: alarmRowSource, systemImage: "bell"),
       ]
@@ -173,13 +173,13 @@ struct HealthMetricFamilyView: View {
       return [
         HealthSummaryRow(
           "Recovery Score",
-          value: isToday ? store.recoveryScoreDisplayText() : "--",
-          source: isToday ? store.snapshot(for: .recovery).source : .unavailable("selected date has no stored recovery score"),
+          value: isToday ? healthStore.recoveryScoreDisplayText() : "--",
+          source: isToday ? healthStore.snapshot(for: .recovery).source : .unavailable("selected date has no stored recovery score"),
           systemImage: "battery.100percent"
         ),
-        HealthSummaryRow("Resting HRV", value: store.recoveryHRVDisplayText(for: selectedDate), source: store.recoveryHRVSource(for: selectedDate), systemImage: "waveform.path.ecg"),
-        HealthSummaryRow("Resting HR", value: store.recoveryRestingHRDisplayText(for: selectedDate), source: store.recoveryRestingHRSource(for: selectedDate), systemImage: "heart"),
-        HealthSummaryRow("Provided vitals", value: store.recoveryRespiratoryRateDisplayText(for: selectedDate), source: store.recoveryRespiratoryRateSource(for: selectedDate), systemImage: "lungs"),
+        HealthSummaryRow("Resting HRV", value: healthStore.recoveryHRVDisplayText(for: selectedDate), source: healthStore.recoveryHRVSource(for: selectedDate), systemImage: "waveform.path.ecg"),
+        HealthSummaryRow("Resting HR", value: healthStore.recoveryRestingHRDisplayText(for: selectedDate), source: healthStore.recoveryRestingHRSource(for: selectedDate), systemImage: "heart"),
+        HealthSummaryRow("Provided vitals", value: healthStore.recoveryRespiratoryRateDisplayText(for: selectedDate), source: healthStore.recoveryRespiratoryRateSource(for: selectedDate), systemImage: "lungs"),
       ]
     case .strain:
       let selectedDate = selectedDateBinding.wrappedValue
@@ -187,19 +187,19 @@ struct HealthMetricFamilyView: View {
       return [
         HealthSummaryRow(
           "Strain Score",
-          value: store.strainScoreDisplayText(for: selectedDate),
-          source: isToday ? store.snapshot(for: .strain).source : .unavailable("selected date has no stored strain score"),
+          value: healthStore.strainScoreDisplayText(for: selectedDate),
+          source: isToday ? healthStore.snapshot(for: .strain).source : .unavailable("selected date has no stored strain score"),
           systemImage: "figure.run"
         ),
-        HealthSummaryRow("Target strain", value: store.strainTargetDisplayText(), source: .unavailable("strain target unavailable"), systemImage: "target"),
-        HealthSummaryRow("Duration", value: store.strainDurationDisplayText(), source: .unavailable("activity sessions unavailable"), systemImage: "timer"),
-        HealthSummaryRow("Total Energy", value: store.strainEnergyDisplayText(for: selectedDate), source: store.whoopTotalCaloriesSource(for: selectedDate), systemImage: "flame"),
-        HealthSummaryRow("Steps", value: store.strainActivityCountText(for: selectedDate), source: store.whoopStepsSource(for: selectedDate), systemImage: "shoeprints.fill"),
+        HealthSummaryRow("Target strain", value: healthStore.strainTargetDisplayText(), source: .unavailable("strain target unavailable"), systemImage: "target"),
+        HealthSummaryRow("Duration", value: healthStore.strainDurationDisplayText(), source: .unavailable("activity sessions unavailable"), systemImage: "timer"),
+        HealthSummaryRow("Total Energy", value: healthStore.strainEnergyDisplayText(for: selectedDate), source: healthStore.whoopTotalCaloriesSource(for: selectedDate), systemImage: "flame"),
+        HealthSummaryRow("Steps", value: healthStore.strainActivityCountText(for: selectedDate), source: healthStore.whoopStepsSource(for: selectedDate), systemImage: "shoeprints.fill"),
       ]
     case .stress:
       let selectedDate = selectedDateBinding.wrappedValue
       let isToday = Calendar.current.isDate(selectedDate, inSameDayAs: Date())
-      let summary = store.stressAlgorithmSummary(for: selectedDate)
+      let summary = healthStore.stressAlgorithmSummary(for: selectedDate)
       let scoreText = summary.score.flatMap { HealthDataStore.numberText($0, fractionDigits: 0) } ?? "--"
       let averageHRText = summary.averageHeartRate.flatMap { HealthDataStore.numberText($0, fractionDigits: 0) }
         .map { "\($0) bpm avg" } ?? "No HR data"
@@ -208,7 +208,7 @@ struct HealthMetricFamilyView: View {
         HealthSummaryRow("Stress score", value: summary.hasData ? "\(scoreText)% | \(summary.status)" : summary.status, source: summary.source, systemImage: "waveform.path.ecg"),
         HealthSummaryRow("Confidence", value: summary.hasData ? confidenceText : "--", source: summary.source, systemImage: "checkmark.seal"),
         HealthSummaryRow("Inputs", value: summary.hasData ? summary.inputSummary : "No local stress inputs", source: summary.source, systemImage: "checklist"),
-        HealthSummaryRow("HRV Input", value: isToday ? store.hrvFeatureSummary() : "--", source: isToday ? store.packetInputSource("HRV feature") : store.recoveryHRVSource(for: selectedDate), systemImage: "waveform.path.ecg"),
+        HealthSummaryRow("HRV Input", value: isToday ? healthStore.hrvFeatureSummary() : "--", source: isToday ? healthStore.packetInputSource("HRV feature") : healthStore.recoveryHRVSource(for: selectedDate), systemImage: "waveform.path.ecg"),
         HealthSummaryRow("Average HR", value: averageHRText, source: summary.source, systemImage: "heart"),
       ]
     default:
@@ -217,7 +217,7 @@ struct HealthMetricFamilyView: View {
   }
 
   private var primarySleepQualitySummary: String {
-    guard let sleep = store.primarySleep() else {
+    guard let sleep = healthStore.primarySleep() else {
       return "-- | No data"
     }
     return "\(sleep.scoreDisplayText) | \(sleep.qualityText)"
@@ -236,15 +236,15 @@ struct HealthMetricFamilyView: View {
   private var timelineRows: [HealthSummaryRow] {
     switch route {
     case .sleep:
-      if let sleep = store.primarySleep() {
+      if let sleep = healthStore.primarySleep() {
         return [
           HealthSummaryRow("Primary sleep", value: "\(sleep.startLabel) - \(sleep.endLabel) | \(sleep.durationText) | \(sleep.scoreDisplayText)", source: sleep.source, systemImage: "bed.double"),
           HealthSummaryRow("Timeline", value: sleep.stages.isEmpty ? "No stage timeline" : "\(sleep.stages.count) stage rows", source: sleep.source, systemImage: "timeline.selection"),
         ]
       }
       return [
-        HealthSummaryRow("Primary sleep", value: store.bandSleepImportStatus, source: .unavailable(store.bandSleepImportStatus), systemImage: "bed.double"),
-        HealthSummaryRow("Timeline", value: String(localized: "No sleep timeline"), source: .unavailable(store.bandSleepImportStatus), systemImage: "timeline.selection"),
+        HealthSummaryRow("Primary sleep", value: healthStore.bandSleepImportStatus, source: .unavailable(healthStore.bandSleepImportStatus), systemImage: "bed.double"),
+        HealthSummaryRow("Timeline", value: String(localized: "No sleep timeline"), source: .unavailable(healthStore.bandSleepImportStatus), systemImage: "timeline.selection"),
       ]
     case .recovery:
       return [
@@ -255,7 +255,7 @@ struct HealthMetricFamilyView: View {
         HealthSummaryRow("Activities", value: "No activities", source: .unavailable("activity sessions unavailable"), systemImage: "plus.circle"),
       ]
     case .stress:
-      let summary = store.stressAlgorithmSummary(for: selectedDateBinding.wrappedValue)
+      let summary = healthStore.stressAlgorithmSummary(for: selectedDateBinding.wrappedValue)
       return [
         HealthSummaryRow("Daily timeline", value: summary.hasData ? "\(summary.windows.count) stress windows" : summary.status, source: summary.source, systemImage: "timeline.selection"),
       ]
@@ -268,8 +268,8 @@ struct HealthMetricFamilyView: View {
     switch route {
     case .sleep:
       return [
-        HealthSummaryRow("Score impacts", value: store.sleepV1ComponentBreakdownRows().isEmpty ? "No score component data" : "\(store.sleepV1ComponentBreakdownRows().count) components", source: store.packetScoreSource("sleep score components"), systemImage: "sparkles"),
-        HealthSummaryRow("Confidence", value: store.sleepV1ArchitectureCalibrationSummary().isEmpty ? "No confidence data" : store.sleepV1ArchitectureCalibrationSummary(), source: store.packetScoreSource("sleep score output"), systemImage: "lock"),
+        HealthSummaryRow("Score impacts", value: healthStore.sleepV1ComponentBreakdownRows().isEmpty ? "No score component data" : "\(healthStore.sleepV1ComponentBreakdownRows().count) components", source: healthStore.packetScoreSource("sleep score components"), systemImage: "sparkles"),
+        HealthSummaryRow("Confidence", value: healthStore.sleepV1ArchitectureCalibrationSummary().isEmpty ? "No confidence data" : healthStore.sleepV1ArchitectureCalibrationSummary(), source: healthStore.packetScoreSource("sleep score output"), systemImage: "lock"),
       ]
     case .recovery:
       return [
@@ -278,10 +278,10 @@ struct HealthMetricFamilyView: View {
       ]
     case .strain:
       return [
-        HealthSummaryRow("Coaching", value: store.strainEmptyStateSummary(), source: .unavailable("strain insights unavailable"), systemImage: "sparkles"),
+        HealthSummaryRow("Coaching", value: healthStore.strainEmptyStateSummary(), source: .unavailable("strain insights unavailable"), systemImage: "sparkles"),
       ]
     case .stress:
-      let summary = store.stressAlgorithmSummary(for: selectedDateBinding.wrappedValue)
+      let summary = healthStore.stressAlgorithmSummary(for: selectedDateBinding.wrappedValue)
       return [
         HealthSummaryRow("Breakdown", value: summary.hasData ? "High \(Int((summary.high.percent * 100).rounded()))% | Medium \(Int((summary.medium.percent * 100).rounded()))% | Low \(Int((summary.low.percent * 100).rounded()))%" : summary.status, source: summary.source, systemImage: "chart.bar"),
       ]
@@ -395,7 +395,7 @@ struct StrainV2ActivityBackground: View {
 struct StrainV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
   @Environment(GooseAppModel.self) private var model
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingDatePicker = false
@@ -424,8 +424,8 @@ struct StrainV2OverviewPage: View {
 
             StrainV2Hero(
               palette: palette,
-              score: store.strainScore0To100(for: selectedDate),
-              status: store.strainStatusText(for: selectedDate),
+              score: healthStore.strainScore0To100(for: selectedDate),
+              status: healthStore.strainStatusText(for: selectedDate),
               dateLabel: dateLabel,
               onDateTap: { showingDatePicker = true }
             )
@@ -439,13 +439,13 @@ struct StrainV2OverviewPage: View {
                 palette: palette,
                 systemImage: "target",
                 label: "Target Strain",
-                value: store.strainTargetDisplayText()
+                value: healthStore.strainTargetDisplayText()
               )
               SleepV2StatCard(
                 palette: palette,
                 systemImage: "timer",
                 label: "Duration",
-                value: store.strainDurationDisplayText()
+                value: healthStore.strainDurationDisplayText()
               )
             }
             .frame(height: 96)
@@ -455,22 +455,22 @@ struct StrainV2OverviewPage: View {
                 palette: palette,
                 systemImage: "flame.fill",
                 label: "Total Energy",
-                value: store.strainEnergyDisplayText(for: selectedDate)
+                value: healthStore.strainEnergyDisplayText(for: selectedDate)
               )
               SleepV2StatCard(
                 palette: palette,
                 systemImage: "shoeprints.fill",
                 label: "Steps",
-                value: store.strainActivityCountText(for: selectedDate)
+                value: healthStore.strainActivityCountText(for: selectedDate)
               )
             }
             .frame(height: 96)
 
-            if let imu = store.imuStepCountResult, !imu.insufficientData {
+            if let imu = healthStore.imuStepCountResult, !imu.insufficientData {
               IMUStepsComparisonCard(
                 palette: palette,
                 imuSteps: imu.stepCount,
-                whoopSteps: store.strainStepCountForComparison()
+                whoopSteps: healthStore.strainStepCountForComparison()
               )
             }
 
@@ -487,23 +487,23 @@ struct StrainV2OverviewPage: View {
 
             StrainV2DailyLoadCard(
               palette: palette,
-              scoreText: store.strainScoreDisplayText(for: selectedDate),
-              targetText: store.strainTargetDisplayText(),
-              durationText: store.strainDurationDisplayText(),
-              energyText: store.strainEnergyDisplayText(for: selectedDate)
+              scoreText: healthStore.strainScoreDisplayText(for: selectedDate),
+              targetText: healthStore.strainTargetDisplayText(),
+              durationText: healthStore.strainDurationDisplayText(),
+              energyText: healthStore.strainEnergyDisplayText(for: selectedDate)
             )
 
             SleepV2SectionHeader(title: String(localized: "Activities"), palette: palette)
-            if store.exerciseSessions.isEmpty {
+            if healthStore.exerciseSessions.isEmpty {
               StrainV2EmptyStateCard(
                 palette: palette,
                 systemImage: "figure.run.circle",
                 title: String(localized: "No activities"),
-                message: store.strainEmptyStateSummary()
+                message: healthStore.strainEmptyStateSummary()
               )
             } else {
               VStack(spacing: 10) {
-                ForEach(store.exerciseSessions.prefix(7)) { session in
+                ForEach(healthStore.exerciseSessions.prefix(7)) { session in
                   ExerciseSessionCard(palette: palette, session: session)
                 }
               }
@@ -554,26 +554,26 @@ struct StrainV2OverviewPage: View {
       ScoreDatePickerSheet(
         title: "Strain",
         routes: [.strain],
-        snapshots: [store.snapshot(for: .strain)],
+        snapshots: [healthStore.snapshot(for: .strain)],
         selectedDate: $selectedDate
       )
     }
     .sheet(isPresented: $showingInsightsSheet) {
-      StrainV2InsightsSheet(palette: palette, store: store)
+      StrainV2InsightsSheet(palette: palette)
     }
     .sheet(item: $selectedTrend) { snapshot in
       SleepV2BevelTrendSheet(snapshot: snapshot)
     }
     .onAppear {
       Task {
-        await store.runExerciseSessions()
-        await store.runIMUStepCount()
+        await healthStore.runExerciseSessions()
+        await healthStore.runIMUStepCount()
       }
     }
     .onChange(of: model.packetImportRevision) { _, _ in
       Task {
-        await store.runExerciseSessions()
-        await store.runIMUStepCount()
+        await healthStore.runExerciseSessions()
+        await healthStore.runIMUStepCount()
       }
     }
   }
@@ -585,11 +585,11 @@ struct StrainV2OverviewPage: View {
   }
 
   private var coachTip: CoachInlineTip {
-    CoachTipFactory.metricTip(route: .strain, healthStore: store, appModel: model)
+    CoachTipFactory.metricTip(route: .strain, healthStore: healthStore, appModel: model)
   }
 
   private var trendRows: [HealthMetricSnapshot] {
-    store.trendRows(for: .strain)
+    healthStore.trendRows(for: .strain)
   }
 
   private func openCoachTip() {
@@ -861,7 +861,7 @@ struct StrainV2EmptyStateCard: View {
 
 struct StrainV2InsightsSheet: View {
   let palette: SleepV2Palette
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
@@ -872,18 +872,18 @@ struct StrainV2InsightsSheet: View {
             palette: palette,
             systemImage: "exclamationmark.triangle",
             title: "No strain insights",
-            message: store.strainEmptyStateSummary()
+            message: healthStore.strainEmptyStateSummary()
           )
 
           SleepV2Panel(palette: palette, padding: 16, radius: 18) {
             VStack(spacing: 0) {
-              StrainV2FactRow(label: "Score", value: store.strainScoreDisplayText(), palette: palette)
+              StrainV2FactRow(label: "Score", value: healthStore.strainScoreDisplayText(), palette: palette)
               Divider().overlay(palette.separator)
-              StrainV2FactRow(label: "Target", value: store.strainTargetDisplayText(), palette: palette)
+              StrainV2FactRow(label: "Target", value: healthStore.strainTargetDisplayText(), palette: palette)
               Divider().overlay(palette.separator)
-              StrainV2FactRow(label: "Duration", value: store.strainDurationDisplayText(), palette: palette)
+              StrainV2FactRow(label: "Duration", value: healthStore.strainDurationDisplayText(), palette: palette)
               Divider().overlay(palette.separator)
-              StrainV2FactRow(label: "Total Energy", value: store.strainEnergyDisplayText(), palette: palette)
+              StrainV2FactRow(label: "Total Energy", value: healthStore.strainEnergyDisplayText(), palette: palette)
             }
           }
         }

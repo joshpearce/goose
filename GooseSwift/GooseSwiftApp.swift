@@ -39,6 +39,7 @@ struct GooseSwiftApp: App {
         .environment(model.bleState)
         .environment(model.syncState)
         .environment(model.healthState)
+        .environment(model.healthStore)
         .environmentObject(model.packetMonitor)
         .environmentObject(model.ble.messageStore)
         .environmentObject(router)

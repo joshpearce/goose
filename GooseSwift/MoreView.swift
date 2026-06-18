@@ -10,7 +10,7 @@ import HealthKit
 struct MoreView: View {
   @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
-  private var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @StateObject private var store: MoreDataStore
   @AppStorage(OnboardingStorage.firstName) private var profileFirstName = ""
   @AppStorage(OnboardingStorage.unitSystem) private var profileUnitSystemRaw = "imperial"
@@ -19,14 +19,12 @@ struct MoreView: View {
   @State private var isImportingSleep = false
 
   @MainActor
-  init(healthStore: HealthDataStore) {
-    self.healthStore = healthStore
+  init() {
     _store = StateObject(wrappedValue: MoreDataStore())
   }
 
   @MainActor
-  init(healthStore: HealthDataStore, store: MoreDataStore) {
-    self.healthStore = healthStore
+  init(store: MoreDataStore) {
     _store = StateObject(wrappedValue: store)
   }
 
@@ -154,11 +152,11 @@ struct MoreView: View {
     case .rawExport:
       MoreRawExportView(store: store)
     case .algorithms:
-      MoreAlgorithmsView(store: store, healthStore: healthStore) {
+      MoreAlgorithmsView(store: store) {
         router.openHealth(.algorithms)
       }
     case .debug:
-      MoreDebugView(store: store, healthStore: healthStore)
+      MoreDebugView(store: store)
     case .privacy:
       MorePrivacyView(store: store)
     case .remoteServer:
@@ -174,7 +172,7 @@ struct MoreView: View {
     case .intervalTimer:
       IntervalTimerView()
     case .metricExplorer:
-      MetricExplorerView(healthStore: healthStore)
+      MetricExplorerView()
     }
   }
 

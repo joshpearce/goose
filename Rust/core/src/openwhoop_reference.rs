@@ -450,16 +450,20 @@ mod tests {
 
     #[test]
     fn history_field_table_marks_goose_statuses() {
-        let bpm = openwhoop_history_field_reference(OpenWhoopHistoryField::Bpm).unwrap();
+        let bpm = openwhoop_history_field_reference(OpenWhoopHistoryField::Bpm)
+            .expect("Bpm field must be present in the OpenWhoop history field reference table");
         assert_eq!(bpm.status, GooseSummaryStatus::Matched);
         assert_eq!(bpm.goose_summary_kinds, &GOOSE_SUMMARIES_NORMAL_HISTORY);
 
-        let gravity = openwhoop_history_field_reference(OpenWhoopHistoryField::Gravity).unwrap();
+        let gravity = openwhoop_history_field_reference(OpenWhoopHistoryField::Gravity)
+            .expect("Gravity field must be present in the OpenWhoop history field reference table");
         assert_eq!(gravity.status, GooseSummaryStatus::Conflicting);
         assert_eq!(gravity.goose_summary_kinds, &GOOSE_SUMMARIES_RAW_MOTION);
 
-        let spo2 =
-            openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage).unwrap();
+        let spo2 = openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage)
+            .expect(
+                "Gen5Spo2Percentage must be present in the OpenWhoop history field reference table",
+            );
         assert!(!spo2.gen4);
         assert!(spo2.gen5);
         assert_eq!(spo2.status, GooseSummaryStatus::NotDecoded);

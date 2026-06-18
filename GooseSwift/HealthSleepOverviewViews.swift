@@ -5,8 +5,8 @@ import UIKit
 
 struct SleepV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  var store: HealthDataStore
-  var ble: GooseBLEClient
+  @Environment(HealthDataStore.self) private var healthStore
+  var ble: any BLETransport
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingInsightsSheet = false
@@ -85,11 +85,11 @@ struct SleepV2OverviewPage: View {
                 onSleepNeeded: { showingSleepNeededSheet = true }
               )
 
-              SleepV2BandSyncCard(store: store, ble: ble, palette: palette) {
+              SleepV2BandSyncCard(ble: ble, palette: palette) {
                 startBandSleepSync(automatic: false)
               }
 
-              SleepStagingCard(palette: palette, result: store.sleepStagingResult)
+              SleepStagingCard(palette: palette, result: healthStore.sleepStagingResult)
 
               SleepV2SectionHeader(title: "Timeline", palette: palette)
 
@@ -106,7 +106,7 @@ struct SleepV2OverviewPage: View {
               SleepV2SectionHeader(title: "Trends", palette: palette)
 
               VStack(spacing: 14) {
-                ForEach(store.trendRows(for: .sleep)) { snapshot in
+                ForEach(healthStore.trendRows(for: .sleep)) { snapshot in
                   SleepV2TrendRow(palette: palette, snapshot: snapshot) {
                     selectedTrend = snapshot
                   }
@@ -142,25 +142,25 @@ struct SleepV2OverviewPage: View {
       }
     }
     .onAppear {
-      Task { await store.loadBridgeCatalogsIfNeeded() }
+      Task { await healthStore.loadBridgeCatalogsIfNeeded() }
       startBandSleepSyncIfReady()
-      Task { await store.runSleepStaging() }
+      Task { await healthStore.runSleepStaging() }
     }
     .onChange(of: ble.canSyncHistorical) { _, _ in
       startBandSleepSyncIfReady()
     }
     .onChange(of: ble.historicalSyncStatus) { _, newValue in
       if newValue == "synced" {
-        Task { await store.refreshSleepAfterBandSync(packetCount: ble.historicalPacketCount) }
+        Task { await healthStore.refreshSleepAfterBandSync(packetCount: ble.historicalPacketCount) }
       } else if newValue == "failed" {
-        store.markBandSleepSyncFailed(ble.historicalSyncStatus)
+        healthStore.markBandSleepSyncFailed(ble.historicalSyncStatus)
       }
     }
     .sheet(isPresented: $showingDatePicker) {
       ScoreDatePickerSheet(
         title: "Sleep",
         routes: [.sleep],
-        snapshots: [store.snapshot(for: .sleep)],
+        snapshots: [healthStore.snapshot(for: .sleep)],
         selectedDate: $selectedDate
       )
     }
@@ -183,13 +183,13 @@ struct SleepV2OverviewPage: View {
 
   private var selectedSnapshot: HealthMetricSnapshot {
     ScoreDateTimeline.datedSnapshot(
-      from: store.snapshot(for: .sleep),
+      from: healthStore.snapshot(for: .sleep),
       date: selectedDate
     )
   }
 
   private var primarySleep: PrimarySleepDetail? {
-    store.primarySleep()
+    healthStore.primarySleep()
   }
 
   private var sleepScore: Int {
@@ -205,7 +205,7 @@ struct SleepV2OverviewPage: View {
   }
 
   private var coachTip: CoachInlineTip {
-    CoachTipFactory.sleepTip(healthStore: store, ble: ble)
+    CoachTipFactory.sleepTip(healthStore: healthStore, ble: ble)
   }
 
   private func startBandSleepSyncIfReady() {
@@ -228,7 +228,7 @@ struct SleepV2OverviewPage: View {
   }
 
   private func startBandSleepSync(automatic: Bool) {
-    store.markBandSleepSyncRequested(
+    healthStore.markBandSleepSyncRequested(
       automatic: automatic,
       canSync: ble.canSyncHistorical,
       detail: ble.historicalSyncStatus

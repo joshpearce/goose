@@ -19,7 +19,7 @@ private struct DeviceContentView: View {
   @Environment(GooseAppModel.self) private var model
   @Environment(BLEState.self) private var bleState
   @EnvironmentObject private var packetMonitor: PacketMonitorModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @State private var selectedPanel: DevicePanel = .status
 
   var body: some View {
@@ -311,7 +311,7 @@ private struct DeviceAdvancedPanel: View {
   @Environment(HealthState.self) private var healthState
   var model: GooseAppModel
   @ObservedObject var packetMonitor: PacketMonitorModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -427,7 +427,7 @@ private struct DeviceDetailStack<Content: View>: View {
 }
 
 private struct DeviceSyncProgressCard: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   private var percentText: String? {
     ble.historicalSyncFraction.map { "\(Int(($0 * 100).rounded()))%" }
@@ -509,7 +509,7 @@ private struct DeviceFactRow: View {
 private struct DeviceActionGrid: View {
   @Environment(HealthState.self) private var healthState
   var model: GooseAppModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
@@ -617,7 +617,7 @@ private func generationMajorVersion(_ generation: String) -> String {
 }
 
 private struct DiscoveredDeviceList: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {

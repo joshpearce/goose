@@ -12,7 +12,7 @@ struct HRMonitorView: View {
 
 private struct HRMonitorContentView: View {
   @Environment(GooseAppModel.self) private var model
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @State private var selectedDevice: GooseDiscoveredDevice?
   @State private var connectingDeviceID: UUID?
 
@@ -158,7 +158,7 @@ private struct HRMonitorHeader: View {
 }
 
 private struct HRMonitorScanList: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   let connectingDeviceID: UUID?
   let onSelectDevice: (GooseDiscoveredDevice) -> Void
 
@@ -223,7 +223,7 @@ private struct HRMonitorDeviceRow: View {
 }
 
 private struct HRMonitorConnectedPanel: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   let disconnectAction: () -> Void
 
   var body: some View {
