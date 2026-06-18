@@ -59,7 +59,7 @@ final class GooseAppModel {
   // view layer; this weak reference lets SleepSync coordinate with it.
   weak var healthStore: HealthDataStore?
 
-  let ble: GooseBLEClient
+  let ble: CoreBluetoothBLETransport
   let packetMonitor = PacketMonitorModel()
   let activitySession = ActivitySessionModel()
   let activityLocationTracker = ActivityLocationTracker()
@@ -261,7 +261,7 @@ final class GooseAppModel {
   static let deviceSignalPointInterval: TimeInterval = 0.75
 
   init(startBLE: Bool = true) {
-    ble = GooseBLEClient(startCentral: startBLE)
+    ble = CoreBluetoothBLETransport(startCentral: startBLE)
     whoopDataSignalPipeline = WhoopDataSignalPipeline(
       ble: ble,
       packetUIStateAggregator: packetUIStateAggregator,

@@ -259,7 +259,7 @@ extension CoreBluetoothBLETransport {
     }
 
     let sequence = nextClockSequence()
-    let frame = activeDeviceGeneration.buildCommandFrame(
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -358,7 +358,7 @@ extension CoreBluetoothBLETransport {
     }
 
     let sequence = nextAlarmSequence()
-    let frame = activeDeviceGeneration.buildCommandFrame(
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -493,7 +493,7 @@ extension CoreBluetoothBLETransport {
     }
     let sequence = nextSensorCommandSequence
     nextSensorCommandSequence = nextSensorCommandSequence == UInt8.max ? 180 : nextSensorCommandSequence + 1
-    let frame = activeDeviceGeneration.buildCommandFrame(
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
       sequence: sequence,
       command: command.commandNumber,
       data: command.payload
@@ -520,6 +520,22 @@ extension CoreBluetoothBLETransport {
       title: "sensor.command.sent",
       body: "\(command.name) seq=\(sequence) command=\(command.commandNumber) payload=\(Data(command.payload).hexString) writeType=\(writeTypeName(writeType)) frame=\(frame.hexString)"
     )
+  }
+
+  func whoopGenerationFromCapabilities() -> WhoopGeneration {
+    guard let caps = connectedCapabilities else {
+      // connectedCapabilities is nil when disconnected or if the device.capabilities
+      // bridge call failed. Log the nil access and return .gen5 as a conservative
+      // fallback; generation-specific commands should not be sent in this state.
+      record(
+        level: .error,
+        source: "ble",
+        title: "capabilities.nil",
+        body: "connectedCapabilities is nil — generation unknown, defaulting to gen5"
+      )
+      return .gen5
+    }
+    return caps.wireProtocol == .gen4 ? .gen4 : .gen5
   }
 
   func failClockCommand(_ message: String) {
@@ -983,7 +999,52 @@ extension CoreBluetoothBLETransport {
     for characteristic in characteristics {
       if shouldUseCommandCharacteristic(characteristic) {
         commandCharacteristic = characteristic
-        activeDeviceGeneration = WhoopGeneration.detect(from: characteristic)
+        let detectedGeneration = WhoopGeneration.detect(from: characteristic)
+        let deviceKindString = detectedGeneration == .gen4 ? "WHOOP4" : "WHOOP5"
+        let kindString = deviceKindString
+        historicalWriteQueue.async { [weak self] in
+          guard let self else { return }
+          do {
+            let result = try self.historicalDirectWriteBridge.request(
+              method: "device.capabilities",
+              args: ["device_kind": kindString])
+            let capData = try JSONSerialization.data(withJSONObject: result)
+            let caps = try JSONDecoder().decode(DeviceCapabilities.self, from: capData)
+            DispatchQueue.main.async {
+              self.connectedCapabilities = caps
+              if caps.batteryViaCMD26, caps.wireProtocol == .gen4 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                  self?.sendCmd26BatteryRequest()
+                }
+              }
+            }
+          } catch {
+            let gen = kindString
+            DispatchQueue.main.async {
+              self.record(
+                level: .error,
+                source: "ble",
+                title: "device.capabilities.failed",
+                body: "generation=\(gen) error=\(error)"
+              )
+              self.connectedCapabilities = gen == "WHOOP4"
+                ? DeviceCapabilities(
+                    wireProtocol: .gen4,
+                    historicalSync: .pageSequence,
+                    batteryViaR22: false,
+                    batteryViaEvent48: true,
+                    batteryViaCMD26: true,
+                    r22Realtime: false)
+                : DeviceCapabilities(
+                    wireProtocol: .gen5,
+                    historicalSync: .stream,
+                    batteryViaR22: true,
+                    batteryViaEvent48: true,
+                    batteryViaCMD26: true,
+                    r22Realtime: true)
+            }
+          }
+        }
         activeDescriptor = characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
           ? .whoopGen4 : .whoopGen5
         record(

@@ -79,7 +79,7 @@ extension CoreBluetoothBLETransport {
     }
 
     let sequence = nextDebugSequence()
-    let frame = activeDeviceGeneration.buildCommandFrame(
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
       sequence: sequence,
       command: definition.commandNumber,
       data: payload
@@ -201,7 +201,7 @@ extension CoreBluetoothBLETransport {
       return
     }
 
-    let helloFrame = activeDeviceGeneration.helloFrame
+    let helloFrame = whoopGenerationFromCapabilities().helloFrame
     activePeripheral.writeValue(
       helloFrame,
       for: commandCharacteristic,

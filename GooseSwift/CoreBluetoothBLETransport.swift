@@ -272,7 +272,9 @@ import OSLog
   /// `dispatchCoreBluetoothDelegateToMainIfNeeded` before touching this
   /// property; UI callers (SwiftUI buttons, @MainActor app model paths)
   /// are already on main.
-  var activeDeviceGeneration: WhoopGeneration = .gen5
+  // connectedCapabilities is nil when disconnected; set by processDiscoveredCharacteristics
+  // after a successful device.capabilities bridge call.
+  var connectedCapabilities: DeviceCapabilities?
   var activeDescriptor: WearableDescriptor?
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
@@ -332,6 +334,7 @@ import OSLog
   var debugCommandTimeoutWorkItems: [UInt8: DispatchWorkItem] = [:]
   var nextDebugCommandSequence: UInt8 = 120
   var nextHapticCommandSequence: UInt8 = 144
+  var nextCmd26BatteryCommandSequence: UInt8 = 48
   var highFrequencyHistorySyncRequestedExpiry: Date?
   var debugSkinTemperatureCommandSent = false
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?
@@ -537,6 +540,16 @@ import OSLog
     let sequence: UInt8
     let sentAt: Date
     let syncIfNeeded: Bool
+  }
+
+  enum BatteryCommandKind {
+    case getBatteryLevel
+
+    var commandNumber: UInt8 { 26 }
+
+    var name: String { "GET_BATTERY_LEVEL" }
+
+    var payload: [UInt8] { [] }
   }
 
   struct SensorStreamCommandKind {

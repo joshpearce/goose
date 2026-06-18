@@ -50,14 +50,7 @@ extension GooseAppModel {
     }
     let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-7 * 24 * 3600)
     if let whoopID = ble.activeDeviceIdentifier {
-      // Derive device type from the active descriptor's command characteristic prefix,
-      // matching the same logic used in triggerManualUpload.
-      let whoopType: String
-      if let desc = ble.activeDescriptor {
-        whoopType = desc.commandCharacteristicPrefix.hasPrefix("610800") ? "GEN4" : "GOOSE"
-      } else {
-        whoopType = "GOOSE"
-      }
+      let whoopType = ble.connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
       uploadService.triggerBackfill(deviceID: whoopID, deviceType: whoopType, sinceTimestamp: sinceTimestamp)
     }
   }
@@ -74,15 +67,8 @@ extension GooseAppModel {
     }
     let sinceTimestamp = lastUploadAt ?? Date().addingTimeInterval(-24 * 3600)
 
-    // WHOOP upload: derive device type from the active descriptor's command characteristic prefix.
-    // Gen4 uses a 61080002- prefix; Gen5 uses fd4b0002-. Fall back to GOOSE when no descriptor is set.
     if let whoopID = ble.activeDeviceIdentifier {
-      let whoopType: String
-      if let desc = ble.activeDescriptor {
-        whoopType = desc.commandCharacteristicPrefix.hasPrefix("610800") ? "GEN4" : "GOOSE"
-      } else {
-        whoopType = "GOOSE"
-      }
+      let whoopType = ble.connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
       uploadService.upload(deviceID: whoopID, deviceType: whoopType, sinceTimestamp: sinceTimestamp)
     }
 
@@ -122,7 +108,7 @@ extension GooseAppModel {
     let sinceTimestamp = Date().addingTimeInterval(-30)
     uploadService.upload(
       deviceID: deviceEvent.deviceID,
-      deviceType: deviceEvent.rustDeviceType,
+      deviceType: deviceEvent.wireProtocol.bridgeString,
       sinceTimestamp: sinceTimestamp
     )
   }

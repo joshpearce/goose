@@ -396,7 +396,7 @@ extension CoreBluetoothBLETransport {
       record(
         source: "ble.sync",
         title: "historical_sync.retry_skipped",
-        body: "history_complete=true packets=0 generation=\(activeDeviceGeneration.description)"
+        body: "history_complete=true packets=0 generation=\(connectedCapabilities.map { $0.wireProtocol == .gen4 ? "gen4" : "gen5" } ?? "unknown")"
       )
       completeHistoricalSync(reason: "history_complete_metadata_only")
       return true
@@ -416,7 +416,7 @@ extension CoreBluetoothBLETransport {
     let metadataSummary = historicalManager.historyStartReceived || historicalManager.historyEndReceived || historicalManager.historyCompleteReceived
       ? "metadata-only"
       : "no-start"
-    let retryLabel = activeDeviceGeneration == .gen4 ? "gen4 cmd34→22→23" : "GET_DATA_RANGE then SEND_HISTORICAL_DATA"
+    let retryLabel = connectedCapabilities?.historicalSync == .pageSequence ? "gen4 cmd34→22→23" : "GET_DATA_RANGE then SEND_HISTORICAL_DATA"
     publishSyncToast(phase: .syncing, detail: "Retrying historical transfer \(nextAttempt)/\(historicalManager.historicalTransferMaxRequestAttempts)")
     notifyHistoricalSyncProgress(
       status: "waiting",
@@ -437,7 +437,7 @@ extension CoreBluetoothBLETransport {
     historicalManager.historyEndAckQueued = false
     historicalManager.historyEndAckSentThisBurst = false
     historicalManager.pendingHistoryEndAckPayload = nil
-    if activeDeviceGeneration == .gen4 {
+    if connectedCapabilities?.historicalSync == .pageSequence {
       historicalManager.historicalTransferRequestAttemptCount += 1
     }
     writeHistoricalCommand(.getDataRange)

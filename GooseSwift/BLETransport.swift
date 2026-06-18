@@ -81,6 +81,9 @@ protocol BLETransport: AnyObject {
   var invalidFrameCount: Int { get }
   var historicalSyncBurstsCompleted: Int { get }
   var historicalSyncPagesTotal: Int? { get }
+  var alarmDisplaySummary: String { get }
+  var batterySettingsSummary: String { get }
+  var rememberedDeviceDescription: String { get }
 
   // MARK: - Callback properties
 
@@ -113,23 +116,51 @@ protocol BLETransport: AnyObject {
   func stopScan()
   func stopScan(reason: String)
   func reconnectRemembered()
-  func updateConnectionState(_ state: String)
-  func record(source: String, title: String)
-  func record(source: String, title: String, body: String)
-  func recordLiveHeartRate(bpm: Int, source: String, capturedAt: Date)
-  func syncHistoricalPackets()
-  func writeClockCommand()
-  func setWhoopAlarm(at date: Date, alarmID: Int)
+  func updateConnectionState(_ value: String)
+  // Primary record method; convenience overloads are provided via protocol extension.
+  func record(level: GooseLogLevel, source: String, title: String, body: String)
+  func recordLiveHeartRate(_ bpm: Int, source: String, at date: Date)
+  // syncHistoricalPackets with explicit rangeFirst; no-arg convenience is in the protocol extension.
+  func syncHistoricalPackets(rangeFirst: Bool)
+  func setWhoopAlarm(at localWakeTime: Date, alarmID: Int)
   func disableWhoopAlarms()
-  func buzz()
-  func applyBatteryLevel(_ level: Int, isCharging: Bool?, source: String)
+  func buzz(loops: Int)
+  func applyBatteryLevel(_ rawLevel: Int, capturedAt: Date, sourceTitle: String)
   func startPhysiologySignalCapture()
   func stopPhysiologySignalCapture()
   func startMovementHeartRateCapture()
   func stopMovementHeartRateCapture()
-  func enterHighFrequencyHistorySync()
+  // enterHighFrequencyHistorySync with explicit params; convenience no-arg form is in the protocol extension.
+  func enterHighFrequencyHistorySync(intervalSeconds: Int, durationSeconds: Int)
   func exitHighFrequencyHistorySync()
-  func sendDebugResearchCommand(_ command: GooseDebugCommandDefinition)
+  @discardableResult func sendDebugResearchCommand(id: String, payloadHex: String?, source: String) -> Bool
   func previewHelloWorldToast()
   func setDebugCommandStatus(_ status: String)
+  func startHRMonitorScan()
+  func stopHRMonitorScan()
+  func connectHRMonitor(_ device: GooseDiscoveredDevice)
+  func disconnectHRMonitor()
+}
+
+// Convenience overloads: callers use shorter forms; these forward to the primary record method.
+extension BLETransport {
+  func syncHistoricalPackets() {
+    syncHistoricalPackets(rangeFirst: false)
+  }
+
+  func record(source: String, title: String) {
+    record(level: .info, source: source, title: title, body: "")
+  }
+
+  func record(source: String, title: String, body: String) {
+    record(level: .info, source: source, title: title, body: body)
+  }
+
+  @discardableResult func sendDebugResearchCommand(id: String) -> Bool {
+    sendDebugResearchCommand(id: id, payloadHex: nil, source: "ui.debug")
+  }
+
+  func enterHighFrequencyHistorySync() {
+    enterHighFrequencyHistorySync(intervalSeconds: 180, durationSeconds: 7_200)
+  }
 }

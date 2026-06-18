@@ -97,7 +97,7 @@ final class OvernightSQLiteMirrorQueue: @unchecked Sendable {
       "connection_state": connectionState,
       "service_uuid": event.serviceUUID,
       "characteristic_uuid": event.characteristicUUID,
-      "device_type": event.rustDeviceType,
+      "device_type": event.wireProtocol.bridgeString,
       "frame_hex": event.value.hexString,
       "byte_count": event.value.count,
       "decode_status": classification.isCompactLiveFlood ? "sampled_live_motion" : "not_decoded",

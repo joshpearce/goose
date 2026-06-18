@@ -72,15 +72,15 @@ struct GooseNotificationEvent {
   let value: Data
   let capturedAt: Date
 
-  var rustDeviceType: String {
+  var wireProtocol: WireProtocol {
     if characteristicUUID.lowercased().hasPrefix("610800") {
-      return "GEN4"
+      return .gen4
     }
     let normalizedUUID = characteristicUUID.replacingOccurrences(of: "-", with: "").lowercased()
     if normalizedUUID == "2a37" || normalizedUUID.hasPrefix("00002a37") {
-      return "HR_MONITOR"
+      return .hrMonitor
     }
-    return "GOOSE"
+    return .gen5
   }
 }
 
@@ -290,6 +290,45 @@ enum WhoopGeneration: CustomStringConvertible {
   }
 }
 
+
+// MARK: - WireProtocol
+
+enum WireProtocol: String, Decodable {
+  case gen4
+  case gen5
+  case hrMonitor = "hr_monitor"
+
+  var bridgeString: String {
+    switch self {
+    case .gen4: return "GEN4"
+    case .gen5: return "GOOSE"
+    case .hrMonitor: return "HR_MONITOR"
+    }
+  }
+}
+
+enum HistoricalSyncKind: String, Decodable {
+  case pageSequence = "page_sequence"
+  case stream
+}
+
+struct DeviceCapabilities: Decodable {
+  let wireProtocol: WireProtocol
+  let historicalSync: HistoricalSyncKind
+  let batteryViaR22: Bool
+  let batteryViaEvent48: Bool
+  let batteryViaCMD26: Bool
+  let r22Realtime: Bool
+
+  enum CodingKeys: String, CodingKey {
+    case wireProtocol = "wire_protocol"
+    case historicalSync = "historical_sync"
+    case batteryViaR22 = "battery_via_r22"
+    case batteryViaEvent48 = "battery_via_event48"
+    case batteryViaCMD26 = "battery_via_cmd26"
+    case r22Realtime = "r22_realtime"
+  }
+}
 
 // MARK: - BLE Bonding State
 

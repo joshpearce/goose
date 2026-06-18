@@ -221,7 +221,7 @@ struct SleepV2CalculationRow: View {
 }
 
 struct SleepV2AlarmSheet: View {
-  var ble: any BLETransport
+  var ble: CoreBluetoothBLETransport
   @Environment(\.dismiss) private var dismiss
   @Environment(\.colorScheme) private var colorScheme
   @State private var alarmTime = Self.defaultWakeTime()
@@ -757,7 +757,7 @@ struct SleepV2AlarmTileBackground: View {
 }
 
 struct SleepV2AlarmDiagnostics: View {
-  var ble: any BLETransport
+  var ble: CoreBluetoothBLETransport
   let palette: SleepV2Palette
 
   var body: some View {

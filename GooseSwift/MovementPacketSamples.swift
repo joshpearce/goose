@@ -226,7 +226,7 @@ final class SkippedNotificationDiagnostics {
   private let payloadHexByteLimit = 256
 
   func record(_ event: GooseNotificationEvent) -> SkippedNotificationDiagnostic {
-    let reason = Self.frameSkipReason(value: event.value, deviceType: event.rustDeviceType)
+    let reason = Self.frameSkipReason(value: event.value, deviceType: event.wireProtocol.bridgeString)
     lock.lock()
     totalCount += 1
     countsByCharacteristic[event.characteristicUUID, default: 0] += 1
@@ -237,7 +237,7 @@ final class SkippedNotificationDiagnostics {
     lock.unlock()
 
     let standardHeartRateText = event.characteristicUUID.uppercased() == "2A37" ? " standard_hr=true" : ""
-    let message = "#\(count) char=\(event.characteristicUUID) service=\(event.serviceUUID) type=\(event.rustDeviceType) bytes=\(event.value.count) reason=\(reason.detail)\(standardHeartRateText) hex=\(Self.hexForLog(event.value, maxBytes: payloadHexByteLimit))"
+    let message = "#\(count) char=\(event.characteristicUUID) service=\(event.serviceUUID) type=\(event.wireProtocol.bridgeString) bytes=\(event.value.count) reason=\(reason.detail)\(standardHeartRateText) hex=\(Self.hexForLog(event.value, maxBytes: payloadHexByteLimit))"
 
     let rollup: String?
     if count == 10 || count.isMultiple(of: 50) {

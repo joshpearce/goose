@@ -6,7 +6,7 @@ import UIKit
 struct SleepV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
   var store: HealthDataStore
-  var ble: any BLETransport
+  var ble: CoreBluetoothBLETransport
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingInsightsSheet = false
