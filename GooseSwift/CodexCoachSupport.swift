@@ -7,13 +7,13 @@ struct CodexLoginDeviceCode: Equatable {
 
 @MainActor
 enum CodexLocalToolContext {
-  static func build(healthStore: HealthDataStore, appModel: GooseAppModel) -> [String: Any] {
+  static func build(healthStore: HealthDataStore, appModel: GooseAppModel, healthState: HealthState) -> [String: Any] {
     [
       "generated_at": isoString(Date()),
       "tools": [
         "load_stats": loadStats(healthStore: healthStore, appModel: appModel),
-        "get_activities": getActivities(healthStore: healthStore, appModel: appModel),
-        "get_capture_sessions": getCaptureSessions(appModel: appModel),
+        "get_activities": getActivities(healthStore: healthStore, appModel: appModel, healthState: healthState),
+        "get_capture_sessions": getCaptureSessions(appModel: appModel, healthState: healthState),
         "get_raw_session_data": getRawSessionData(appModel: appModel),
       ],
     ]
@@ -69,7 +69,8 @@ enum CodexLocalToolContext {
 
   private static func getActivities(
     healthStore: HealthDataStore,
-    appModel: GooseAppModel
+    appModel: GooseAppModel,
+    healthState: HealthState
   ) -> [String: Any] {
     let session = appModel.activitySession
     return [
@@ -82,8 +83,8 @@ enum CodexLocalToolContext {
         "average_heart_rate": jsonValue(session.averageHeartRate),
         "max_heart_rate": jsonValue(session.maxHeartRate),
       ],
-      "activity_detection": appModel.activityDetectionStatus,
-      "activity_persistence": appModel.activityPersistenceStatus,
+      "activity_detection": healthState.activityDetectionStatus,
+      "activity_persistence": healthState.activityPersistenceStatus,
       "movement_packets": appModel.movementPacketStatus,
       "strain": healthStore.strainFeatureScoreSummary(),
       "motion_inputs": healthStore.motionFeatureSummary(),
@@ -94,18 +95,18 @@ enum CodexLocalToolContext {
     ]
   }
 
-  private static func getCaptureSessions(appModel: GooseAppModel) -> [String: Any] {
+  private static func getCaptureSessions(appModel: GooseAppModel, healthState: HealthState) -> [String: Any] {
     [
-      "packet_import": appModel.packetImportStatus,
+      "packet_import": healthState.packetImportStatus,
       "last_parsed_frame": appModel.lastParsedFrameSummary,
       "health_packet_capture": [
-        "session_id": jsonValue(appModel.healthPacketCaptureSessionID),
-        "status": appModel.healthPacketCaptureStatus,
-        "started_at": isoString(appModel.healthPacketCaptureStartedAt),
-        "frame_count": appModel.healthPacketCaptureFrameCount,
-        "target": appModel.healthPacketCaptureTargetSummary,
-        "last_packet": appModel.healthPacketCaptureLastPacketSummary,
-        "families": appModel.healthPacketCaptureFamilyRows.map { row in
+        "session_id": jsonValue(healthState.healthPacketCaptureSessionID),
+        "status": healthState.healthPacketCaptureStatus,
+        "started_at": isoString(healthState.healthPacketCaptureStartedAt),
+        "frame_count": healthState.healthPacketCaptureFrameCount,
+        "target": healthState.healthPacketCaptureTargetSummary,
+        "last_packet": healthState.healthPacketCaptureLastPacketSummary,
+        "families": healthState.healthPacketCaptureFamilyRows.map { row in
           [
             "id": row.id,
             "title": row.title,

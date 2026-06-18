@@ -4,13 +4,14 @@ import Foundation
 enum CoachLocalToolContext {
   static func build(
     healthStore: HealthDataStore,
-    appModel: GooseAppModel
+    appModel: GooseAppModel,
+    healthState: HealthState
   ) -> [String: Any] {
     let tools: [String: Any] = [
       "load_stats": loadStats(healthStore: healthStore, appModel: appModel),
-      "get_activities": activities(appModel: appModel),
-      "get_capture_sessions": captureSessions(appModel: appModel),
-      "get_raw_session_data": rawSessionData(healthStore: healthStore, appModel: appModel),
+      "get_activities": activities(appModel: appModel, healthState: healthState),
+      "get_capture_sessions": captureSessions(appModel: appModel, healthState: healthState),
+      "get_raw_session_data": rawSessionData(healthStore: healthStore, appModel: appModel, healthState: healthState),
     ]
 
     return [
@@ -84,7 +85,7 @@ enum CoachLocalToolContext {
     return rows
   }
 
-  private static func activities(appModel: GooseAppModel) -> [String: Any] {
+  private static func activities(appModel: GooseAppModel, healthState: HealthState) -> [String: Any] {
     let session = appModel.activitySession
     return [
       "active_session": [
@@ -97,27 +98,27 @@ enum CoachLocalToolContext {
         "average_hr": session.averageHeartRate ?? NSNull(),
         "max_hr": session.maxHeartRate ?? NSNull(),
       ],
-      "timeline_status": appModel.homeActivityTimelineStatus,
-      "timeline": appModel.homeActivityTimelineItems.prefix(8).map(activityTimelineItem),
-      "persistence_status": appModel.activityPersistenceStatus,
-      "detection_status": appModel.activityDetectionStatus,
+      "timeline_status": healthState.homeActivityTimelineStatus,
+      "timeline": healthState.homeActivityTimelineItems.prefix(8).map(activityTimelineItem),
+      "persistence_status": healthState.activityPersistenceStatus,
+      "detection_status": healthState.activityDetectionStatus,
       "movement_packet_status": appModel.movementPacketStatus,
-      "movement_validation_status": appModel.movementPacketValidationStatus,
+      "movement_validation_status": healthState.movementPacketValidationStatus,
     ]
   }
 
-  private static func captureSessions(appModel: GooseAppModel) -> [String: Any] {
+  private static func captureSessions(appModel: GooseAppModel, healthState: HealthState) -> [String: Any] {
     [
-      "packet_import_status": appModel.packetImportStatus,
+      "packet_import_status": healthState.packetImportStatus,
       "last_parsed_frame": appModel.lastParsedFrameSummary,
       "health_packet_capture": [
-        "status": appModel.healthPacketCaptureStatus,
-        "session_id": appModel.healthPacketCaptureSessionID ?? NSNull(),
-        "started_at": appModel.healthPacketCaptureStartedAt.map(timestamp) ?? NSNull(),
-        "frame_count": appModel.healthPacketCaptureFrameCount,
-        "target_summary": appModel.healthPacketCaptureTargetSummary,
-        "last_packet": appModel.healthPacketCaptureLastPacketSummary,
-        "families": appModel.healthPacketCaptureFamilyRows.prefix(12).map(captureFamily),
+        "status": healthState.healthPacketCaptureStatus,
+        "session_id": healthState.healthPacketCaptureSessionID ?? NSNull(),
+        "started_at": healthState.healthPacketCaptureStartedAt.map(timestamp) ?? NSNull(),
+        "frame_count": healthState.healthPacketCaptureFrameCount,
+        "target_summary": healthState.healthPacketCaptureTargetSummary,
+        "last_packet": healthState.healthPacketCaptureLastPacketSummary,
+        "families": healthState.healthPacketCaptureFamilyRows.prefix(12).map(captureFamily),
       ],
       "device_signals": [
         "summary": appModel.liveDeviceDataSummary,
@@ -135,13 +136,14 @@ enum CoachLocalToolContext {
 
   private static func rawSessionData(
     healthStore: HealthDataStore,
-    appModel: GooseAppModel
+    appModel: GooseAppModel,
+    healthState: HealthState
   ) -> [String: Any] {
     [
       "packet_inputs_status": healthStore.packetInputStatus,
       "packet_scores_status": healthStore.packetScoreStatus,
-      "capture_status": captureSessions(appModel: appModel),
-      "activity_status": activities(appModel: appModel),
+      "capture_status": captureSessions(appModel: appModel, healthState: healthState),
+      "activity_status": activities(appModel: appModel, healthState: healthState),
     ]
   }
 

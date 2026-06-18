@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeDashboardView: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(HealthState.self) private var healthState
   @EnvironmentObject private var router: AppRouter
   @Environment(HealthDataStore.self) private var healthStore
   @Binding var selectedDate: Date
@@ -53,7 +54,7 @@ struct HomeDashboardView: View {
           sleep: homeSnapshot(for: .sleep, in: cached),
           activity: homeSnapshot(for: .strain, in: cached),
           recovery: homeSnapshot(for: .recovery, in: cached),
-          activities: model.homeActivityTimelineItems,
+          activities: healthState.homeActivityTimelineItems,
           openSleep: { openHealth(.sleep) },
           openActivity: { openHealth(.strain) },
           openRecovery: { openHealth(.recovery) }

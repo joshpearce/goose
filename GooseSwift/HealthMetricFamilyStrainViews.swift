@@ -395,6 +395,7 @@ struct StrainV2ActivityBackground: View {
 struct StrainV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
   @Environment(GooseAppModel.self) private var model
+  @Environment(HealthState.self) private var healthState
   @Environment(HealthDataStore.self) private var healthStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
@@ -570,7 +571,7 @@ struct StrainV2OverviewPage: View {
         await healthStore.runIMUStepCount()
       }
     }
-    .onChange(of: model.packetImportRevision) { _, _ in
+    .onChange(of: healthState.packetImportRevision) { _, _ in
       Task {
         await healthStore.runExerciseSessions()
         await healthStore.runIMUStepCount()

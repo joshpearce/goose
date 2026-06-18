@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @AppStorage(OnboardingStorage.onboardingComplete) private var onboardingComplete = false
   @AppStorage(OnboardingStorage.onboardingRedoRequested) private var onboardingRedoRequested = false
 
@@ -50,10 +51,10 @@ struct RootView: View {
   }
 
   private func syncModelOnboardingState() {
-    guard model.onboardingComplete != onboardingComplete else {
+    guard bleState.onboardingComplete != onboardingComplete else {
       return
     }
-    model.onboardingComplete = onboardingComplete
+    bleState.onboardingComplete = onboardingComplete
   }
 }
 

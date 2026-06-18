@@ -82,6 +82,7 @@ private struct CoachRouteRow: View {
 struct CoachSleepRouteView: View {
   @Environment(HealthDataStore.self) private var healthStore
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @State private var alarmTime: Date = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
 
   private var sleep: PrimarySleepDetail? { healthStore.primarySleepDetail }
@@ -165,11 +166,11 @@ struct CoachSleepRouteView: View {
           displayedComponents: .hourAndMinute
         )
         .labelsHidden()
-        .disabled(isDisconnected || model.alarmIsArmed)
-        .opacity(isDisconnected || model.alarmIsArmed ? 0.4 : 1)
+        .disabled(isDisconnected || bleState.alarmIsArmed)
+        .opacity(isDisconnected || bleState.alarmIsArmed ? 0.4 : 1)
         .accessibilityHint(isDisconnected ? "Conecta o WHOOP para ativar" : "")
 
-        if isDisconnected && !model.alarmIsArmed {
+        if isDisconnected && !bleState.alarmIsArmed {
           HStack(spacing: 8) {
             Image(systemName: "sensor.tag.radiowaves.forward")
               .foregroundStyle(.secondary)
@@ -181,29 +182,29 @@ struct CoachSleepRouteView: View {
         }
 
         Button {
-          if model.alarmIsArmed {
+          if bleState.alarmIsArmed {
             model.ble.disableWhoopAlarms()
-            model.alarmIsArmed = false
-            model.scheduledAlarmTime = nil
+            bleState.alarmIsArmed = false
+            bleState.scheduledAlarmTime = nil
           } else {
             guard model.ble.canWriteAlarm else { return }
             model.ble.setWhoopAlarm(at: alarmTime)
-            model.alarmIsArmed = true
-            model.scheduledAlarmTime = alarmTime
+            bleState.alarmIsArmed = true
+            bleState.scheduledAlarmTime = alarmTime
             model.ble.buzz(loops: 2)
           }
         } label: {
-          Text(model.alarmIsArmed ? "Cancelar Alarme" : "Armar Alarme")
+          Text(bleState.alarmIsArmed ? "Cancelar Alarme" : "Armar Alarme")
             .font(.body.weight(.semibold))
-            .foregroundStyle(model.alarmIsArmed ? Color.red : Color.indigo)
+            .foregroundStyle(bleState.alarmIsArmed ? Color.red : Color.indigo)
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(
-              (model.alarmIsArmed ? Color.red : Color.indigo).opacity(0.14),
+              (bleState.alarmIsArmed ? Color.red : Color.indigo).opacity(0.14),
               in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
         }
         .disabled(isDisconnected)
-        .accessibilityLabel(model.alarmIsArmed ? "Cancelar alarme armado" : "Armar alarme de despertar")
+        .accessibilityLabel(bleState.alarmIsArmed ? "Cancelar alarme armado" : "Armar alarme de despertar")
       }
     }
   }

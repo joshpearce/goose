@@ -32,6 +32,7 @@ final class MoreRemoteServerViewModel: ObservableObject {
 struct MoreRemoteServerView: View {
   @StateObject private var vm = MoreRemoteServerViewModel()
   @Environment(GooseAppModel.self) private var model
+  @Environment(SyncState.self) private var syncState
 
   private static let relativeDateFormatter: RelativeDateTimeFormatter = {
     let f = RelativeDateTimeFormatter()
@@ -71,7 +72,7 @@ struct MoreRemoteServerView: View {
         Section("Status") {
           // Row 1: Server reachability
           Label {
-            switch model.serverReachable {
+            switch syncState.serverReachable {
             case .none:
               Text("Checking...").foregroundStyle(.secondary)
             case .some(true):
@@ -80,7 +81,7 @@ struct MoreRemoteServerView: View {
               Text("Server unreachable").foregroundStyle(.red)
             }
           } icon: {
-            switch model.serverReachable {
+            switch syncState.serverReachable {
             case .none:
               ProgressView().scaleEffect(0.7)
             case .some(true):
@@ -93,9 +94,9 @@ struct MoreRemoteServerView: View {
           // Row 1b: Manual connection test (auth-validated)
           LabeledContent("Test Connection") {
             HStack(spacing: 8) {
-              if model.connectionTestRunning {
+              if syncState.connectionTestRunning {
                 ProgressView().scaleEffect(0.7)
-              } else if let result = model.connectionTestResult {
+              } else if let result = syncState.connectionTestResult {
                 Text(result)
                   .font(.caption)
                   .foregroundStyle(result.hasPrefix("✅") ? .green : result.hasPrefix("⚠️") ? .orange : .red)
@@ -109,18 +110,18 @@ struct MoreRemoteServerView: View {
               }
               .buttonStyle(.bordered)
               .controlSize(.mini)
-              .disabled(model.connectionTestRunning)
+              .disabled(syncState.connectionTestRunning)
             }
           }
 
           // Row 2: Last sync + ACK count + manual trigger
           LabeledContent("Last sync") {
             HStack(spacing: 8) {
-              if let lastUpload = model.lastUploadAt {
+              if let lastUpload = syncState.lastUploadAt {
                 VStack(alignment: .trailing, spacing: 1) {
                   Text(Self.relativeDateFormatter.localizedString(for: lastUpload, relativeTo: Date()))
                     .foregroundStyle(.secondary)
-                  if let count = model.lastSyncedCount {
+                  if let count = syncState.lastSyncedCount {
                     Text("\(count) records acked")
                       .font(.caption2)
                       .foregroundStyle(.green)
@@ -139,15 +140,15 @@ struct MoreRemoteServerView: View {
 
           // Row 3: Pending batch count
           LabeledContent("Pending batches") {
-            Text("\(model.pendingBatchCount)")
-              .foregroundStyle(model.pendingBatchCount > 0 ? .orange : .secondary)
+            Text("\(syncState.pendingBatchCount)")
+              .foregroundStyle(syncState.pendingBatchCount > 0 ? .orange : .secondary)
           }
 
           // Row 4: Rows pending sync flag
           LabeledContent("Sync pendente") {
             HStack(spacing: 8) {
-              if model.syncPendingRowCount > 0 {
-                Text("\(model.syncPendingRowCount) rows")
+              if syncState.syncPendingRowCount > 0 {
+                Text("\(syncState.syncPendingRowCount) rows")
                   .foregroundStyle(.orange)
               } else {
                 Text("0 rows")
@@ -164,10 +165,10 @@ struct MoreRemoteServerView: View {
           // Row 5: Trust-chain import from server
           LabeledContent("Server import") {
             HStack(spacing: 8) {
-              if model.serverImportInProgress {
+              if syncState.serverImportInProgress {
                 ProgressView().scaleEffect(0.7)
                 Text("Importing…").foregroundStyle(.secondary)
-              } else if let count = model.serverImportLastFrameCount {
+              } else if let count = syncState.serverImportLastFrameCount {
                 Text("\(count) frames").foregroundStyle(.green)
               } else {
                 Text("Not run").foregroundStyle(.secondary)
@@ -177,7 +178,7 @@ struct MoreRemoteServerView: View {
               }
               .buttonStyle(.bordered)
               .controlSize(.mini)
-              .disabled(model.serverImportInProgress)
+              .disabled(syncState.serverImportInProgress)
             }
           }
         }
@@ -215,10 +216,14 @@ struct MoreRemoteServerView: View {
   }
   .environment({
     let m = GooseAppModel()
-    m.serverReachable = nil
-    m.lastUploadAt = nil
-    m.pendingBatchCount = 0
+    m.syncState.serverReachable = nil
+    m.syncState.lastUploadAt = nil
+    m.syncState.pendingBatchCount = 0
     return m
+  }())
+  .environment({
+    let m = GooseAppModel()
+    return m.syncState
   }())
 }
 
@@ -228,10 +233,17 @@ struct MoreRemoteServerView: View {
   }
   .environment({
     let m = GooseAppModel()
-    m.serverReachable = true
-    m.lastUploadAt = Date().addingTimeInterval(-120)
-    m.pendingBatchCount = 0
+    m.syncState.serverReachable = true
+    m.syncState.lastUploadAt = Date().addingTimeInterval(-120)
+    m.syncState.pendingBatchCount = 0
     return m
+  }())
+  .environment({
+    let m = GooseAppModel()
+    m.syncState.serverReachable = true
+    m.syncState.lastUploadAt = Date().addingTimeInterval(-120)
+    m.syncState.pendingBatchCount = 0
+    return m.syncState
   }())
 }
 
@@ -241,9 +253,16 @@ struct MoreRemoteServerView: View {
   }
   .environment({
     let m = GooseAppModel()
-    m.serverReachable = false
-    m.lastUploadAt = nil
-    m.pendingBatchCount = 2
+    m.syncState.serverReachable = false
+    m.syncState.lastUploadAt = nil
+    m.syncState.pendingBatchCount = 2
     return m
+  }())
+  .environment({
+    let m = GooseAppModel()
+    m.syncState.serverReachable = false
+    m.syncState.lastUploadAt = nil
+    m.syncState.pendingBatchCount = 2
+    return m.syncState
   }())
 }

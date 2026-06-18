@@ -27,6 +27,7 @@ struct MoreDebugView: View {
 
 private struct MoreDebugStatusTab: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @ObservedObject var store: MoreDataStore
   @Environment(HealthDataStore.self) private var healthStore
 
@@ -41,9 +42,9 @@ private struct MoreDebugStatusTab: View {
         )
         MoreInfoRow(
           title: "HR Spikes Filtered",
-          value: "\(model.hrSpikeCount) | valid \(GooseHRSanitizer.minValidBPM)-\(GooseHRSanitizer.maxValidBPM) bpm",
+          value: "\(bleState.hrSpikeCount) | valid \(GooseHRSanitizer.minValidBPM)-\(GooseHRSanitizer.maxValidBPM) bpm",
           systemImage: "heart.slash",
-          status: model.hrSpikeCount == 0 ? .ready : .stale
+          status: bleState.hrSpikeCount == 0 ? .ready : .stale
         )
       }
 
@@ -115,6 +116,7 @@ private struct MoreDebugStatusTab: View {
 
 private struct MoreDebugCaptureTab: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(HealthState.self) private var healthState
   @EnvironmentObject private var packetMonitor: PacketMonitorModel
   @ObservedObject var store: MoreDataStore
   @State private var showDestructiveConfirmation = false
@@ -124,21 +126,21 @@ private struct MoreDebugCaptureTab: View {
       Section("Health Packet Capture") {
         MoreInfoRow(
           title: "Session",
-          value: model.healthPacketCaptureStatus.localizedCaptureStatus,
+          value: healthState.healthPacketCaptureStatus.localizedCaptureStatus,
           systemImage: "record.circle",
           status: self.healthPacketCaptureStatus
         )
         MoreInfoRow(
           title: "Targets",
-          value: model.healthPacketCaptureTargetSummary.localizedCaptureTargetSummary,
+          value: healthState.healthPacketCaptureTargetSummary.localizedCaptureTargetSummary,
           systemImage: "scope",
-          status: model.healthPacketCaptureFamilyRows.isEmpty ? .pending : .ready
+          status: healthState.healthPacketCaptureFamilyRows.isEmpty ? .pending : .ready
         )
         MoreInfoRow(
           title: "Last Packet",
-          value: model.healthPacketCaptureLastPacketSummary,
+          value: healthState.healthPacketCaptureLastPacketSummary,
           systemImage: "waveform.path.ecg.rectangle",
-          status: model.healthPacketCaptureLastPacketSummary == "No packets captured" ? .pending : .ready
+          status: healthState.healthPacketCaptureLastPacketSummary == "No packets captured" ? .pending : .ready
         )
         MoreInfoRow(
           title: "Live Data",
@@ -154,7 +156,7 @@ private struct MoreDebugCaptureTab: View {
         )
         MoreInfoRow(
           title: "RR Watch",
-          value: model.respiratoryPacketWatchStatus,
+          value: healthState.respiratoryPacketWatchStatus,
           systemImage: "lungs",
           status: self.respiratoryPacketWatchStatus
         )
@@ -165,13 +167,13 @@ private struct MoreDebugCaptureTab: View {
           status: model.ble.invalidFrameCount == 0 ? .ready : .blocked
         )
         MoreActionRow(
-          title: model.healthPacketCaptureSessionID == nil ? "Start Walk Capture" : "Stop Capture",
-          detail: model.healthPacketCaptureSessionID == nil ? "Starts a 30 minute WHOOP movement, HR, GPS, and activity candidate capture" : model.healthPacketCaptureTargetSummary,
-          systemImage: model.healthPacketCaptureSessionID == nil ? "figure.walk.circle" : "stop.circle",
+          title: healthState.healthPacketCaptureSessionID == nil ? "Start Walk Capture" : "Stop Capture",
+          detail: healthState.healthPacketCaptureSessionID == nil ? "Starts a 30 minute WHOOP movement, HR, GPS, and activity candidate capture" : healthState.healthPacketCaptureTargetSummary,
+          systemImage: healthState.healthPacketCaptureSessionID == nil ? "figure.walk.circle" : "stop.circle",
           status: self.healthPacketCaptureActionStatus,
-          disabled: model.healthPacketCaptureSessionID == nil && model.ble.connectionState != "ready"
+          disabled: healthState.healthPacketCaptureSessionID == nil && model.ble.connectionState != "ready"
         ) {
-          if model.healthPacketCaptureSessionID == nil {
+          if healthState.healthPacketCaptureSessionID == nil {
             model.startHealthPacketCapture()
           } else {
             model.stopHealthPacketCapture()
@@ -182,7 +184,7 @@ private struct MoreDebugCaptureTab: View {
           detail: "Full-rate K10/K11/R17/R21/K25/K26 streams into the capture DB",
           systemImage: "waveform.path.ecg.rectangle",
           status: self.healthPacketCaptureActionStatus,
-          disabled: model.healthPacketCaptureSessionID != nil || model.ble.connectionState != "ready"
+          disabled: healthState.healthPacketCaptureSessionID != nil || model.ble.connectionState != "ready"
         ) {
           model.startPhysiologyPacketCapture()
         }
@@ -191,26 +193,26 @@ private struct MoreDebugCaptureTab: View {
           detail: "Event 17 plus K18/K24 history",
           systemImage: "thermometer.medium",
           status: self.temperatureCaptureActionStatus,
-          disabled: model.healthPacketCaptureSessionID != nil
+          disabled: healthState.healthPacketCaptureSessionID != nil
             || model.ble.connectionState != "ready"
             || (!model.ble.canSyncHistorical && !model.ble.isHistoricalSyncing)
         ) {
           model.startTemperaturePacketCapture()
         }
         MoreActionRow(
-          title: model.respiratoryPacketWatchActive ? "Stop RR Packet Watch" : "Watch K18 RR Packets",
-          detail: model.respiratoryPacketWatchStatus,
+          title: healthState.respiratoryPacketWatchActive ? "Stop RR Packet Watch" : "Watch K18 RR Packets",
+          detail: healthState.respiratoryPacketWatchStatus,
           systemImage: "lungs",
           status: self.respiratoryPacketWatchStatus,
-          disabled: !model.respiratoryPacketWatchActive && model.ble.connectionState != "ready"
+          disabled: !healthState.respiratoryPacketWatchActive && model.ble.connectionState != "ready"
         ) {
-          if model.respiratoryPacketWatchActive {
+          if healthState.respiratoryPacketWatchActive {
             model.stopRespiratoryPacketWatch()
           } else {
             model.startRespiratoryPacketWatch()
           }
         }
-        if model.healthPacketCaptureFamilyRows.isEmpty {
+        if healthState.healthPacketCaptureFamilyRows.isEmpty {
           MoreInfoRow(
             title: "Families",
             value: "No decoded packet families in this capture yet",
@@ -218,7 +220,7 @@ private struct MoreDebugCaptureTab: View {
             status: .pending
           )
         } else {
-          ForEach(model.healthPacketCaptureFamilyRows.prefix(10)) { family in
+          ForEach(healthState.healthPacketCaptureFamilyRows.prefix(10)) { family in
             MoreInfoRow(
               title: "\(family.title) x\(family.count)",
               value: family.detail,
@@ -238,16 +240,16 @@ private struct MoreDebugCaptureTab: View {
         )
         MoreInfoRow(
           title: "Detector",
-          value: model.activityDetectionStatus.localizedActivityDetectionStatus,
+          value: healthState.activityDetectionStatus.localizedActivityDetectionStatus,
           systemImage: "figure.run.circle",
           status: activityDetectorStatus
         )
         MoreActionRow(
-          title: model.movementPacketValidationIsRunning ? "Listening For Movement" : "Run Movement Packet Test",
-          detail: model.movementPacketValidationStatus,
+          title: healthState.movementPacketValidationIsRunning ? "Listening For Movement" : "Run Movement Packet Test",
+          detail: healthState.movementPacketValidationStatus,
           systemImage: "dot.radiowaves.left.and.right",
           status: movementPacketTestStatus,
-          disabled: model.movementPacketValidationIsRunning
+          disabled: healthState.movementPacketValidationIsRunning
         ) {
           model.startMovementPacketValidationTest()
         }
@@ -389,47 +391,47 @@ private struct MoreDebugCaptureTab: View {
   }
 
   private var movementPacketTestStatus: MoreStatusKind {
-    if model.movementPacketValidationIsRunning {
+    if healthState.movementPacketValidationIsRunning {
       return .pending
     }
-    if model.movementPacketValidationStatus.hasPrefix("Passed") {
+    if healthState.movementPacketValidationStatus.hasPrefix("Passed") {
       return .ready
     }
-    if model.movementPacketValidationStatus.hasPrefix("Failed") || model.movementPacketValidationStatus.hasPrefix("Connect WHOOP") {
+    if healthState.movementPacketValidationStatus.hasPrefix("Failed") || healthState.movementPacketValidationStatus.hasPrefix("Connect WHOOP") {
       return .blocked
     }
     return .pending
   }
 
   private var activityDetectorStatus: MoreStatusKind {
-    if model.activityDetectionStatus.contains("Candidate") || model.activityDetectionStatus.contains("Movement") {
+    if healthState.activityDetectionStatus.contains("Candidate") || healthState.activityDetectionStatus.contains("Movement") {
       return .ready
     }
     return packetMonitor.movementPacketStatus == "No movement packets" ? .pending : .ready
   }
 
   private var healthPacketCaptureStatus: MoreStatusKind {
-    if model.healthPacketCaptureSessionID != nil {
+    if healthState.healthPacketCaptureSessionID != nil {
       return .pending
     }
-    if model.healthPacketCaptureStatus.hasPrefix("Stopped") {
+    if healthState.healthPacketCaptureStatus.hasPrefix("Stopped") {
       return .ready
     }
-    if model.healthPacketCaptureStatus.contains("failed") || model.healthPacketCaptureStatus.hasPrefix("Connect WHOOP") {
+    if healthState.healthPacketCaptureStatus.contains("failed") || healthState.healthPacketCaptureStatus.hasPrefix("Connect WHOOP") {
       return .blocked
     }
     return .pending
   }
 
   private var healthPacketCaptureActionStatus: MoreStatusKind {
-    if model.healthPacketCaptureSessionID != nil {
+    if healthState.healthPacketCaptureSessionID != nil {
       return .pending
     }
     return model.ble.connectionState == "ready" ? .pending : .blocked
   }
 
   private var temperatureCaptureActionStatus: MoreStatusKind {
-    if model.healthPacketCaptureSessionID != nil {
+    if healthState.healthPacketCaptureSessionID != nil {
       return .blocked
     }
     if model.ble.connectionState != "ready" {
@@ -439,16 +441,16 @@ private struct MoreDebugCaptureTab: View {
   }
 
   private var respiratoryPacketWatchStatus: MoreStatusKind {
-    if model.respiratoryPacketWatchActive {
+    if healthState.respiratoryPacketWatchActive {
       return .pending
     }
-    if model.respiratoryPacketWatchStatus.hasPrefix("Found K18") {
+    if healthState.respiratoryPacketWatchStatus.hasPrefix("Found K18") {
       return .ready
     }
-    if model.respiratoryPacketWatchStatus.hasPrefix("Connect WHOOP") {
+    if healthState.respiratoryPacketWatchStatus.hasPrefix("Connect WHOOP") {
       return .blocked
     }
-    if model.respiratoryPacketWatchStatus.hasPrefix("Timed out") {
+    if healthState.respiratoryPacketWatchStatus.hasPrefix("Timed out") {
       return .stale
     }
     return model.ble.connectionState == "ready" ? .pending : .blocked
@@ -506,6 +508,7 @@ private struct MoreDebugCaptureTab: View {
 
 private struct MoreDebugResearchTab: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @ObservedObject var store: MoreDataStore
   @AppStorage(OnboardingStorage.onboardingComplete) private var onboardingComplete = false
   @AppStorage(OnboardingStorage.onboardingRedoRequested) private var onboardingRedoRequested = false
@@ -613,7 +616,7 @@ private struct MoreDebugResearchTab: View {
         Button {
           model.recordUIAction("ui.debug.redo_onboarding")
           OnboardingProfilePersistence.requestRedoFromDefaults()
-          model.onboardingComplete = false
+          bleState.onboardingComplete = false
           onboardingComplete = false
           onboardingRedoRequested = true
         } label: {
