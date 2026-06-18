@@ -728,13 +728,14 @@ extension CoreBluetoothBLETransport {
       offset += 4
     }
 
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
     let pageState = Self.historicalRangePageState(fromRangeBody: body)
     let pageCurrent = pageState?.pageCurrent
     let pageOldest = pageState?.pageOldest
     let pageEnd = pageState?.pageEnd
     let pagesBehind = pageState?.pagesBehind
 
-    if status == "success", connectedCapabilities?.wireProtocol != .gen4 {
+    if status == "success", !catalog.isGen4 {
       historicalManager.historicalRangePageState = pageState
     } else if status != "pending" {
       historicalManager.historicalRangePageState = nil
@@ -745,7 +746,7 @@ extension CoreBluetoothBLETransport {
     // not trusted there. Guarding on historicalSyncPagesTotal == nil keeps a
     // re-issued GET_DATA_RANGE within the same session from growing the
     // denominator and rewinding the progress ring.
-    if status == "success", connectedCapabilities?.wireProtocol != .gen4,
+    if status == "success", !catalog.isGen4,
        historicalSyncPagesTotal == nil,
        let pagesBehind, pagesBehind > 0, isHistoricalSyncing {
       historicalSyncPagesTotal = Int(pagesBehind)
@@ -1012,14 +1013,16 @@ extension CoreBluetoothBLETransport {
   }
 
   func frames(in data: Data) -> [Data] {
-    switch connectedCapabilities?.wireProtocol {
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
+    switch catalog.capabilities?.wireProtocol {
     case .gen4: return Self.gen4Frames(in: data)
     default: return Self.v5Frames(in: data)
     }
   }
 
   func payload(in frame: Data) -> [UInt8]? {
-    switch connectedCapabilities?.wireProtocol {
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
+    switch catalog.capabilities?.wireProtocol {
     case .gen4: return Self.gen4Payload(in: frame)
     default: return Self.v5Payload(in: frame)
     }

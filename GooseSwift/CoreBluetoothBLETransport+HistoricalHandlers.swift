@@ -76,11 +76,8 @@ extension CoreBluetoothBLETransport {
     let frames = historicalManager.pendingHistoricalFrames
     historicalManager.pendingHistoricalFrames.removeAll()
     let deviceUUID = selectedDeviceID?.uuidString
-    let deviceType: String
-    switch connectedCapabilities?.historicalSync {
-    case .pageSequence: deviceType = "GEN4"
-    default: deviceType = connectedCapabilities?.wireProtocol.bridgeString ?? "GOOSE"
-    }
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
+    let deviceType = catalog.historicalDeviceType
     let frameObjects: [[String: Any]] = frames.map { f in
       [
         "evidence_id": UUID().uuidString,
@@ -446,11 +443,12 @@ extension CoreBluetoothBLETransport {
       return
     }
 
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
     // Gen4 cmd 22 replies with body `<echoed_seq> 02 0b 00 00`. The 0x02 in
     // the result-code slot is a Gen4 success ack, not Gen5 PENDING — so we
     // bypass the Gen5 result-code logic and immediately advance to cmd 23.
     // historicalManager.gen4HistoricalPageSeq was set by the preceding cmd 34 response.
-    if connectedCapabilities?.historicalSync == .pageSequence && pending.kind == .sendHistoricalData {
+    if catalog.usesPageSequenceSync && pending.kind == .sendHistoricalData {
       historicalManager.historicalCommandTimeoutWorkItem?.cancel()
       historicalManager.pendingHistoricalCommand = nil
       record(
@@ -564,7 +562,7 @@ extension CoreBluetoothBLETransport {
 
     switch pending.kind {
     case .getDataRange:
-      if connectedCapabilities?.historicalSync == .pageSequence {
+      if catalog.usesPageSequenceSync {
         guard payload.count >= 14 else {
           failHistoricalSync("Gen4 cmd 34 response too short: \(payload.count) bytes payload=\(Data(payload).hexString)")
           return
@@ -590,7 +588,7 @@ extension CoreBluetoothBLETransport {
         completeHistoricalSync(reason: "historical_range_poll_complete")
         return
       }
-      if connectedCapabilities?.historicalSync != .pageSequence,
+      if !catalog.usesPageSequenceSync,
          historicalManager.historicalRangePageState?.pagesBehind == 0 {
         completeHistoricalSync(reason: "historical_range_empty")
         return
@@ -668,8 +666,9 @@ extension CoreBluetoothBLETransport {
         return
       }
       historicalSyncBurstsCompleted += 1
+      let catalog = DeviceCatalog(capabilities: connectedCapabilities)
       let ackPayload: [UInt8]
-      if connectedCapabilities?.historicalSync == .pageSequence {
+      if catalog.usesPageSequenceSync {
         historicalManager.gen4HistoricalPageSeq &+= 1
         ackPayload = gen4PageRequestPayload(seq: historicalManager.gen4HistoricalPageSeq)
         record(

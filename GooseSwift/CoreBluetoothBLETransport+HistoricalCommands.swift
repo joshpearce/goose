@@ -65,7 +65,8 @@ extension CoreBluetoothBLETransport {
     publishSyncToast(phase: .syncing, detail: toastDetail)
     // Gen4 ignores firstCommandOverride: the strap requires the cmd 34 → 22 → 23
     // sequence regardless of caller intent. See docs/gen4-historical-sync.md.
-    if connectedCapabilities?.historicalSync == .pageSequence {
+    let catalog = DeviceCatalog(capabilities: connectedCapabilities)
+    if catalog.usesPageSequenceSync {
       record(
         source: "ble.sync",
         title: "historical_sync.started",
@@ -105,7 +106,7 @@ extension CoreBluetoothBLETransport {
     let commandPayload: [UInt8]
     if kind == .historicalDataResult {
       commandPayload = historicalManager.pendingHistoryEndAckPayload ?? kind.payload
-    } else if connectedCapabilities?.historicalSync == .pageSequence && (kind == .getDataRange || kind == .sendHistoricalData) {
+    } else if DeviceCatalog(capabilities: connectedCapabilities).usesPageSequenceSync && (kind == .getDataRange || kind == .sendHistoricalData) {
       commandPayload = [0x00]
     } else {
       commandPayload = kind.payload

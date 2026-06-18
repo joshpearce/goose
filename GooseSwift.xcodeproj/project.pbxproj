@@ -170,6 +170,7 @@
 		D100000000000000000000061 /* CoreBluetoothBLETransport+Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D200000000000000000000061 /* CoreBluetoothBLETransport+Haptics.swift */; };
 		D100000000000000000000080 /* BLETransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D200000000000000000000080 /* BLETransport.swift */; };
 		D100000000000000000000081 /* CoreBluetoothBLETransport+BatteryCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = D200000000000000000000081 /* CoreBluetoothBLETransport+BatteryCommands.swift */; };
+		D100000000000000000000082 /* DeviceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D200000000000000000000082 /* DeviceCatalog.swift */; };
 		E1000000000000000000001 /* CoachProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000001 /* CoachProviderProtocol.swift */; };
 		E1000000000000000000002 /* CoachChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000002 /* CoachChatModel.swift */; };
 		E1000000000000000000003 /* ChatGPTCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003 /* ChatGPTCoachProvider.swift */; };
@@ -403,6 +404,7 @@
 		D200000000000000000000061 /* CoreBluetoothBLETransport+Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreBluetoothBLETransport+Haptics.swift"; sourceTree = "<group>"; };
 		D200000000000000000000080 /* BLETransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLETransport.swift; sourceTree = "<group>"; };
 		D200000000000000000000081 /* CoreBluetoothBLETransport+BatteryCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreBluetoothBLETransport+BatteryCommands.swift"; sourceTree = "<group>"; };
+		D200000000000000000000082 /* DeviceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCatalog.swift; sourceTree = "<group>"; };
 		D2000000000000000000005A /* HRMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorView.swift; sourceTree = "<group>"; };
 		D2000000000000000000005B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
@@ -662,6 +664,7 @@
 				D200000000000000000000061 /* CoreBluetoothBLETransport+Haptics.swift */,
 				D200000000000000000000080 /* BLETransport.swift */,
 				D200000000000000000000081 /* CoreBluetoothBLETransport+BatteryCommands.swift */,
+				D200000000000000000000082 /* DeviceCatalog.swift */,
 				D2000000000000000000005A /* HRMonitorView.swift */,
 				D2000000000000000000005C /* LocalizedStatusStrings.swift */,
 				E2000000000000000000001 /* CoachProviderProtocol.swift */,
@@ -1095,6 +1098,7 @@
 				D100000000000000000000061 /* CoreBluetoothBLETransport+Haptics.swift in Sources */,
 				D100000000000000000000080 /* BLETransport.swift in Sources */,
 				D100000000000000000000081 /* CoreBluetoothBLETransport+BatteryCommands.swift in Sources */,
+				D100000000000000000000082 /* DeviceCatalog.swift in Sources */,
 				D1000000000000000000005A /* HRMonitorView.swift in Sources */,
 				D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */,
 				D1000000000000000000005D /* GooseAppModel+SleepSync.swift in Sources */,
