@@ -14,6 +14,10 @@
     clippy::manual_clamp,
     clippy::if_same_then_else
 )]
+// Production code must not call .unwrap() — use .expect("reason") or ? propagation.
+// Test code is exempt (cfg_attr scoping); modules with unconverted test unwraps carry
+// a file-level #![allow(clippy::unwrap_used)] shield that Plans 2–5 remove progressively.
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 pub mod activity_candidates;
 pub mod activity_identity;
@@ -22,6 +26,7 @@ pub mod algorithm_compare;
 pub mod baselines;
 pub mod bridge;
 pub mod calibration;
+pub mod capabilities;
 pub mod capture_correlation;
 pub mod capture_import;
 pub mod capture_sanitize;

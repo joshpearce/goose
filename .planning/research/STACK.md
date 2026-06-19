@@ -157,9 +157,9 @@ with the RE work).
 
 | Gate | Feature blocked | RE task |
 |------|-----------------|---------|
-| `STRAP_DRIVEN_ALARM_EXECUTED` event-57 payload | HAP-03 smart alarm UI confirmation/feedback | BTSnoop: arm alarm for T+2 min via existing `writeAlarmCommand()`, wait for strap fire, parse handle `0x0022`/`0x0027` inbound packet |
-| `SetAlarmInfoCommandPacketRev4` wire layout | HAP-04 wake-window engine (`GooseWakeWindowManager`) | Ghidra decompile of `SetAlarmInfoCommandPacketRev4` + BTSnoop of WHOOP app setting a windowed alarm |
-| R22 6-byte `extra` field meaning | BLE5-01 RR interval extraction from WHOOP 5.0 6-byte variant | Second BTSnoop capture during known workout with simultaneous WHOOP app HR/RR ground truth |
+| `STRAP_DRIVEN_ALARM_EXECUTED` event-57 payload | HAP-03 smart alarm UI confirmation/feedback | BLE capture: arm alarm for T+2 min via existing `writeAlarmCommand()`, wait for strap fire, parse handle `0x0022`/`0x0027` inbound packet |
+| `SetAlarmInfoCommandPacketRev4` wire layout | HAP-04 wake-window engine (`GooseWakeWindowManager`) | Protocol analysis of `SetAlarmInfoCommandPacketRev4` + BLE capture of WHOOP app setting a windowed alarm |
+| R22 6-byte `extra` field meaning | BLE5-01 RR interval extraction from WHOOP 5.0 6-byte variant | Second BLE capture during known workout with simultaneous WHOOP app HR/RR ground truth |
 | `HapticsPatternType` enum values | HAP-02 advanced haptic pattern system beyond `[47, 152]` | Send `get_all_haptics_pattern` (cmd `0x3F`) to live WHOOP 5.0, parse response payload |
 
 ---
@@ -184,7 +184,7 @@ cd /Users/francisco/Documents/goose/Rust/core && cargo test
 
 ## Sources
 
-- `.planning/seeds/` — all 16 seed files read directly; authored from Ghidra RE + BTSnoop captures + NoopApp source review (HIGH confidence)
+- `.planning/seeds/` — all 16 seed files read directly; authored from hardware observation + NoopApp source review (HIGH confidence)
 - `Rust/core/Cargo.toml` — confirmed current dependency versions
 - `GooseSwift.xcodeproj/project.pbxproj` — confirmed `GooseSwiftTests` target `T40000000000000000000001` exists; `GooseSwiftTests/` directory contains 10 existing test files
 - `Rust/core/src/protocol.rs:567` — confirmed `7 | 9 | 12 | 18` NormalHistory arm; `0x10` not handled

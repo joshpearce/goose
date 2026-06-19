@@ -60,7 +60,7 @@ extension GooseAppModel {
     // (GooseRustBridge is @unchecked Sendable with unguarded mutable state).
     let localRust = GooseRustBridge()
     let store = healthStore
-    store?.markBandSleepSyncRequested(
+    store.markBandSleepSyncRequested(
       automatic: true,
       canSync: ble.canSyncHistorical,
       detail: ""
@@ -70,7 +70,7 @@ extension GooseAppModel {
 
     let deviceId = ble.activeDeviceIdentifier?.uuidString ?? ""
     guard !deviceId.isEmpty else {
-      store?.markBandSleepSyncFailed("No active device")
+      store.markBandSleepSyncFailed("No active device")
       return
     }
 
@@ -91,12 +91,9 @@ extension GooseAppModel {
       let gravityCount = gravityRows.count
 
       if gravityCount < 100 {
-        // BLE historical sync needed — poll historicalSyncStatus instead of
-        // setting onHistoricalSyncCompleted to avoid AppShellView callback conflict
-        // (RESEARCH.md Pitfall #3: onHistoricalSyncCompleted is a single slot
-        // owned by AppShellView; overwriting it breaks manual sync in AppShellView).
+        // BLE historical sync needed — poll historicalSyncStatus for completion.
         guard ble.canSyncHistorical else {
-          store?.markBandSleepSyncFailed(
+          store.markBandSleepSyncFailed(
             "BLE sync unavailable: \(ble.historicalSyncStatus)"
           )
           return
@@ -111,13 +108,13 @@ extension GooseAppModel {
             break
           }
           if status == "failed" {
-            store?.markBandSleepSyncFailed("BLE historical sync failed")
+            store.markBandSleepSyncFailed("BLE historical sync failed")
             return
           }
           attempts += 1
         }
         if attempts >= 120 {
-          store?.markBandSleepSyncFailed("BLE historical sync timed out")
+          store.markBandSleepSyncFailed("BLE historical sync timed out")
           return
         }
       }
@@ -135,7 +132,7 @@ extension GooseAppModel {
 
       let stagingMethod = stagingResult["staging_method"] as? String ?? "no_imu_data"
       guard stagingMethod != "no_imu_data" else {
-        store?.bandSleepImportStatus = String(localized: "Awaiting sync")
+        store.bandSleepImportStatus = String(localized: "Awaiting sync")
         return
       }
 
@@ -170,14 +167,14 @@ extension GooseAppModel {
       )
 
       // Refresh sleep displays and set success status.
-      await store?.refreshSleepAfterBandSync(packetCount: 0)
-      store?.bandSleepImportStatus = String(localized: "Synced from band")
+      await store.refreshSleepAfterBandSync(packetCount: 0)
+      store.bandSleepImportStatus = String(localized: "Synced from band")
       let notifDurationMinutes = Int(stageSummary.values.reduce(0, +))
       let notifHRV: Double? = {
         guard UserDefaults.standard.object(forKey: "goose.swift.liveHRVRMSSD") != nil else { return nil }
         return UserDefaults.standard.double(forKey: "goose.swift.liveHRVRMSSD")
       }()
-      let notifRecovery = Double(store?.snapshot(for: .recovery).value ?? "")
+      let notifRecovery = Double(store.snapshot(for: .recovery).value ?? "")
       Task {
         await NotificationScheduler.shared.scheduleSleepProcessed(
           durationMinutes: notifDurationMinutes,
@@ -187,7 +184,7 @@ extension GooseAppModel {
       }
 
     } catch {
-      store?.markBandSleepSyncFailed("Sleep sync error: \(error)")
+      store.markBandSleepSyncFailed("Sleep sync error: \(error)")
     }
   }
 }

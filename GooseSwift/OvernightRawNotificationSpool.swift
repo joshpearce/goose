@@ -366,7 +366,7 @@ final class OvernightRawNotificationSpool: @unchecked Sendable {
         "connection_state": connectionState,
         "service_uuid": event.serviceUUID,
         "characteristic_uuid": event.characteristicUUID,
-        "device_type": event.rustDeviceType,
+        "device_type": event.wireProtocol.bridgeString,
         "byte_count": event.value.count,
         "sha256": event.value.sha256HexString,
         "checksum_algorithm": OvernightRawNotificationStorageClassifier.checksumAlgorithm,

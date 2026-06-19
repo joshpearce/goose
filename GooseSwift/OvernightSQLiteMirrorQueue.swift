@@ -22,6 +22,9 @@ struct OvernightSQLiteMirrorSnapshot {
   }
 }
 
+// THREADING: @unchecked Sendable is safe — all mutable state is confined to the serial queue
+// com.goose.swift.overnight-sqlite-mirror, which provides mutual exclusion without NSLock.
+// The Rust bridge instance (rust) is accessed only from within that serial queue.
 final class OvernightSQLiteMirrorQueue: @unchecked Sendable {
   private static let timestampFormatter: ISO8601DateFormatter = {
     let formatter = ISO8601DateFormatter()
@@ -97,7 +100,7 @@ final class OvernightSQLiteMirrorQueue: @unchecked Sendable {
       "connection_state": connectionState,
       "service_uuid": event.serviceUUID,
       "characteristic_uuid": event.characteristicUUID,
-      "device_type": event.rustDeviceType,
+      "device_type": event.wireProtocol.bridgeString,
       "frame_hex": event.value.hexString,
       "byte_count": event.value.count,
       "decode_status": classification.isCompactLiveFlood ? "sampled_live_motion" : "not_decoded",

@@ -5,7 +5,7 @@ final class WhoopDataSignalPipeline: @unchecked Sendable {
 
   private let queue = DispatchQueue(label: "com.goose.swift.whoop-data-signal", qos: .utility)
   private let stateLock = NSLock()
-  private let ble: GooseBLEClient
+  private let ble: any BLETransport
   private let packetUIStateAggregator: PacketUIStateAggregator
   private let statusInterval: TimeInterval
   private let logInterval: TimeInterval
@@ -22,7 +22,7 @@ final class WhoopDataSignalPipeline: @unchecked Sendable {
   private var lastLoggedAt: [String: Date] = [:]
 
   init(
-    ble: GooseBLEClient,
+    ble: any BLETransport,
     packetUIStateAggregator: PacketUIStateAggregator,
     statusInterval: TimeInterval,
     logInterval: TimeInterval,

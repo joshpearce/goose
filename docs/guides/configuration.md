@@ -39,7 +39,7 @@ When upload is enabled and a URL is configured, the **More > Remote Server** scr
 
 ### Upload retry behaviour
 
-Each upload batch is attempted up to three times with exponential backoff (1 s, 2 s, 4 s between retries). Failed batches after all retries are discarded silently; the pending batch count is decremented and the status is updated. The upload endpoint is `POST /v1/ingest-decoded`.
+Each upload batch is attempted up to **7 times** (1 initial attempt + 6 retries) with exponential backoff capped at 60 s: delays between attempts are 1 s, 2 s, 4 s, 8 s, 16 s, 32 s, 60 s. 4xx client errors abort the retry loop immediately and are not retried. After all attempts fail, `uploadErrorState` is set to a human-readable error string and the pending batch count is decremented. The decoded-streams upload endpoint is `POST /v1/ingest-decoded`. On a successful upload, raw BLE frames are also sent to `POST /v1/ingest-frames` (no additional retry loop — a single attempt).
 
 ---
 

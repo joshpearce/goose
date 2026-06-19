@@ -245,14 +245,12 @@ pub fn import_captured_frame_batch_with_output_options(
     options: CapturedFrameBatchOptions<'_>,
     output_options: CapturedFrameBatchOutputOptions,
 ) -> GooseResult<CapturedFrameBatchImportReport> {
-    store.immediate_transaction(|store| {
-        import_captured_frame_batch_with_output_options_in_transaction(
-            store,
-            frames,
-            options,
-            output_options,
-        )
-    })
+    import_captured_frame_batch_with_output_options_in_transaction(
+        store,
+        frames,
+        options,
+        output_options,
+    )
 }
 
 fn import_captured_frame_batch_with_output_options_in_transaction(

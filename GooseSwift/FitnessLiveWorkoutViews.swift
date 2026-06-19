@@ -7,7 +7,7 @@ struct FitnessLiveWorkoutView: View {
   @Binding var selectedPage: FitnessWorkoutPage
   let activity: ActivityKind
   @ObservedObject var session: ActivitySessionModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @ObservedObject var locationTracker: ActivityLocationTracker
   let segmentNumber: Int
   @Binding var dockExpanded: Bool
@@ -131,7 +131,7 @@ struct FitnessPageCarousel: View {
   @Binding var selectedPage: FitnessWorkoutPage
   let activity: ActivityKind
   @ObservedObject var session: ActivitySessionModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @ObservedObject var locationTracker: ActivityLocationTracker
   let segmentNumber: Int
 
@@ -207,6 +207,7 @@ struct FitnessPageCarousel: View {
 
 struct FitnessOverviewPage: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @AppStorage(OnboardingStorage.unitSystem) private var unitSystemRaw = MoreProfileUnitSystem.imperial.rawValue
   let activity: ActivityKind
   let currentHeartRate: Int?
@@ -242,8 +243,8 @@ struct FitnessOverviewPage: View {
           FitnessPaceBlock(value: averageHeartRate.map(String.init) ?? "--", label: "AVERAGE\nHR", color: .white)
             .padding(.bottom, 88)
 
-          if model.liveWorkoutStrain > 0 {
-            FitnessPaceBlock(value: String(format: "%.1f", model.liveWorkoutStrain), label: "STRAIN", color: .white)
+          if bleState.liveWorkoutStrain > 0 {
+            FitnessPaceBlock(value: String(format: "%.1f", bleState.liveWorkoutStrain), label: "STRAIN", color: .white)
               .padding(.bottom, 76)
           }
 

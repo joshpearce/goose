@@ -7,7 +7,7 @@ v1.0 delivered: FastAPI+TimescaleDB server, automatic iOS→server upload, integ
 v2.0 expanded: full WHOOP 4.0 (Gen4) support, Android JNI foundations, standard HR GATT pipeline.
 v3.0 completed: HR monitor scan UI + independent capture, BLE stability, Recovery V2 dashboard, pt-PT localisation, WHOOP 4.0 RTC sync, SDNN accuracy fix.
 v4.0 delivered: URL scheme security (deep link guard), full `@Observable` migration, four-provider Coach (ChatGPT/Claude/Custom/Gemini), complete pt-PT localisation for v4.0 strings.
-v5.0 shipped (2026-06-08): Validated algorithm pipeline — HRV (BLE-gap-aware RMSSD + Lipponen-Tarvainen filter), Sleep staging (Cole-Kripke scale=0.001 + 4-class), Strain/Calories (Ghidra-confirmed Keytel/H-B coefficients), V24 biometric decode (SpO2/skin_temp/resp/gravity2), Exercise detection (retroactive, Karvonen zones), Upload sync (synced flag + cursors), Readiness Engine (ACWR + Foster monotony). Schema v19. 128 Rust tests. 9 audit HIGH findings fixed.
+v5.0 shipped (2026-06-08): Validated algorithm pipeline — HRV (BLE-gap-aware RMSSD + Lipponen-Tarvainen filter), Sleep staging (Cole-Kripke scale=0.001 + 4-class), Strain/Calories (empirically validated Keytel/H-B coefficients), V24 biometric decode (SpO2/skin_temp/resp/gravity2), Exercise detection (retroactive, Karvonen zones), Upload sync (synced flag + cursors), Readiness Engine (ACWR + Foster monotony). Schema v19. 128 Rust tests. 9 audit HIGH findings fixed.
 v6.0 shipped (2026-06-09): All v5.0 Rust algorithms wired to SwiftUI dashboards — Readiness Engine, Sleep Staging (4-class hypnogram + AASM), V24 Biometrics, Exercise Sessions, Upload Sync UI, IMU Step Detection. Algorithm alignment: recovery Z-score weights, EWMA 14-night alpha, Cole-Kripke 30s epochs. Raw BLE frame upload/import (trust-chain). Test Connection + Import do servidor UI. 0 untranslated pt-PT strings.
 v7.0 shipped (2026-06-10): Sync correctness + async migration — upload route pair complete (POST /v1/ingest-frames + GET export), device_uuid end-to-end (CoreBluetooth → SQLite → server), upload sync race fix (pre-capture rowIDs), HealthDataStore full async/await migration (60+ calls, GCD removed), morning band sleep sync (gravity K18/K24 extraction → Cole-Kripke → external_sleep_sessions). Algorithm defaults promoted to v1. Phase 51 (real-device validation) deferred — hardware gate.
 v10.0 shipped (2026-06-13): Protocol parity + haptics + feature completeness — WHOOP 5.0 BLE manager refactor (GooseBLEHistoricalManager + GooseBLEDataValidator), haptic buzz primitive (cmd 0x13), BreatheView, Coach VOW nudges, Interval Timer, iOS notifications (sleep/workout/battery), HR decimation, Stress/ANS + Trends + Manual Workout screens, service layer protocols + mocks, smart alarm UI (HAP-03), wake-window RE-gated stub. Schema v20 (4 new SQLite tables). Code review fixes across 3 phases.
@@ -144,9 +144,22 @@ Known deferred (v10.0): BLE5-01/02 (hardware-gated — real WHOOP 5.0), HAP-02/D
 
 Known deferred: Ph74/75 BLE device-gate tests; CAPSENSE-01, HAP-04, BLE5-01/02 hardware gates
 
-### Active (v12.0 — TBD)
+### Active (v12.0 — Code Health & Protocol Foundation)
 
-_(Next milestone not yet defined — run `/gsd-new-milestone` to begin.)_
+- [ ] **BAT-01**: Gen4 WHOOP real battery % via Event-48 payload (offset 17, u16 LE / 10)
+- [ ] **BAT-02**: Gen4 GET_BATTERY_LEVEL command (cmd 26) response parsing as fallback path
+- [ ] **PROTO-01**: `WireProtocol { Gen4, Gen5 }` Rust enum replacing 17 string comparisons in Swift
+- [ ] **PROTO-02**: `DeviceKind { Whoop4, Whoop5, HrMonitor }` + `DeviceCapabilities` struct via bridge method
+- [ ] **PROTO-03**: DB migration normalising MAVERICK/PUFFIN → GOOSE; Swift `WhoopGeneration` → `connectedCapabilities`
+- [ ] **ARCH-01**: bridge.rs 509-arm dispatcher → `BridgeRouter` trait + per-domain handlers (metrics, sleep, capture, activity)
+- [ ] **ARCH-02**: store.rs 140 métodos → domain stores (SleepStore, CaptureStore, MetricsStore) + schema validation on open
+- [ ] **ARCH-03**: 133 `.unwrap()` → `Result<_, GooseError>` in bridge.rs + store.rs; `#[deny(clippy::unwrap_used)]`
+- [ ] **ARCH-04**: HealthDataStore owned by GooseAppModel (not AppShellView @StateObject); weak ref eliminated
+- [ ] **ARCH-05**: GooseBLEClient → `BLETransport` protocol + `BLESessionCoordinator` actor + `DeviceCatalog`
+- [ ] **ARCH-06**: GooseAppModel → domain `@Observable` objects (BLEState, SyncState, HealthState)
+- [ ] **COMM-01**: Protocol offset comments (WHOOP Event-48, cmd 26 layout) in Rust source
+- [ ] **COMM-02**: Threading invariant comments at bridge FFI boundary and GooseRustBridge usage sites
+- [ ] **COMM-03**: Algorithm coefficient comments (Banister eTRIMP, EWMA alpha, Cole-Kripke) in Rust source
 
 ### Deferred (hardware gate — sem device físico)
 
@@ -194,9 +207,15 @@ _(Next milestone not yet defined — run `/gsd-new-milestone` to begin.)_
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current Milestone: v11.0 — TBD
+## Current Milestone: v12.0 — Code Health & Protocol Foundation
 
-_(Not yet defined. Run `/gsd-new-milestone` to start requirements and roadmap for v11.0.)_
+**Goal:** Eliminar dívida técnica estrutural — protocolo Gen4/Gen5 limpo, bridge/store partidos em domínios, ownership Swift correcta, crash safety via Result, e bateria real Gen4.
+
+**Target features:**
+- Battery Gen4 real % via Event-48 e cmd 26 (SEED-002)
+- WireProtocol + DeviceKind + DeviceCapabilities — elimina 17 string comparisons (SEED-003, fase 83 com context completo)
+- bridge.rs BridgeRouter, store.rs domain stores, unwrap→Result, HealthDataStore ownership, BLEClient actor (SEED-004)
+- Targeted WHY comments: offsets WHOOP, threading, FFI safety, coeficientes empíricos (SEED-005)
 
 ---
 *Last updated: 2026-06-13 after v10.0 milestone*

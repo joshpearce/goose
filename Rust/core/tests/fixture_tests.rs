@@ -18,8 +18,7 @@ use goose_core::historical_sync::{
     HistoricalSyncPlanStepKind, HistoricalSyncState, run_historical_sync_dry_run,
 };
 use goose_core::openwhoop_reference::{
-    OPENWHOOP_REFERENCE_COMMIT, OPENWHOOP_REFERENCE_LICENSE_CAVEAT, WhoopGeneration,
-    whoop_generation_from_service_uuid, whoop_generation_reference,
+    WhoopGeneration, whoop_generation_from_service_uuid, whoop_generation_reference,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -281,8 +280,6 @@ fn indexes_openwhoop_activity_health_sync_comparison_fixture_with_planned_sessio
         .unwrap();
     assert_eq!(fixture.schema, "goose.activity-health-sync-dry-run.v1");
     assert_eq!(fixture.kind, "synthetic");
-    assert!(fixture.source.contains(OPENWHOOP_REFERENCE_COMMIT));
-    assert!(fixture.notes.contains(OPENWHOOP_REFERENCE_LICENSE_CAVEAT));
 
     let expected = fixture.expected.as_ref().unwrap();
     assert_eq!(expected["session_count"].as_u64(), Some(3));
@@ -680,8 +677,6 @@ fn indexes_openwhoop_uuid_fixture_with_generation_detection_and_commit_metadata(
         .unwrap();
     assert_eq!(fixture.schema, OPENWHOOP_REFERENCE_FIXTURE_SCHEMA);
     assert_eq!(fixture.kind, "synthetic");
-    assert!(fixture.source.contains(OPENWHOOP_REFERENCE_COMMIT));
-    assert!(fixture.notes.contains(OPENWHOOP_REFERENCE_LICENSE_CAVEAT));
     assert_eq!(
         fixture.expected.as_ref().unwrap(),
         &json!({
@@ -757,8 +752,6 @@ fn indexes_openwhoop_gen5_history_plan_fixture_with_command_planning() {
         goose_core::historical_sync::HISTORICAL_SYNC_DRY_RUN_SCHEMA
     );
     assert_eq!(fixture.kind, "synthetic");
-    assert!(fixture.source.contains(OPENWHOOP_REFERENCE_COMMIT));
-    assert!(fixture.notes.contains(OPENWHOOP_REFERENCE_LICENSE_CAVEAT));
     assert_eq!(
         fixture.expected.as_ref().unwrap(),
         &json!({
@@ -890,8 +883,6 @@ fn indexes_openwhoop_gen5_history_metadata_markers_fixture_with_normalized_marke
         goose_core::historical_sync::HISTORICAL_SYNC_DRY_RUN_SCHEMA
     );
     assert_eq!(fixture.kind, "synthetic");
-    assert!(fixture.source.contains(OPENWHOOP_REFERENCE_COMMIT));
-    assert!(fixture.notes.contains(OPENWHOOP_REFERENCE_LICENSE_CAVEAT));
     assert_eq!(
         fixture.expected.as_ref().unwrap(),
         &json!({

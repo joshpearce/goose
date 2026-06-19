@@ -1,5 +1,41 @@
 # Milestones
 
+## v12.0 v12.0 (Shipped: 2026-06-19)
+
+**Phases completed:** 9 phases, 38 plans, 39 tasks
+
+**Key accomplishments:**
+
+- SQLite migration step 22 normalises `decoded_frames.device_type` by rewriting MAVERICK/PUFFIN rows to GOOSE, and bumps CURRENT_SCHEMA_VERSION from 21 to 22.
+- device.capabilities bridge method wired in bridge.rs and parse_device_type() rejects MAVERICK/PUFFIN, with regression tests proving DB normalization via migration step 22
+- WireProtocol/HistoricalSyncKind/DeviceCapabilities types added to GooseBLETypes.swift; GooseBLEClient uses connectedCapabilities from device.capabilities bridge call instead of activeDeviceGeneration
+- All 9 remaining Swift files migrated to typed connectedCapabilities/wireProtocol API; zero string-based device-type comparisons remain in GooseSwift/
+- All Phase 83 structural invariants confirmed: 7 targeted test filters green, iOS BUILD SUCCEEDED, zero rustDeviceType/activeDeviceGeneration, MAVERICK/PUFFIN absent from production write paths
+- protocol.rs
+- Event-48 battery value wired from Rust compact summary through NotificationFrameInterpretation to applyBatteryLevel, gated on batteryViaEvent48 + wireProtocol gen4
+- GooseBLEClient.swift
+- `#![cfg_attr(not(test), deny(clippy::unwrap_used))]` added to lib.rs with per-module allow shields on 7 unconverted modules; bridge.rs converted from 46 test `.unwrap()` to `.expect("descriptive message")` leaving zero `.unwrap()` in the file.
+- 62 test `.unwrap()` calls in store.rs converted to `.expect()` and `#![allow(clippy::unwrap_used)]` shield removed — store.rs now passes `deny(clippy::unwrap_used)` clean.
+- Eliminated all 11 `.unwrap()` calls in metrics.rs (3 production + 8 test), removed the `#![allow(clippy::unwrap_used)]` shield — file now passes `deny(clippy::unwrap_used)` with zero violations.
+- 8 test-code .unwrap() calls in capabilities.rs converted to .expect() with descriptive messages; #![allow(clippy::unwrap_used)] shield removed; module now passes deny(clippy::unwrap_used) cleanly
+- ARCH-03 deny(clippy::unwrap_used) gate confirmed with zero lint violations; catch_unwind verified at bridge.rs FFI entry; 180 unit tests pass; 2 pre-existing export_tests failures documented as not caused by Phase 85
+- 1. [Rule 1 - Bug] Fixed metric_result_to_value generic signature
+- 1. [Rule 1 - Bug] Worktree was behind gsd/v12.0-milestone
+- activity.rs
+- Task 1: Replace placeholder test with Option A multi-file scanner
+- Protocol offset and algorithm comments at all 14 non-obvious WHOOP wire-format decode sites — 11 in protocol.rs and 3 in bridge/metrics.rs.
+- All integration test suites pass — bridge.rs split verified complete.
+- All 49 activity-domain methods moved from store/mod.rs to store/activity.rs; store/mod.rs now contains only 7 infrastructure pub fn.
+- 1. [Rule 1 - Bug] Used .environment() instead of .environmentObject() for HealthDataStore
+- 1. [Rule 1 - Bug] @EnvironmentObject vs @Environment — Plan said @EnvironmentObject, actual conformance requires @Environment
+- BLETransport protocol extracted from GooseBLEClient public surface; GooseBLEClient renamed to CoreBluetoothBLETransport across 13 files + xcodeproj with BUILD SUCCEEDED.
+- BLESessionCoordinator actor created; GooseAppModel.ble typed as any BLETransport with 15 additional BLETransport protocol members and 12 view files updated to compile with the abstraction boundary.
+- DeviceCatalog struct replaces 14 scattered `connectedCapabilities?.historicalSync/wireProtocol` guard patterns across 4 CoreBluetoothBLETransport extension files with typed computed property queries.
+- All HealthState property accesses redirected through `healthState.xxx`:
+- 1. [Rule 1 - Bug] CoachLocalToolContext not in plan scope
+
+---
+
 ## v10.0 Protocol Parity, Haptics & Feature Completeness (Shipped: 2026-06-13)
 
 **Phases completed:** 7 phases, 17 plans, 16 tasks

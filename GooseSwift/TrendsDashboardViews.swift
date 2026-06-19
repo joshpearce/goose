@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TrendsDashboardView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   @State private var recoveryPoints: [(date: String, value: Double)] = []
   @State private var hrvPoints: [(date: String, value: Double)] = []
@@ -45,9 +45,9 @@ struct TrendsDashboardView: View {
     isLoading = true
     loadError = nil
     do {
-      async let recovery = try await store.fetchTrendsSeries(metricName: "recovery")
-      async let hrv = try await store.fetchTrendsSeries(metricName: "hrv")
-      async let strain = try await store.fetchTrendsSeries(metricName: "strain")
+      async let recovery = try await healthStore.fetchTrendsSeries(metricName: "recovery")
+      async let hrv = try await healthStore.fetchTrendsSeries(metricName: "hrv")
+      async let strain = try await healthStore.fetchTrendsSeries(metricName: "strain")
       recoveryPoints = try await recovery
       hrvPoints = try await hrv
       strainPoints = try await strain

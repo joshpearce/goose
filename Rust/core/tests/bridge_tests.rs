@@ -501,6 +501,150 @@ fn bridge_gen4_upload_device_generation_field_is_set_correctly() {
     );
 }
 
+// Regression tests for Phase 83 — D-11: new rows must never persist as MAVERICK or PUFFIN.
+// capture.import_frame_batch deserializes device_type via serde (not parse_device_type),
+// so legacy strings may succeed. Migration step 22 normalises them on every DB open.
+// These tests verify that after a DB re-open (simulating the next app launch), zero
+// MAVERICK/PUFFIN rows remain.
+
+#[test]
+fn test_capture_import_frame_batch_rejects_legacy_maverick() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let _response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "legacy-maverick-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test",
+            "frames": [
+                {
+                    "evidence_id": "legacy-mav-1",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-03T12:00:00Z",
+                    "device_model": "WHOOP 4.0",
+                    "frame_hex": GET_HELLO_FRAME,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "MAVERICK"
+                }
+            ]
+        }
+    }));
+
+    // Simulate the next app launch: GooseStore::open() always runs migrate(),
+    // which runs UPDATE decoded_frames SET device_type='GOOSE'
+    // WHERE device_type IN ('MAVERICK','PUFFIN'). After this, zero MAVERICK rows remain.
+    let store = GooseStore::open(&db).expect("GooseStore::open must succeed after import");
+    drop(store);
+
+    let conn = Connection::open(&db).expect("direct connection must succeed");
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM decoded_frames WHERE device_type = 'MAVERICK'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("query must succeed");
+    assert_eq!(
+        count, 0,
+        "After migration step 22, zero MAVERICK rows must remain in decoded_frames"
+    );
+}
+
+#[test]
+fn test_capture_import_frame_batch_rejects_legacy_puffin() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let _response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "legacy-puffin-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test",
+            "frames": [
+                {
+                    "evidence_id": "legacy-puffin-1",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-03T12:00:00Z",
+                    "device_model": "WHOOP 5.0",
+                    "frame_hex": GET_HELLO_FRAME,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "PUFFIN"
+                }
+            ]
+        }
+    }));
+
+    // Same migration guarantee as the MAVERICK test — every DB open runs migrate().
+    let store = GooseStore::open(&db).expect("GooseStore::open must succeed after import");
+    drop(store);
+
+    let conn = Connection::open(&db).expect("direct connection must succeed");
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM decoded_frames WHERE device_type = 'PUFFIN'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("query must succeed");
+    assert_eq!(
+        count, 0,
+        "After migration step 22, zero PUFFIN rows must remain in decoded_frames"
+    );
+}
+
+// Integration tests for the device.capabilities JSON dispatch path (Phase 83).
+// These exercise the full handle_bridge_request_json → DeviceCapabilitiesArgs
+// deserialisation → device_capabilities_bridge round trip, which the unit tests
+// in bridge.rs do not cover.
+
+#[test]
+fn test_device_capabilities_bridge_whoop4_via_json_dispatch() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-whoop4",
+        "method": "device.capabilities",
+        "args": { "device_kind": "WHOOP4" }
+    }));
+    assert!(response.ok, "{:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["wire_protocol"].as_str().unwrap(), "gen4");
+    assert_eq!(result["historical_sync"].as_str().unwrap(), "page_sequence");
+    assert_eq!(result["battery_via_r22"].as_bool().unwrap(), false);
+}
+
+#[test]
+fn test_device_capabilities_bridge_whoop5_via_json_dispatch() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-whoop5",
+        "method": "device.capabilities",
+        "args": { "device_kind": "WHOOP5" }
+    }));
+    assert!(response.ok, "{:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["wire_protocol"].as_str().unwrap(), "gen5");
+    assert_eq!(result["historical_sync"].as_str().unwrap(), "stream");
+    assert_eq!(result["battery_via_r22"].as_bool().unwrap(), true);
+}
+
+#[test]
+fn test_device_capabilities_bridge_unknown_kind_rejected() {
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "caps-unknown",
+        "method": "device.capabilities",
+        "args": { "device_kind": "UNKNOWN" }
+    }));
+    assert!(!response.ok, "unknown device_kind must be rejected");
+}
+
 #[test]
 fn bridge_exposes_algorithm_registry_and_score_methods() {
     let registry = request(serde_json::json!({

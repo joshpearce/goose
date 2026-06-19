@@ -7,6 +7,8 @@
 
 # Goose - Local Companion for WHOOP Devices
 
+[![Discord](https://img.shields.io/discord/EyZE6gzAF2?label=Discord&logo=discord&logoColor=white)](https://discord.gg/EyZE6gzAF2)
+
 > **Active fork of [b-nnett/goose](https://github.com/b-nnett/goose).** This fork extends the original with a self-hosted FastAPI + TimescaleDB server, automatic biometric upload from iOS, and an expanded health metrics pipeline. The upstream project appears inactive; development continues here.
 
 **Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.**
@@ -21,30 +23,34 @@ The app and backend have had very little attention put into performance. The app
 
 Goose is a local-first WHOOP data and health metrics project. The iOS app connects to WHOOP bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views. An optional self-hosted server lets you persist decoded biometric streams outside the device.
 
-## What Shipped in v5.0
+## What Shipped in v11.0
 
-v5.0 is the first milestone where the full biometric pipeline is closed end to end.
+v11.0 is the most recent milestone.
 
-**Algorithms and metrics**
+**Fixes and health**
 
-- HRV accuracy: BLE-gap aware RMSSD computation with ectopic beat filter.
-- Sleep staging: Cole-Kripke activity-count classifier and 4-class AASM stage model (Wake / REM / Light / Deep).
-- Strain and calories: Ghidra-confirmed WHOOP coefficients for strain score and calorie expenditure.
-- Readiness Engine v1: ACWR (acute:chronic workload ratio) with Foster monotony over a 28-day strain window; outputs a readiness level and zone (optimal / rundown / primed).
+- Resting HR floor set to 30 bpm minimum.
+- Battery level fix: R22 battery level for Gen5; Gen4 0xFF guard.
+- HealthKit import persistence to SQLite.
 
-**Biometric decode**
+**BLE and protocol**
 
-- V24 packet decode for SpO2, skin temperature, respiration rate, and gravity2 streams.
-- Exercise detection from the decoded biometric stream.
+- BLE auth retry on reconnect.
+- Fork + upstream PR integration: units, localisation, BLE recovery, sync donut.
+
+**Debug and UI**
+
+- Debug 3-tab split, Logs & Export rename, Breathe haptics, live strain display.
+- Lazy init to reduce startup latency.
 
 **Upload sync infrastructure**
 
-- 6 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity2_samples`, `hr_samples`, `rr_intervals`.
-- Pending-upload queries and mark-synced operations are available on all 6 tables.
+- 10 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity`, `gravity2_samples`, `hr_samples`, `resp_samples`, `rr_intervals`, `skin_temp_samples`, `spo2_samples`.
+- Pending-upload queries and mark-synced operations are available on all 10 tables.
 
 **Rust core**
 
-- SQLite schema v19.
+- SQLite schema v21.
 - 45 integration test files in `Rust/core/tests/`.
 
 ## Project Layout
@@ -90,7 +96,7 @@ This fork is built on top of [b-nnett/goose](https://github.com/b-nnett/goose), 
 
 The BLE pairing model, on-wrist detection approach, and background sync architecture draw from [Noop](https://github.com/NoopApp/noop), an offline WHOOP companion that pioneered local-first WHOOP data access on iOS. Noop is not affiliated with Goose; this credit is here because it established many of the patterns this project builds on.
 
-The self-hosted server and biometric algorithm pipeline are adapted from [my-whoop](https://github.com/tigercraft4/my-whoop), a prior personal project for storing and analysing WHOOP data on a self-hosted FastAPI + TimescaleDB stack, itself forked from [johnmiddleton12/wearable](https://github.com/johnmiddleton12/wearable). The server in `server/ingest/` maintains API compatibility with my-whoop so existing deployments continue to work.
+The self-hosted server and biometric algorithm pipeline are adapted from [my-whoop](https://github.com/tigercraft4/my-whoop), a prior personal project for storing and analysing WHOOP data on a self-hosted FastAPI + TimescaleDB stack, itself forked from [johnmiddleton12/wearable](https://github.com/johnmiddleton12/wearable). The `server/ingest/` layer maintains API compatibility with my-whoop so existing deployments continue to work.
 
 ## Current Scope
 
@@ -110,8 +116,8 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 
 - macOS with Xcode installed.
 - iOS 26.0 SDK and an iOS 26.0 capable simulator/device.
-- Apple Developer signing configured for the `com.tigercraft4.goose` bundle identifier.
-- Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source.
+- Apple Developer signing configured for the `com.goose.app` bundle identifier (override via `Config/Local.xcconfig`).
+- Rust and Cargo for building the Goose Rust core from the committed `Rust/core` source (MSRV 1.96).
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
 
@@ -166,7 +172,7 @@ After a successful physical-device build, reinstall and launch:
 ```sh
 xcrun devicectl device uninstall app \
   --device <device-id> \
-  com.tigercraft4.goose
+  com.goose.app
 
 xcrun devicectl device install app \
   --device <device-id> \
@@ -175,7 +181,7 @@ xcrun devicectl device install app \
 xcrun devicectl device process launch \
   --device <device-id> \
   --terminate-existing \
-  com.tigercraft4.goose
+  com.goose.app
 ```
 
 ## Self-Hosted Server
@@ -201,7 +207,7 @@ archives; Xcode generates them locally through `Scripts/build_ios_rust.sh`.
 Prerequisites:
 
 - Xcode command line tools.
-- Rust via `rustup`.
+- Rust via `rustup` (MSRV 1.96).
 - iOS Rust targets:
 
 ```bash
@@ -262,7 +268,7 @@ Guides and reference docs:
 
 This project moves quickly, so small focused changes are easiest to review.
 
-Want to talk to other contributors? [Join the discussion on GitHub](https://github.com/tigercraft4/goose/discussions).
+Want to talk to other contributors? [Join the Discord](https://discord.gg/EyZE6gzAF2) or [join the discussion on GitHub](https://github.com/tigercraft4/goose/discussions).
 
 - Keep changes close to the feature or bug you are working on.
 - Match the existing SwiftUI style before introducing new patterns.

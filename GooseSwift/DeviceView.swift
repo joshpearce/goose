@@ -17,8 +17,9 @@ private enum DevicePanel {
 
 private struct DeviceContentView: View {
   @Environment(GooseAppModel.self) private var model
+  @Environment(BLEState.self) private var bleState
   @EnvironmentObject private var packetMonitor: PacketMonitorModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
   @State private var selectedPanel: DevicePanel = .status
 
   var body: some View {
@@ -31,7 +32,7 @@ private struct DeviceContentView: View {
             statusText: connectionHeadline,
             deviceName: ble.activeDeviceName,
             lastSync: lastSyncSummary,
-            generation: model.connectedDeviceGeneration
+            generation: bleState.connectedDeviceGeneration
           )
           .padding(.bottom, 30)
 
@@ -307,9 +308,10 @@ private struct BatteryRail: View {
 
 private struct DeviceAdvancedPanel: View {
   @EnvironmentObject private var messageStore: GooseMessageStore
+  @Environment(HealthState.self) private var healthState
   var model: GooseAppModel
   @ObservedObject var packetMonitor: PacketMonitorModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -328,7 +330,7 @@ private struct DeviceAdvancedPanel: View {
         DeviceFactRow(systemName: "dot.radiowaves.left.and.right", label: "Connection", value: ble.connectionState.localizedConnectionState)
         DeviceFactRow(systemName: "arrow.triangle.2.circlepath", label: "Historical sync", value: ble.historicalSyncStatus.localizedHistoricalSyncStatus)
         DeviceFactRow(systemName: "bolt.horizontal", label: "High freq", value: ble.highFrequencyHistorySyncDisplaySummary)
-        DeviceFactRow(systemName: "lungs", label: "RR packets", value: model.respiratoryPacketWatchStatus)
+        DeviceFactRow(systemName: "lungs", label: "RR packets", value: healthState.respiratoryPacketWatchStatus)
         DeviceFactRow(systemName: "cpu", label: "Rust", value: model.rustStatus)
         DeviceFactRow(systemName: "waveform.path.ecg", label: "Last frame", value: packetMonitor.lastParsedFrameSummary)
       }
@@ -425,7 +427,7 @@ private struct DeviceDetailStack<Content: View>: View {
 }
 
 private struct DeviceSyncProgressCard: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   private var percentText: String? {
     ble.historicalSyncFraction.map { "\(Int(($0 * 100).rounded()))%" }
@@ -505,8 +507,9 @@ private struct DeviceFactRow: View {
 }
 
 private struct DeviceActionGrid: View {
+  @Environment(HealthState.self) private var healthState
   var model: GooseAppModel
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
@@ -549,14 +552,14 @@ private struct DeviceActionGrid: View {
       }
       .disabled(!ble.canWriteHighFrequencyHistorySync)
 
-      DeviceActionButton(title: model.respiratoryPacketWatchActive ? "Stop RR" : "Watch RR", systemName: "lungs") {
-        if model.respiratoryPacketWatchActive {
+      DeviceActionButton(title: healthState.respiratoryPacketWatchActive ? "Stop RR" : "Watch RR", systemName: "lungs") {
+        if healthState.respiratoryPacketWatchActive {
           model.stopRespiratoryPacketWatch()
         } else {
           model.startRespiratoryPacketWatch()
         }
       }
-      .disabled(!model.respiratoryPacketWatchActive && ble.connectionState != "ready")
+      .disabled(!healthState.respiratoryPacketWatchActive && ble.connectionState != "ready")
 
       DeviceActionButton(title: "Hello", systemName: "paperplane") {
         ble.sendClientHello()
@@ -614,7 +617,7 @@ private func generationMajorVersion(_ generation: String) -> String {
 }
 
 private struct DiscoveredDeviceList: View {
-  var ble: GooseBLEClient
+  var ble: any BLETransport
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {

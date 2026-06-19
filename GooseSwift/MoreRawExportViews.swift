@@ -162,7 +162,7 @@ struct MoreRawExportView: View {
 
 struct MoreAlgorithmsView: View {
   @ObservedObject var store: MoreDataStore
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   let openHealthAlgorithms: () -> Void
 
   var body: some View {

@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 10 test files and 52 tests, plus manual verification with a physical WHOOP device).
+Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
 
 ---
 
@@ -102,7 +102,7 @@ cargo build --all-targets --locked
 
 ### Coverage
 
-No coverage threshold is configured. CI runs `cargo test --locked --no-fail-fast` and `cargo test --lib --locked` as blocking gates. As of v5.0: 128 passing, 0 failing.
+No coverage threshold is configured. CI runs `cargo build --lib` and `cargo test --lib` as blocking gates (see `rust-core.yml`). The full integration test suite (`cargo test -p goose-core --locked`) runs locally but is not part of the CI blocking check.
 
 ---
 
@@ -110,14 +110,14 @@ No coverage threshold is configured. CI runs `cargo test --locked --no-fail-fast
 
 ### Test framework
 
-pytest >= 8.0 with httpx >= 0.27 as the FastAPI `TestClient` transport. Test files are in `server/ingest/tests/`. Install test dependencies separately from the production image:
+pytest >= 9.0 with httpx >= 0.28 as the FastAPI `TestClient` transport. Test files are in `server/ingest/tests/`. Install test dependencies separately from the production image:
 
 ```bash
 cd server/ingest
 pip install -r requirements-dev.txt   # includes -r requirements.txt
 ```
 
-`requirements-dev.txt` adds `pytest>=8` and `httpx>=0.27` on top of the production stack.
+`requirements-dev.txt` adds `pytest>=9.0.3` and `httpx>=0.28.1` on top of the production stack.
 
 ### Running tests
 
@@ -192,7 +192,7 @@ pytest tests/ # integration tests self-manage the TimescaleDB container
 
 ### Test framework
 
-XCTest. The `GooseSwiftTests` unit test target is registered in `GooseSwift.xcodeproj` (product type `com.apple.product-type.bundle.unit-test`). Test files live in `GooseSwiftTests/` — 10 files, 52 test functions as of the current revision.
+XCTest. The `GooseSwiftTests` unit test target is registered in `GooseSwift.xcodeproj` (product type `com.apple.product-type.bundle.unit-test`). Test files live in `GooseSwiftTests/` — 16 test files and 3 shared mock helpers, 69 test functions as of the current revision.
 
 ### Running tests
 
@@ -222,6 +222,15 @@ xcodebuild test \
 | `GeminiProviderTests.swift` | Gemini provider configuration and authentication state |
 | `CustomEndpointProviderTests.swift` | Custom endpoint provider URL validation |
 | `CoachKeychainTests.swift` | Coach OAuth token Keychain read/write lifecycle |
+| `BaselineProgressTests.swift` | `BaselineProgress` pending/mapped/fallback states and `allReady` logic |
+| `HistoricalRangeParsingTests.swift` | `RangePageState` parsing: empty ranges, wrapped page windows, short body |
+| `TemperatureFormattingTests.swift` | Temperature unit conversion and delta formatting (°C / °F) |
+| `TrendsFetchTests.swift` | `TrendsFetch` calls correct bridge metric series query |
+| `WorkoutEntryTests.swift` | `WorkoutEntry` submit path and disabled-when-zero-duration guard |
+| `WorkoutLiveActivityAttributesTests.swift` | `WorkoutLiveActivityAttributes.ContentState` encode/decode round-trip |
+| `MockBLEClient.swift` | Test double for `GooseBLEManaging` (shared helper, no test functions) |
+| `MockHealthStore.swift` | Test double for `HealthDataStoring`; delegates to `MockRustBridge` (shared helper) |
+| `MockRustBridge.swift` | Test double for `GooseRustBridging`; records last method called (shared helper) |
 
 ### Writing new tests
 
@@ -306,23 +315,11 @@ Prerequisites: the self-hosted server must be running (see `server/README.md`).
 
 ## CI
 
-Five workflows run the automated test gates on every push and pull request.
-
-### `rust-core-ci.yml` — Build, test, and lint
-
-Runs on `ubuntu-latest`. Triggered by pushes and PRs that touch `Rust/core/**` or the workflow file itself, and on `workflow_dispatch`.
-
-Steps:
-1. Install stable Rust toolchain with clippy.
-2. Confirm `python3` is available (needed by reference adapter tests).
-3. Cache `~/.cargo/registry`, `~/.cargo/git`, and `Rust/core/target`.
-4. `cargo build --all-targets --locked`
-5. `cargo test --locked --no-fail-fast` (blocking)
-6. `cargo clippy --all-targets --locked || true` (non-blocking — surfaces warnings without failing the build)
+Six workflows run the automated test and quality gates on every push and pull request. Three additional housekeeping workflows (`branch-cleanup.yml`, `stale.yml`, `zizmor.yml`) manage branch hygiene and workflow security scanning but do not run tests.
 
 ### `rust-core.yml` — Format, build, test (MSRV matrix)
 
-Runs on `ubuntu-latest` and `macos-15` against Rust 1.96 (MSRV). Triggered by pushes and PRs that touch `Rust/**`.
+Runs on `ubuntu-latest` and `macos-15` against Rust 1.96 (MSRV). Triggered by pushes to `main` that touch `Rust/**`, on all PRs, and on `workflow_dispatch`.
 
 Jobs:
 - **fmt** — `cargo fmt --all -- --check` (blocking)
@@ -331,6 +328,7 @@ Jobs:
   2. `cargo build --lib --verbose`
   3. `cargo test --lib --verbose`
 - **clippy** — `cargo clippy --lib --no-deps -- -D warnings` (advisory, `continue-on-error: true`)
+- **rust-gate** — aggregates fmt + build-test results; fails if either job fails or is cancelled
 
 ### `security.yml` — Dependency audit
 
@@ -344,9 +342,21 @@ Runs on a weekly schedule (Mondays, 07:00 UTC) and on pushes/PRs that touch depe
 Runs on every push and PR to `main`, and weekly (Mondays, 08:00 UTC).
 
 - Covers Swift (`GooseSwift/`) and Python (`server/`) source.
+- Swift job runs on `macos-26` (Xcode 26.4.1, iOS 26.x SDKs) to match the project's `IPHONEOS_DEPLOYMENT_TARGET = 26.0`.
 - Rust is excluded from CodeQL; advisories are handled by `cargo-audit`.
 
-The iOS app (`GooseSwiftTests`) is not run in CI. The `GooseSwiftTests` XCTest suite requires macOS with Xcode and a simulator; no GitHub Actions workflow currently provisions that environment for running `xcodebuild test`. The `codeql.yml` workflow does perform static analysis of Swift source on `macos-26` (see below), but does not execute the unit tests.
+The iOS XCTest suite (`GooseSwiftTests`) is not run in CI. Running `xcodebuild test` requires a booted iOS simulator, which is not provisioned in the GitHub Actions environment used by `swift-build.yml`. The `codeql.yml` workflow does perform static analysis of Swift source on `macos-26` (see above), but does not execute the unit tests.
+
+### `swift-build.yml` — Swift compile check
+
+Runs on `macos-15`. Triggered by pushes to `main` that touch `GooseSwift/**`, `GooseWorkoutLiveActivityExtension/**`, or `GooseSwift.xcodeproj/**`, on all PRs, and on `workflow_dispatch`.
+
+Steps:
+1. Select Xcode 26.3 (`xcode-select`).
+2. Install stable Rust toolchain and the `aarch64-apple-ios-sim` target (needed by the Xcode build phase that cross-compiles the Rust core).
+3. Cache `~/.cargo/registry`, `~/.cargo/git`, and `Rust/core/target`.
+4. `xcodebuild … -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build` (blocking)
+5. **swift-gate** — aggregates the build result; fails if the build step fails or is cancelled.
 
 ### `server-ci.yml` — Server pytest suite
 
@@ -358,3 +368,4 @@ Steps:
 3. Install `server/ingest/requirements-dev.txt`.
 4. Confirm the Docker daemon is reachable (`docker info`).
 5. `pytest tests/ -v --tb=short` — all tests; the `conftest.py` fixtures self-manage the TimescaleDB container.
+6. **server-gate** — aggregates the pytest result; fails if the job fails or is cancelled.

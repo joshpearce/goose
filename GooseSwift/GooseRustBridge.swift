@@ -19,7 +19,12 @@ struct GooseRustBridgeTiming {
   }
 }
 
+// THREADING: goose_bridge_handle_json blocks the calling thread for the full Rust+SQLite round trip;
+// never call request() from @MainActor. Each owner (GooseAppModel, HealthDataStore,
+// OvernightSQLiteMirrorQueue, CaptureFrameWriteQueue) holds its own instance — the Rust side is stateless.
 final class GooseRustBridge: @unchecked Sendable {
+  // THREADING: lock serialises counter increments and _lastTiming writes; bridge instances may be
+  // called concurrently from DispatchQueue.async or Task.detached contexts.
   private let lock = NSLock()
   private var counter = 0
   private var _lastTiming: GooseRustBridgeTiming?
@@ -33,6 +38,8 @@ final class GooseRustBridge: @unchecked Sendable {
     try requestValue(method: method, args: args) as? [String: Any] ?? [:]
   }
 
+  // THREADING: callers must dispatch to a background DispatchQueue before calling request() or
+  // requestValue() — the call blocks until Rust + SQLite return, then resumes on the calling thread.
   func requestValue(method: String, args: [String: Any] = [:]) throws -> Any {
     let requestID: String = lock.withLock {
       _lastTiming = nil

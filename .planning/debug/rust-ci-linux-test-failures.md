@@ -1,5 +1,5 @@
 ---
-status: investigating
+status: resolved
 trigger: "Investigate Rust test failures on CI (Linux x86_64) that pass locally (macOS ARM64)"
 created: 2026-06-11T00:00:00Z
 updated: 2026-06-11T00:10:00Z

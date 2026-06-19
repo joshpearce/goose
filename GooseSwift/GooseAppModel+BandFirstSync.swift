@@ -40,7 +40,7 @@ extension GooseAppModel {
 
     // Set expiration handler before starting any work (D-14: graceful OS revocation).
     task.expirationHandler = { [weak self] in
-      self?.ble.stopScan()
+      if let self { Task { await self.bleCoordinator.stopScan() } }
       task.setTaskCompleted(success: false)
     }
 
@@ -54,9 +54,9 @@ extension GooseAppModel {
     }
 
     // Otherwise attempt a scan+connect with a 20-second timeout (D-12/D-13).
-    ble.startScan()
+    Task { await bleCoordinator.startScan() }
     DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
-      self?.ble.stopScan()
+      if let self { Task { await self.bleCoordinator.stopScan() } }
       task.setTaskCompleted(success: false)
     }
   }

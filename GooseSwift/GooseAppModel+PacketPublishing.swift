@@ -16,12 +16,12 @@ extension GooseAppModel {
       return
     }
 
-    healthPacketCaptureFamilyRows = snapshot.rows
+    healthState.healthPacketCaptureFamilyRows = snapshot.rows
     healthPacketCaptureFamilyRowsByID = Dictionary(
       uniqueKeysWithValues: snapshot.rows.map { ($0.id, $0) }
     )
     if let lastPacketSummary = snapshot.lastPacketSummary {
-      healthPacketCaptureLastPacketSummary = lastPacketSummary
+      healthState.healthPacketCaptureLastPacketSummary = lastPacketSummary
     }
     for family in snapshot.discoveredFamilies {
       ble.record(
@@ -63,13 +63,13 @@ extension GooseAppModel {
     healthPacketCaptureUIUpdateWorkItem = nil
     lastHealthPacketCaptureUIUpdatedAt = now
     if let capture = activeHealthPacketCapture {
-      healthPacketCaptureFrameCount = capture.importedFrameCount
+      healthState.healthPacketCaptureFrameCount = capture.importedFrameCount
     }
     if let pendingHealthPacketCaptureLastPacketSummary {
-      healthPacketCaptureLastPacketSummary = pendingHealthPacketCaptureLastPacketSummary
+      healthState.healthPacketCaptureLastPacketSummary = pendingHealthPacketCaptureLastPacketSummary
       self.pendingHealthPacketCaptureLastPacketSummary = nil
     }
-    updateHealthPacketCaptureTargetSummary(rows: healthPacketCaptureFamilyRows)
+    updateHealthPacketCaptureTargetSummary(rows: healthState.healthPacketCaptureFamilyRows)
     logHealthPacketCaptureSummaryIfNeeded(now: now)
   }
 
@@ -82,7 +82,7 @@ extension GooseAppModel {
     }
     lastHealthPacketCaptureSummaryLoggedAt = now
 
-    let topFamilies = healthPacketCaptureFamilyRows
+    let topFamilies = healthState.healthPacketCaptureFamilyRows
       .prefix(8)
       .map { "\($0.id)=\($0.count)" }
       .joined(separator: " | ")
@@ -99,7 +99,7 @@ extension GooseAppModel {
     ble.record(
       source: "health.packet_capture",
       title: "summary",
-      body: "\(healthPacketCaptureTargetSummary) last=\(healthPacketCaptureLastPacketSummary) families=\(topFamilies.isEmpty ? "none" : topFamilies) signals=\(signalCounts.isEmpty ? "none" : signalCounts)"
+      body: "\(healthState.healthPacketCaptureTargetSummary) last=\(healthState.healthPacketCaptureLastPacketSummary) families=\(topFamilies.isEmpty ? "none" : topFamilies) signals=\(signalCounts.isEmpty ? "none" : signalCounts)"
     )
     writeCaptureStatusSnapshot(topFamilies: topFamilies, signalCounts: signalCounts)
   }
@@ -113,10 +113,10 @@ extension GooseAppModel {
       "timestamp=\(Self.captureTimestampFormatter.string(from: Date()))",
       "session_id=\(activeCapture?.sessionID ?? "none")",
       "mode=\(activeCapture?.mode.rawValue ?? "none")",
-      "frame_count=\(healthPacketCaptureFrameCount)",
-      "status=\(healthPacketCaptureStatus)",
-      "target_summary=\(healthPacketCaptureTargetSummary)",
-      "last_packet=\(healthPacketCaptureLastPacketSummary)",
+      "frame_count=\(healthState.healthPacketCaptureFrameCount)",
+      "status=\(healthState.healthPacketCaptureStatus)",
+      "target_summary=\(healthState.healthPacketCaptureTargetSummary)",
+      "last_packet=\(healthState.healthPacketCaptureLastPacketSummary)",
       "top_families=\(topFamilies.isEmpty ? "none" : topFamilies)",
       "signal_counts=\(signalCounts.isEmpty ? "none" : signalCounts)",
       "latest_data_packet=\(latestWhoopDataPacketStatus)",
@@ -128,7 +128,7 @@ extension GooseAppModel {
       "latest_raw_research=\(latestRawResearchPacketStatus)",
       "latest_realtime_status=\(latestRealtimeStatusPacketStatus)",
       "movement=\(movementPacketStatus)",
-      "activity_detection=\(activityDetectionStatus)",
+      "activity_detection=\(healthState.activityDetectionStatus)",
       "performance_pipeline=\(performancePipelineStatus)",
       "ble_physiology=\(ble.physiologyCaptureStatus)",
       "ble_last_physiology_command=\(ble.lastPhysiologyCommandSummary)",
@@ -334,11 +334,11 @@ extension GooseAppModel {
       .filter { $0.status == .unresolved || $0.status == .unknown }
       .reduce(0) { $0 + $1.count }
     if activeHealthPacketCapture?.mode == .temperature {
-      healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | K18 \(k18History) | K24 \(k24History) | K47 \(k47History) | event17 \(eventTemperature) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
+      healthState.healthPacketCaptureTargetSummary = "frames \(healthState.healthPacketCaptureFrameCount) | K18 \(k18History) | K24 \(k24History) | K47 \(k47History) | event17 \(eventTemperature) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
     } else if r21 + optical + pulse + temperature > 0 {
-      healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | R21 \(r21) | optical \(optical) | pulse \(pulse) | K47 \(k47History) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
+      healthState.healthPacketCaptureTargetSummary = "frames \(healthState.healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | R21 \(r21) | optical \(optical) | pulse \(pulse) | K47 \(k47History) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
     } else {
-      healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | K47 \(k47History) | metadata \(metadataEvents) | activity \(activityDetectionStatus) | unknown \(unresolved)"
+      healthState.healthPacketCaptureTargetSummary = "frames \(healthState.healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | K47 \(k47History) | metadata \(metadataEvents) | activity \(healthState.activityDetectionStatus) | unknown \(unresolved)"
     }
   }
 
@@ -473,7 +473,7 @@ extension GooseAppModel {
   }
 
   func observeRespiratoryPacketWatch(_ sample: WhoopDataSignalSample) {
-    guard respiratoryPacketWatchActive, sample.packetK == 18 || sample.packetK == 24 else {
+    guard healthState.respiratoryPacketWatchActive, sample.packetK == 18 || sample.packetK == 24 else {
       return
     }
 
@@ -485,19 +485,19 @@ extension GooseAppModel {
 
     let counts = "K18 \(respiratoryPacketWatchK18Count) | K24 \(respiratoryPacketWatchK24Count)"
     if sample.packetK == 24 {
-      respiratoryPacketWatchStatus = "Saw K24; still waiting for K18 respiratory history | \(counts)"
+      healthState.respiratoryPacketWatchStatus = "Saw K24; still waiting for K18 respiratory history | \(counts)"
       ble.record(level: .debug, source: "respiratory.packet_watch", title: "related_history_packet", body: sample.logSummary)
       return
     }
 
     respiratoryPacketWatchTimeoutWorkItem?.cancel()
     respiratoryPacketWatchTimeoutWorkItem = nil
-    respiratoryPacketWatchActive = false
+    healthState.respiratoryPacketWatchActive = false
     if let respiratoryRate = sample.historyRespiratoryRate {
       let rateText = respiratoryRate.respiratoryRateRPM.map { String(format: "%.1f rpm candidate", $0) } ?? "candidate unresolved"
-      respiratoryPacketWatchStatus = "Found K18 \(rateText) | \(counts)"
+      healthState.respiratoryPacketWatchStatus = "Found K18 \(rateText) | \(counts)"
     } else {
-      respiratoryPacketWatchStatus = "Found K18; respiratory candidate unavailable | \(counts)"
+      healthState.respiratoryPacketWatchStatus = "Found K18; respiratory candidate unavailable | \(counts)"
     }
     ble.record(source: "respiratory.packet_watch", title: "matched.k18", body: sample.logSummary)
   }
@@ -638,7 +638,7 @@ extension GooseAppModel {
     movementPacketLogCount += 1
     let movementChanged = lastMovementPacketLoggedMoving != sample.isMoving
     let intervalElapsed = sample.capturedAt.timeIntervalSince(lastMovementPacketLoggedAt) >= Self.movementPacketLogInterval
-    guard movementPacketLogCount <= 3 || movementChanged || intervalElapsed || movementPacketValidationIsRunning else {
+    guard movementPacketLogCount <= 3 || movementChanged || intervalElapsed || healthState.movementPacketValidationIsRunning else {
       return false
     }
     lastMovementPacketLoggedAt = sample.capturedAt
@@ -659,14 +659,14 @@ extension GooseAppModel {
   }
 
   func updateMovementPacketValidation(with sample: MovementPacketSample) {
-    guard movementPacketValidationIsRunning else {
+    guard healthState.movementPacketValidationIsRunning else {
       return
     }
 
     movementPacketValidation.ingest(sample)
     let newValidationStatus = movementPacketValidation.statusSummary
-    if newValidationStatus != movementPacketValidationStatus {
-      movementPacketValidationStatus = newValidationStatus
+    if newValidationStatus != healthState.movementPacketValidationStatus {
+      healthState.movementPacketValidationStatus = newValidationStatus
     }
     ble.record(
       level: .debug,
@@ -679,11 +679,11 @@ extension GooseAppModel {
       return
     }
 
-    movementPacketValidationIsRunning = false
+    healthState.movementPacketValidationIsRunning = false
     movementPacketValidationTimeoutWorkItem?.cancel()
     let intensityPercent = Int((sample.motionIntensity * 100).rounded())
     let hrText = sample.heartRateBPM.map { ", HR \($0)" } ?? ""
-    movementPacketValidationStatus = "Passed: real \(sample.bodySummaryKind) moving packet, intensity \(intensityPercent)%\(hrText)"
+    healthState.movementPacketValidationStatus = "Passed: real \(sample.bodySummaryKind) moving packet, intensity \(intensityPercent)%\(hrText)"
     ble.record(
       source: "activity.detect",
       title: "movement_packet_test.pass",
@@ -692,11 +692,11 @@ extension GooseAppModel {
   }
 
   func finishMovementPacketValidationTimedOut() {
-    guard movementPacketValidationIsRunning else {
+    guard healthState.movementPacketValidationIsRunning else {
       return
     }
-    movementPacketValidationIsRunning = false
-    movementPacketValidationStatus = movementPacketValidation.timeoutSummary
+    healthState.movementPacketValidationIsRunning = false
+    healthState.movementPacketValidationStatus = movementPacketValidation.timeoutSummary
     ble.record(level: .warn, source: "activity.detect", title: "movement_packet_test.timeout", body: movementPacketValidation.logSummary)
   }
 
@@ -706,10 +706,10 @@ extension GooseAppModel {
       case .status(let status):
         // Guard prevents @Published objectWillChange from firing when the status string
         // repeats unchanged across consecutive movement packets.
-        guard status != activityDetectionStatus else { break }
-        activityDetectionStatus = status
+        guard status != healthState.activityDetectionStatus else { break }
+        healthState.activityDetectionStatus = status
       case .primeGPS(let reason):
-        activityDetectionStatus = "Movement detected; priming GPS"
+        healthState.activityDetectionStatus = "Movement detected; priming GPS"
         if !activitySession.isActive {
           activityLocationTracker.start(reset: true)
         }
@@ -724,7 +724,7 @@ extension GooseAppModel {
           )
           break
         }
-        activityDetectionStatus = "Candidate \(recording.activity.title) recording"
+        healthState.activityDetectionStatus = "Candidate \(recording.activity.title) recording"
         beginActivityRecording(
           activity: recording.activity,
           startedAt: recording.startedAt,
@@ -750,7 +750,7 @@ extension GooseAppModel {
           )
           break
         }
-        activityDetectionStatus = "Candidate \(summary.activity.title) stored"
+        healthState.activityDetectionStatus = "Candidate \(summary.activity.title) stored"
         finishActivityRecording(
           activity: summary.activity,
           startedAt: summary.startedAt,

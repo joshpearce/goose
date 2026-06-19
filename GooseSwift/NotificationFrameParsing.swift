@@ -85,6 +85,7 @@ struct NotificationFrameCompactSummary {
   let bodyByteCount: Int?
   let heartRateBPM: Int?
   let r22BatteryPct: Int?
+  let event48BatteryPct: Int?
   let r17Flags: Int?
   let r17SampleCount: Int?
   let r17ParsedSampleCount: Int?
@@ -114,6 +115,7 @@ struct NotificationFrameCompactSummary {
     bodyByteCount = NotificationFrameParser.intValue(raw["body_byte_count"])
     heartRateBPM = NotificationFrameParser.intValue(raw["heart_rate"])
     r22BatteryPct = NotificationFrameParser.intValue(raw["r22_battery_pct"])
+    event48BatteryPct = NotificationFrameParser.intValue(raw["event48_battery_pct"])
     r17Flags = NotificationFrameParser.intValue(raw["r17_flags"])
     r17SampleCount = NotificationFrameParser.intValue(raw["r17_sample_count"])
     r17ParsedSampleCount = NotificationFrameParser.intValue(raw["r17_parsed_sample_count"])
@@ -135,6 +137,7 @@ struct NotificationFrameInterpretation {
   let healthPacketFamily: HealthPacketCaptureFamily?
   let heartRateBPM: Int?
   let r22BatteryPct: Int?
+  let event48BatteryPct: Int?
   let movementSample: MovementPacketSample?
   let whoopEvent: WhoopEventSample?
   let dataSignal: WhoopDataSignalSample?
@@ -161,7 +164,7 @@ struct NotificationParseContext: @unchecked Sendable {
   let healthCaptureActive: Bool
   let respiratoryPacketWatchActive: Bool
   let fallbackHeartRate: Int?
-  let ble: GooseBLEClient
+  let ble: any BLETransport
   let packetUIStateAggregator: PacketUIStateAggregator
   let whoopDataSignalPipeline: WhoopDataSignalPipeline
 }
@@ -187,12 +190,15 @@ enum OvernightRawNotificationStorageClassifier {
 
   static func classify(_ event: GooseNotificationEvent) -> Classification {
     let headerBytes = Array(event.value.prefix(10))
-    guard headerBytes.count >= 9, headerBytes[0] == 0xaa else {
+    // Gen4 has a 4-byte header (sync + 2-byte len + header-CRC); packet_type is at byte 4.
+    // Gen5/Maverick have an 8-byte header; packet_type is at byte 8.
+    let headerLen = event.wireProtocol == .gen4 ? 4 : 8
+    guard headerBytes.count >= headerLen + 1, headerBytes[0] == 0xaa else {
       return Classification(packetType: nil, packetK: nil, compactKey: nil)
     }
 
-    let packetType = headerBytes[8]
-    let packetK = headerBytes.count > 9 ? headerBytes[9] : nil
+    let packetType = headerBytes[headerLen]
+    let packetK = headerBytes.count > headerLen + 1 ? headerBytes[headerLen + 1] : nil
     guard compactLivePacketTypes.contains(packetType),
           let packetK,
           compactLivePacketKs.contains(packetK) else {

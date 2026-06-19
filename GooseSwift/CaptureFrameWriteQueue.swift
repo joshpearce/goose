@@ -179,8 +179,12 @@ final class CaptureFrameEnqueueAggregator: @unchecked Sendable {
   }
 }
 
+// THREADING: @unchecked Sendable is safe — all mutable state is protected by stateLock (NSLock);
+// Rust bridge calls are made only from writeQueue (serial), never from the caller's thread.
 final class CaptureFrameWriteQueue: @unchecked Sendable {
   private let writeQueue = DispatchQueue(label: "com.goose.swift.capture-frame-writes", qos: .utility)
+  // THREADING: stateLock guards pendingRows, queuedRowCount, isWriting, and completion callbacks
+  // shared between BLE notification ingest callers (enqueue) and the writeQueue flush path.
   private let stateLock = NSLock()
   private let rust = GooseRustBridge()
   private let databasePath: String

@@ -18,6 +18,9 @@ use serde::{Deserialize, Serialize};
 /// Multiplicative scale factor applied to each activity count before the
 /// Cole-Kripke weighted sum. 0.001 converts raw inter-sample magnitude
 /// differences (g-units) to the activity index expected by Cole 1992.
+// ALGO: D = Σ(wᵢ × Aᵢ) where Aᵢ = SCALE_FACTOR × raw_count; D >= COLE_KRIPKE_WAKE_THRESHOLD
+// (1.0) → wake epoch. Cole 1992 used wrist actometer counts 0–1000/epoch; 0.001 maps them to
+// a [0,1]-normalised activity index. Ref: Cole RJ et al. Sleep 1992;15(5):461-469.
 pub const COLE_KRIPKE_SCALE_FACTOR: f64 = 0.001;
 
 /// Wake threshold: D >= 1.0 → wake epoch (Cole 1992).

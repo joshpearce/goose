@@ -5,7 +5,7 @@ import UIKit
 
 struct HealthView: View {
   @Environment(GooseAppModel.self) private var model
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @State private var cachedLandingSnapshots: [HealthMetricSnapshot] = []
   @State private var cachedVitalSnapshots: [HealthMetricSnapshot] = []
   @State private var bpmRefreshTask: Task<Void, Never>?
@@ -15,17 +15,17 @@ struct HealthView: View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 22) {
         HealthDashboardStatusHeader(
-          catalogStatus: store.catalogStatus,
-          usesSampleData: store.usesSampleData
+          catalogStatus: healthStore.catalogStatus,
+          usesSampleData: healthStore.usesSampleData
         )
 
         HealthActivityOverviewSection(
-          steps: store.whoopStepsDisplayText(),
-          activeEnergy: store.whoopActiveCaloriesDisplayText(),
-          stepsFreshness: store.whoopStepsStatusText(),
-          stepsSource: store.whoopStepsSource(),
-          activeEnergyFreshness: store.whoopActiveCaloriesStatusText(),
-          activeEnergySource: store.whoopActiveCaloriesSource(),
+          steps: healthStore.whoopStepsDisplayText(),
+          activeEnergy: healthStore.whoopActiveCaloriesDisplayText(),
+          stepsFreshness: healthStore.whoopStepsStatusText(),
+          stepsSource: healthStore.whoopStepsSource(),
+          activeEnergyFreshness: healthStore.whoopActiveCaloriesStatusText(),
+          activeEnergySource: healthStore.whoopActiveCaloriesSource(),
           heartRateValue: liveHeartRateValue,
           heartRateStatus: liveHeartRateStatus,
           heartRateSource: liveHeartRateSource
@@ -46,7 +46,7 @@ struct HealthView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackground(.hidden, for: .navigationBar)
     .navigationDestination(for: HealthRoute.self) { route in
-      HealthRouteContentView(route: route, store: store)
+      HealthRouteContentView(route: route)
     }
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
@@ -67,13 +67,13 @@ struct HealthView: View {
       }
     }
     .sheet(isPresented: $showingManualWorkout) {
-      ManualWorkoutEntrySheet(bridge: store.bridge, databasePath: store.databasePath)
+      ManualWorkoutEntrySheet(bridge: healthStore.bridge, databasePath: healthStore.databasePath)
     }
     .onAppear {
       model.recordUIAction("page.opened", detail: "Health")
       Task {
-        await store.loadBridgeCatalogsIfNeeded()
-        await store.refreshHeartRateTimeline()
+        await healthStore.loadBridgeCatalogsIfNeeded()
+        await healthStore.refreshHeartRateTimeline()
       }
       refreshSnapshots()
     }
@@ -84,18 +84,18 @@ struct HealthView: View {
         if !Task.isCancelled { refreshSnapshots() }
       }
     }
-    .onChange(of: store.catalogStatus) { _, _ in
+    .onChange(of: healthStore.catalogStatus) { _, _ in
       refreshSnapshots()
     }
   }
 
   private func refreshSnapshots() {
-    cachedLandingSnapshots = store.landingSnapshots(
+    cachedLandingSnapshots = healthStore.landingSnapshots(
       liveHeartRateBPM: model.ble.liveHeartRateBPM,
       liveHeartRateSource: model.ble.liveHeartRateSource,
       liveHeartRateUpdatedAt: model.ble.liveHeartRateUpdatedAt
     )
-    cachedVitalSnapshots = Array(store.healthMonitorSnapshots().prefix(4))
+    cachedVitalSnapshots = Array(healthStore.healthMonitorSnapshots().prefix(4))
   }
 
   private var liveHeartRateValue: String {
@@ -107,7 +107,7 @@ struct HealthView: View {
 
   private var liveHeartRateStatus: String {
     guard model.ble.liveHeartRateBPM != nil else {
-      return store.heartRateTimelineStatus
+      return healthStore.heartRateTimelineStatus
     }
     return HealthDataStore.relativeText(for: model.ble.liveHeartRateUpdatedAt) ?? "Live"
   }
@@ -120,16 +120,16 @@ struct HealthView: View {
 
   private func snapshots(for routes: [HealthRoute]) -> [HealthMetricSnapshot] {
     routes.compactMap { route in
-      cachedLandingSnapshots.first { $0.route == route } ?? store.snapshot(for: route)
+      cachedLandingSnapshots.first { $0.route == route } ?? healthStore.snapshot(for: route)
     }
   }
 
   @MainActor
   private func refreshDashboard() {
     Task {
-      await store.refreshBridgeCatalogs()
-      await store.refreshHeartRateTimeline()
-      store.refreshPacketInputsIfNeeded()
+      await healthStore.refreshBridgeCatalogs()
+      await healthStore.refreshHeartRateTimeline()
+      healthStore.refreshPacketInputsIfNeeded()
     }
   }
 }

@@ -2,7 +2,8 @@ import SwiftUI
 
 struct CoachChatScreen: View {
   var chat: CoachChatModel
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
+  @Environment(HealthState.self) private var healthState
   var appModel: GooseAppModel
   @Binding var draft: String
   let scrollToBottomRequestID: Int
@@ -107,7 +108,7 @@ struct CoachChatScreen: View {
     guard !trimmedPrompt.isEmpty else {
       return
     }
-    chat.send(trimmedPrompt, healthStore: healthStore, appModel: appModel)
+    chat.send(trimmedPrompt, healthStore: healthStore, appModel: appModel, healthState: healthState)
   }
 
   private func scrollToBottom(

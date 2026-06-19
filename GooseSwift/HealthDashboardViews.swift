@@ -319,91 +319,64 @@ struct HealthRouteShortcutCard: View {
 
 struct HealthRouteDetailView: View {
   let route: HealthRoute
-  var store: HealthDataStore
-
-  /// Production init: caller supplies the ambient store so this view shares
-  /// the same HealthDataStore instance as the rest of the navigation stack.
-  init(route: HealthRoute, store: HealthDataStore) {
-    self.route = route
-    self.store = store
-  }
-
-#if DEBUG
-  /// Preview-only init: creates a fresh isolated store and applies preview state.
-  /// Never use in production code paths — the store created here is orphaned
-  /// from the ambient packetScoreStatus and catalog state.
-  init(route: HealthRoute, previewState: HealthPreviewState? = nil) {
-    self.route = route
-    let previewStore = HealthDataStore()
-    if let previewState {
-      previewStore.applyPreviewState(previewState)
-    }
-    self.store = previewStore
-  }
-#endif
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
-    HealthRouteDestinationView(route: route, store: store)
+    HealthRouteDestinationView(route: route)
   }
 }
 
 struct HealthRouteDestinationView: View {
   let route: HealthRoute
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   var selectedDate: Binding<Date>?
 
-  init(route: HealthRoute, store: HealthDataStore, selectedDate: Binding<Date>? = nil) {
-    self.route = route
-    self.store = store
-    self.selectedDate = selectedDate
-  }
-
   var body: some View {
-    HealthRouteContentView(route: route, store: store, selectedDate: selectedDate)
+    HealthRouteContentView(route: route, selectedDate: selectedDate)
       .task {
-        await store.loadBridgeCatalogsIfNeeded()
+        await healthStore.loadBridgeCatalogsIfNeeded()
       }
   }
 }
 
 struct HealthRouteContentView: View {
   let route: HealthRoute
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   var selectedDate: Binding<Date>? = nil
 
   var body: some View {
     switch route {
     case .healthMonitor:
-      HealthMonitorView(store: store)
+      HealthMonitorView()
     case .sleep, .recovery, .strain, .stress:
-      HealthMetricFamilyView(route: route, store: store, externalSelectedDate: selectedDate)
+      HealthMetricFamilyView(route: route, externalSelectedDate: selectedDate)
     case .trends:
-      TrendsDashboardView(store: store)
+      TrendsDashboardView()
     case .cardioLoad:
-      CardioLoadView(store: store)
+      CardioLoadView()
     case .energyBank:
-      EnergyBankView(store: store)
+      EnergyBankView()
     case .packetInputs:
-      PacketHealthView(store: store)
+      PacketHealthView()
     case .algorithms:
-      AlgorithmsHealthView(store: store)
+      AlgorithmsHealthView()
     case .referenceComparisons:
-      ReferenceComparisonsView(store: store)
+      ReferenceComparisonsView()
     case .calibration:
-      CalibrationHealthView(store: store)
+      CalibrationHealthView()
     }
   }
 }
 
 struct HealthStatusBanner: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
-        Image(systemName: store.usesSampleData ? "testtube.2" : "checkmark.seal")
-          .foregroundStyle(store.usesSampleData ? .orange : .green)
-        Text(store.catalogStatus)
+        Image(systemName: healthStore.usesSampleData ? "testtube.2" : "checkmark.seal")
+          .foregroundStyle(healthStore.usesSampleData ? .orange : .green)
+        Text(healthStore.catalogStatus)
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(.primary)
         Spacer()
@@ -480,7 +453,7 @@ struct HealthMetricCard: View {
 }
 
 struct HealthMonitorView: View {
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @State private var selectedTrend: HealthMetricSnapshot?
   @State private var cachedMonitorSnapshots: [HealthMetricSnapshot] = []
 
@@ -492,7 +465,7 @@ struct HealthMonitorView: View {
   var body: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 18) {
-        HealthHero(snapshot: store.snapshot(for: .healthMonitor), subtitle: "Vitals, timeline, and primary sleep inputs")
+        HealthHero(snapshot: healthStore.snapshot(for: .healthMonitor), subtitle: "Vitals, timeline, and primary sleep inputs")
 
         LazyVGrid(columns: columns, spacing: 10) {
           ForEach(cachedMonitorSnapshots) { snapshot in
@@ -505,7 +478,7 @@ struct HealthMonitorView: View {
           }
         }
 
-        let cardioLoadSnapshot = store.snapshot(for: .cardioLoad)
+        let cardioLoadSnapshot = healthStore.snapshot(for: .cardioLoad)
         NavigationLink(value: HealthRoute.cardioLoad) {
           HealthWideRouteCard(
             title: cardioLoadSnapshot.title,
@@ -520,24 +493,24 @@ struct HealthMonitorView: View {
 
         HealthSectionTitle("Timeline")
         VStack(spacing: 8) {
-          if let sleep = store.primarySleep() {
+          if let sleep = healthStore.primarySleep() {
             HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: "\(sleep.startLabel) - \(sleep.endLabel) | \(sleep.durationText) | \(sleep.scoreDisplayText)", source: sleep.source, systemImage: "bed.double"))
           } else {
-            HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: store.bandSleepImportStatus, source: .unavailable(store.bandSleepImportStatus), systemImage: "bed.double"))
+            HealthInfoRow(row: HealthSummaryRow("Primary sleep", value: healthStore.bandSleepImportStatus, source: .unavailable(healthStore.bandSleepImportStatus), systemImage: "bed.double"))
           }
-          HealthInfoRow(row: HealthSummaryRow("Heart rate 1D", value: store.heartRateTimelineStatus, source: store.heartRateHourlyRanges.isEmpty ? .unavailable("BLE heart-rate sample store") : .live("BLE heart-rate sample store"), systemImage: "heart"))
-          ForEach(store.heartRateHourlyTimelineRows()) { row in
+          HealthInfoRow(row: HealthSummaryRow("Heart rate 1D", value: healthStore.heartRateTimelineStatus, source: healthStore.heartRateHourlyRanges.isEmpty ? .unavailable("BLE heart-rate sample store") : .live("BLE heart-rate sample store"), systemImage: "heart"))
+          ForEach(healthStore.heartRateHourlyTimelineRows()) { row in
             HealthInfoRow(row: row)
           }
         }
 
-        if store.localDataSupportsExport {
+        if healthStore.localDataSupportsExport {
           HealthSectionTitle("Export")
           VStack(alignment: .leading, spacing: 10) {
-            ForEach(store.healthMonitorExportRows()) { row in
+            ForEach(healthStore.healthMonitorExportRows()) { row in
               HealthInfoRow(row: row)
             }
-            ShareLink(item: store.localHealthExportText) {
+            ShareLink(item: healthStore.localHealthExportText) {
               Label("Share Local Health Snapshot", systemImage: "square.and.arrow.up")
                 .font(.subheadline.weight(.semibold))
             }
@@ -551,13 +524,13 @@ struct HealthMonitorView: View {
     .gooseScreenBackground()
     .navigationTitle("Health Monitor")
     .task {
-      cachedMonitorSnapshots = store.healthMonitorSnapshots()
-      await store.refreshHeartRateTimeline()
-      store.refreshPacketInputsIfNeeded()
+      cachedMonitorSnapshots = healthStore.healthMonitorSnapshots()
+      await healthStore.refreshHeartRateTimeline()
+      healthStore.refreshPacketInputsIfNeeded()
     }
-    .onChange(of: store.packetScoreStatus) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
-    .onChange(of: store.hkHRVSDNNMs) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
-    .onChange(of: store.hkRestingHR) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: healthStore.packetScoreStatus) { cachedMonitorSnapshots = healthStore.healthMonitorSnapshots() }
+    .onChange(of: healthStore.hkHRVSDNNMs) { cachedMonitorSnapshots = healthStore.healthMonitorSnapshots() }
+    .onChange(of: healthStore.hkRestingHR) { cachedMonitorSnapshots = healthStore.healthMonitorSnapshots() }
     .sheet(item: $selectedTrend) { snapshot in
       if snapshot.id == "resting-hr" || snapshot.id == "resting-hrv" {
         SleepV2BevelTrendSheet(snapshot: snapshot)
@@ -570,14 +543,14 @@ struct HealthMonitorView: View {
 
 struct PacketHealthView: View {
   @Environment(GooseAppModel.self) private var model
-  var store: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
 
   var body: some View {
     List {
       Section {
         Button {
           Task {
-            await store.runPacketInputs()
+            await healthStore.runPacketInputs()
           }
         } label: {
           Label("Extract Packet-Derived Inputs", systemImage: "square.stack.3d.up")
@@ -585,50 +558,50 @@ struct PacketHealthView: View {
       }
 
       Section("Packet-Derived Inputs") {
-        HealthInfoRow(row: HealthSummaryRow("Readiness", value: store.metricInputReadinessSummary(), source: store.packetInputSource("metrics.input_readiness"), systemImage: "checklist"))
-        HealthInfoRow(row: HealthSummaryRow("Latest HR", value: store.latestHeartRateSummary(bpm: model.ble.liveHeartRateBPM, source: model.ble.liveHeartRateSource, updatedAt: model.ble.liveHeartRateUpdatedAt), source: model.ble.liveHeartRateBPM == nil ? .unavailable("BLE latest HR unavailable") : .live("BLE latest HR"), systemImage: "heart"))
-        if !store.latestHeartRateProvenanceSummary(source: model.ble.liveHeartRateSource).isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("HR provenance", value: store.latestHeartRateProvenanceSummary(source: model.ble.liveHeartRateSource), source: .live("latestHeartRateProvenanceSummary()"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Readiness", value: healthStore.metricInputReadinessSummary(), source: healthStore.packetInputSource("metrics.input_readiness"), systemImage: "checklist"))
+        HealthInfoRow(row: HealthSummaryRow("Latest HR", value: healthStore.latestHeartRateSummary(bpm: model.ble.liveHeartRateBPM, source: model.ble.liveHeartRateSource, updatedAt: model.ble.liveHeartRateUpdatedAt), source: model.ble.liveHeartRateBPM == nil ? .unavailable("BLE latest HR unavailable") : .live("BLE latest HR"), systemImage: "heart"))
+        if !healthStore.latestHeartRateProvenanceSummary(source: model.ble.liveHeartRateSource).isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("HR provenance", value: healthStore.latestHeartRateProvenanceSummary(source: model.ble.liveHeartRateSource), source: .live("latestHeartRateProvenanceSummary()"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Motion", value: store.motionFeatureSummary(), source: store.packetInputSource("metrics.motion_features"), systemImage: "figure.walk.motion"))
-        if !store.motionFeatureProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Motion provenance", value: store.motionFeatureProvenanceSummary(), source: store.packetInputSource("metrics.motion_features"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Motion", value: healthStore.motionFeatureSummary(), source: healthStore.packetInputSource("metrics.motion_features"), systemImage: "figure.walk.motion"))
+        if !healthStore.motionFeatureProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Motion provenance", value: healthStore.motionFeatureProvenanceSummary(), source: healthStore.packetInputSource("metrics.motion_features"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Step discovery", value: store.stepDiscoverySummary(), source: store.packetInputSource("metrics.step_packet_discovery"), systemImage: "shoeprints.fill"))
-        if !store.stepDiscoveryProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Step discovery provenance", value: store.stepDiscoveryProvenanceSummary(), source: store.packetInputSource("metrics.step_packet_discovery"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Step discovery", value: healthStore.stepDiscoverySummary(), source: healthStore.packetInputSource("metrics.step_packet_discovery"), systemImage: "shoeprints.fill"))
+        if !healthStore.stepDiscoveryProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Step discovery provenance", value: healthStore.stepDiscoveryProvenanceSummary(), source: healthStore.packetInputSource("metrics.step_packet_discovery"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Unavailable steps", value: store.activityUnavailableStatusSummary(), source: store.packetInputSource("metrics.activity_unavailable_daily_status"), systemImage: "minus.circle"))
-        HealthInfoRow(row: HealthSummaryRow("HRV", value: store.hrvFeatureSummary(), source: store.packetInputSource("metrics.hrv_features"), systemImage: "waveform.path.ecg"))
-        if !store.hrvFeatureProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("HRV provenance", value: store.hrvFeatureProvenanceSummary(), source: store.packetInputSource("metrics.hrv_features"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Unavailable steps", value: healthStore.activityUnavailableStatusSummary(), source: healthStore.packetInputSource("metrics.activity_unavailable_daily_status"), systemImage: "minus.circle"))
+        HealthInfoRow(row: HealthSummaryRow("HRV", value: healthStore.hrvFeatureSummary(), source: healthStore.packetInputSource("metrics.hrv_features"), systemImage: "waveform.path.ecg"))
+        if !healthStore.hrvFeatureProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("HRV provenance", value: healthStore.hrvFeatureProvenanceSummary(), source: healthStore.packetInputSource("metrics.hrv_features"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Resting HR", value: store.restingHeartRateFeatureSummary(), source: store.packetInputSource("metrics.resting_hr_features"), systemImage: "heart"))
-        if !store.restingHeartRateFeatureProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Resting HR provenance", value: store.restingHeartRateFeatureProvenanceSummary(), source: store.packetInputSource("metrics.resting_hr_features"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Resting HR", value: healthStore.restingHeartRateFeatureSummary(), source: healthStore.packetInputSource("metrics.resting_hr_features"), systemImage: "heart"))
+        if !healthStore.restingHeartRateFeatureProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Resting HR provenance", value: healthStore.restingHeartRateFeatureProvenanceSummary(), source: healthStore.packetInputSource("metrics.resting_hr_features"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Energy", value: store.energyRollupSummary(), source: store.whoopActiveCaloriesSource(), systemImage: "flame.fill"))
-        if !store.energyRollupProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Energy provenance", value: store.energyRollupProvenanceSummary(), source: store.whoopActiveCaloriesSource(), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Energy", value: healthStore.energyRollupSummary(), source: healthStore.whoopActiveCaloriesSource(), systemImage: "flame.fill"))
+        if !healthStore.energyRollupProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Energy provenance", value: healthStore.energyRollupProvenanceSummary(), source: healthStore.whoopActiveCaloriesSource(), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Unavailable energy", value: store.energyUnavailableStatusSummary(), source: store.packetInputSource("metrics.energy_unavailable_daily_status"), systemImage: "minus.circle"))
-        HealthInfoRow(row: HealthSummaryRow("Window", value: store.windowFeatureSummary(), source: store.packetInputSource("metrics.window_features"), systemImage: "rectangle.dashed"))
-        if !store.windowFeatureProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Window provenance", value: store.windowFeatureProvenanceSummary(), source: store.packetInputSource("metrics.window_features"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Unavailable energy", value: healthStore.energyUnavailableStatusSummary(), source: healthStore.packetInputSource("metrics.energy_unavailable_daily_status"), systemImage: "minus.circle"))
+        HealthInfoRow(row: HealthSummaryRow("Window", value: healthStore.windowFeatureSummary(), source: healthStore.packetInputSource("metrics.window_features"), systemImage: "rectangle.dashed"))
+        if !healthStore.windowFeatureProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Window provenance", value: healthStore.windowFeatureProvenanceSummary(), source: healthStore.packetInputSource("metrics.window_features"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Vitals", value: store.vitalEventFeatureSummary(), source: store.packetInputSource("metrics.vital_event_features"), systemImage: "thermometer.medium"))
-        if !store.vitalEventFeatureProvenanceSummary().isEmpty {
-          HealthInfoRow(row: HealthSummaryRow("Vitals provenance", value: store.vitalEventFeatureProvenanceSummary(), source: store.packetInputSource("metrics.vital_event_features"), systemImage: "doc.text.magnifyingglass"))
+        HealthInfoRow(row: HealthSummaryRow("Vitals", value: healthStore.vitalEventFeatureSummary(), source: healthStore.packetInputSource("metrics.vital_event_features"), systemImage: "thermometer.medium"))
+        if !healthStore.vitalEventFeatureProvenanceSummary().isEmpty {
+          HealthInfoRow(row: HealthSummaryRow("Vitals provenance", value: healthStore.vitalEventFeatureProvenanceSummary(), source: healthStore.packetInputSource("metrics.vital_event_features"), systemImage: "doc.text.magnifyingglass"))
         }
-        HealthInfoRow(row: HealthSummaryRow("Recovery sensor rollup", value: store.recoverySensorDailyRollupSummary(), source: store.packetInputSource("metrics.recovery_sensor_daily_rollup"), systemImage: "heart.text.square"))
-        HealthInfoRow(row: HealthSummaryRow("Unavailable recovery", value: store.recoveryUnavailableStatusSummary(), source: store.packetInputSource("metrics.recovery_unavailable_daily_status"), systemImage: "minus.circle"))
-        HealthInfoRow(row: HealthSummaryRow("Next action", value: store.packetDerivedFeatureNextActionSummary(), source: store.packetInputSource("packetDerivedFeatureNextActionSummary()"), systemImage: "arrow.triangle.2.circlepath"))
+        HealthInfoRow(row: HealthSummaryRow("Recovery sensor rollup", value: healthStore.recoverySensorDailyRollupSummary(), source: healthStore.packetInputSource("metrics.recovery_sensor_daily_rollup"), systemImage: "heart.text.square"))
+        HealthInfoRow(row: HealthSummaryRow("Unavailable recovery", value: healthStore.recoveryUnavailableStatusSummary(), source: healthStore.packetInputSource("metrics.recovery_unavailable_daily_status"), systemImage: "minus.circle"))
+        HealthInfoRow(row: HealthSummaryRow("Next action", value: healthStore.packetDerivedFeatureNextActionSummary(), source: healthStore.packetInputSource("packetDerivedFeatureNextActionSummary()"), systemImage: "arrow.triangle.2.circlepath"))
       }
 
       Section {
         Button {
           Task {
-            await store.runPacketScores()
+            await healthStore.runPacketScores()
           }
         } label: {
           Label("Run Packet-Derived Scores", systemImage: "chart.xyaxis.line")
@@ -636,28 +609,28 @@ struct PacketHealthView: View {
       }
 
       Section("Packet-Derived Scores") {
-        HealthInfoRow(row: HealthSummaryRow("Sleep", value: store.sleepFeatureScoreSummary(), source: store.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
-        HealthOptionalRow(label: "Sleep model", value: store.sleepV1ModelStatusSummary(), source: store.packetScoreSource("sleepV1ModelStatusSummary()"), systemImage: "brain.head.profile")
-        HealthOptionalRow(label: "Sleep confidence", value: store.sleepV1ConfidenceSummary(), source: store.packetScoreSource("sleepV1ConfidenceSummary()"), systemImage: "checkmark.seal")
-        HealthOptionalRow(label: "Sleep data", value: store.sleepV1DataNotesSummary(), source: store.packetScoreSource("sleepV1DataNotesSummary()"), systemImage: "info.circle")
-        HealthOptionalRow(label: "Sleep schedule", value: store.sleepV1ScheduleSummary(), source: store.packetScoreSource("sleepV1ScheduleSummary()"), systemImage: "calendar")
-        HealthOptionalRow(label: "Sleep debt", value: store.sleepV1DebtSummary(), source: store.packetScoreSource("sleepV1DebtSummary()"), systemImage: "minus.circle")
-        HealthOptionalRow(label: "Sleep HR", value: store.sleepV1HeartRateSummary(), source: store.packetScoreSource("sleepV1HeartRateSummary()"), systemImage: "heart")
-        HealthOptionalRow(label: "Sleep stages", value: store.sleepV1StagesSummary(), source: store.packetScoreSource("sleepV1StagesSummary()"), systemImage: "chart.bar")
-        HealthOptionalRow(label: "Sleep architecture", value: store.sleepV1ArchitectureCalibrationSummary(), source: store.packetScoreSource("sleepV1ArchitectureCalibrationSummary()"), systemImage: "point.3.connected.trianglepath.dotted")
-        HealthOptionalRow(label: "Sleep change", value: store.sleepV1WhyChangedSummary(), source: store.packetScoreSource("sleepV1WhyChangedSummary()"), systemImage: "arrow.left.arrow.right")
-        ForEach(store.sleepV1ComponentBreakdownRows()) { row in
+        HealthInfoRow(row: HealthSummaryRow("Sleep", value: healthStore.sleepFeatureScoreSummary(), source: healthStore.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
+        HealthOptionalRow(label: "Sleep model", value: healthStore.sleepV1ModelStatusSummary(), source: healthStore.packetScoreSource("sleepV1ModelStatusSummary()"), systemImage: "brain.head.profile")
+        HealthOptionalRow(label: "Sleep confidence", value: healthStore.sleepV1ConfidenceSummary(), source: healthStore.packetScoreSource("sleepV1ConfidenceSummary()"), systemImage: "checkmark.seal")
+        HealthOptionalRow(label: "Sleep data", value: healthStore.sleepV1DataNotesSummary(), source: healthStore.packetScoreSource("sleepV1DataNotesSummary()"), systemImage: "info.circle")
+        HealthOptionalRow(label: "Sleep schedule", value: healthStore.sleepV1ScheduleSummary(), source: healthStore.packetScoreSource("sleepV1ScheduleSummary()"), systemImage: "calendar")
+        HealthOptionalRow(label: "Sleep debt", value: healthStore.sleepV1DebtSummary(), source: healthStore.packetScoreSource("sleepV1DebtSummary()"), systemImage: "minus.circle")
+        HealthOptionalRow(label: "Sleep HR", value: healthStore.sleepV1HeartRateSummary(), source: healthStore.packetScoreSource("sleepV1HeartRateSummary()"), systemImage: "heart")
+        HealthOptionalRow(label: "Sleep stages", value: healthStore.sleepV1StagesSummary(), source: healthStore.packetScoreSource("sleepV1StagesSummary()"), systemImage: "chart.bar")
+        HealthOptionalRow(label: "Sleep architecture", value: healthStore.sleepV1ArchitectureCalibrationSummary(), source: healthStore.packetScoreSource("sleepV1ArchitectureCalibrationSummary()"), systemImage: "point.3.connected.trianglepath.dotted")
+        HealthOptionalRow(label: "Sleep change", value: healthStore.sleepV1WhyChangedSummary(), source: healthStore.packetScoreSource("sleepV1WhyChangedSummary()"), systemImage: "arrow.left.arrow.right")
+        ForEach(healthStore.sleepV1ComponentBreakdownRows()) { row in
           HealthInfoRow(row: row)
         }
-        HealthOptionalRow(label: "Sleep provenance", value: store.packetScoreProvenanceSummary("sleep"), source: store.packetScoreSource("packetScoreProvenanceSummary(sleep)"), systemImage: "doc.text.magnifyingglass")
-        HealthInfoRow(row: HealthSummaryRow("Recovery", value: store.recoveryFeatureScoreSummary(), source: store.packetScoreSource("metrics.recovery_score_from_features"), systemImage: "battery.100percent"))
-        HealthInfoRow(row: HealthSummaryRow("Recovery vitals", value: store.recoveryProvidedVitalsSummary(), source: store.packetScoreSource("recoveryProvidedVitalsSummary()"), systemImage: "lungs"))
-        HealthOptionalRow(label: "Recovery provenance", value: store.packetScoreProvenanceSummary("recovery"), source: store.packetScoreSource("packetScoreProvenanceSummary(recovery)"), systemImage: "doc.text.magnifyingglass")
-        HealthInfoRow(row: HealthSummaryRow("Strain", value: store.strainFeatureScoreSummary(), source: store.packetScoreSource("metrics.strain_score_from_features"), systemImage: "figure.run"))
-        HealthOptionalRow(label: "Strain provenance", value: store.packetScoreProvenanceSummary("strain"), source: store.packetScoreSource("packetScoreProvenanceSummary(strain)"), systemImage: "doc.text.magnifyingglass")
-        HealthInfoRow(row: HealthSummaryRow("Stress", value: store.stressFeatureScoreSummary(), source: store.packetScoreSource("metrics.stress_score_from_features"), systemImage: "waveform.path.ecg"))
-        HealthOptionalRow(label: "Stress provenance", value: store.packetScoreProvenanceSummary("stress"), source: store.packetScoreSource("packetScoreProvenanceSummary(stress)"), systemImage: "doc.text.magnifyingglass")
-        HealthInfoRow(row: HealthSummaryRow("Next action", value: store.packetDerivedScoreNextActionSummary(), source: store.packetScoreSource("packetDerivedScoreNextActionSummary()"), systemImage: "arrow.triangle.2.circlepath"))
+        HealthOptionalRow(label: "Sleep provenance", value: healthStore.packetScoreProvenanceSummary("sleep"), source: healthStore.packetScoreSource("packetScoreProvenanceSummary(sleep)"), systemImage: "doc.text.magnifyingglass")
+        HealthInfoRow(row: HealthSummaryRow("Recovery", value: healthStore.recoveryFeatureScoreSummary(), source: healthStore.packetScoreSource("metrics.recovery_score_from_features"), systemImage: "battery.100percent"))
+        HealthInfoRow(row: HealthSummaryRow("Recovery vitals", value: healthStore.recoveryProvidedVitalsSummary(), source: healthStore.packetScoreSource("recoveryProvidedVitalsSummary()"), systemImage: "lungs"))
+        HealthOptionalRow(label: "Recovery provenance", value: healthStore.packetScoreProvenanceSummary("recovery"), source: healthStore.packetScoreSource("packetScoreProvenanceSummary(recovery)"), systemImage: "doc.text.magnifyingglass")
+        HealthInfoRow(row: HealthSummaryRow("Strain", value: healthStore.strainFeatureScoreSummary(), source: healthStore.packetScoreSource("metrics.strain_score_from_features"), systemImage: "figure.run"))
+        HealthOptionalRow(label: "Strain provenance", value: healthStore.packetScoreProvenanceSummary("strain"), source: healthStore.packetScoreSource("packetScoreProvenanceSummary(strain)"), systemImage: "doc.text.magnifyingglass")
+        HealthInfoRow(row: HealthSummaryRow("Stress", value: healthStore.stressFeatureScoreSummary(), source: healthStore.packetScoreSource("metrics.stress_score_from_features"), systemImage: "waveform.path.ecg"))
+        HealthOptionalRow(label: "Stress provenance", value: healthStore.packetScoreProvenanceSummary("stress"), source: healthStore.packetScoreSource("packetScoreProvenanceSummary(stress)"), systemImage: "doc.text.magnifyingglass")
+        HealthInfoRow(row: HealthSummaryRow("Next action", value: healthStore.packetDerivedScoreNextActionSummary(), source: healthStore.packetScoreSource("packetDerivedScoreNextActionSummary()"), systemImage: "arrow.triangle.2.circlepath"))
       }
     }
     .gooseListBackground()

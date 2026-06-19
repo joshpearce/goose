@@ -3,6 +3,8 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 build/
+Packages/**/.build/
+.claude/
 *.ipa
 *.dSYM
 *.xcarchive
@@ -29,3 +31,6 @@ server/**/.venv*/
 server/**/__pycache__/
 server/**/*.pyc
 server/**/*.pyo
+
+# Local protocol research notes — not for version control
+re-assets/

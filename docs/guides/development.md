@@ -12,7 +12,7 @@ GooseSwift/                    iOS app source — Swift/SwiftUI
 GooseWorkoutLiveActivityExtension/  ActivityKit Live Activity widget
 Rust/core/src/                 Rust static library source
 Rust/core/include/             C bridge header (goose_core_bridge.h)
-Rust/core/tests/               Rust integration tests (45 files)
+Rust/core/tests/               Rust integration tests (40+ files)
 Rust/iphoneos/                 Staged libgoose_core.a for device builds
 Rust/iphonesimulator/          Staged libgoose_core.a for simulator builds
 Scripts/build_ios_rust.sh      Xcode build phase — cross-compiles Rust to iOS
@@ -73,11 +73,9 @@ GooseAppModel.swift                         Core @Published state + owned object
 GooseAppModel+NotificationPipeline.swift    BLE notification handling
 GooseAppModel+ActivityRecording.swift       Activity session lifecycle
 GooseAppModel+ActivityTimeline.swift        Activity timeline refresh
+GooseAppModel+BandFirstSync.swift           Band first-sync coordination
 GooseAppModel+HealthCapture.swift           Health packet capture sessions
 GooseAppModel+Lifecycle.swift               App lifecycle events
-GooseAppModel+OvernightRun.swift            Overnight guard
-GooseAppModel+OvernightRecovery.swift       Overnight recovery state
-GooseAppModel+OvernightState.swift          Overnight guard state transitions
 GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
 GooseAppModel+SleepSync.swift               Band sleep session sync from BLE history
 GooseAppModel+Upload.swift                  Server upload trigger
@@ -91,11 +89,13 @@ GooseBLEClient+HistoricalCommands.swift     Historical sync command dispatch
 GooseBLEClient+HistoricalHandlers.swift     Historical sync response handling
 GooseBLEClient+HRMonitor.swift              HR monitor peripheral support
 GooseBLEClient+DebugAndSync.swift           Debug session + sync utilities
+GooseBLEClient+Haptics.swift                Haptic feedback on BLE events
 GooseBLEClient+UserActions.swift            User-facing BLE actions
 GooseBLEClient+VitalsAndLogging.swift       Vitals forwarding and BLE logging
 
 HealthDataStore.swift                       Metric query coordinator
 HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
+HealthDataStore+BaselineProgress.swift      EWMA baseline progress queries
 HealthDataStore+Cardio.swift                Cardio load queries
 HealthDataStore+CoachSummaries.swift        Coach summary queries
 HealthDataStore+Exercise.swift              Exercise session queries
@@ -129,8 +129,20 @@ When adding a new concern to `GooseAppModel`, `GooseBLEClient`, or `HealthDataSt
 | `com.goose.swift.capture-frame-enqueue` | `CaptureFrameWriteQueue` | Frame enqueue and back-pressure |
 | `com.goose.swift.capture-frame-writes` | `CaptureFrameWriteQueue` | SQLite batch writes via Rust |
 | `com.goose.swift.corebluetooth` | `GooseBLEClient` | CBCentralManager callbacks |
+| `com.goose.swift.historical-write` | `GooseBLEClient` | Historical sync SQLite writes |
 | `com.goose.swift.realtime-vitals` | `GooseBLEClient` | Real-time vitals forwarding |
 | `com.goose.swift.diagnostic-log` | `GooseBLEClient` | BLE diagnostic logging |
+| `com.goose.swift.ble-ui-state` | `BLEUIStateAggregator` | BLE UI state throttling |
+| `com.goose.swift.packet-ui-state` | `PacketUIStateAggregator` | Packet UI state throttling |
+| `com.goose.swift.heart-rate-sample-pipeline` | `HeartRateSeriesStores` | HR sample ingestion |
+| `com.goose.swift.heart-rate-series` | `HeartRateSeriesStores` | HR series write serialisation |
+| `com.goose.swift.hrv-series` | `HeartRateSeriesStores` | HRV series write serialisation |
+| `com.goose.swift.health-packet-family-aggregator` | `HealthPacketCaptureTypes` | Packet family aggregation |
+| `com.goose.swift.whoop-data-signal` | `WhoopDataSignalPipeline` | Inbound biometric signal dispatch |
+| `com.goose.swift.passive-activity-detection` | `PassiveActivityDetector` | Heuristic workout detection |
+| `com.goose.swift.overnight-raw-spool` | `OvernightRawNotificationSpool` | Raw notification spooling overnight |
+| `com.goose.swift.overnight-sqlite-mirror` | `OvernightSQLiteMirrorQueue` | Overnight mirror writes to SQLite |
+| `com.goose.swift.network-monitor` | `GooseNetworkMonitor` | Network reachability monitoring |
 
 `GooseUploadService` uses the Swift cooperative thread pool (async/await Tasks) rather than a named `DispatchQueue`.
 
@@ -154,7 +166,7 @@ The Rust bridge (`GooseRustBridge.request(...)`) is a **blocking synchronous cal
 
 ### Running tests
 
-The Rust core has 45 integration test files in `Rust/core/tests/`. Run the full test suite with Cargo from the project root or from `Rust/core`:
+The Rust core has integration test files in `Rust/core/tests/`. Run the full test suite with Cargo from the project root or from `Rust/core`:
 
 ```bash
 # From project root
@@ -177,6 +189,8 @@ cargo test -p goose-core --test bridge_tests test_version
 ```
 
 Unit tests within `src/` follow standard Rust conventions (`#[cfg(test)]` blocks). The Cargo target directory defaults to `build/rust-target/goose-core` to keep build products outside the source tree.
+
+The Rust crate uses **Edition 2024** with MSRV `1.96`.
 
 ### Bridge architecture
 
@@ -215,21 +229,15 @@ char *goose_core_version_json(void);
 
 On failure `ok` is `false` and `error: { "code": "method_error", "message": "..." }` is present.
 
-### v5.0 Rust modules
+`BRIDGE_METHODS` (a `&[&str]` constant in `bridge.rs`) lists all 148 dispatched methods and is verified by the unit test `bridge_methods_constant_matches_dispatcher`.
 
-Three modules were added or significantly updated in v5.0. Developers working on metrics should be aware of them:
+### SQLite schema
 
-| Module | File | Purpose |
-|---|---|---|
-| `exercise_detection` | `src/exercise_detection.rs` | Detects exercise sessions from HR and gravity samples using the same constants as `exercise.py` in the server pipeline (`MIN_EXERCISE_MIN = 10 min`, `MERGE_GAP_S = 60 s`, `MOTION_THRESHOLD = 0.20 g`). |
-| `baselines` | `src/baselines.rs` | EWMA personal baseline engine for HRV RMSSD and resting HR. Alpha = 0.0483 (14-night half-life; `1 − 0.5^(1/14)`). Cold-start gate: z-scores are `None` until 4 nights; baseline marked ready after 7 nights; trusted after 14. Reconstructs state from `daily_recovery_metrics` rows — no new SQLite table. |
-| `store` | `src/store.rs` | SQLite schema at version 19 (`CURRENT_SCHEMA_VERSION = 19`). New in v5.0: `exercise_sessions` table and the v19 migration. Schema is applied by `GooseStore::open` on every startup. |
-
-The `exercise_detection_tests.rs` integration test file covers `exercise_detection`. The `store_tests.rs` file verifies the v19 schema version assertion.
+The Rust store manages the SQLite schema at **version 21** (`CURRENT_SCHEMA_VERSION = 21` in `src/store.rs`). Migrations are applied automatically by `GooseStore::open` on every startup. When adding or modifying tables, increment `CURRENT_SCHEMA_VERSION` and add a migration arm to the migration match block in `store.rs`.
 
 ### Adding a new bridge method
 
-The complete method list is in `BRIDGE_METHODS` (a `&[&str]` constant in `bridge.rs`) and verified by the test `bridge_methods_constant_matches_dispatcher`. When adding a new method:
+When adding a new method:
 
 1. Add the method name string to `BRIDGE_METHODS` in alphabetical order within its namespace prefix.
 2. Add a `#[derive(Debug, Clone, Deserialize)]` args struct (e.g. `struct MyMethodArgs { database_path: String, ... }`).
@@ -363,13 +371,17 @@ def my_new_route(device: str):
 The OpenAPI schema is intentionally disabled (`docs_url=None, redoc_url=None, openapi_url=None`) — do not re-enable it without reviewing whether the endpoint surface should be public.
 
 **File responsibilities:**
-- `main.py` — route definitions and request/response models (Pydantic `BaseModel`)
-- `store.py` — idempotent DB upserts (`ON CONFLICT DO UPDATE / DO NOTHING`)
-- `read.py` — read queries returning dicts/lists
-- `ingest.py` — raw BLE frame batch pipeline (legacy path)
-- `db.py` — schema bootstrap (`bootstrap_schema` re-applies `init.sql` idempotently on every startup)
-- `config.py` — reads `GOOSE_API_KEY`, `GOOSE_DB_DSN`, `GOOSE_RAW_ROOT` from environment
-- `analysis/daily.py` — `compute_day(conn, device_id, day)` orchestrates the daily sleep → recovery → strain → exercise pipeline
+
+| File | Purpose |
+|---|---|
+| `main.py` | Route definitions and request/response models (Pydantic `BaseModel`) |
+| `store.py` | Idempotent DB upserts (`ON CONFLICT DO UPDATE / DO NOTHING`) |
+| `read.py` | Read queries returning dicts/lists |
+| `ingest.py` | Raw BLE frame batch pipeline (legacy path) |
+| `archive.py` | Raw archive handling and extraction |
+| `db.py` | Schema bootstrap (`bootstrap_schema` re-applies `init.sql` idempotently on every startup) |
+| `config.py` | Reads `GOOSE_API_KEY`, `GOOSE_DB_DSN`, `GOOSE_RAW_ROOT` from environment |
+| `analysis/daily.py` | `compute_day(conn, device_id, day)` orchestrates the daily sleep → recovery → strain → exercise pipeline |
 
 ### TimescaleDB schema
 

@@ -3,7 +3,7 @@ import SwiftUI
 struct CoachView: View {
   @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @State private var registry = CoachProviderRegistry()
   @State private var chat: CoachChatModel
   @State private var promptDraft = ""
@@ -11,8 +11,7 @@ struct CoachView: View {
   @State private var showingChat = false
   @State private var showingSettings = false
 
-  init(healthStore: HealthDataStore) {
-    self.healthStore = healthStore
+  init() {
     let registry = CoachProviderRegistry()
     self._registry = State(initialValue: registry)
     self._chat = State(initialValue: CoachChatModel(registry: registry))
@@ -32,8 +31,7 @@ struct CoachView: View {
         },
       openHealth: router.openHealth,
       openMore: router.openMore,
-      openChatPrompt: openChat(prompt:),
-      healthStore: healthStore
+      openChatPrompt: openChat(prompt:)
     )
     .gooseScreenBackground()
     .navigationTitle("Coach")
@@ -121,7 +119,6 @@ struct CoachView: View {
     if chat.isSignedIn {
       CoachChatScreen(
         chat: chat,
-        healthStore: healthStore,
         appModel: model,
         draft: $promptDraft,
         scrollToBottomRequestID: router.coachScrollToBottomRequestID
@@ -438,7 +435,7 @@ private struct CoachOverviewScreen: View {
   let openHealth: (HealthRoute?) -> Void
   let openMore: (MoreRoute?) -> Void
   let openChatPrompt: (String) -> Void
-  var healthStore: HealthDataStore
+  @Environment(HealthDataStore.self) private var healthStore
   @State private var showingJournal = false
   @State private var todayEntry: DailyJournalEntry? = DailyJournalStore.today()
   @State private var vowDismissed = false
@@ -467,7 +464,7 @@ private struct CoachOverviewScreen: View {
           .transition(.opacity)
         }
 
-        CoachRoutesSection(healthStore: healthStore)
+        CoachRoutesSection()
 
         CoachOverviewSectionTitle("Metric Highlights")
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -1043,8 +1040,9 @@ private struct CoachJournalCard: View {
 
 #Preview("Signed out") {
   NavigationStack {
-    CoachView(healthStore: HealthDataStore())
+    CoachView()
       .environment(GooseAppModel(startBLE: false))
+      .environment(HealthDataStore())
       .environmentObject(AppRouter())
   }
 }

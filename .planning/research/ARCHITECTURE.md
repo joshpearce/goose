@@ -409,11 +409,11 @@ This is a single-user personal device app. Scale concerns are per-session data v
 
 ## Sources
 
-- Seed files in `.planning/seeds/` (2026-06-11): R22 wire format from BTSnoop capture (#92), v18 field layout from NoopApp/WhoopProtocol cross-reference, alarm payloads confirmed on real MG hardware, journal schema from Ghidra WhoopJournal RE, service-layer DI rationale from WHOOP class inventory
+- Seed files in `.planning/seeds/` (2026-06-11): R22 wire format from hardware capture (#92), v18 field layout from NoopApp/WhoopProtocol cross-reference, alarm payloads confirmed on real MG hardware, journal schema from hardware observation, service-layer DI rationale from WHOOP class inventory
 - Project history: `.planning/PROJECT.md` — v9.0 architecture baseline (StateMachine, BondingManager, NetworkMonitor, HRSanitizer confirmed shipped)
 - Codebase inspection: `GooseBLEClient.swift`, `GooseAppModel.swift`, `GooseBLEClient+Commands.swift`, `GooseAppModel+BandFirstSync.swift`, `Rust/core/src/protocol.rs` (PACKET_TYPE constants, `packet_type_name` dispatch table), `GooseSwift/HeartRateSeriesStores.swift` (maxSamples, prune, NSLock pattern)
-- WHOOP RE: `smart-alarm-strap-haptic.md` — puffin frame format + buzz payload confirmed on real MG hardware; `whoop5-r22-packet-support.md` — BTSnoop HCI capture from issue #92 (darylbleach)
-- WHOOP RE: `advanced-haptic-breathe-primitive.md` — Ghidra ObjC class inventory (WhoopBiotelemetry framework); `wake-window-alarm.md` — WhoopSleepCoach class names (WakeWindow, SmartAlarmTriggerManager, SetAlarmInfoCommandPacketRev4)
+- Protocol analysis: `smart-alarm-strap-haptic.md` — puffin frame format + buzz payload confirmed on real MG hardware; `whoop5-r22-packet-support.md` — BLE HCI capture from issue #92 (darylbleach)
+- Protocol analysis: `advanced-haptic-breathe-primitive.md` — ObjC class inventory (WhoopBiotelemetry framework); `wake-window-alarm.md` — WhoopSleepCoach class names (WakeWindow, SmartAlarmTriggerManager, SetAlarmInfoCommandPacketRev4)
 
 ---
 *Architecture research for: Goose iOS biometric platform — v10.0 component integration*

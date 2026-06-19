@@ -1019,9 +1019,9 @@ fn step_capture_validation_next_actions(
     let mut actions = Vec::new();
     for issue in issues {
         let (summary, action): (&str, String) = match issue.as_str() {
-            _ if official_label_policy_issue_action(issue).is_some() => (
+            _ if let Some(action) = official_label_policy_issue_action(issue) => (
                 "Official WHOOP label provenance is not marked as validation-only",
-                official_label_policy_issue_action(issue).unwrap().to_string(),
+                action.to_string(),
             ),
             "no_step_delta_validation_label" => (
                 "No manual or official-app step delta label was supplied",

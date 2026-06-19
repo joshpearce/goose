@@ -75,7 +75,7 @@ extension GooseAppModel {
       importedFrameCount: 0
     )
     Task { await self.strainAccumulator.reset() }
-    activityPersistenceStatus = syncStatus == "candidate" ? "Candidate \(activity.title)" : "Recording \(activity.title)"
+    healthState.activityPersistenceStatus = syncStatus == "candidate" ? "Candidate \(activity.title)" : "Recording \(activity.title)"
 
     if ownsCaptureSession {
       do {
@@ -186,7 +186,7 @@ extension GooseAppModel {
     activeActivityPersistence = nil
     activeActivityOwnsCaptureSession = false
     Task { await self.strainAccumulator.freeze() }
-    liveWorkoutStrain = 0
+    bleState.liveWorkoutStrain = 0
 
     let sessionID = persistence?.activitySessionID ?? "ios.activity.\(UUID().uuidString)"
     let captureSessionID = persistence?.captureSessionID
@@ -312,7 +312,7 @@ extension GooseAppModel {
       let storedPrefix = sessionSyncStatus == "candidate" ? "Stored candidate" : "Stored"
       let storedDistance = storesLocationMetrics ? " \(formatPersistedDistance(distanceMeters))" : ""
       let logDistance = storesLocationMetrics ? "\(Int(distanceMeters.rounded()))m" : "no distance"
-      activityPersistenceStatus = "\(storedPrefix) \(activity.title)\(storedDistance)"
+      healthState.activityPersistenceStatus = "\(storedPrefix) \(activity.title)\(storedDistance)"
       ble.record(source: "rust", title: "activity.session.store.ok", body: "\(sessionID) \(activityType) \(logDistance)")
       refreshActivityTimeline(for: end)
       if shouldFinishSharedHealthCapture {
@@ -321,7 +321,7 @@ extension GooseAppModel {
         ble.stopMovementHeartRateCapture()
       }
     } catch {
-      activityPersistenceStatus = "Activity store failed"
+      healthState.activityPersistenceStatus = "Activity store failed"
       ble.record(level: .error, source: "rust", title: "activity.session.store.failed", body: String(describing: error))
       if shouldFinishSharedHealthCapture {
         stopHealthPacketCapture(reason: "activity_store_failed")

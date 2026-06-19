@@ -115,8 +115,12 @@ pub fn detect_exercise_sessions(
     }
 
     // Step 4 — Align HR and smoothed gravity via nearest-neighbor within ALIGN_TOLERANCE_S
+    // Sort hr by timestamp to ensure gap computation in Step 5 is time-ordered,
+    // mirroring the sorted_gravity treatment above.
+    let mut hr_sorted: Vec<&HrSample> = hr.iter().collect();
+    hr_sorted.sort_by(|a, b| a.ts.partial_cmp(&b.ts).unwrap_or(std::cmp::Ordering::Equal));
     let mut aligned: Vec<AlignedPair> = Vec::new();
-    for sample in hr {
+    for sample in &hr_sorted {
         // Find gravity row with minimum |ts_gravity - ts_hr| <= ALIGN_TOLERANCE_S
         let best = smoothed_gravity
             .iter()
@@ -497,7 +501,10 @@ mod tests {
             });
         }
         // Sort by ts
-        hr.sort_by(|a, b| a.ts.partial_cmp(&b.ts).unwrap());
+        hr.sort_by(|a, b| {
+            a.ts.partial_cmp(&b.ts)
+                .expect("HrSample ts values must be finite (no NaN) in test fixtures")
+        });
 
         // Gravity: all samples active (> threshold)
         let gravity: Vec<GravityRow> = hr.iter().map(|s| make_gravity(s.ts, 0.30)).collect();

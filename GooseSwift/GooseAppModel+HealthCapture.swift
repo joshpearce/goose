@@ -51,15 +51,15 @@ extension GooseAppModel {
         }
         switch result {
         case .success(let refresh):
-          self.homeActivityTimelineItems = refresh.items
-          self.homeActivityTimelineStatus = refresh.status
+          self.healthState.homeActivityTimelineItems = refresh.items
+          self.healthState.homeActivityTimelineStatus = refresh.status
           self.ble.record(
             source: "activity.timeline",
             title: "home.refresh.ok",
             body: "\(refresh.status) | \(Self.captureTimestampFormatter.string(from: dayStart))-\(Self.captureTimestampFormatter.string(from: dayEnd))"
           )
         case .failure(let error):
-          self.homeActivityTimelineStatus = "Activity timeline failed"
+          self.healthState.homeActivityTimelineStatus = "Activity timeline failed"
           self.ble.record(level: .warn, source: "activity.timeline", title: "home.refresh.failed", body: String(describing: error))
         }
       }
@@ -85,13 +85,13 @@ extension GooseAppModel {
   ) {
     ble.record(source: "health.packet_capture", title: "start.requested", body: "source=\(source)")
     guard ble.connectionState == "ready" else {
-      healthPacketCaptureStatus = "Connect WHOOP first. Current state: \(ble.connectionState)"
-      ble.record(level: .warn, source: "health.packet_capture", title: "start.blocked", body: healthPacketCaptureStatus)
+      healthState.healthPacketCaptureStatus = "Connect WHOOP first. Current state: \(ble.connectionState)"
+      ble.record(level: .warn, source: "health.packet_capture", title: "start.blocked", body: healthState.healthPacketCaptureStatus)
       return
     }
     guard activeHealthPacketCapture == nil else {
-      healthPacketCaptureStatus = "Capture already active: \(healthPacketCaptureSessionID?.prefix(8) ?? "?")"
-      ble.record(level: .debug, source: "health.packet_capture", title: "start.skipped", body: healthPacketCaptureStatus)
+      healthState.healthPacketCaptureStatus = "Capture already active: \(healthState.healthPacketCaptureSessionID?.prefix(8) ?? "?")"
+      ble.record(level: .debug, source: "health.packet_capture", title: "start.skipped", body: healthState.healthPacketCaptureStatus)
       return
     }
 
@@ -131,28 +131,28 @@ extension GooseAppModel {
         importedFrameCount: 0
       )
       healthPacketCaptureStreamRetryAttempt = 0
-      healthPacketCaptureSessionID = sessionID
-      healthPacketCaptureStartedAt = startedAt
-      healthPacketCaptureFrameCount = 0
+      healthState.healthPacketCaptureSessionID = sessionID
+      healthState.healthPacketCaptureStartedAt = startedAt
+      healthState.healthPacketCaptureFrameCount = 0
       healthPacketCaptureFamilyRowsByID.removeAll()
-      healthPacketCaptureFamilyRows = []
+      healthState.healthPacketCaptureFamilyRows = []
       healthPacketCaptureFamilyAggregator.reset()
       pendingHealthPacketCaptureLastPacketSummary = nil
       lastRestingHeartRateFrameWriteAt = .distantPast
       healthPacketCaptureUIUpdateWorkItem?.cancel()
       healthPacketCaptureUIUpdateWorkItem = nil
       lastHealthPacketCaptureUIUpdatedAt = Date.distantPast
-      healthPacketCaptureTargetSummary = mode.initialTargetSummary
-      healthPacketCaptureLastPacketSummary = "Waiting for packets"
-      healthPacketCaptureStatus = "\(mode.statusPrefix) for \(healthPacketCaptureDurationText(duration))"
+      healthState.healthPacketCaptureTargetSummary = mode.initialTargetSummary
+      healthState.healthPacketCaptureLastPacketSummary = "Waiting for packets"
+      healthState.healthPacketCaptureStatus = "\(mode.statusPrefix) for \(healthPacketCaptureDurationText(duration))"
       ble.record(source: "health.packet_capture", title: "start.ok", body: "\(sessionID) mode=\(mode.rawValue) duration=\(Int(duration.rounded()))s")
       requestStreamsForActiveCapture(reason: "capture_start")
       scheduleHistoricalSyncForPhysiologyCaptureIfNeeded(mode: mode)
       scheduleHealthPacketCaptureTimeout(duration: duration)
     } catch {
-      healthPacketCaptureStatus = "Start failed: \(String(describing: error))"
-      healthPacketCaptureSessionID = nil
-      healthPacketCaptureStartedAt = nil
+      healthState.healthPacketCaptureStatus = "Start failed: \(String(describing: error))"
+      healthState.healthPacketCaptureSessionID = nil
+      healthState.healthPacketCaptureStartedAt = nil
       ble.record(level: .error, source: "health.packet_capture", title: "start.failed", body: String(describing: error))
     }
   }
@@ -163,7 +163,7 @@ extension GooseAppModel {
     temperatureHistorySyncWorkItem?.cancel()
     flushCaptureFrameEnqueueUpdates()
     guard let capture = activeHealthPacketCapture else {
-      healthPacketCaptureStatus = "No active health packet capture"
+      healthState.healthPacketCaptureStatus = "No active health packet capture"
       ble.record(level: .debug, source: "health.packet_capture", title: "stop.skipped", body: reason)
       return
     }
@@ -173,7 +173,7 @@ extension GooseAppModel {
        activeActivityPersistence?.detectionMethod == "user_assigned",
        reason != "activity_finished",
        reason != "activity_store_failed" {
-      healthPacketCaptureStatus = "Capture timer elapsed; keeping stream open for workout"
+      healthState.healthPacketCaptureStatus = "Capture timer elapsed; keeping stream open for workout"
       ble.record(
         source: "health.packet_capture",
         title: "finish.deferred_active_activity",
@@ -211,10 +211,10 @@ extension GooseAppModel {
       )
       activeHealthPacketCapture = nil
       healthPacketCaptureStreamRetryAttempt = 0
-      healthPacketCaptureSessionID = nil
-      healthPacketCaptureStartedAt = nil
-      healthPacketCaptureStatus = "Stopped \(capture.importedFrameCount) frames (\(reason))"
-      healthPacketCaptureFrameCount = capture.importedFrameCount
+      healthState.healthPacketCaptureSessionID = nil
+      healthState.healthPacketCaptureStartedAt = nil
+      healthState.healthPacketCaptureStatus = "Stopped \(capture.importedFrameCount) frames (\(reason))"
+      healthState.healthPacketCaptureFrameCount = capture.importedFrameCount
       publishHealthPacketCaptureUIUpdate()
       publishPacketImportRevision()
       ble.record(source: "health.packet_capture", title: "finish.ok", body: "\(capture.sessionID) frames=\(capture.importedFrameCount) reason=\(reason)")
@@ -224,7 +224,7 @@ extension GooseAppModel {
         ble.stopPhysiologySignalCapture()
       }
     } catch {
-      healthPacketCaptureStatus = "Finish failed: \(String(describing: error))"
+      healthState.healthPacketCaptureStatus = "Finish failed: \(String(describing: error))"
       ble.record(level: .error, source: "health.packet_capture", title: "finish.failed", body: String(describing: error))
     }
   }
@@ -236,49 +236,49 @@ extension GooseAppModel {
       body: "duration=\(Int(duration.rounded()))s sync=\(ble.historicalSyncStatus) canSync=\(ble.canSyncHistorical)"
     )
     guard ble.connectionState == "ready" else {
-      respiratoryPacketWatchStatus = "Connect WHOOP first. Current state: \(ble.connectionState)"
-      ble.record(level: .warn, source: "respiratory.packet_watch", title: "start.blocked", body: respiratoryPacketWatchStatus)
+      healthState.respiratoryPacketWatchStatus = "Connect WHOOP first. Current state: \(ble.connectionState)"
+      ble.record(level: .warn, source: "respiratory.packet_watch", title: "start.blocked", body: healthState.respiratoryPacketWatchStatus)
       return
     }
-    guard !respiratoryPacketWatchActive else {
-      respiratoryPacketWatchStatus = "Already watching K18 respiratory history"
-      ble.record(level: .debug, source: "respiratory.packet_watch", title: "start.skipped", body: respiratoryPacketWatchStatus)
+    guard !healthState.respiratoryPacketWatchActive else {
+      healthState.respiratoryPacketWatchStatus = "Already watching K18 respiratory history"
+      ble.record(level: .debug, source: "respiratory.packet_watch", title: "start.skipped", body: healthState.respiratoryPacketWatchStatus)
       return
     }
 
-    respiratoryPacketWatchActive = true
+    healthState.respiratoryPacketWatchActive = true
     respiratoryPacketWatchK18Count = 0
     respiratoryPacketWatchK24Count = 0
     respiratoryPacketWatchStartedAt = Date()
-    respiratoryPacketWatchStatus = "Watching K18 respiratory history for \(healthPacketCaptureDurationText(duration))"
+    healthState.respiratoryPacketWatchStatus = "Watching K18 respiratory history for \(healthPacketCaptureDurationText(duration))"
     scheduleRespiratoryPacketWatchTimeout(duration: duration)
 
     if ble.isHistoricalSyncing {
-      respiratoryPacketWatchStatus = "Watching active historical sync for K18 respiratory history"
+      healthState.respiratoryPacketWatchStatus = "Watching active historical sync for K18 respiratory history"
       return
     }
     guard ble.canSyncHistorical else {
-      respiratoryPacketWatchStatus = "Watching passively; historical sync unavailable: \(ble.historicalSyncStatus)"
+      healthState.respiratoryPacketWatchStatus = "Watching passively; historical sync unavailable: \(ble.historicalSyncStatus)"
       ble.record(level: .warn, source: "respiratory.packet_watch", title: "history_sync.unavailable", body: ble.historicalSyncStatus)
       return
     }
 
-    respiratoryPacketWatchStatus = "Requested historical sync; watching for K18 respiratory history"
+    healthState.respiratoryPacketWatchStatus = "Requested historical sync; watching for K18 respiratory history"
     ble.syncHistoricalPackets(rangeFirst: true)
   }
 
   func stopRespiratoryPacketWatch(reason: String = "manual_stop") {
     respiratoryPacketWatchTimeoutWorkItem?.cancel()
     respiratoryPacketWatchTimeoutWorkItem = nil
-    guard respiratoryPacketWatchActive else {
-      respiratoryPacketWatchStatus = "No active K18 respiratory history watch"
+    guard healthState.respiratoryPacketWatchActive else {
+      healthState.respiratoryPacketWatchStatus = "No active K18 respiratory history watch"
       ble.record(level: .debug, source: "respiratory.packet_watch", title: "stop.skipped", body: reason)
       return
     }
 
-    respiratoryPacketWatchActive = false
-    respiratoryPacketWatchStatus = "Stopped K18 watch: K18 \(respiratoryPacketWatchK18Count) | K24 \(respiratoryPacketWatchK24Count) (\(reason))"
-    ble.record(source: "respiratory.packet_watch", title: "stop.ok", body: respiratoryPacketWatchStatus)
+    healthState.respiratoryPacketWatchActive = false
+    healthState.respiratoryPacketWatchStatus = "Stopped K18 watch: K18 \(respiratoryPacketWatchK18Count) | K24 \(respiratoryPacketWatchK24Count) (\(reason))"
+    ble.record(source: "respiratory.packet_watch", title: "stop.ok", body: healthState.respiratoryPacketWatchStatus)
   }
 
   func scheduleRespiratoryPacketWatchTimeout(duration: TimeInterval) {
@@ -296,21 +296,21 @@ extension GooseAppModel {
   }
 
   func finishRespiratoryPacketWatchTimedOut() {
-    guard respiratoryPacketWatchActive else {
+    guard healthState.respiratoryPacketWatchActive else {
       return
     }
     respiratoryPacketWatchTimeoutWorkItem?.cancel()
     respiratoryPacketWatchTimeoutWorkItem = nil
-    respiratoryPacketWatchActive = false
-    respiratoryPacketWatchStatus = "Timed out waiting for K18: K18 \(respiratoryPacketWatchK18Count) | K24 \(respiratoryPacketWatchK24Count)"
-    ble.record(level: .warn, source: "respiratory.packet_watch", title: "timeout", body: respiratoryPacketWatchStatus)
+    healthState.respiratoryPacketWatchActive = false
+    healthState.respiratoryPacketWatchStatus = "Timed out waiting for K18: K18 \(respiratoryPacketWatchK18Count) | K24 \(respiratoryPacketWatchK24Count)"
+    ble.record(level: .warn, source: "respiratory.packet_watch", title: "timeout", body: healthState.respiratoryPacketWatchStatus)
   }
 
   func handleHistoricalSyncProgress(_ progress: GooseHistoricalSyncProgress) {
     if progress.isTerminal && !progress.failed {
-      onHistoricalSyncCompleted?()
+      Task { await healthStore.runPacketInputs() }
     }
-    guard respiratoryPacketWatchActive else {
+    guard healthState.respiratoryPacketWatchActive else {
       return
     }
 
@@ -318,29 +318,29 @@ extension GooseAppModel {
     if progress.failed {
       respiratoryPacketWatchTimeoutWorkItem?.cancel()
       respiratoryPacketWatchTimeoutWorkItem = nil
-      respiratoryPacketWatchActive = false
-      respiratoryPacketWatchStatus = "Sync failed before K18: \(progress.detail) | \(counts)"
-      ble.record(level: .warn, source: "respiratory.packet_watch", title: "sync.failed", body: respiratoryPacketWatchStatus)
+      healthState.respiratoryPacketWatchActive = false
+      healthState.respiratoryPacketWatchStatus = "Sync failed before K18: \(progress.detail) | \(counts)"
+      ble.record(level: .warn, source: "respiratory.packet_watch", title: "sync.failed", body: healthState.respiratoryPacketWatchStatus)
       return
     }
 
     if progress.isTerminal {
       respiratoryPacketWatchTimeoutWorkItem?.cancel()
       respiratoryPacketWatchTimeoutWorkItem = nil
-      respiratoryPacketWatchActive = false
-      respiratoryPacketWatchStatus = "Sync complete; no K18 found in \(progress.packetCount) packets | \(counts)"
-      ble.record(source: "respiratory.packet_watch", title: "sync.completed_without_k18", body: respiratoryPacketWatchStatus)
+      healthState.respiratoryPacketWatchActive = false
+      healthState.respiratoryPacketWatchStatus = "Sync complete; no K18 found in \(progress.packetCount) packets | \(counts)"
+      ble.record(source: "respiratory.packet_watch", title: "sync.completed_without_k18", body: healthState.respiratoryPacketWatchStatus)
       return
     }
 
-    respiratoryPacketWatchStatus = "Sync \(progress.status): \(progress.detail) | packets \(progress.packetCount) | \(counts)"
+    healthState.respiratoryPacketWatchStatus = "Sync \(progress.status): \(progress.detail) | packets \(progress.packetCount) | \(counts)"
   }
 
   func startHRMonitorCapture(source: String = "auto.hr_monitor_connected") {
     ble.record(source: "health.packet_capture", title: "hr_monitor.start.requested", body: "source=\(source)")
     guard ble.hrConnectionState == "connected" else {
-      healthPacketCaptureStatus = "HR monitor not connected. State: \(ble.hrConnectionState)"
-      ble.record(level: .warn, source: "health.packet_capture", title: "hr_monitor.start.blocked", body: healthPacketCaptureStatus)
+      healthState.healthPacketCaptureStatus = "HR monitor not connected. State: \(ble.hrConnectionState)"
+      ble.record(level: .warn, source: "health.packet_capture", title: "hr_monitor.start.blocked", body: healthState.healthPacketCaptureStatus)
       return
     }
     guard activeHealthPacketCapture == nil else {
@@ -381,25 +381,25 @@ extension GooseAppModel {
         mode: .hrMonitor,
         importedFrameCount: 0
       )
-      healthPacketCaptureSessionID = sessionID
-      healthPacketCaptureStartedAt = startedAt
-      healthPacketCaptureFrameCount = 0
+      healthState.healthPacketCaptureSessionID = sessionID
+      healthState.healthPacketCaptureStartedAt = startedAt
+      healthState.healthPacketCaptureFrameCount = 0
       healthPacketCaptureFamilyRowsByID.removeAll()
-      healthPacketCaptureFamilyRows = []
+      healthState.healthPacketCaptureFamilyRows = []
       healthPacketCaptureFamilyAggregator.reset()
       pendingHealthPacketCaptureLastPacketSummary = nil
       lastRestingHeartRateFrameWriteAt = .distantPast
       healthPacketCaptureUIUpdateWorkItem?.cancel()
       healthPacketCaptureUIUpdateWorkItem = nil
       lastHealthPacketCaptureUIUpdatedAt = Date.distantPast
-      healthPacketCaptureTargetSummary = HealthPacketCaptureMode.hrMonitor.initialTargetSummary
-      healthPacketCaptureLastPacketSummary = "Waiting for packets"
-      healthPacketCaptureStatus = "\(HealthPacketCaptureMode.hrMonitor.statusPrefix) — \(ble.activeDeviceName)"
+      healthState.healthPacketCaptureTargetSummary = HealthPacketCaptureMode.hrMonitor.initialTargetSummary
+      healthState.healthPacketCaptureLastPacketSummary = "Waiting for packets"
+      healthState.healthPacketCaptureStatus = "\(HealthPacketCaptureMode.hrMonitor.statusPrefix) — \(ble.activeDeviceName)"
       ble.record(source: "health.packet_capture", title: "hr_monitor.start.ok", body: "\(sessionID) mode=hr_monitor source=\(source)")
     } catch {
-      healthPacketCaptureStatus = "HR monitor start failed: \(String(describing: error))"
-      healthPacketCaptureSessionID = nil
-      healthPacketCaptureStartedAt = nil
+      healthState.healthPacketCaptureStatus = "HR monitor start failed: \(String(describing: error))"
+      healthState.healthPacketCaptureSessionID = nil
+      healthState.healthPacketCaptureStartedAt = nil
       ble.record(level: .error, source: "health.packet_capture", title: "hr_monitor.start.failed", body: String(describing: error))
     }
   }
@@ -423,15 +423,15 @@ extension GooseAppModel {
         ]
       )
       activeHealthPacketCapture = nil
-      healthPacketCaptureSessionID = nil
-      healthPacketCaptureStartedAt = nil
-      healthPacketCaptureFrameCount = capture.importedFrameCount
-      healthPacketCaptureStatus = "Stopped \(capture.importedFrameCount) HR monitor frames (\(reason))"
+      healthState.healthPacketCaptureSessionID = nil
+      healthState.healthPacketCaptureStartedAt = nil
+      healthState.healthPacketCaptureFrameCount = capture.importedFrameCount
+      healthState.healthPacketCaptureStatus = "Stopped \(capture.importedFrameCount) HR monitor frames (\(reason))"
       publishHealthPacketCaptureUIUpdate()
       publishPacketImportRevision()
       ble.record(source: "health.packet_capture", title: "hr_monitor.finish.ok", body: "\(capture.sessionID) frames=\(capture.importedFrameCount) reason=\(reason)")
     } catch {
-      healthPacketCaptureStatus = "HR monitor finish failed: \(String(describing: error))"
+      healthState.healthPacketCaptureStatus = "HR monitor finish failed: \(String(describing: error))"
       ble.record(level: .error, source: "health.packet_capture", title: "hr_monitor.finish.failed", body: String(describing: error))
     }
   }
@@ -466,7 +466,7 @@ extension GooseAppModel {
   func scheduleMovementHeartRateStreamRetryIfNeeded() {
     healthPacketCaptureStreamRetryWorkItem?.cancel()
     guard activeHealthPacketCapture?.mode == .walk,
-          healthPacketCaptureFrameCount == 0,
+          healthState.healthPacketCaptureFrameCount == 0,
           healthPacketCaptureStreamRetryAttempt < 12 else {
       return
     }
@@ -481,7 +481,7 @@ extension GooseAppModel {
   }
 
   func retryMovementHeartRateStreamIfNeeded() {
-    guard activeHealthPacketCapture?.mode == .walk, healthPacketCaptureFrameCount == 0 else {
+    guard activeHealthPacketCapture?.mode == .walk, healthState.healthPacketCaptureFrameCount == 0 else {
       return
     }
     healthPacketCaptureStreamRetryAttempt += 1
@@ -525,7 +525,7 @@ extension GooseAppModel {
   func schedulePhysiologyStreamRetryIfNeeded() {
     healthPacketCaptureStreamRetryWorkItem?.cancel()
     guard activeHealthPacketCapture?.mode == .physiology,
-          healthPacketCaptureFrameCount == 0,
+          healthState.healthPacketCaptureFrameCount == 0,
           healthPacketCaptureStreamRetryAttempt < 12 else {
       return
     }
@@ -540,7 +540,7 @@ extension GooseAppModel {
   }
 
   func retryPhysiologyStreamIfNeeded() {
-    guard activeHealthPacketCapture?.mode == .physiology, healthPacketCaptureFrameCount == 0 else {
+    guard activeHealthPacketCapture?.mode == .physiology, healthState.healthPacketCaptureFrameCount == 0 else {
       return
     }
     healthPacketCaptureStreamRetryAttempt += 1
@@ -558,7 +558,7 @@ extension GooseAppModel {
       body: "reason=\(reason) sync=\(ble.historicalSyncStatus) canSync=\(ble.canSyncHistorical)"
     )
     if ble.isHistoricalSyncing {
-      healthPacketCaptureStatus = "Capturing temperature from active historical sync"
+      healthState.healthPacketCaptureStatus = "Capturing temperature from active historical sync"
       return
     }
 
@@ -580,11 +580,11 @@ extension GooseAppModel {
     }
     temperatureHistorySyncWorkItem = nil
     if ble.isHistoricalSyncing {
-      healthPacketCaptureStatus = "Capturing temperature from active historical sync"
+      healthState.healthPacketCaptureStatus = "Capturing temperature from active historical sync"
       return
     }
     guard ble.canSyncHistorical else {
-      healthPacketCaptureStatus = "Temperature capture waiting for historical sync: \(ble.historicalSyncStatus)"
+      healthState.healthPacketCaptureStatus = "Temperature capture waiting for historical sync: \(ble.historicalSyncStatus)"
       ble.record(level: .warn, source: "health.packet_capture", title: "temperature.history.blocked", body: ble.historicalSyncStatus)
       return
     }
@@ -635,7 +635,7 @@ extension GooseAppModel {
       return
     }
     guard autoStartHealthPacketCaptureAttempt < 120 else {
-      healthPacketCaptureStatus = "Auto-start timed out waiting for WHOOP"
+      healthState.healthPacketCaptureStatus = "Auto-start timed out waiting for WHOOP"
       ble.record(level: .warn, source: "health.packet_capture", title: "auto_start.timeout", body: ble.connectionState)
       return
     }
@@ -644,7 +644,7 @@ extension GooseAppModel {
 
   func scheduleAutoStartRespiratoryPacketWatchIfNeeded() {
     guard autoStartRespiratoryPacketWatchOnReady,
-          !respiratoryPacketWatchActive else {
+          !healthState.respiratoryPacketWatchActive else {
       return
     }
     autoStartRespiratoryPacketWatchWorkItem?.cancel()
@@ -659,7 +659,7 @@ extension GooseAppModel {
 
   func attemptAutoStartRespiratoryPacketWatch() {
     guard autoStartRespiratoryPacketWatchOnReady,
-          !respiratoryPacketWatchActive else {
+          !healthState.respiratoryPacketWatchActive else {
       return
     }
     autoStartRespiratoryPacketWatchAttempt += 1
@@ -673,7 +673,7 @@ extension GooseAppModel {
       return
     }
     guard autoStartRespiratoryPacketWatchAttempt < 120 else {
-      respiratoryPacketWatchStatus = "Auto-start timed out waiting for WHOOP"
+      healthState.respiratoryPacketWatchStatus = "Auto-start timed out waiting for WHOOP"
       ble.record(level: .warn, source: "respiratory.packet_watch", title: "auto_start.timeout", body: ble.connectionState)
       return
     }

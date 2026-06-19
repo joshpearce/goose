@@ -163,7 +163,7 @@ extension String {
     }
   }
 
-  // MARK: - Capture Status (GooseAppModel.healthPacketCaptureStatus)
+  // MARK: - Capture Status (HealthState.healthPacketCaptureStatus)
   // Highly dynamic — pass through with known prefix localisation.
 
   var localizedCaptureStatus: String {
@@ -174,7 +174,7 @@ extension String {
     }
   }
 
-  // MARK: - Capture Target Summary (GooseAppModel.healthPacketCaptureTargetSummary)
+  // MARK: - Capture Target Summary (HealthState.healthPacketCaptureTargetSummary)
   // Highly dynamic — passthrough with known base value.
 
   var localizedCaptureTargetSummary: String {
@@ -184,7 +184,7 @@ extension String {
     }
   }
 
-  // MARK: - Activity Detection Status (GooseAppModel.activityDetectionStatus)
+  // MARK: - Activity Detection Status (HealthState.activityDetectionStatus)
   // Raw values include "Watching for movement packets", "Movement detected; priming GPS",
   //   "Candidate <title> recording", "Candidate <title> stored", dynamic pipeline strings.
 
@@ -195,7 +195,7 @@ extension String {
     }
   }
 
-  // MARK: - Packet Import Status (GooseAppModel.packetImportStatus)
+  // MARK: - Packet Import Status (HealthState.packetImportStatus)
   // Raw values include "No packet import", "Packet import failed", dynamic status strings.
 
   var localizedPacketImportStatus: String {

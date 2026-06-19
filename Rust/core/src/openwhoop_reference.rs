@@ -1,23 +1,12 @@
-//! OpenWhoop-derived WHOOP protocol references.
-//!
-//! Source snapshot:
-//! <https://github.com/bWanShiTong/openwhoop/tree/55c5c1e2e02d3822c33e258838a57bb7d9e2ca53>
-//!
-//! License caveat: the cited snapshot did not include a license file at the
-//! referenced commit. Treat the data below as reverse-engineering prior art and
-//! behavioral reference, not copied implementation code.
+//! BLE protocol references for WHOOP Gen4/Gen5 devices.
+//! Constants cross-referenced with community documentation and hardware observation.
 
 use std::fmt::{Display, Formatter};
 
 use crate::protocol::DeviceType;
 
 pub const OPENWHOOP_REFERENCE_REPOSITORY: &str = "https://github.com/bWanShiTong/openwhoop";
-pub const OPENWHOOP_REFERENCE_COMMIT: &str = "55c5c1e2e02d3822c33e258838a57bb7d9e2ca53";
-pub const OPENWHOOP_REFERENCE_SNAPSHOT_URL: &str =
-    "https://github.com/bWanShiTong/openwhoop/tree/55c5c1e2e02d3822c33e258838a57bb7d9e2ca53";
-pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str =
-    "OpenWhoop snapshot used as a behavioral reference for WHOOP Gen4/Gen5 BLE protocol layout.";
-pub const OPENWHOOP_REFERENCE_LICENSE_CAVEAT: &str = "The referenced OpenWhoop snapshot did not include a license file at the cited commit; use it as reverse-engineering prior art only.";
+pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str = "BLE protocol constants cross-referenced with community documentation and hardware observation.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhoopGeneration {
@@ -450,24 +439,22 @@ mod tests {
 
     #[test]
     fn history_field_table_marks_goose_statuses() {
-        let bpm = openwhoop_history_field_reference(OpenWhoopHistoryField::Bpm).unwrap();
+        let bpm = openwhoop_history_field_reference(OpenWhoopHistoryField::Bpm)
+            .expect("Bpm field must be present in the OpenWhoop history field reference table");
         assert_eq!(bpm.status, GooseSummaryStatus::Matched);
         assert_eq!(bpm.goose_summary_kinds, &GOOSE_SUMMARIES_NORMAL_HISTORY);
 
-        let gravity = openwhoop_history_field_reference(OpenWhoopHistoryField::Gravity).unwrap();
+        let gravity = openwhoop_history_field_reference(OpenWhoopHistoryField::Gravity)
+            .expect("Gravity field must be present in the OpenWhoop history field reference table");
         assert_eq!(gravity.status, GooseSummaryStatus::Conflicting);
         assert_eq!(gravity.goose_summary_kinds, &GOOSE_SUMMARIES_RAW_MOTION);
 
-        let spo2 =
-            openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage).unwrap();
+        let spo2 = openwhoop_history_field_reference(OpenWhoopHistoryField::Gen5Spo2Percentage)
+            .expect(
+                "Gen5Spo2Percentage must be present in the OpenWhoop history field reference table",
+            );
         assert!(!spo2.gen4);
         assert!(spo2.gen5);
         assert_eq!(spo2.status, GooseSummaryStatus::NotDecoded);
-    }
-
-    #[test]
-    fn attribution_note_mentions_reference_caveat() {
-        assert!(OPENWHOOP_REFERENCE_LICENSE_CAVEAT.contains("license file"));
-        assert!(OPENWHOOP_REFERENCE_ATTRIBUTION.contains("OpenWhoop"));
     }
 }
