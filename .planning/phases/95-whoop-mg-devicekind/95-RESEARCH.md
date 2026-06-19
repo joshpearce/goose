@@ -461,17 +461,13 @@ if capabilities.deviceKind == "WHOOP_MG" {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does the WHOOP MG peripheral name reliably contain "MG" or "WHOOP MG"?**
-   - What we know: APK marketing copy uses "WHOOP MG"; `WhoopDeviceName.MAVERICK` is the codename
-   - What's unclear: Whether the BLE advertisement local name string matches the product name
-   - Recommendation: Apply D-03 (best-effort); mark with `candidate_MG_advertisement_byte_unverified`; user can test against real MG device
+   - RESOLVED: Apply D-03 (best-effort from APK). Use `.lowercased().contains(" mg")` on peripheral name, annotated `candidate_MG_advertisement_byte_unverified`. Hardware-gated validation acceptable per D-05.
 
 2. **Should `device_kind` be added to `DeviceCapabilities` Rust struct or returned separately in bridge JSON?**
-   - What we know: Bridge currently returns `DeviceCapabilities` fields only (no `device_kind` in JSON)
-   - What's unclear: Whether adding `device_kind` to the Rust struct is the right boundary
-   - Recommendation: Simpler path — add `device_kind` to the bridge JSON response in `device_capabilities_bridge` by constructing the JSON manually, without modifying the `DeviceCapabilities` struct
+   - RESOLVED: Simpler path — add `device_kind` to the bridge JSON response in `device_capabilities_bridge` by constructing the JSON manually (include the string alongside the existing DeviceCapabilities fields), without modifying the `DeviceCapabilities` Rust struct. Plan 95-02 Task 1 implements this.
 
 ---
 
