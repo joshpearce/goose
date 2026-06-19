@@ -639,11 +639,12 @@ Plans:
   5. Bridge routing uses a central dispatch registry; `CommandDefinition` array is in sync
   6. `cargo test --locked` passes clean
 
-**Plans**:
+**Plans**: 3 plans
 
-- [ ] 93-01-PLAN.md — Investigate #156: trace HR data path for fw 50.38.1.0; identify and fix root cause (BUG-HR-01)
-- [ ] 93-02-PLAN.md — PACKET_TYPE enum + exhaustive match sites (PROTO-08)
-- [ ] 93-03-PLAN.md — Silent drop elimination + domain/parse sync + bridge registry (PROTO-09, PROTO-10, PROTO-11)
+Plans:
+- [ ] 93-01-PLAN.md — Fix BUG-HR-01: add R22Whoop5Hr arm to heart_rate_plan_from_row + r22_whoop5_hr to trusted_frames (Wave 1)
+- [ ] 93-02-PLAN.md — Introduce PacketType enum, delete 17 PACKET_TYPE_* constants, migrate 5 match sites (Wave 1)
+- [ ] 93-03-PLAN.md — Unknown variant in DataPacketBodySummary, replace wildcard, COMMAND_DEFINITIONS registry test (Wave 2)
 
 ---
 
