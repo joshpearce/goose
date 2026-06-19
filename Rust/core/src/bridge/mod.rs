@@ -1187,6 +1187,26 @@ mod tests {
             .expect("battery_pct must be present");
         assert_eq!(battery_pct, 85);
     }
+
+    /// PROTO-11: COMMAND_DEFINITIONS must serialise to a non-empty JSON array without error.
+    ///
+    /// This mirrors the "commands.definitions" bridge dispatch arm (debug.rs) which calls
+    /// serde_json::to_value(COMMAND_DEFINITIONS) at runtime. If the type ever loses its
+    /// Serialize impl, this test fails at compile time / test time — catching registry
+    /// drift before it reaches the bridge.
+    #[test]
+    fn commands_definitions_serialises_without_error() {
+        use crate::commands::COMMAND_DEFINITIONS;
+        let value = serde_json::to_value(COMMAND_DEFINITIONS)
+            .expect("COMMAND_DEFINITIONS must serialise to JSON without error");
+        let arr = value
+            .as_array()
+            .expect("COMMAND_DEFINITIONS must serialise as a JSON array");
+        assert!(
+            !arr.is_empty(),
+            "COMMAND_DEFINITIONS must not be empty"
+        );
+    }
 }
 
 #[cfg(target_os = "android")]

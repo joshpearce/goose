@@ -845,3 +845,91 @@ fn packet_type_from_u8_r22() {
     assert_eq!(PacketType::from(0x10u8), PacketType::R22RealtimeData);
     assert_eq!(u8::from(PacketType::R22RealtimeData), 0x10u8);
 }
+
+/// PROTO-09: an unhandled packet_k (99) must produce Unknown { packet_k: 99 } in body_summary
+/// and a warning string "unhandled_packet_k_99" — not a silent None drop.
+#[test]
+fn unknown_packet_k_warning() {
+    // Build a minimal data-packet payload: byte 0 = HistoricalData packet type,
+    // byte 1 = packet_k (99 — unhandled), bytes 2..13 = header filler, rest padding.
+    let mut payload = vec![u8::from(PacketType::HistoricalData), 99u8, 0u8];
+    // counter_or_page (4 bytes), timestamp_seconds (4 bytes), timestamp_subseconds (2 bytes)
+    payload.extend_from_slice(&0u32.to_le_bytes());
+    payload.extend_from_slice(&42u32.to_le_bytes());
+    payload.extend_from_slice(&0u16.to_le_bytes());
+    // body padding (a few extra bytes so body_offset=13 is in range)
+    payload.extend_from_slice(&[0u8; 4]);
+
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket {
+            packet_k,
+            body_summary,
+            warnings,
+            ..
+        } => {
+            assert_eq!(packet_k, Some(99));
+            assert_eq!(
+                body_summary,
+                Some(DataPacketBodySummary::Unknown { packet_k: 99 }),
+                "packet_k=99 must produce Unknown variant, not None"
+            );
+            assert!(
+                warnings.iter().any(|w| w == "unhandled_packet_k_99"),
+                "warnings must contain 'unhandled_packet_k_99', got: {warnings:?}"
+            );
+        }
+        other => panic!("expected DataPacket payload, got {other:?}"),
+    }
+}
+
+/// PROTO-09: DataPacketBodySummary::Unknown must serialise with kind="unknown" via the
+/// serde tag. This validates the JSON representation without needing bridge round-trip.
+#[test]
+fn unknown_packet_k_body_summary_kind() {
+    let summary = DataPacketBodySummary::Unknown { packet_k: 11 };
+    let value = serde_json::to_value(&summary).expect("Unknown must serialise to JSON");
+    assert_eq!(
+        value["kind"].as_str(),
+        Some("unknown"),
+        "Unknown must serialise with kind='unknown', got: {value}"
+    );
+    assert_eq!(
+        value["packet_k"].as_u64(),
+        Some(11),
+        "Unknown must preserve packet_k=11 in JSON, got: {value}"
+    );
+}
+
+/// PROTO-10: data_packet_domain() gap values (11, 16, 19, 20, 22, 25, 26) that have no
+/// dedicated parse arm must be handled by the Unknown catch-all — not silently dropped.
+#[test]
+fn domain_gap_packet_ks_produce_unknown() {
+    // These are the packet_k values listed in data_packet_domain() but absent from
+    // parse_data_packet_body_summary's explicit match arms (as of PROTO-09 fix).
+    let gap_ks: &[u8] = &[11, 16, 19, 20, 22, 25, 26];
+
+    for &k in gap_ks {
+        let mut payload = vec![u8::from(PacketType::HistoricalData), k, 0u8];
+        payload.extend_from_slice(&0u32.to_le_bytes()); // counter_or_page
+        payload.extend_from_slice(&0u32.to_le_bytes()); // timestamp_seconds
+        payload.extend_from_slice(&0u16.to_le_bytes()); // timestamp_subseconds
+        payload.extend_from_slice(&[0u8; 4]);           // body padding
+
+        let frame = build_v5_payload_frame(&payload);
+        let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+        match parsed.parsed_payload.unwrap() {
+            ParsedPayload::DataPacket { body_summary, .. } => {
+                assert_eq!(
+                    body_summary,
+                    Some(DataPacketBodySummary::Unknown { packet_k: k }),
+                    "packet_k={k} (domain gap) must produce Unknown variant (PROTO-10)"
+                );
+            }
+            other => panic!("packet_k={k}: expected DataPacket, got {other:?}"),
+        }
+    }
+}
