@@ -2,15 +2,17 @@
 gsd_state_version: 1.0
 milestone: v12.0
 milestone_name: milestone
-status: audit_pending
-stopped_at: Phase 91 Plan 02 complete — ALGO bibliographic comments in Rust files (commit 8f98267)
-last_updated: "2026-06-18T22:00:00.000Z"
-last_activity: 2026-06-18 -- Phase 91 complete — all 9 phases of v12.0 done; milestone audit pending
+current_phase: 0
+status: Awaiting next milestone
+stopped_at: Phase 87 Plan 02 complete — sleep domain in store/sleep.rs (commit 764cb04)
+last_updated: "2026-06-19T08:25:58.213Z"
+last_activity: 2026-06-19
+last_activity_desc: Milestone v12.0 completed and archived
 progress:
   total_phases: 9
   completed_phases: 9
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 38
+  completed_plans: 38
   percent: 100
 ---
 
@@ -25,12 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 ## Current Position
 
-Phase: 87 (store-rs-split) — EXECUTING
-Plan: 3 of 6 (Plan 02 complete)
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 87 Plan 02 complete — sleep domain moved to store/sleep.rs
-
-Progress: [██████████] 100%
+Phase: Milestone v12.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-19 — Milestone v12.0 completed and archived
 
 ## Performance Metrics
 
@@ -136,6 +136,4 @@ Next action: Execute 87-03 (next domain split in Wave 2)
 
 ## Operator Next Steps
 
-- Phase 85 gate plan complete — ARCH-03 SC1 (lint) and SC2 (catch_unwind) confirmed. SC3 partial: 2 pre-existing export_tests failures (sensor_sample_rows 18 vs 19) not caused by Phase 85.
-- Run /gsd-debug to investigate export_tests sensor_sample_rows failures before /gsd-verify-work
-- After verification: proceed to Phase 86 (bridge.rs split)
+- Start the next milestone with /gsd-new-milestone
