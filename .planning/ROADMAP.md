@@ -679,10 +679,11 @@ Plans:
   4. Device view shows "WHOOP MG" label for MG devices; no regression on Whoop4/Whoop5 identification
   5. `cargo test --locked` passes clean
 
-**Plans**:
+**Plans**: 2 plans
 
-- [ ] 95-01-PLAN.md — Research WHOOP MG BLE advertisement + add WhoopMg DeviceKind to Rust core (MG-01)
-- [ ] 95-02-PLAN.md — Swift advertisement parsing for WHOOP MG + connectedCapabilities update (MG-02)
+Plans:
+- [ ] 95-01-PLAN.md — Add DeviceKind::WhoopMg to Rust capabilities.rs + remap Maverick in protocol.rs (MG-01)
+- [ ] 95-02-PLAN.md — Swift: 3-way MG BLE detection + deviceKind bridge field + connectedDeviceGeneration label (MG-02)
 
 ---
 
