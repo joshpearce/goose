@@ -1,4 +1,5 @@
 # Requirements: Goose v13.0
+
 # Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export
 
 *Milestone goal: Fechar os bugs reportados no fork (export OOM, auth stuck, HR data), limpar a protocol layer (enum, silent drops), adicionar WHOOP MG como DeviceKind, corrigir métricas Gen4 em falta, e exportar dados WHOOP para HealthKit (Bevel integration).*
@@ -7,7 +8,7 @@
 
 ## Bug Fixes
 
-- [ ] **BUG-AUTH-01**: User can recover from WHOOP 5.0 auth stuck state — app detects retry exhaustion, surfaces clear "Reconnect WHOOP" prompt, halts retry loop (closes #154)
+- [x] **BUG-AUTH-01**: User can recover from WHOOP 5.0 auth stuck state — app detects retry exhaustion, surfaces clear "Reconnect WHOOP" prompt, halts retry loop (closes #154)
 - [ ] **BUG-EXP-01**: User can export on databases > 100 MB without OOM crash — validation pipeline passes manifest by reference/ID, not serialised object (closes #155 primary)
 - [ ] **BUG-EXP-02**: User running full raw export does not silently bypass safe defaults — `runFullRawExport()` respects `includeRawBytes = false` (closes #155 Bug 1)
 - [ ] **BUG-EXP-03**: User's export bundle creation calls `validate()` once — redundant bridge call in `createBundle()` removed (closes #155 Bug 2)

@@ -319,8 +319,10 @@ Plans:
 
 **Plans**: 2 plans
 Plans:
+
 - [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
 - [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+
 **UI hint**: yes
 
 ---
@@ -339,6 +341,7 @@ Plans:
 
 **Plans**: 3 plans
 Plans:
+
 - [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
 - [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
 - [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
@@ -358,10 +361,12 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
+
 - [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
 - [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
 - [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
 - [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+
 **UI hint**: yes
 
 ---
@@ -528,8 +533,10 @@ Plans:
 
 **Plans**: 2 plans
 Plans:
+
 - [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
 - [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+
 **UI hint**: yes
 
 ### Phase 89: BLE Actor Refactor
@@ -546,6 +553,7 @@ Plans:
 
 **Plans**: 3 plans
 Plans:
+
 - [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
 - [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
 - [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
@@ -563,10 +571,12 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
+
 - [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
 - [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
 - [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
 - [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+
 **UI hint**: yes
 
 ### Phase 91: Threading & Algorithm Comments
@@ -583,6 +593,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+
 - [ ] 91-01-PLAN.md — Swift threading invariant comments (COMM-02): GooseRustBridge, CaptureFrameWriteQueue, OvernightSQLiteMirrorQueue, GooseAppModel
 - [ ] 91-02-PLAN.md — Rust algorithm coefficient comments (COMM-03): Banister eTRIMP, EWMA alpha, Cole-Kripke scale
 
@@ -607,9 +618,10 @@ Plans:
   6. iOS build compiles without new warnings
 
 **Plans**:
-- [ ] 92-01-PLAN.md — Fix export OOM: manifest by-reference in validation pipeline; validate() dedup (BUG-EXP-01, BUG-EXP-03)
+1/3 plans executed
+
 - [ ] 92-02-PLAN.md — Fix export defaults + disable OOM-risk button (BUG-EXP-02, BUG-EXP-04)
-- [ ] 92-03-PLAN.md — Fix WHOOP 5.0 auth stuck state recovery (BUG-AUTH-01)
+- [x] 92-03-PLAN.md — Fix WHOOP 5.0 auth stuck state recovery (BUG-AUTH-01)
 
 ---
 
@@ -628,6 +640,7 @@ Plans:
   6. `cargo test --locked` passes clean
 
 **Plans**:
+
 - [ ] 93-01-PLAN.md — Investigate #156: trace HR data path for fw 50.38.1.0; identify and fix root cause (BUG-HR-01)
 - [ ] 93-02-PLAN.md — PACKET_TYPE enum + exhaustive match sites (PROTO-08)
 - [ ] 93-03-PLAN.md — Silent drop elimination + domain/parse sync + bridge registry (PROTO-09, PROTO-10, PROTO-11)
@@ -646,6 +659,7 @@ Plans:
   3. `cargo test --locked` passes clean; Rust test fixtures updated for new parse paths
 
 **Plans**:
+
 - [ ] 94-01-PLAN.md — Gen4 recovery metric parsing: respiratory_rate + skin_temp byte offsets in Rust (GEN4-06)
 - [ ] 94-02-PLAN.md — Gen4 packet47 page_sequence reassembly fix (SYNC-07)
 
@@ -665,6 +679,7 @@ Plans:
   5. `cargo test --locked` passes clean
 
 **Plans**:
+
 - [ ] 95-01-PLAN.md — Research WHOOP MG BLE advertisement + add WhoopMg DeviceKind to Rust core (MG-01)
 - [ ] 95-02-PLAN.md — Swift advertisement parsing for WHOOP MG + connectedCapabilities update (MG-02)
 
@@ -682,6 +697,7 @@ Plans:
   3. iOS build compiles without new warnings; `cargo test --locked` passes clean
 
 **Plans**:
+
 - [ ] 96-01-PLAN.md — Fix 9 silent try? bridge calls in Swift (BP-01)
 - [ ] 96-02-PLAN.md — Rust SQLite connection pool (BP-02)
 
@@ -701,6 +717,7 @@ Plans:
   5. iOS build compiles without new warnings; existing HealthKit read functionality unaffected
 
 **Plans**:
+
 - [ ] 97-01-PLAN.md — HealthKit write infrastructure: HKHealthStore setup, permission request, write helper (HK-01..HK-05 foundation)
 - [ ] 97-02-PLAN.md — Write HR + HRV samples to HealthKit from capture pipeline (HK-01, HK-02)
 - [ ] 97-03-PLAN.md — Write SpO2 + sleep sessions to HealthKit (HK-03, HK-04)
@@ -727,7 +744,7 @@ Plans:
 | 89 | 3/3 | Complete   | 2026-06-18 |
 | 90 | 4/4 | Complete   | 2026-06-18 |
 | 91 | 2/2 | Complete   | 2026-06-18 |
-| 92 | v13.0 | Pending | — |
+| 92 | 1/3 | In Progress|  |
 | 93 | v13.0 | Pending | — |
 | 94 | v13.0 | Pending | — |
 | 95 | v13.0 | Pending | — |
@@ -771,6 +788,9 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 5/6 plans executed
 Plans:
+
+- [ ] 92-01-PLAN.md
+
 **Wave 1**
 
 - [x] 60-01-PLAN.md — Delete overnight guard subsystem core (3 files + GooseAppModel state + overnight struct types)
