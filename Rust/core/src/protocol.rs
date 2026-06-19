@@ -166,7 +166,9 @@ impl DeviceType {
     pub fn device_kind(self) -> DeviceKind {
         match self {
             DeviceType::Gen4 => DeviceKind::Whoop4,
-            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
+            // WHOOP MG (Maverick hardware codename) is a distinct device kind
+            DeviceType::Maverick => DeviceKind::WhoopMg,
+            DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
             DeviceType::HrMonitor => DeviceKind::HrMonitor,
         }
     }
@@ -1337,8 +1339,8 @@ mod wire_protocol_tests {
     }
 
     #[test]
-    fn device_kind_maverick_is_whoop5() {
-        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::Whoop5);
+    fn device_kind_maverick_is_whoop_mg() {
+        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::WhoopMg);
     }
 
     #[test]
