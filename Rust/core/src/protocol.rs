@@ -319,9 +319,7 @@ pub enum DataPacketBodySummary {
     },
     /// Catch-all for packet_k values with no dedicated parse arm.
     /// Serialises as { "kind": "unknown", "packet_k": N }.
-    Unknown {
-        packet_k: u8,
-    },
+    Unknown { packet_k: u8 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -693,7 +691,10 @@ fn parse_data_packet_payload(payload: &[u8]) -> ParsedPayload {
     // the structured body_summary already carries all useful motion data,
     // and the large hex dump roughly doubles the stored JSON for these types.
     // body_hex remains populated for all other packet_k values.
-    let body_hex = if matches!(packet_k, Some(10) | Some(21) | Some(24)) {
+    // NOTE: pk=24 (V24History, Gen4 recovery data) is NOT a high-volume motion
+    // packet and must NOT be suppressed — its body_hex is consumed by Gen4 metric
+    // extraction. Only K10/K21 raw-motion frames qualify for PERF-05 suppression.
+    let body_hex = if matches!(packet_k, Some(10) | Some(21)) {
         String::new()
     } else {
         hex::encode(&payload[13.min(payload.len())..])
