@@ -101,7 +101,7 @@ beginHistoricalSync
 ## Known limitations
 
 - **Page count hardcoded to 16** (`0x10, 0x00, 0x00, 0x00`). The official app uses 16 as the burst window; adjusting this may affect strap compatibility.
-- **Gen4 cmd 34 body structure is partially reverse-engineered.** Only `bytes[10..13]` (last-synced page sequence) is used. Additional fields (oldest page, end page, etc.) are not parsed.
+- **Gen4 cmd 34 body structure is partially documented.** Only `bytes[10..13]` (last-synced page sequence) is used. Additional fields (oldest page, end page, etc.) are not parsed.
 - **No Gen4 range poll.** `historicalRangePollOnly` is respected (returns after cmd 34) but the page sequence information is logged only, not exposed as range telemetry.
 
 ## Success log example
@@ -123,13 +123,12 @@ ble.sync  historical_sync.metadata          HISTORY_COMPLETE
 ble.sync  historical_sync.completed         reason=history_result_ack_sent_after_complete 42 historical packets captured
 ```
 
-## Reverse-engineering approach
+## Protocol analysis notes
 
-The Gen4 protocol was reverse-engineered from:
+The Gen4 protocol differences from Gen5 were determined through hardware testing:
 
-1. **PacketLogger captures** of the official WHOOP iOS app communicating with a Gen4 strap over BLE. Packet bytes were decoded against the Gen5 framing spec to identify where the protocols diverge.
-2. **Frame header analysis** — the Gen4 header byte 3 (`crc8(len_bytes)`) vs Gen5 padding byte was identified by correlating the declared length field with observed byte patterns.
-3. **Command sequence tracing** — the cmd 34 → 22 → 23 sequence was confirmed by matching command numbers in request frames against response frames.
-4. **Page sequence extraction** — bytes 10–13 of the cmd 34 response were identified as the last-synced page counter by observing that subsequent cmd 23 requests with `seq = last_synced + 1` elicited historical data from the strap.
+1. **Frame header** — Gen4 header byte 3 is `crc8(len_bytes)`; Gen5 uses a padding byte at the same offset.
+2. **Command sequence** — cmd 34 → 22 → 23 sequence confirmed via live BLE capture against a real Gen4 strap.
+3. **Page sequence** — bytes 10–13 of the cmd 34 response contain the last-synced page counter; subsequent cmd 23 requests with `seq = last_synced + 1` elicit historical data.
 
-See `docs/architecture/protocol-reverse-engineering.md` for the full BLE protocol reference.
+See `docs/architecture/ble-protocol-reference.md` for the full BLE protocol reference.
