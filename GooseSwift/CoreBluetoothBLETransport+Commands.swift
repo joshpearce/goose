@@ -1034,14 +1034,16 @@ extension CoreBluetoothBLETransport {
                     batteryViaR22: false,
                     batteryViaEvent48: true,
                     batteryViaCMD26: true,
-                    r22Realtime: false)
+                    r22Realtime: false,
+                    deviceKind: "WHOOP4")
                 : DeviceCapabilities(
                     wireProtocol: .gen5,
                     historicalSync: .stream,
                     batteryViaR22: true,
                     batteryViaEvent48: true,
                     batteryViaCMD26: true,
-                    r22Realtime: true)
+                    r22Realtime: true,
+                    deviceKind: gen)  // "WHOOP5" or "WHOOP_MG" per kindString
             }
           }
         }
