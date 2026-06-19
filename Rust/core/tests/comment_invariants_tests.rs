@@ -26,8 +26,7 @@ fn read_file(relative: &str) -> String {
         .and_then(|p| p.parent()) // project root
         .expect("could not resolve project root");
     let path = root.join(relative);
-    fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("could not read {}: {}", path.display(), e))
+    fs::read_to_string(&path).unwrap_or_else(|e| panic!("could not read {}: {}", path.display(), e))
 }
 
 // ── COMM-02: THREADING: comments in Swift files ───────────────────────────────

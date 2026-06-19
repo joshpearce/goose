@@ -13,8 +13,7 @@ use crate::{
     metrics::built_in_algorithm_definitions,
     openwhoop_reference::{
         OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_REPOSITORY,
-        openwhoop_history_field_references,
-        whoop_generation_references,
+        openwhoop_history_field_references, whoop_generation_references,
     },
     perf_budget::DEFAULT_PERF_SCALE,
     property_tests::{DEFAULT_CASES_PER_GROUP, DEFAULT_PROPERTY_SEED},
@@ -1026,14 +1025,10 @@ mod tests {
         let bridge_methods: std::collections::HashSet<&str> =
             BRIDGE_METHODS.iter().copied().collect();
 
-        let mut missing_arms: Vec<&&str> = bridge_methods
-            .difference(&found_methods)
-            .collect();
+        let mut missing_arms: Vec<&&str> = bridge_methods.difference(&found_methods).collect();
         missing_arms.sort();
 
-        let mut extra_arms: Vec<&&str> = found_methods
-            .difference(&bridge_methods)
-            .collect();
+        let mut extra_arms: Vec<&&str> = found_methods.difference(&bridge_methods).collect();
         extra_arms.sort();
 
         assert!(

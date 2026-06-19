@@ -1,10 +1,10 @@
 use std::{collections::BTreeSet, path::Path};
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok,
-    default_active_status, default_manual_source, default_overnight_mode,
-    default_raw_notification_source, default_decode_status,
-    empty_json_object, json_object_string, open_bridge_store, request_args,
+    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, default_active_status,
+    default_decode_status, default_manual_source, default_overnight_mode,
+    default_raw_notification_source, empty_json_object, json_object_string, open_bridge_store,
+    request_args,
 };
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -24,9 +24,8 @@ use crate::{
         validate_sleep_v1_stage_labels_for_store,
     },
     store::{
-        ExternalSleepSessionInput, ExternalSleepStageInput,
-        OvernightHistoricalRangePollInput, OvernightRawNotificationInput,
-        OvernightSyncSessionInput, SleepCorrectionLabelInput,
+        ExternalSleepSessionInput, ExternalSleepStageInput, OvernightHistoricalRangePollInput,
+        OvernightRawNotificationInput, OvernightSyncSessionInput, SleepCorrectionLabelInput,
     },
 };
 use serde::Deserialize;
@@ -46,36 +45,28 @@ pub(crate) fn dispatch_sleep(request: &BridgeRequest) -> BridgeResponse {
             .and_then(sleep_correction_label_list_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "sleep.validate_window_labels" => {
-            request_args::<SleepWindowLabelValidationArgs>(request)
-                .and_then(sleep_window_label_validation_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
-        "sleep.validate_stage_labels" => {
-            request_args::<SleepStageLabelValidationArgs>(request)
-                .and_then(sleep_stage_label_validation_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "sleep.validate_window_labels" => request_args::<SleepWindowLabelValidationArgs>(request)
+            .and_then(sleep_window_label_validation_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sleep.validate_stage_labels" => request_args::<SleepStageLabelValidationArgs>(request)
+            .and_then(sleep_stage_label_validation_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "sleep.validate_v1_explanation_stability" => {
             request_args::<SleepV1ExplanationStabilityArgs>(request)
                 .and_then(sleep_v1_explanation_stability_bridge)
                 .map(|value| bridge_ok(&request.request_id, value))
                 .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
         }
-        "sleep.validate_v1_release_gates" => {
-            request_args::<SleepV1ReleaseGateArgs>(request)
-                .and_then(sleep_v1_release_gate_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
-        "sleep.validate_v1_evidence_folder" => {
-            request_args::<SleepV1EvidenceFolderArgs>(request)
-                .and_then(sleep_v1_evidence_folder_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "sleep.validate_v1_release_gates" => request_args::<SleepV1ReleaseGateArgs>(request)
+            .and_then(sleep_v1_release_gate_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sleep.validate_v1_evidence_folder" => request_args::<SleepV1EvidenceFolderArgs>(request)
+            .and_then(sleep_v1_evidence_folder_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "overnight.mirror_batch" => request_args::<OvernightMirrorBatchArgs>(request)
             .and_then(overnight_mirror_batch_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
@@ -88,12 +79,10 @@ pub(crate) fn dispatch_sleep(request: &BridgeRequest) -> BridgeResponse {
             .and_then(health_sync_dry_run_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
-        "health_sync.activity_dry_run" => {
-            request_args::<ActivityHealthSyncDryRunInput>(request)
-                .and_then(activity_health_sync_dry_run_bridge)
-                .map(|value| bridge_ok(&request.request_id, value))
-                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
-        }
+        "health_sync.activity_dry_run" => request_args::<ActivityHealthSyncDryRunInput>(request)
+            .and_then(activity_health_sync_dry_run_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         _ => unreachable!(
             "dispatch_sleep called with non-sleep method: {}",
             request.method
@@ -481,18 +470,21 @@ fn external_sleep_history_import_bridge(
                 let stage_summary_json =
                     json_object_string("stage_summary", &session.stage_summary)?;
                 let provenance_json = json_object_string("provenance", &session.provenance)?;
-                if insert_external_sleep_session_conn(conn, ExternalSleepSessionInput {
-                    sleep_id: &session.sleep_id,
-                    source: &session.source,
-                    platform: &session.platform,
-                    platform_record_id: session.platform_record_id.as_deref(),
-                    start_time_unix_ms: session.start_time_unix_ms,
-                    end_time_unix_ms: session.end_time_unix_ms,
-                    timezone: session.timezone.as_deref(),
-                    stage_summary_json: &stage_summary_json,
-                    confidence: session.confidence,
-                    provenance_json: &provenance_json,
-                })? {
+                if insert_external_sleep_session_conn(
+                    conn,
+                    ExternalSleepSessionInput {
+                        sleep_id: &session.sleep_id,
+                        source: &session.source,
+                        platform: &session.platform,
+                        platform_record_id: session.platform_record_id.as_deref(),
+                        start_time_unix_ms: session.start_time_unix_ms,
+                        end_time_unix_ms: session.end_time_unix_ms,
+                        timezone: session.timezone.as_deref(),
+                        stage_summary_json: &stage_summary_json,
+                        confidence: session.confidence,
+                        provenance_json: &provenance_json,
+                    },
+                )? {
                     inserted_sessions += 1;
                 } else {
                     unchanged_sessions += 1;
@@ -509,15 +501,18 @@ fn external_sleep_history_import_bridge(
                         stage.stage_id, stage.stage_kind
                     )));
                 };
-                if insert_external_sleep_stage_conn(conn, ExternalSleepStageInput {
-                    stage_id: &stage.stage_id,
-                    sleep_id: &stage.sleep_id,
-                    stage_kind,
-                    start_time_unix_ms: stage.start_time_unix_ms,
-                    end_time_unix_ms: stage.end_time_unix_ms,
-                    confidence: stage.confidence,
-                    provenance_json: &provenance_json,
-                })? {
+                if insert_external_sleep_stage_conn(
+                    conn,
+                    ExternalSleepStageInput {
+                        stage_id: &stage.stage_id,
+                        sleep_id: &stage.sleep_id,
+                        stage_kind,
+                        start_time_unix_ms: stage.start_time_unix_ms,
+                        end_time_unix_ms: stage.end_time_unix_ms,
+                        confidence: stage.confidence,
+                        provenance_json: &provenance_json,
+                    },
+                )? {
                     inserted_stages += 1;
                 } else {
                     unchanged_stages += 1;
@@ -747,7 +742,18 @@ fn insert_external_sleep_session_conn(
     input: ExternalSleepSessionInput<'_>,
 ) -> GooseResult<bool> {
     // Check for an existing row with the same sleep_id.
-    let existing: Option<(String, String, String, Option<String>, i64, i64, Option<String>, String, f64, String)> = conn
+    let existing: Option<(
+        String,
+        String,
+        String,
+        Option<String>,
+        i64,
+        i64,
+        Option<String>,
+        String,
+        f64,
+        String,
+    )> = conn
         .query_row(
             r#"
             SELECT
@@ -777,8 +783,16 @@ fn insert_external_sleep_session_conn(
         .map_err(GooseError::from)?;
 
     if let Some((
-        ex_sleep_id, ex_source, ex_platform, ex_platform_record_id,
-        ex_start, ex_end, ex_timezone, ex_stage_summary, ex_confidence, ex_provenance,
+        ex_sleep_id,
+        ex_source,
+        ex_platform,
+        ex_platform_record_id,
+        ex_start,
+        ex_end,
+        ex_timezone,
+        ex_stage_summary,
+        ex_confidence,
+        ex_provenance,
     )) = existing
     {
         let same = ex_sleep_id == input.sleep_id
@@ -878,8 +892,13 @@ fn insert_external_sleep_stage_conn(
         .map_err(GooseError::from)?;
 
     if let Some((
-        ex_stage_id, ex_sleep_id, ex_stage_kind,
-        ex_start, ex_end, ex_confidence, ex_provenance,
+        ex_stage_id,
+        ex_sleep_id,
+        ex_stage_kind,
+        ex_start,
+        ex_end,
+        ex_confidence,
+        ex_provenance,
     )) = existing
     {
         let same = ex_stage_id == input.stage_id
@@ -938,7 +957,6 @@ fn canonical_external_sleep_stage(stage: &str) -> Option<&'static str> {
     }
 }
 
-
 fn canonical_external_sleep_stage_row(stage: &str) -> Option<&'static str> {
     match stage
         .trim()
@@ -952,4 +970,3 @@ fn canonical_external_sleep_stage_row(stage: &str) -> Option<&'static str> {
         value => canonical_external_sleep_stage(value),
     }
 }
-

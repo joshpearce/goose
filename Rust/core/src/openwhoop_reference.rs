@@ -6,8 +6,7 @@ use std::fmt::{Display, Formatter};
 use crate::protocol::DeviceType;
 
 pub const OPENWHOOP_REFERENCE_REPOSITORY: &str = "https://github.com/bWanShiTong/openwhoop";
-pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str =
-    "BLE protocol constants cross-referenced with community documentation and hardware observation.";
+pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str = "BLE protocol constants cross-referenced with community documentation and hardware observation.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhoopGeneration {
@@ -458,5 +457,4 @@ mod tests {
         assert!(spo2.gen5);
         assert_eq!(spo2.status, GooseSummaryStatus::NotDecoded);
     }
-
 }

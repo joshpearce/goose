@@ -1,14 +1,16 @@
-use std::{collections::BTreeSet, path::{Path, PathBuf}};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::{
     BridgeRequest, BridgeResponse, CAPTURE_ARRIVAL_PLAN_REPORT_SCHEMA, bridge_error, bridge_ok,
-    default_capture_sanitize_salt, default_correlation_start, default_correlation_end,
-    default_device_type, default_parser_version, default_true,
-    open_bridge_store, open_bridge_store_hot, parse_device_type, parse_event48_battery_from_data,
-    request_args,
+    default_capture_sanitize_salt, default_correlation_end, default_correlation_start,
+    default_device_type, default_parser_version, default_true, open_bridge_store,
+    open_bridge_store_hot, parse_device_type, parse_event48_battery_from_data, request_args,
 };
 use crate::{
     GooseError, GooseResult,
@@ -27,17 +29,20 @@ use crate::{
         validate_historical_sync_physical_evidence,
     },
     local_health_validation::{
-        LocalHealthValidationManifestScaffoldOptions,
-        review_local_health_validation_manifest, scaffold_local_health_validation_manifest,
+        LocalHealthValidationManifestScaffoldOptions, review_local_health_validation_manifest,
+        scaffold_local_health_validation_manifest,
     },
     metric_features::{
-        MetricFeatureNextAction,
-        RecoverySensorDiscoveryOptions, RecoverySensorDiscoveryReport,
+        MetricFeatureNextAction, RecoverySensorDiscoveryOptions, RecoverySensorDiscoveryReport,
         run_recovery_sensor_discovery_report_for_store,
     },
-    metric_readiness::{MetricInputNextAction, MetricInputReadinessOptions, MetricInputReadinessReport,
-        run_metric_input_readiness},
-    protocol::{DataPacketBodySummary, I16SeriesSummary, ParsedFrame, ParsedPayload, parse_frame_hex},
+    metric_readiness::{
+        MetricInputNextAction, MetricInputReadinessOptions, MetricInputReadinessReport,
+        run_metric_input_readiness,
+    },
+    protocol::{
+        DataPacketBodySummary, I16SeriesSummary, ParsedFrame, ParsedPayload, parse_frame_hex,
+    },
     store::{
         ActivitySessionRow, BackfillReport, CaptureSessionInput, CaptureSessionRow,
         CommandValidationRecord, GooseStore,
@@ -128,7 +133,6 @@ pub(crate) fn dispatch_capture(request: &BridgeRequest) -> BridgeResponse {
     }
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 struct ParseFrameArgs {
     frame_hex: String,
@@ -144,8 +148,6 @@ struct ParseFrameBatchArgs {
     #[serde(default = "default_true")]
     include_result: bool,
 }
-
-
 
 #[derive(Debug, Clone, Deserialize)]
 struct CaptureImportFrameBatchArgs {
@@ -164,7 +166,6 @@ struct CaptureImportFrameBatchArgs {
     active_device_id: Option<String>,
     frames: Vec<CapturedFrameInput>,
 }
-
 
 #[derive(Debug, Clone, Deserialize)]
 struct CaptureTimelineArgs {
@@ -211,15 +212,12 @@ struct CaptureListSessionsArgs {
     end_unix_ms: i64,
 }
 
-
-
 #[derive(Debug, Clone, Deserialize)]
 struct HistoricalSyncPhysicalEvidenceTemplateArgs {
     generation: HistoricalSyncGeneration,
     #[serde(default)]
     capture_session_id: String,
 }
-
 
 #[derive(Debug, Clone, Deserialize)]
 struct CaptureCorrelationArgs {
@@ -294,7 +292,6 @@ struct CaptureArrivalPhysicalRow {
     evidence: String,
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 struct CaptureSanitizeArgs {
     input_path: String,
@@ -302,10 +299,6 @@ struct CaptureSanitizeArgs {
     #[serde(default = "default_capture_sanitize_salt")]
     salt: String,
 }
-
-
-
-
 
 /// Mark specific rows in a stream table as synced=1 by rowid.
 /// Stream name is validated against STREAM_ALLOWLIST in store.mark_synced_rows (T-29-03).
@@ -333,7 +326,6 @@ struct SyncBackfillStreamsArgs {
     start_ts: f64,
     end_ts: f64,
 }
-
 
 fn parse_frame_hex_bridge(args: ParseFrameArgs) -> GooseResult<serde_json::Value> {
     let device_type = parse_device_type(&args.device_type)?;
@@ -584,7 +576,6 @@ fn axis_range_and_abs(axis: &I16SeriesSummary) -> Option<(f64, f64)> {
     Some((range.max(0.0), peak_abs))
 }
 
-
 fn historical_sync_dry_run_bridge(
     args: HistoricalSyncDryRunInput,
 ) -> GooseResult<serde_json::Value> {
@@ -619,7 +610,6 @@ fn historical_sync_physical_validation_bridge(
     })
 }
 
-
 fn capture_sanitize_bridge(args: CaptureSanitizeArgs) -> GooseResult<serde_json::Value> {
     if args.input_path.trim().is_empty() {
         return Err(GooseError::message("input_path is required"));
@@ -636,7 +626,6 @@ fn capture_sanitize_bridge(args: CaptureSanitizeArgs) -> GooseResult<serde_json:
         GooseError::message(format!("cannot serialize capture sanitize report: {error}"))
     })
 }
-
 
 fn capture_import_frame_batch_bridge(
     args: CaptureImportFrameBatchArgs,
@@ -659,7 +648,6 @@ fn capture_import_frame_batch_bridge(
         GooseError::message(format!("cannot serialize capture import report: {error}"))
     })
 }
-
 
 fn capture_timeline_bridge(args: CaptureTimelineArgs) -> GooseResult<serde_json::Value> {
     if args.start.trim().is_empty() {
@@ -763,7 +751,6 @@ fn capture_list_sessions_bridge(args: CaptureListSessionsArgs) -> GooseResult<se
     }))
     .map_err(|error| GooseError::message(format!("cannot serialize capture session list: {error}")))
 }
-
 
 fn capture_correlation_bridge(args: CaptureCorrelationArgs) -> GooseResult<serde_json::Value> {
     let store = open_bridge_store(&args.database_path)?;
@@ -1520,7 +1507,6 @@ fn push_arrival_action(
     });
 }
 
-
 fn sync_mark_synced_bridge(args: SyncMarkSyncedArgs) -> GooseResult<serde_json::Value> {
     let store = open_bridge_store(&args.database_path)?;
     let count = store.mark_synced_rows(&args.stream, &args.row_ids)?;
@@ -1546,4 +1532,3 @@ fn sync_backfill_streams_bridge(args: SyncBackfillStreamsArgs) -> GooseResult<se
         "battery_inserted": report.battery_inserted,
     }))
 }
-
