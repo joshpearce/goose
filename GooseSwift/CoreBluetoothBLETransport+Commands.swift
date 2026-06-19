@@ -1000,7 +1000,18 @@ extension CoreBluetoothBLETransport {
       if shouldUseCommandCharacteristic(characteristic) {
         commandCharacteristic = characteristic
         let detectedGeneration = WhoopGeneration.detect(from: characteristic)
-        let deviceKindString = detectedGeneration == .gen4 ? "WHOOP4" : "WHOOP5"
+        // 3-way detection: gen4 by command characteristic UUID prefix; WHOOP MG by peripheral
+        // advertised name containing " mg" (e.g. "WHOOP MG 1A2B"); gen5 otherwise.
+        // candidate_MG_advertisement_byte_unverified — identifies MG by peripheral name per D-03;
+        // falls back to WHOOP5 if peripheral name is absent or does not contain " mg".
+        let deviceKindString: String
+        if detectedGeneration == .gen4 {
+          deviceKindString = "WHOOP4"
+        } else if peripheral.name?.lowercased().contains(" mg") == true {
+          deviceKindString = "WHOOP_MG"
+        } else {
+          deviceKindString = "WHOOP5"
+        }
         let kindString = deviceKindString
         historicalWriteQueue.async { [weak self] in
           guard let self else { return }
@@ -1012,6 +1023,7 @@ extension CoreBluetoothBLETransport {
             let caps = try JSONDecoder().decode(DeviceCapabilities.self, from: capData)
             DispatchQueue.main.async {
               self.connectedCapabilities = caps
+              self.onCapabilitiesUpdated?()
               if caps.batteryViaCMD26, caps.wireProtocol == .gen4 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                   self?.sendCmd26BatteryRequest()

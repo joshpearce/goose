@@ -308,6 +308,16 @@ final class GooseAppModel {
       self.ble.updateConnectionState(newState.connectionStateString)
       self.bleState.bondingState = newState
     }
+    ble.onCapabilitiesUpdated = { [weak self] in
+      Task { @MainActor in
+        guard let self else { return }
+        // candidate_MG_advertisement_byte_unverified — per D-06, set "MG" generation label
+        // when the bridge confirms deviceKind == "WHOOP_MG" after GATT characteristics discovery.
+        if self.ble.connectedCapabilities?.deviceKind == "WHOOP_MG" {
+          self.bleState.connectedDeviceGeneration = "MG"
+        }
+      }
+    }
     ble.onConnectionStateChange = { [weak self] state in
       Task { @MainActor in
         self?.handleBLEConnectionStateChange(state)

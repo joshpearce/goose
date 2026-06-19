@@ -394,6 +394,8 @@ extension CoreBluetoothBLETransport {
     for uuid in serviceUUIDs {
       let lower = uuid.uuidString.lowercased()
       if lower.hasPrefix("61080001") { return "4.0" }
+      // fd4b0001: MAVERICK (WHOOP MG) and GOOSE share this UUID family; cannot distinguish at scan time.
+      // The "MG" label is applied after GATT connection in processDiscoveredCharacteristics.
       if lower.hasPrefix("fd4b0001") { return "5.0" }
     }
     return "unknown"

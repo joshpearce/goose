@@ -107,6 +107,7 @@ import OSLog
   var onHistoricalSyncProgress: ((GooseHistoricalSyncProgress) -> Void)?
   var onHistoricalRangeTelemetry: ((GooseHistoricalRangeTelemetry) -> Void)?
   var onMessage: ((GooseMessage) -> Void)?
+  var onCapabilitiesUpdated: (() -> Void)?
 
   let logger = Logger(subsystem: "com.goose.swift", category: "ble")
   let coreBluetoothQueue = DispatchQueue(label: "com.goose.swift.corebluetooth", qos: .utility)
