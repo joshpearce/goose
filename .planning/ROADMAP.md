@@ -620,7 +620,7 @@ Plans:
 **Plans**:
 1/3 plans executed
 
-- [ ] 92-02-PLAN.md — Fix export defaults + disable OOM-risk button (BUG-EXP-02, BUG-EXP-04)
+- [x] 92-02-PLAN.md — Fix export defaults + disable OOM-risk button (BUG-EXP-02, BUG-EXP-04)
 - [x] 92-03-PLAN.md — Fix WHOOP 5.0 auth stuck state recovery (BUG-AUTH-01)
 
 ---
@@ -789,7 +789,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Plans:** 5/6 plans executed
 Plans:
 
-- [ ] 92-01-PLAN.md
+- [x] 92-01-PLAN.md
 
 **Wave 1**
 
