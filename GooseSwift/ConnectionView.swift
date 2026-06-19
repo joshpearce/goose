@@ -151,6 +151,20 @@ private struct ConnectionContentView: View {
     }
     .gooseListBackground()
     .navigationTitle("Connect")
+    .alert("Authentication Failed", isPresented: Binding(
+      get: { ble.authExhausted },
+      set: { ble.authExhausted = $0 }
+    )) {
+      Button("Reconnect WHOOP", role: .destructive) {
+        ble.forgetRememberedDevice()
+        ble.authExhausted = false
+      }
+      Button("Cancel", role: .cancel) {
+        ble.authExhausted = false
+      }
+    } message: {
+      Text("Authentication with your WHOOP failed after 12 attempts. Tap Reconnect WHOOP to forget this device and start a new connection, or Cancel to dismiss.")
+    }
   }
 
   private var liveHeartRateValue: String {

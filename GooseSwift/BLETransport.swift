@@ -95,6 +95,8 @@ protocol BLETransport: AnyObject {
   var reconnectFailed: Bool { get }
   var hrIsReconnecting: Bool { get }
   var hrReconnectFailed: Bool { get }
+  // BUG-AUTH-01: true when 12 retry cycles have exhausted — triggers recovery alert in ConnectionView.
+  var authExhausted: Bool { get set }
 
   // MARK: - Callback properties
 
