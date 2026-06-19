@@ -1,6 +1,6 @@
-# WHOOP BLE Protocol — Reverse Engineering Reference
+# WHOOP BLE Protocol — Implementation Reference
 
-This document is a running reference of the WHOOP BLE protocol as reconstructed from PacketLogger captures and code analysis. It covers both Gen4 and Gen5 straps.
+This document is a technical reference for the WHOOP BLE protocol as implemented in Goose. It covers both Gen4 and Gen5 straps.
 
 ## BLE connection layer
 
@@ -59,14 +59,21 @@ Offset  Field
 
 | Value | Name | Direction |
 |-------|------|-----------|
-| `0x01` | `command` | App → Strap |
-| `0x02` | `commandResponse` | Strap → App |
-| `0x03` | `event` | Strap → App (unsolicited) |
-| `0x04` | `metadata` | Strap → App |
-| `0x05` | `historicalData` | Strap → App |
-| `0x06` | `historicalIMUDataStream` | Strap → App |
-| `0x09` | `puffinCommandResponse` | Strap → App |
-| `0x0a` | `puffinMetadata` | Strap → App |
+| `0x23` (35) | `command` | App → Strap |
+| `0x24` (36) | `commandResponse` | Strap → App |
+| `0x25` (37) | `puffinCommand` | App → Strap |
+| `0x26` (38) | `puffinCommandResponse` | Strap → App |
+| `0x28` (40) | `realtimeData` | Strap → App |
+| `0x2B` (43) | `realtimeRawData` | Strap → App |
+| `0x2F` (47) | `historicalData` | Strap → App |
+| `0x30` (48) | `event` | Strap → App (unsolicited) |
+| `0x31` (49) | `metadata` | Strap → App |
+| `0x33` (51) | `realtimeIMUDataStream` | Strap → App |
+| `0x34` (52) | `historicalIMUDataStream` | Strap → App |
+| `0x35` (53) | `relativePuffinEvents` | Strap → App |
+| `0x36` (54) | `puffinEventsFromStrap` | Strap → App |
+| `0x38` (56) | `puffinMetadata` | Strap → App |
+| `0x10` (16) | `r22RealtimeData` | Strap → App (WHOOP 5.0) |
 
 ## Connection handshake
 
@@ -99,10 +106,8 @@ Sensor stream commands use cmd numbers in the 80–120 range (approximate). The 
 
 ### High-frequency history sync
 
-- cmd 96: Enable high-frequency sync (interval + duration args)
-- cmd 97: Disable high-frequency sync
-
-Events 97 and 98 are emitted by the strap when high-frequency sync state changes.
+- cmd 85 (0x55): Enable high-frequency sync (interval + duration args)
+- cmd 86 (0x56): Disable high-frequency sync
 
 ## Historical data sync
 
