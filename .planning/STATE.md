@@ -4,8 +4,8 @@ milestone: v13.0
 milestone_name: Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export
 current_phase: 0
 status: Awaiting first phase
-stopped_at: Phase 95 context gathered
-last_updated: "2026-06-19T19:16:17.159Z"
+stopped_at: Phase 95 executed — WhoopMg DeviceKind
+last_updated: "2026-06-19T19:17:51.632Z"
 last_activity: 2026-06-19
 last_activity_desc: Milestone v13.0 initialized
 progress:
@@ -112,9 +112,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-19T19:16:05.869Z
-Stopped at: Phase 95 context gathered
-Resume file: .planning/phases/95-whoop-mg-devicekind/95-CONTEXT.md
+Last session: 2026-06-19T19:17:51.625Z
+Stopped at: Phase 95 executed — WhoopMg DeviceKind
+Resume file: .planning/phases/95-whoop-mg-devicekind/95-VERIFICATION.md
 Next action: /gsd-discuss-phase 92 or /gsd-plan-phase 92
 
 ## Operator Next Steps
