@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -336,32 +337,42 @@ fn local_health_validation_manifest_scaffold_bridge(
 
 #[derive(Debug, Clone, Deserialize)]
 struct LocalHealthValidationManifestRunbookArgs {
-    manifest: serde_json::Value,
+    #[serde(default)]
+    manifest: Option<serde_json::Value>,
+    #[serde(default)]
+    manifest_path: Option<String>,
 }
 
 fn local_health_validation_manifest_runbook_bridge(
     args: LocalHealthValidationManifestRunbookArgs,
 ) -> GooseResult<serde_json::Value> {
-    if !args.manifest.is_object() {
+    let manifest = if let Some(path) = args.manifest_path {
+        let raw = fs::read_to_string(&path)
+            .map_err(|e| GooseError::message(format!("manifest_path read failed: {e}")))?;
+        serde_json::from_str::<serde_json::Value>(&raw)
+            .map_err(|e| GooseError::message(format!("manifest_path parse failed: {e}")))?
+    } else if let Some(m) = args.manifest {
+        m
+    } else {
+        return Err(GooseError::message("manifest or manifest_path is required"));
+    };
+    if !manifest.is_object() {
         return Err(GooseError::message("manifest object is required"));
     }
-    let markdown = local_health_validation_manifest_runbook_markdown(&args.manifest);
-    let manifest_schema = args
-        .manifest
+    let markdown = local_health_validation_manifest_runbook_markdown(&manifest);
+    let manifest_schema = manifest
         .get("schema")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("unknown");
     Ok(json!({
         "schema": "goose.local-health-validation-runbook.v1",
         "manifest_schema": manifest_schema,
-        "markdown_report_path": args
-            .manifest
+        "markdown_report_path": manifest
             .get("run_validation")
             .and_then(|value| value.get("markdown_report_path"))
             .and_then(serde_json::Value::as_str)
             .unwrap_or("local-health-validation-report.md"),
-        "json_report_path": args
-            .manifest
+        "json_report_path": manifest
             .get("run_validation")
             .and_then(|value| value.get("json_report_path"))
             .and_then(serde_json::Value::as_str)
@@ -372,16 +383,29 @@ fn local_health_validation_manifest_runbook_bridge(
 
 #[derive(Debug, Clone, Deserialize)]
 struct LocalHealthValidationManifestReviewArgs {
-    manifest: serde_json::Value,
+    #[serde(default)]
+    manifest: Option<serde_json::Value>,
+    #[serde(default)]
+    manifest_path: Option<String>,
 }
 
 fn local_health_validation_manifest_review_bridge(
     args: LocalHealthValidationManifestReviewArgs,
 ) -> GooseResult<serde_json::Value> {
-    if !args.manifest.is_object() {
+    let manifest = if let Some(path) = args.manifest_path {
+        let raw = fs::read_to_string(&path)
+            .map_err(|e| GooseError::message(format!("manifest_path read failed: {e}")))?;
+        serde_json::from_str::<serde_json::Value>(&raw)
+            .map_err(|e| GooseError::message(format!("manifest_path parse failed: {e}")))?
+    } else if let Some(m) = args.manifest {
+        m
+    } else {
+        return Err(GooseError::message("manifest or manifest_path is required"));
+    };
+    if !manifest.is_object() {
         return Err(GooseError::message("manifest object is required"));
     }
-    Ok(review_local_health_validation_manifest(&args.manifest))
+    Ok(review_local_health_validation_manifest(&manifest))
 }
 
 // ---------------------------------------------------------------------------
