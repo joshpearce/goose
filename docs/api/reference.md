@@ -682,7 +682,7 @@ Every caller creates its own `GooseRustBridge` instance — the bridge is statel
 
 ### Method Catalogue
 
-The bridge supports 148 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
+The bridge supports 154 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
 
 #### Core / Discovery
 
@@ -690,6 +690,14 @@ The bridge supports 148 RPC methods at compile time. The full live list is avail
 |--------|------|-------------|
 | `core.version` | _(none)_ | Returns crate version, schema IDs, storage schema version |
 | `core.list_methods` | _(none)_ | Returns sorted list of all supported method names |
+| `device.capabilities` | _(none)_ | Returns the capability flags for the connected device generation |
+
+#### Battery
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `battery.parse_cmd26_response` | `payload: string` | Parse a raw CMD26 battery status response frame; returns structured battery fields |
+| `battery.parse_event48_payload` | `payload: string` | Parse a raw Event 48 battery payload; returns structured battery event fields |
 
 #### Protocol Parsing
 
@@ -963,6 +971,16 @@ Generic named time-series storage keyed by `(source, metric_name, date)`.
 |--------|----------|-------------|
 | `health_sync.dry_run` | `HealthSyncDryRunInput` fields | Dry-run HealthKit sync and report the plan |
 | `health_sync.activity_dry_run` | `ActivityHealthSyncDryRunInput` fields | Dry-run HealthKit activity sync |
+
+#### Validation
+
+Local health manifest operations — scaffold a manifest template, review an existing manifest against known criteria, and produce a runbook for outstanding items.
+
+| Method | Key Args | Description |
+|--------|----------|-------------|
+| `validation.local_health_manifest_scaffold` | `database_path` | Generate a starter local health manifest template for the device |
+| `validation.local_health_manifest_review` | `database_path`, `manifest` | Review a local health manifest and return a structured findings report |
+| `validation.local_health_manifest_runbook` | `database_path`, `manifest` | Produce a step-by-step runbook from a local health manifest review |
 
 #### Diagnostics
 
