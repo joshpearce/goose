@@ -468,6 +468,14 @@ final class MoreDataStore: ObservableObject {
     return " (\(Int(mb))MB)"
   }
 
+  var isDatabaseTooLarge: Bool {
+    guard !databasePath.isEmpty,
+          let attrs = try? FileManager.default.attributesOfItem(atPath: databasePath),
+          let bytes = attrs[.size] as? Int64 else { return false }
+    let mb = Double(bytes) / 1_048_576
+    return mb > 20
+  }
+
   var canRunRawExport: Bool {
     databaseExists && rawExportWindowIssueSummary() == nil && !selectedRawFamilies.isEmpty
   }

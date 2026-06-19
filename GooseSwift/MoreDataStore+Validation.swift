@@ -127,7 +127,6 @@ extension MoreDataStore {
     rawMetricFamilies = ""
     rawAlgorithmIDs = ""
     rawAlgorithmVersions = ""
-    includeRawBytes = true
     selectedRawFamilies = Set(Self.rawFamilies)
     runRawExport()
   }
