@@ -439,7 +439,7 @@ When `POST /v1/ingest-decoded` is received, the server calls `daily.compute_day`
 |---|---|---|
 | `GooseAppModel` | `GooseSwift/GooseAppModel.swift` + `GooseAppModel+*.swift` | Central `@MainActor @Observable` coordinator; owns `HealthDataStore`, BLE transport reference, Rust bridge, all notification queues, upload service. Split across extension files by concern. |
 | `BLETransport` | `GooseSwift/BLETransport.swift` | Protocol abstracting all BLE state and commands. `GooseAppModel` holds `let ble: any BLETransport`. |
-| `CoreBluetoothBLETransport` | `GooseSwift/CoreBluetoothBLETransport.swift` + `CoreBluetoothBLETransport+*.swift` | `@Observable` concrete implementation of `BLETransport`; CoreBluetooth central manager; WHOOP GATT connection and proprietary frame framing; command writes. Split across 18 extension files. |
+| `CoreBluetoothBLETransport` | `GooseSwift/CoreBluetoothBLETransport.swift` + `CoreBluetoothBLETransport+*.swift` | `@Observable` concrete implementation of `BLETransport`; CoreBluetooth central manager; WHOOP GATT connection and proprietary frame framing; command writes. Split across 12 extension files. |
 | `BLESessionCoordinator` | `GooseSwift/BLESessionCoordinator.swift` | Actor wrapping `CoreBluetoothBLETransport` for session lifecycle (connect/disconnect/state). |
 | `DeviceCatalog` | `GooseSwift/DeviceCatalog.swift` | Resolves per-device capability flags from `DeviceCapabilities`. Centralises all Gen4/Gen5 branching; replaces string comparisons at call sites. |
 | `GooseRustBridge` | `GooseSwift/GooseRustBridge.swift` | JSON-RPC envelope over `goose_bridge_handle_json` / `goose_bridge_free_string` (C FFI). Schema: `goose.bridge.request.v1`. Stateless — multiple instances are normal. |
@@ -667,4 +667,4 @@ All `/v1` routes require `Authorization: Bearer <GOOSE_API_KEY>`. The OpenAPI sc
 - **Overnight guard rowID pre-capture prevents upload race.** `GooseUploadService.captureAllPendingRowIDs` snapshots pending row IDs before the HTTP call. `markStreamsSynced` is called only inside the `uploadSucceeded == true` branch, eliminating the race where rows arriving during an upload would be incorrectly marked synced.
 - **Sleep sync fires at most once per calendar day.** `UserDefaults: goose.swift.last_band_sleep_sync_date` is written before any async work to prevent retry loops on drop-and-reconnect.
 - **No circular imports.** The `GooseWorkoutLiveActivityExtension` target shares only `WorkoutLiveActivityAttributes.swift` with the main app. It has no access to `GooseAppModel`, `GooseRustBridge`, or any SQLite layer.
-- **iOS deployment target: 26.0.** All Swift source targets `IPHONEOS_DEPLOYMENT_TARGET = 26.0` as set in `GooseSwift.xcodeproj/project.pbxproj`. App marketing version is `0.1.0`.
+- **iOS deployment target: 26.0.** All Swift source targets `IPHONEOS_DEPLOYMENT_TARGET = 26.0` as set in `GooseSwift.xcodeproj/project.pbxproj`. App marketing version is `8.0` (build 8).

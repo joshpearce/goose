@@ -9,7 +9,7 @@ Goose has three independent test surfaces: the **Rust core** (47 integration tes
 
 ### Test framework
 
-Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (45 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate ships many binaries used by integration tests as CLI fixtures, including `goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`, `goose-local-health-validation-suite`, `goose-reference-algo-runner`, `goose-property-test-suite`, and others defined in `Rust/core/Cargo.toml`.
+Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (47 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate ships many binaries used by integration tests as CLI fixtures, including `goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`, `goose-local-health-validation-suite`, `goose-reference-algo-runner`, `goose-property-test-suite`, and others defined in `Rust/core/Cargo.toml`.
 
 A `Rust/core/fixtures/` directory provides golden hex frames and synthetic capture data (under `fixtures/owned/` and `fixtures/synthetic/`) consumed by tests such as `fixture_tests.rs`, `capture_import_tests.rs`, and `protocol_tests.rs`.
 

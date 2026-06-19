@@ -88,7 +88,7 @@ PLATFORM_NAME=iphonesimulator CURRENT_ARCH=arm64 Scripts/build_ios_rust.sh
 PLATFORM_NAME=iphoneos CURRENT_ARCH=arm64 Scripts/build_ios_rust.sh
 ```
 
-The pre-built `.a` archives at `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` are committed to the repository so contributors can build the iOS app without needing a local Rust toolchain. Commit updated `.a` files whenever you change Rust source that affects the public FFI surface.
+The `.a` archives at `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` are **gitignored and not committed**. Run `Scripts/build_ios_rust.sh` (or open the project in Xcode which triggers it automatically as a build phase) to produce them locally before building the app.
 
 ---
 
@@ -102,7 +102,7 @@ The Rust test suite runs on any platform (including Linux/CI):
 cd Rust/core && cargo test --locked
 ```
 
-There are 45 integration test files in `Rust/core/tests/`, covering protocol parsing, metric algorithms, storage, BLE simulation, sleep staging, biometric pipeline, and exercise detection. CI runs these automatically on every pull request that touches `Rust/core/` via the `rust-core` workflow (`.github/workflows/rust-core.yml`).
+There are 47 integration test files in `Rust/core/tests/`, covering protocol parsing, metric algorithms, storage, BLE simulation, sleep staging, biometric pipeline, and exercise detection. CI runs these automatically on every pull request that touches `Rust/core/` via the `rust-core` workflow (`.github/workflows/rust-core.yml`).
 
 ### Swift unit tests
 
@@ -137,7 +137,7 @@ There is no formatter config file. Match the surrounding file's style exactly. R
 
 ### Rust
 
-- Edition 2024, MSRV 1.94.
+- Edition 2024, MSRV 1.96.
 - Run `cargo fmt` before submitting. Run `cargo clippy` and address any new warnings — Clippy is non-blocking in CI but warnings should not be introduced.
 - Run `cargo check` before opening a PR to catch type errors without a full build.
 - Follow the existing module structure under `Rust/core/src/`.
@@ -150,7 +150,7 @@ These rules apply whenever touching `GooseRustBridge` or adding bridge call site
 
 - **Always pass `database_path` in every bridge call that accesses storage.** The Rust side is stateless; all persistence goes through the path argument. Use `HealthDataStore.defaultDatabasePath()` to resolve it.
 - **Never call `GooseRustBridge` from `@MainActor` inline.** `goose_bridge_handle_json` is synchronous and blocks the calling thread. Always dispatch to a background `DispatchQueue` first, then return to `@MainActor` via `Task { @MainActor in ... }`.
-- **`GooseRustBridge` is not a singleton.** Long-lived coordinators (`GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`, `GooseBLEClient`, `GooseUploadService`, `MoreDataStore`, `NotificationFrameParsing`) each own their own instance. Short-lived local instances are also acceptable for one-off bridge calls in background contexts. Do not introduce a shared singleton.
+- **`GooseRustBridge` is not a singleton.** Long-lived coordinators (`GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`, `GooseUploadService`, `MoreDataStore`, `NotificationFrameParsing`) each own their own instance. Short-lived local instances are also acceptable for one-off bridge calls in background contexts. Do not introduce a shared singleton.
 
 ---
 

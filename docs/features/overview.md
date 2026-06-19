@@ -2,8 +2,8 @@
 # App Tabs — Feature Overview
 
 Goose organises its interface into four tabs defined in `GooseSwift/AppShellView.swift` as `GooseAppTab`:
-`home`, `health`, `coach`, and `more`. All four tabs share a single `HealthDataStore` instance created by
-`AppShellView` and receive the global `GooseAppModel` via the SwiftUI environment.
+`home`, `health`, `coach`, and `more`. All four tabs share a single `HealthDataStore` instance owned by
+`GooseAppModel` and receive it via the SwiftUI environment.
 
 ---
 

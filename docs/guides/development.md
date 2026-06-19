@@ -84,18 +84,14 @@ GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
 GooseAppModel+SleepSync.swift               Band sleep session sync from BLE history
 GooseAppModel+Upload.swift                  Server upload trigger
 
-GooseBLEClient.swift                        @Published BLE state + callback vars
-GooseBLEClient+CentralDelegate.swift        CBCentralManagerDelegate
-GooseBLEClient+PeripheralDelegate.swift     CBPeripheralDelegate
-GooseBLEClient+Commands.swift               WHOOP command writes
-GooseBLEClient+Parsing.swift                Packet framing helpers
-GooseBLEClient+HistoricalCommands.swift     Historical sync command dispatch
-GooseBLEClient+HistoricalHandlers.swift     Historical sync response handling
-GooseBLEClient+HRMonitor.swift              HR monitor peripheral support
-GooseBLEClient+DebugAndSync.swift           Debug session + sync utilities
-GooseBLEClient+Haptics.swift                Haptic feedback on BLE events
-GooseBLEClient+UserActions.swift            User-facing BLE actions
-GooseBLEClient+VitalsAndLogging.swift       Vitals forwarding and BLE logging
+GooseBLEClient.swift                        Legacy BLE coordinator (state + callbacks); BLE connection now via CoreBluetoothBLETransport
+GooseBLEClient+BatteryCommands.swift        Battery command dispatch
+
+CoreBluetoothBLETransport.swift             @Observable concrete BLETransport; CoreBluetooth central manager
+CoreBluetoothBLETransport+CentralDelegate.swift   CBCentralManagerDelegate
+CoreBluetoothBLETransport+PeripheralDelegate.swift CBPeripheralDelegate
+CoreBluetoothBLETransport+HistoricalCommands.swift Historical sync command dispatch
+CoreBluetoothBLETransport+HistoricalHandlers.swift Historical sync response handling
 
 HealthDataStore.swift                       Metric query coordinator
 HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
