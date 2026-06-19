@@ -557,21 +557,36 @@ final class MoreDataStore: ObservableObject {
           validationManifestArgs["window_source"] = "raw_export_manifest"
           validationManifestArgs["raw_export_bundle_path"] = bundlePath
           let manifest = try bridge.request(method: "validation.local_health_manifest_scaffold", args: validationManifestArgs)
-          let review = try bridge.request(
-            method: "validation.local_health_manifest_review",
-            args: ["manifest": manifest]
-          )
-          let runbookMarkdown = try Self.rawValidationRunbookMarkdown(
-            bridge: bridge,
-            manifest: manifest
-          )
-          validationSidecars = try Self.writeRawValidationSidecars(
+          // Write the in-memory manifest dict to disk immediately so subsequent
+          // bridge calls can reference it by path, releasing the large dict from memory.
+          let manifestURL = try Self.writeManifestToDisk(
             manifest,
-            review: review,
-            reviewStatus: Self.rawValidationReviewSummary(review),
-            runbookMarkdown: runbookMarkdown,
             bundlePath: bundlePath,
             outputDirectory: self.outputDirectory
+          )
+          guard let manifestURL else {
+            throw NSError(
+              domain: "GooseRawValidation",
+              code: 1,
+              userInfo: [NSLocalizedDescriptionKey: "Manifest URL unavailable — sidecar write did not produce a file path"]
+            )
+          }
+          // From here the in-memory manifest dict is not referenced again.
+          // All downstream bridge calls pass manifest_path instead.
+          let review = try bridge.request(
+            method: "validation.local_health_manifest_review",
+            args: ["manifest_path": manifestURL.path]
+          )
+          let runbookResult = try bridge.request(
+            method: "validation.local_health_manifest_runbook",
+            args: ["manifest_path": manifestURL.path]
+          )
+          let runbookMarkdown = Self.firstString(runbookResult, keys: ["markdown"]) ?? ""
+          validationSidecars = try Self.writeValidationSidecarsAfterManifest(
+            manifestURL: manifestURL,
+            review: review,
+            reviewStatus: Self.rawValidationReviewSummary(review),
+            runbookMarkdown: runbookMarkdown
           )
         } catch {
           let message = Self.errorSummary(error)

@@ -8,6 +8,54 @@ import HealthKit
 #endif
 
 extension MoreDataStore {
+  // Write only the manifest JSON to disk and return the file URL.
+  // Used by performRawExport to release the in-memory manifest dict before
+  // calling downstream bridge methods (review, runbook) by path.
+  nonisolated static func writeManifestToDisk(
+    _ manifest: [String: Any],
+    bundlePath: String,
+    outputDirectory: String
+  ) throws -> URL? {
+    let fileManager = FileManager.default
+    var isDirectory: ObjCBool = false
+    let bundleURL = URL(fileURLWithPath: bundlePath)
+    let sidecarDirectory: URL
+    if fileManager.fileExists(atPath: bundlePath, isDirectory: &isDirectory), isDirectory.boolValue {
+      sidecarDirectory = bundleURL
+    } else {
+      sidecarDirectory = URL(fileURLWithPath: outputDirectory, isDirectory: true)
+    }
+    try fileManager.createDirectory(at: sidecarDirectory, withIntermediateDirectories: true)
+    let sidecarURL = sidecarDirectory.appendingPathComponent("local-health-validation-manifest.json")
+    let data = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+    try data.write(to: sidecarURL, options: .atomic)
+    return sidecarURL
+  }
+
+  // Write review JSON and runbook markdown sidecars alongside an already-written manifest.
+  // Called after writeManifestToDisk returns manifestURL and the in-memory manifest is released.
+  nonisolated static func writeValidationSidecarsAfterManifest(
+    manifestURL: URL,
+    review: [String: Any],
+    reviewStatus: String,
+    runbookMarkdown: String
+  ) throws -> RawValidationSidecarResult {
+    let sidecarDirectory = manifestURL.deletingLastPathComponent()
+    let reviewURL = sidecarDirectory.appendingPathComponent("local-health-validation-review.json")
+    let reviewData = try JSONSerialization.data(withJSONObject: review, options: [.prettyPrinted, .sortedKeys])
+    try reviewData.write(to: reviewURL, options: .atomic)
+    let runbookURL = sidecarDirectory.appendingPathComponent("local-health-validation-runbook.md")
+    try runbookMarkdown.write(to: runbookURL, atomically: true, encoding: .utf8)
+    return RawValidationSidecarResult(
+      manifestStatus: "Saved \(manifestURL.lastPathComponent)",
+      manifestURL: manifestURL,
+      reviewStatus: reviewStatus,
+      reviewURL: reviewURL,
+      runbookStatus: "Saved \(runbookURL.lastPathComponent)",
+      runbookURL: runbookURL
+    )
+  }
+
   nonisolated static func writeRawValidationSidecars(
     _ manifest: [String: Any],
     review: [String: Any],
