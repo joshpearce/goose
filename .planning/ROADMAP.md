@@ -642,9 +642,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 93-01-PLAN.md — Fix BUG-HR-01: add R22Whoop5Hr arm to heart_rate_plan_from_row + r22_whoop5_hr to trusted_frames (Wave 1)
-- [ ] 93-02-PLAN.md — Introduce PacketType enum, delete 17 PACKET_TYPE_* constants, migrate 5 match sites (Wave 1)
-- [ ] 93-03-PLAN.md — Unknown variant in DataPacketBodySummary, replace wildcard, COMMAND_DEFINITIONS registry test (Wave 2)
+- [x] 93-01-PLAN.md — Fix BUG-HR-01: add R22Whoop5Hr arm to heart_rate_plan_from_row + r22_whoop5_hr to trusted_frames (Wave 1)
+- [x] 93-02-PLAN.md — Introduce PacketType enum, delete 17 PACKET_TYPE_* constants, migrate 5 match sites (Wave 1)
+- [x] 93-03-PLAN.md — Unknown variant in DataPacketBodySummary, replace wildcard, COMMAND_DEFINITIONS registry test (Wave 2)
 
 ---
 
