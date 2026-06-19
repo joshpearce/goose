@@ -494,6 +494,12 @@ pub fn packet_type_name(packet_type: u8) -> Option<&'static str> {
     })
 }
 
+pub fn packet_type_debug_name(packet_type: u8) -> String {
+    packet_type_name(packet_type)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("unknown_0x{:02x}", packet_type))
+}
+
 pub fn decode_hex_with_whitespace(hex_value: &str) -> GooseResult<Vec<u8>> {
     if !hex_value.bytes().any(|byte| byte.is_ascii_whitespace()) {
         return Ok(hex::decode(hex_value)?);
