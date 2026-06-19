@@ -4,8 +4,8 @@ milestone: v13.0
 milestone_name: Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export
 current_phase: 0
 status: Awaiting first phase
-stopped_at: Phase 94 executed — GEN4-06 + SYNC-07 fixed
-last_updated: "2026-06-19T16:42:39.898Z"
+stopped_at: Phase 95 context gathered
+last_updated: "2026-06-19T18:33:19.111Z"
 last_activity: 2026-06-19
 last_activity_desc: Milestone v13.0 initialized
 progress:
@@ -109,9 +109,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-19T16:42:39.888Z
-Stopped at: Phase 94 executed — GEN4-06 + SYNC-07 fixed
-Resume file: .planning/phases/94-gen4-protocol-completeness/94-VERIFICATION.md
+Last session: 2026-06-19T18:33:19.101Z
+Stopped at: Phase 95 context gathered
+Resume file: .planning/phases/95-whoop-mg-devicekind/95-CONTEXT.md
 Next action: /gsd-discuss-phase 92 or /gsd-plan-phase 92
 
 ## Operator Next Steps
