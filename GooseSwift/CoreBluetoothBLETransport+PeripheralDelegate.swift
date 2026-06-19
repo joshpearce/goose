@@ -344,6 +344,13 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
               title: "write.auth.retry.failed",
               body: "insufficientAuthentication persists on \(characteristic.uuid.uuidString); user action required"
             )
+            // BUG-AUTH-01: increment exhaustion counter; surface recovery alert after 12 cycles.
+            self.authRetryCount += 1
+            if self.authRetryCount >= 12 {
+              self.authRetryCount = 0
+              self.authExhausted = true
+              return
+            }
           }
           return
         }
@@ -356,6 +363,13 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
           title: "write.auth.failed",
           body: "insufficientAuthentication (retry exhausted) on \(characteristic.uuid.uuidString)"
         )
+        // BUG-AUTH-01: increment exhaustion counter; surface recovery alert after 12 cycles.
+        authRetryCount += 1
+        if authRetryCount >= 12 {
+          authRetryCount = 0
+          authExhausted = true
+          return
+        }
         return
       }
       record(level: .error, source: "ble", title: "write.failed", body: "\(characteristic.uuid.uuidString) \(error.localizedDescription)")
@@ -373,6 +387,8 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
       }
     } else {
       authRetryPending = false
+      authRetryCount = 0
+      authExhausted = false
       record(source: "ble", title: "write.accepted", body: characteristic.uuid.uuidString)
     }
   }
