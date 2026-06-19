@@ -469,22 +469,16 @@ This test lives in `bridge/mod.rs` (same file as the existing sync test) or `bri
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **HeartRatePlan struct compatibility for R22**
-   - What we know: `HeartRatePlan` has `marker_offset: usize` and `marker_value: u8` used by `heart_rate_feature_from_plan`. R22 provides `hr_bpm: f32`.
-   - What's unclear: Does `heart_rate_feature_from_plan` use `marker_value` as raw BPM (u8) or as a byte to decode? Reading lines after 4404 of `metric_features.rs` will answer this.
-   - Recommendation: Executor reads `heart_rate_feature_from_plan` before writing the R22 arm. If `marker_value` is used as-is as the integer BPM, `hr_bpm.round() as u8` is correct. If not, a new field may be needed.
+   - RESOLVED: `heart_rate_feature_from_plan` reads `marker_value` as-is as an integer BPM via `f64::from(plan.marker_value)`. Therefore `hr_bpm.round() as u8` is correct for the R22 arm. No new struct field needed. Confirmed by plan 93-01 action based on planner code inspection.
 
 2. **D-11 exact scope**
-   - What we know: CONTEXT.md D-11 says "compile-time test consistent with `bridge_methods_constant_matches_dispatcher` pattern."
-   - What's unclear: Is the test asserting that every `CommandDefinition.method_name` is in `BRIDGE_METHODS`, or just that `COMMAND_DEFINITIONS` serialises cleanly?
-   - Recommendation: Planner defines the assertion as: "every `CommandDefinition` has a method name with a dispatch arm" — this is stronger and aligns with the existing test's set-equality pattern.
+   - RESOLVED: The registry sync test asserts that `COMMAND_DEFINITIONS` serialises to JSON without error (`commands_definitions_serialises_without_error`). This is the appropriate scope — it catches structural breakage without requiring a full method-name parity assertion (which is covered separately by `bridge_methods_constant_matches_dispatcher`).
 
 3. **`Unknown` variant Serde output**
-   - What we know: `DataPacketBodySummary` derives `Serialize, Deserialize` with `#[serde(tag = "kind", rename_all = "snake_case")]`. `Unknown` will serialise as `{ "kind": "unknown", "packet_k": N }`.
-   - What's unclear: Whether existing tests assert on exact `body_summary_kind` strings and would break with `"unknown"` appearing in outputs.
-   - Recommendation: Run `grep -rn '"unknown"' Rust/core/tests/` after adding the variant to check for conflicts.
+   - RESOLVED: `DataPacketBodySummary::Unknown { packet_k }` will serialise as `{ "kind": "unknown", "packet_k": N }` per the existing `#[serde(tag = "kind", rename_all = "snake_case")]` derive. Executor must run `grep -rn '"unknown"' Rust/core/tests/` after adding the variant to confirm no test assertions conflict with the new output shape.
 
 ---
 
