@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
+Goose has three independent test surfaces: the **Rust core** (47 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
 
 ---
 
@@ -84,7 +84,9 @@ cargo build --all-targets --locked
 | `ui_coverage_tests.rs` | UI surface coverage audit |
 | `debug_ws_tests.rs` | WebSocket debug server contract |
 | `fake_ble_peripheral_tests.rs` | Simulated BLE peripheral for offline tests |
+| `comment_invariants_tests.rs` | THREADING: and SAFETY: invariant comment presence audit |
 | `tooling_inventory_tests.rs` | CLI tooling presence verification |
+| `store_schema_version_tests.rs` | SQLite schema version assertions |
 | `capture_arrival_plan_cli_tests.rs` | `goose-capture-arrival-plan` CLI output |
 | `command_capture_plan_cli_tests.rs` | `goose-command-capture-plan` CLI output |
 | `local_health_validation_suite_cli_tests.rs` | `goose-local-health-validation-suite` CLI |
@@ -315,7 +317,9 @@ Prerequisites: the self-hosted server must be running (see `server/README.md`).
 
 ## CI
 
-Six workflows run the automated test and quality gates on every push and pull request. Three additional housekeeping workflows (`branch-cleanup.yml`, `stale.yml`, `zizmor.yml`) manage branch hygiene and workflow security scanning but do not run tests.
+Six workflows run the automated test and quality gates on every push and pull request: `rust-core.yml`, `swift-build.yml`, `server-ci.yml`, `zizmor.yml`, `security.yml`, and `codeql.yml`. Each produces a named gate job that must pass before a PR can merge. Three additional workflows (`branch-cleanup.yml`, `stale.yml`, `release.yml`) handle branch hygiene and releases but do not gate PRs.
+
+The four required status checks are: **rust/gate**, **swift/gate**, **server/gate**, and **zizmor/gate**.
 
 ### `rust-core.yml` — Format, build, test (MSRV matrix)
 
