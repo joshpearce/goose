@@ -1202,10 +1202,7 @@ mod tests {
         let arr = value
             .as_array()
             .expect("COMMAND_DEFINITIONS must serialise as a JSON array");
-        assert!(
-            !arr.is_empty(),
-            "COMMAND_DEFINITIONS must not be empty"
-        );
+        assert!(!arr.is_empty(), "COMMAND_DEFINITIONS must not be empty");
     }
 }
 
