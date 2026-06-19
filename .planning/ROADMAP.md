@@ -13,7 +13,7 @@
 - ✅ **v9.0 BLE Reliability & Protocol Parity** — Phases 61-65+66 (shipped 2026-06-11)
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
 - ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
-- **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (active)
+- ✅ **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (shipped 2026-06-19)
 
 ## Phases
 
@@ -153,7 +153,7 @@ Known deferred: Ph74/75 physical-device BLE tests (hardware gate); ble-api-misus
 </details>
 
 <details>
-<summary>v12.0 Code Health & Protocol Foundation (Phases 83-91) — ACTIVE</summary>
+<summary>✅ v12.0 Code Health & Protocol Foundation (Phases 83-91) — SHIPPED 2026-06-19</summary>
 
 ### Phase Details
 
