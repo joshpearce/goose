@@ -120,7 +120,7 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
 
-Built Rust `.a` archives (`Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`) are committed to the repository as pre-built artifacts. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` to skip rebuilding when the committed archives are already valid for the active Xcode platform.
+The Rust `.a` archives (`Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`) are **gitignored** and built automatically by the Xcode build phase (`Scripts/build_ios_rust.sh`). A fresh clone requires at least one Xcode build to populate them. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` to skip rebuilding on subsequent builds.
 
 ## Build
 
