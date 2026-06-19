@@ -53,7 +53,7 @@ The user must be able to capture WHOOP data on iPhone and have it persisted auto
 
 - ✓ HRV pipeline: rmssd_segment_aware BLE gap-aware, Lipponen-Tarvainen ectopic filter, tiered SWS window selection — v5.0 (ALG-HRV-01 to ALG-HRV-03; ALG-HRV-04 human gate pending)
 - ✓ Recovery score v1: Z-score + logistic squash; EWMA baseline; cold-start gate; trust levels; Vermelho/Amarelo/Verde — v5.0 (ALG-REC-01 to ALG-REC-03)
-- ✓ Calorias: Mifflin-St Jeor RMR; Keytel + H-B coefficients Ghidra-confirmed — v5.0 (ALG-CAL-01, ALG-CAL-02)
+- ✓ Calorias: Mifflin-St Jeor RMR; Keytel + H-B coefficients empirically validated — v5.0 (ALG-CAL-01, ALG-CAL-02)
 - ✓ Strain: Tanaka HRmax + Banister TRIMP + fit_strain_denominator calibration helper — v5.0 (ALG-STR-01 to ALG-STR-03)
 - ✓ Sleep metrics without staging: HR dip %, WASO, SOL, disturbance count; EWMA baseline engine — v5.0 (ALG-SLP-01, ALG-SLP-02)
 - ✓ IMU data pipeline: I16SeriesSummary full_samples; gravity table schema v15; TOGGLE_IMU_MODE feature-flagged — v5.0 (IMU-01 to IMU-04)
