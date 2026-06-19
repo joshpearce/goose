@@ -4268,8 +4268,10 @@ fn skin_temperature_plan_from_payload(
 fn respiratory_rate_plan_from_payload(
     parsed_payload: &Option<ParsedPayload>,
 ) -> Option<RespiratoryRatePlan> {
-    // Accept NormalHistory or V18History — resp rate is extracted from raw payload bytes
-    // (raw_absolute_offset: 39), not from body_summary struct fields.
+    // Accept NormalHistory, V18History, or V24History — resp rate is extracted from raw
+    // payload bytes (raw_absolute_offset), not from body_summary struct fields.
+    // V24History (packet_k=24) is the Gen4 format; without it in the guard, all Gen4
+    // historical frames are silently rejected before the packet_k match is reached.
     let Some(ParsedPayload::DataPacket {
         packet_k: Some(packet_k),
         timestamp_seconds,
@@ -4277,7 +4279,8 @@ fn respiratory_rate_plan_from_payload(
         body_summary:
             Some(
                 DataPacketBodySummary::NormalHistory { .. }
-                | DataPacketBodySummary::V18History { .. },
+                | DataPacketBodySummary::V18History { .. }
+                | DataPacketBodySummary::V24History { .. },
             ),
         ..
     }) = parsed_payload
@@ -4295,6 +4298,22 @@ fn respiratory_rate_plan_from_payload(
             raw_absolute_offset: 39,
             encoding: "u16_le_x10",
             scale: 10.0,
+        }),
+        // GEN4-06: Gen4 V24History body layout has resp_raw (u16 LE) at body offset 73.
+        // Absolute payload offset: 3-byte data-packet header + 73 = 76.
+        // Encoding tagged as "u16_le_raw" (scale=1.0) because resp_raw is a pre-computed
+        // zero-crossing signal with unverified scale — quality flag v24_resp_raw_encoding_unverified
+        // applied downstream. Plausibility gate (6–30 rpm) in respiratory_rate_feature_from_plan
+        // rejects implausible values. Schema field tagged "_candidate" per D-02.
+        24 => Some(RespiratoryRatePlan {
+            packet_k: *packet_k,
+            timestamp_seconds: *timestamp_seconds,
+            timestamp_subseconds: *timestamp_subseconds,
+            schema_field: "v24_history_k24_body_73_resp_raw_candidate",
+            raw_body_offset: 73,
+            raw_absolute_offset: 76, // 3-byte data-packet header + body offset 73
+            encoding: "u16_le_raw",  // scale unknown — tagged as unverified candidate (D-02)
+            scale: 1.0,
         }),
         _ => None,
     }

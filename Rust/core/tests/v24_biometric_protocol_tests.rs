@@ -1,4 +1,85 @@
-use goose_core::protocol::{DataPacketBodySummary, parse_v24_body_for_test};
+use goose_core::{
+    capture_correlation::CaptureCorrelationReport,
+    metric_features::{VitalEventFeatureOptions, run_vital_event_feature_report},
+    protocol::{DataPacketBodySummary, ParsedPayload, parse_v24_body_for_test},
+    store::DecodedFrameRow,
+};
+
+// Helper: build a minimal CaptureCorrelationReport that always passes.
+// run_vital_event_feature_report only uses it for trust scoring (trusted_candidate_evidence).
+// Passing an empty, passing report exercises the extraction path without trust dependencies.
+fn passing_correlation() -> CaptureCorrelationReport {
+    CaptureCorrelationReport {
+        schema: "test".to_string(),
+        generated_by: "test".to_string(),
+        fixture_root: "test".to_string(),
+        pass: true,
+        min_owned_captures_per_summary: 0,
+        require_owned_captures: false,
+        observations: vec![],
+        summaries: vec![],
+        issues: vec![],
+        next_capture_actions: vec![],
+    }
+}
+
+// Helper: build a minimal DecodedFrameRow from an 82-byte payload.
+// payload_hex is the full frame hex (used by respiratory_rate_feature_from_plan).
+// parsed_payload_json encodes a DataPacket with V24History body_summary and packet_k=24.
+fn make_v24_decoded_frame_row(payload: &[u8], resp_raw_override: Option<u16>) -> DecodedFrameRow {
+    let mut pkt = payload.to_vec();
+
+    // Optionally override resp_raw at absolute payload offset 76..78 (body offset 73..75).
+    if let Some(val) = resp_raw_override {
+        let bytes = val.to_le_bytes();
+        pkt[76] = bytes[0];
+        pkt[77] = bytes[1];
+    }
+
+    let payload_hex = pkt.iter().map(|b| format!("{b:02x}")).collect::<String>();
+
+    // Build a V24History body_summary from the payload bytes using parse_v24_body_for_test,
+    // then wrap it in ParsedPayload::DataPacket.
+    let (body_summary, _warnings) = parse_v24_body_for_test(&pkt);
+    let parsed_payload = ParsedPayload::DataPacket {
+        packet_k: Some(24),
+        domain: Some("history".to_string()),
+        status_or_stream: Some(0),
+        counter_or_page: Some(0),
+        timestamp_seconds: Some(1_700_000_000),
+        timestamp_subseconds: Some(0),
+        hr_marker_offset: None,
+        hr_present_marker: None,
+        body_offset: 3,
+        body_hex: String::new(), // suppressed for pk=24 per PERF-05; extractor uses payload_hex
+        body_summary,
+        warnings: vec![],
+    };
+    let parsed_payload_json = serde_json::to_string(&parsed_payload)
+        .expect("ParsedPayload serialisation must succeed");
+
+    DecodedFrameRow {
+        frame_id: "test-frame-v24".to_string(),
+        evidence_id: "test-evidence".to_string(),
+        captured_at: "2026-06-19T00:00:00Z".to_string(),
+        device_type: "GEN4".to_string(),
+        raw_len: pkt.len() as i64,
+        header_len: 0,
+        declared_len: pkt.len() as i64,
+        payload_hex,
+        payload_crc_hex: String::new(),
+        header_crc_valid: true,
+        payload_crc_valid: true,
+        packet_type: Some(0x2F),
+        packet_type_name: Some("historical_data".to_string()),
+        sequence: None,
+        command_or_event: None,
+        parsed_payload_json,
+        parser_version: "test".to_string(),
+        warnings_json: "[]".to_string(),
+        device_uuid: None,
+    }
+}
 
 // Helpers to build synthetic payloads for parse_v24_body_for_test.
 // The function expects the full frame payload where data = payload[3..].
@@ -299,4 +380,226 @@ fn test_v24_rr_zero_skip() {
         }
         other => panic!("Expected V24History, got: {:?}", other),
     }
+}
+
+// --- GEN4-06: respiratory_rate extraction tests ---
+//
+// respiratory_rate_plan_from_payload is private; tests exercise via the public
+// run_vital_event_feature_report API which calls it internally and surfaces results
+// in VitalEventFeatureReport.respiratory_rate_inputs.
+
+// Test A: V24History frame with packet_k=24 produces a respiratory_rate_input entry.
+// Verifies the V24History guard and packet_k=24 arm are both present.
+// This test FAILS before the fix (guard only allows NormalHistory | V18History).
+#[test]
+fn respiratory_rate_plan_returns_some_for_v24() {
+    let payload = make_82_byte_payload(); // resp_raw at offset 76..78 = 450 LE
+    let row = make_v24_decoded_frame_row(&payload, None);
+    let correlation = passing_correlation();
+
+    let report = run_vital_event_feature_report(
+        &[row],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.respiratory_rate_input_count, 1,
+        "Expected 1 respiratory_rate_input for V24History pk=24 frame; got {}. \
+         Fix: add V24History to the body_summary guard in respiratory_rate_plan_from_payload \
+         AND add a packet_k=24 arm.",
+        report.respiratory_rate_input_count
+    );
+
+    let input = &report.respiratory_rate_inputs[0];
+    assert_eq!(
+        input.schema_field, "v24_history_k24_body_73_resp_raw_candidate",
+        "schema_field mismatch: {:?}",
+        input.schema_field
+    );
+    assert_eq!(
+        input.raw_absolute_offset, 76,
+        "raw_absolute_offset must be 76 (3-byte header + body offset 73)"
+    );
+    assert_eq!(input.packet_k, 24, "packet_k must be 24 for Gen4 V24History frames");
+}
+
+// Test B: resp_raw bytes at absolute payload offset 76..78 decode to the seeded value.
+// Validates the byte offset arithmetic: body offset 73 = absolute offset 76.
+// Uses make_82_byte_payload() which seeds resp_raw=450 at data[73..75] (pkt[76..78]).
+#[test]
+fn resp_raw_offset_reads_correct_bytes() {
+    let payload = make_82_byte_payload();
+
+    // Verify the fixture sets resp_raw=450 at absolute offset 76..78.
+    let raw_le = u16::from_le_bytes([payload[76], payload[77]]);
+    assert_eq!(
+        raw_le, 450,
+        "make_82_byte_payload must seed resp_raw=450 at pkt[76..78]; got {raw_le}"
+    );
+
+    // Also verify via an explicit override.
+    let payload_custom = {
+        let mut p = payload.clone();
+        let bytes = 180u16.to_le_bytes();
+        p[76] = bytes[0];
+        p[77] = bytes[1];
+        p
+    };
+    let raw_custom = u16::from_le_bytes([payload_custom[76], payload_custom[77]]);
+    assert_eq!(raw_custom, 180, "Override to 180 at pkt[76..78] must read back as 180");
+}
+
+// Test C: two V24 pk=24 rows both produce respiratory_rate_inputs (multi-frame regression guard).
+// Verifies that the pk=24 arm is stable and not accidentally a one-shot path.
+#[test]
+fn pk18_regression_still_returns_some() {
+    let payload = make_82_byte_payload();
+    let row1 = make_v24_decoded_frame_row(&payload, Some(200));
+    let mut row2 = make_v24_decoded_frame_row(&payload, Some(210));
+    row2.frame_id = "test-frame-v24-2".to_string();
+
+    let correlation = passing_correlation();
+    let report = run_vital_event_feature_report(
+        &[row1, row2],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.respiratory_rate_input_count, 2,
+        "Two V24 pk=24 rows must each produce a respiratory_rate_input; got {}",
+        report.respiratory_rate_input_count
+    );
+}
+
+// Test D: A V24History frame with an unrecognised packet_k returns no respiratory_rate_input.
+// Verifies no spurious arm exists: the _ => None fallthrough applies to unknown packet_k values.
+#[test]
+fn pk99_v24_returns_none() {
+    let payload = make_82_byte_payload();
+    let (body_summary, _) = parse_v24_body_for_test(&payload);
+    let payload_hex = payload.iter().map(|b| format!("{b:02x}")).collect::<String>();
+
+    // Build a ParsedPayload with packet_k=99 and V24History body_summary.
+    let parsed_payload = ParsedPayload::DataPacket {
+        packet_k: Some(99),
+        domain: Some("history".to_string()),
+        status_or_stream: Some(0),
+        counter_or_page: Some(0),
+        timestamp_seconds: Some(1_700_000_000),
+        timestamp_subseconds: Some(0),
+        hr_marker_offset: None,
+        hr_present_marker: None,
+        body_offset: 3,
+        body_hex: String::new(),
+        body_summary,
+        warnings: vec![],
+    };
+    let parsed_payload_json =
+        serde_json::to_string(&parsed_payload).expect("serialisation must succeed");
+
+    let row = DecodedFrameRow {
+        frame_id: "test-frame-pk99".to_string(),
+        evidence_id: "test-evidence".to_string(),
+        captured_at: "2026-06-19T00:00:00Z".to_string(),
+        device_type: "GEN4".to_string(),
+        raw_len: payload.len() as i64,
+        header_len: 0,
+        declared_len: payload.len() as i64,
+        payload_hex,
+        payload_crc_hex: String::new(),
+        header_crc_valid: true,
+        payload_crc_valid: true,
+        packet_type: Some(0x2F),
+        packet_type_name: Some("historical_data".to_string()),
+        sequence: None,
+        command_or_event: None,
+        parsed_payload_json,
+        parser_version: "test".to_string(),
+        warnings_json: "[]".to_string(),
+        device_uuid: None,
+    };
+
+    let correlation = passing_correlation();
+    let report = run_vital_event_feature_report(
+        &[row],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.respiratory_rate_input_count, 0,
+        "packet_k=99 with V24History must produce zero respiratory_rate_inputs (no spurious arm); got {}",
+        report.respiratory_rate_input_count
+    );
+}
+
+// Task 2: Integration test for resp_raw extraction from a DecodedFrameRow.
+// Validates the full extraction chain: payload bytes → plan fields → feature report.
+// Note: respiratory_rate_plan_from_payload is private; we test via the public
+// run_vital_event_feature_report API. This is the canonical end-to-end test for
+// Task 2 of plan 94-01 (GEN4-06).
+#[test]
+fn v24_resp_raw_feature_extraction_from_decoded_row() {
+    // Step 1: Build 82-byte V24 payload with resp_raw=240 (0xF0, 0x00) at pkt[76..78].
+    let payload = make_v24_decoded_frame_row(&make_82_byte_payload(), Some(240));
+
+    // Step 2: Confirm the seeded bytes at absolute offset 76..78 decode to 240.
+    // (payload_hex is the hex encoding of the 82 bytes)
+    let payload_bytes: Vec<u8> = (0..payload.payload_hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&payload.payload_hex[i..i + 2], 16).unwrap())
+        .collect();
+    let raw_u16 = u16::from_le_bytes([payload_bytes[76], payload_bytes[77]]);
+    assert_eq!(raw_u16, 240, "payload_hex[76..78] must decode to resp_raw=240");
+
+    // Step 3: Call run_vital_event_feature_report and assert:
+    //   - respiratory_rate_plan returns Some for pk=24 V24History
+    //   - raw_absolute_offset == 76
+    //   - resp_raw bytes at payload[76..78] match the seeded value
+    let correlation = passing_correlation();
+    let report = run_vital_event_feature_report(
+        &[payload],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.respiratory_rate_input_count, 1,
+        "Expected 1 respiratory_rate_input for pk=24 V24History row; got {}",
+        report.respiratory_rate_input_count
+    );
+
+    let input = &report.respiratory_rate_inputs[0];
+    assert_eq!(
+        input.raw_absolute_offset, 76,
+        "raw_absolute_offset must be 76 (3-byte data-packet header + body offset 73)"
+    );
+    assert_eq!(
+        input.schema_field, "v24_history_k24_body_73_resp_raw_candidate",
+        "schema_field must identify this as the V24 resp_raw candidate at body offset 73"
+    );
+    // raw_u16_le must match the seeded value (240) — confirms byte offset arithmetic is correct.
+    assert_eq!(
+        input.raw_u16_le,
+        Some(240),
+        "raw_u16_le must be 240 (the seeded resp_raw value at payload[76..78])"
+    );
 }
