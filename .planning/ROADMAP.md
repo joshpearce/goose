@@ -661,8 +661,8 @@ Plans:
 
 **Plans**:
 
-- [ ] 94-01-PLAN.md — Gen4 recovery metric parsing: respiratory_rate + skin_temp byte offsets in Rust (GEN4-06)
-- [ ] 94-02-PLAN.md — Gen4 packet47 page_sequence reassembly fix (SYNC-07)
+- [x] 94-01-PLAN.md — Gen4 recovery metric parsing: respiratory_rate + skin_temp byte offsets in Rust (GEN4-06)
+- [x] 94-02-PLAN.md — Gen4 packet47 page_sequence reassembly fix (SYNC-07)
 
 ---
 
