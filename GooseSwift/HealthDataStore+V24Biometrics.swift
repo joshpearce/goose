@@ -89,11 +89,15 @@ extension HealthDataStore {
          return UInt16(clamping: Int(d))
        }) {
       // Call spo2_from_raw to get the uncalibrated estimate.
-      if let spo2Report = try? await bridge.requestAsync(
-        method: "biometrics.spo2_from_raw",
-        args: ["red": Int(red), "ir": Int(ir)]
-      ) {
-        spo2Percent = asDouble(spo2Report["spo2_pct"])
+      do {
+        if let spo2Report = try await bridge.requestAsync(
+          method: "biometrics.spo2_from_raw",
+          args: ["red": Int(red), "ir": Int(ir)]
+        ) {
+          spo2Percent = asDouble(spo2Report["spo2_pct"])
+        }
+      } catch {
+        // spo2_from_raw failure: spo2Percent remains nil, displayed as unavailable
       }
     }
 

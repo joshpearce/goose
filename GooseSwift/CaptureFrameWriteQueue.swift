@@ -339,13 +339,17 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       // FIX-05 (D-09b): trigger storage compaction after each successful batch write.
       // Fast no-op when already under the 24 MB limit (handled Rust-side).
       // No ble.record here — GooseAppModel launch-time compaction covers D-10 logging.
-      _ = try? rust.request(
-        method: "storage.compact_raw_evidence",
-        args: [
-          "database_path": databasePath,
-          "limit_bytes": 25_165_824,
-        ]
-      )
+      do {
+        _ = try rust.request(
+          method: "storage.compact_raw_evidence",
+          args: [
+            "database_path": databasePath,
+            "limit_bytes": 25_165_824,
+          ]
+        )
+      } catch {
+        print("storage.compact_raw_evidence: \(error)")
+      }
     }
   }
 

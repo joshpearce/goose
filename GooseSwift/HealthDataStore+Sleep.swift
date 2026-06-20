@@ -230,26 +230,34 @@ extension HealthDataStore {
     let source = "apple.health"
 
     func queryLatest(_ metric: String) async -> Double? {
-      guard
-        let rows = try? await bridge.requestAsync(
+      let rows: [String: Any]?
+      do {
+        rows = try await bridge.requestAsync(
           method: "metric_series.query_range",
           args: ["database_path": db, "metric_name": metric, "start_date": startDate, "end_date": today, "source": source]
-        ),
-        let arr = rows["rows"] as? [[String: Any]],
-        let last = arr.last,
-        let value = last["value"] as? Double
+        )
+      } catch {
+        return nil
+      }
+      guard let rows,
+            let arr = rows["rows"] as? [[String: Any]],
+            let last = arr.last,
+            let value = last["value"] as? Double
       else { return nil }
       return value
     }
 
     func queryHistory(_ metric: String) async -> [(value: Double, date: Date)] {
-      guard
-        let rows = try? await bridge.requestAsync(
+      let rows: [String: Any]?
+      do {
+        rows = try await bridge.requestAsync(
           method: "metric_series.query_range",
           args: ["database_path": db, "metric_name": metric, "start_date": startDate, "end_date": today, "source": source]
-        ),
-        let arr = rows["rows"] as? [[String: Any]]
-      else { return [] }
+        )
+      } catch {
+        return []
+      }
+      guard let rows, let arr = rows["rows"] as? [[String: Any]] else { return [] }
       return arr.compactMap { row -> (Double, Date)? in
         guard let value = row["value"] as? Double, let dateStr = row["date"] as? String,
               let date = df.date(from: dateStr) else { return nil }
@@ -292,10 +300,15 @@ extension HealthDataStore {
     let source = "apple.health"
 
     func upsertMetric(_ metric: String, date: String, value: Double) async {
-      _ = try? await bridge.requestAsync(
-        method: "metric_series.upsert",
-        args: ["database_path": db, "source": source, "metric_name": metric, "date": date, "value": value]
-      )
+      do {
+        _ = try await bridge.requestAsync(
+          method: "metric_series.upsert",
+          args: ["database_path": db, "source": source, "metric_name": metric, "date": date, "value": value]
+        )
+      } catch {
+        // upsert failure: caller will retry on next HealthKit import cycle
+        return
+      }
     }
 
     // Today's snapshot
