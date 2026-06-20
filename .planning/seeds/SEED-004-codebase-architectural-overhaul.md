@@ -1,10 +1,11 @@
 ---
 id: SEED-004
-status: dormant
+status: activated
 planted: 2026-06-14
 planted_during: v11.0 — PR Integration, Code Health & App Polish
 trigger_when: next milestone with code health / architecture focus (v12.0+)
 scope: large
+implemented_in: Phase 110 (ARCH-11 tail — 38 unwraps, v14.0)
 ---
 
 # SEED-004: Codebase Architectural Overhaul — Rust God Files + Swift Ownership + BLE Concurrency

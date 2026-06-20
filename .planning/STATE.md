@@ -1,48 +1,48 @@
 ---
 gsd_state_version: 1.0
-milestone: v13.0
-milestone_name: Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export
+milestone: v14.0
+milestone_name: Android Port, BLE Reliability & Protocol Depth
 current_phase: 0
-status: Awaiting next milestone
-stopped_at: Phase 97 executed — all v13.0 phases complete
-last_updated: "2026-06-20T21:34:53.313Z"
+status: Awaiting first phase
+stopped_at: Milestone v14.0 initialized — ready for Phase 98
+last_updated: "2026-06-20T00:00:00.000Z"
 last_activity: 2026-06-20
-last_activity_desc: Milestone v13.0 completed and archived
+last_activity_desc: Milestone v14.0 planned and initialized
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_phases: 14
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19)
+See: .planning/PROJECT.md (updated 2026-06-20)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v13.0 — Phase 92 (Export & Auth Bug Fixes)
+**Current focus:** v14.0 — Phase 98 (Gen5 Historical Sync Routing Fix + HPS Ring Buffer)
 
 ## Current Position
 
-Phase: Milestone v13.0 complete
+Phase: v14.0 initialized
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-20 — Milestone v13.0 completed and archived
+Status: Awaiting first phase
+Last activity: 2026-06-20 — Milestone v14.0 planned and initialized
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 38 (v12.0 complete)
+- Total plans completed: 16 (v13.0 complete)
 - Average duration: —
 - Total execution time: —
 
 **Recent Trend:**
 
-- Last 5 plans: Phase 91 P02, Phase 91 P01, Phase 90 P04, Phase 90 P03, Phase 90 P02
+- Last 5 plans: Phase 97 P03, Phase 97 P02, Phase 97 P01, Phase 96 P02, Phase 95 P02
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -54,20 +54,17 @@ Last activity: 2026-06-20 — Milestone v13.0 completed and archived
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- v13.0 roadmap: Phase 92 groups export OOM (#155) + auth stuck (#154) — both are Swift-only fixes with no Rust dependency; fastest to ship together
-- v13.0 roadmap: Phase 93 groups HR data investigation (#156) + protocol.rs cleanup (#157) — protocol audit may reveal root cause of #156
-- v13.0 roadmap: Phase 94 groups Gen4 metric parsing (#21) + packet47 reassembly (#20) — both touch Gen4 protocol paths in the same Rust files
-- v13.0 roadmap: Phase 95 is WHOOP MG DeviceKind (SEED-006, #22) — isolated new variant; no dependency on other phases
-- v13.0 roadmap: Phase 96 is best practices (SEED-007) — Swift silent try? + Rust connection pool; orthogonal to protocol work
-- v13.0 roadmap: Phase 97 is HealthKit Export (#109) — depends on Phase 96 (bridge reliability); new HKHealthStore writes need error handling done right
-- [Phase ?]: authExhausted added to BLETransport protocol (get set) for existential binding
-- [Phase ?]: Used peripheral.name?.lowercased().contains(' mg') for MG detection (candidate_MG_advertisement_byte_unverified per D-03)
-- [Phase ?]: Added onCapabilitiesUpdated callback to BLETransport protocol to propagate MG generation label from transport to GooseAppModel.bleState
+- v14.0 scope: Android port (#169) is the headline feature — `android/` Kotlin/Compose + JNI bridge to existing `libgoose_core.so`; CI APK step already stubbed in `android-core.yml`
+- v14.0 scope: Historical sync bugs grouped by generation — Gen5 routing (Phase 98), Gen4 reassembly (Phase 99); SEED-003/004 already completed in v12.0 (bridge/, store/, BLESessionCoordinator actor)
+- v14.0 scope: BLE reliability in Phase 100 (MTU 247 + LE 2M PHY + off-wrist detection)
+- v14.0 scope: P2/P3 issues (#164 Harvard sleep, #165 feature flags, #166 body composition, #167 stealth mode, #168 PIP upload) deferred to v15.0
+- SEED-003/004 status: largely completed in v12.0 (phases 83-91) — bridge/ directory exists, store/ split done, BLESessionCoordinator actor live, DeviceCatalog wired; only 38 unwraps remain (ARCH-11 in Phase 110)
+- MG detection: `peripheral.name?.lowercased().contains(" mg")` used in v13.0; advertisement byte layout unconfirmed (D-03); Phase 109 to harden
 
 ### Roadmap Evolution
 
-- v13.0 Phases 92–97 defined 2026-06-19: Export+auth fixes (92), HR+protocol (93), Gen4 completeness (94), WHOOP MG (95), best practices (96), HealthKit export (97)
-- v12.0 Phases 83–91 defined 2026-06-14: Protocol refactor (83), Gen4 battery (84), Rust crash safety (85), bridge.rs split + protocol comments (86), store.rs split (87), Swift ownership (88), BLE actor (89), domain ViewModels (90), threading + algorithm comments (91)
+- v14.0 Phases 98–111 defined 2026-06-20: historical sync (98-99), BLE reliability (100), telemetry+crash+protocol (101), Gen4 metrics (102), Android port (103-107), battery (108), MG (109), code health (110), comments (111)
+- v13.0 Phases 92–97 shipped 2026-06-20 (all complete)
 
 ### Pending Todos
 
@@ -78,7 +75,7 @@ Recent decisions affecting current work:
 - HAP-04 (Phase 73, wake-window): protocol-analysis-gated — do not write implementation tasks until BLE capture of `STRAP_DRIVEN_ALARM_EXECUTED` and protocol analysis of `SetAlarmInfoCommandPacketRev4` are complete
 - Phase 66 (Cap Sense): hardware-gated — requires real WHOOP 5.x device; deferred indefinitely
 - Hardware gate reminder: ALG-HRV-04, ALG-SLP-04, SLP-SYNC real-device remain deferred (hardware gate)
-- WHOOP MG (Phase 95): MG advertisement byte layout not yet confirmed — needs research before planning
+- WHOOP MG (Phase 109): MG advertisement byte layout not yet confirmed — Phase 109 must resolve or document safe fallback
 
 ## Deferred Items
 
@@ -94,15 +91,11 @@ Items deferred from previous milestones:
 | verification_gap | Phase 22 — ALG-HRV-04 RMSSD parity (≥5 real sessions) | human_needed | v5.0 close |
 | verification_gap | Phase 26 — ALG-SLP-04 4-class staging validation | human_needed | v5.0 close |
 | uat_gap | Phase 73 — 73-UAT.md | partial | v10.0 close |
-| verification_gap | Phase 68 — 68-VERIFICATION.md | human_needed | v10.0 close |
-| verification_gap | Phase 70 — 70-VERIFICATION.md | human_needed | v10.0 close |
-| quick_task | historical-sync-direct-write | missing | v10.0 close |
-| quick_task | fix-imu-step-count | missing | v10.0 close |
-| debug_session | export_tests-sensor_sample_rows-18_vs_19 | investigating | Phase 85 gate |
-| Phase 92 P03 | 6m | 2 tasks | 5 files |
-| Phase 92-export-auth-bug-fixes P02 | 5 min | 2 tasks | 3 files |
-| Phase 95 P02 | 20 min | 2 tasks | 8 files |
-| Phase 96 P01 | 6 min | 3 tasks | 6 files |
+| deferred_v15 | #164 Harvard sleep need model | pending_v15 | v14.0 scope |
+| deferred_v15 | #165 GET_FF_VALUE feature flags | pending_v15 | v14.0 scope |
+| deferred_v15 | #166 body composition history table | pending_v15 | v14.0 scope |
+| deferred_v15 | #167 UI stealth mode metric hiding | pending_v15 | v14.0 scope |
+| deferred_v15 | #168 PIP upload separate data pipeline | pending_v15 | v14.0 scope |
 
 ## Quick Tasks Completed
 
@@ -113,11 +106,12 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-20T16:24:59.861Z
-Stopped at: Phase 97 executed — all v13.0 phases complete
-Resume file: .planning/phases/97-healthkit-export-bevel-integration/97-VERIFICATION.md
-Next action: /gsd-discuss-phase 92 or /gsd-plan-phase 92
+Last session: 2026-06-20
+Stopped at: Milestone v14.0 initialized
+Resume file: .planning/ROADMAP.md
+Next action: /gsd-discuss-phase 98 or /gsd-plan-phase 98
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run /gsd-discuss-phase 98 to start Phase 98 (Gen5 Historical Sync Routing Fix + HPS Ring Buffer)
+- Or run /gsd-plan-phase 98 to skip discussion and plan directly

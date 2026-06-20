@@ -1,10 +1,11 @@
 ---
 id: SEED-007
-status: active
+status: activated
 planted: 2026-06-15
 planted_during: v12.0 — best practices audit (gsd-explore)
 trigger_when: próxima fase de code health, ou antes de qualquer fase que toque em CaptureFrameWriteQueue / HealthDataStore / GooseAppModel+Upload
 scope: medium
+implemented_in: Gap 1 (BP-01) Phase 96 v13.0; Gap 2 (BP-03) Phase 110 v14.0
 ---
 
 # SEED-007: Best Practices Gaps — Swift Silent Failures + Rust Connection Pool

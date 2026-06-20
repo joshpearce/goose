@@ -1,10 +1,11 @@
 ---
 id: SEED-006
-status: active
+status: activated
 planted: 2026-06-14
 planted_during: v12.0 — Protocol Architecture Refactor
 trigger_when: support for WHOOP MG is confirmed or when a user connects a WHOOP MG device
 scope: small
+implemented_in: Phase 109 (MG-03, v14.0)
 ---
 
 # SEED-006: Add WHOOP MG as First-Class DeviceKind

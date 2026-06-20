@@ -1,10 +1,11 @@
 ---
 id: SEED-002
-status: active
+status: activated
 planted: 2026-06-14
 planted_during: v11.0 — PR Integration, Code Health & App Polish
 trigger_when: when relevant
-scope: unknown
+scope: small
+implemented_in: Phase 108 (BAT-01, v14.0)
 ---
 
 # SEED-002: Battery level Gen4+Gen5 — protocolo reverse-engineered no noop/PostHooks.swift

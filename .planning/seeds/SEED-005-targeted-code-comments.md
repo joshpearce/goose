@@ -1,10 +1,11 @@
 ---
 id: SEED-005
-status: dormant
+status: activated
 planted: 2026-06-14
 planted_during: v11.0 — PR Integration, Code Health & App Polish
 trigger_when: milestone de code health (v12.0+), idealmente após SEED-004 splits estarem feitos
 scope: small
+implemented_in: Phase 111 (COMM-04/COMM-05, v14.0)
 ---
 
 # SEED-005: Targeted Code Comments — WHY not WHAT

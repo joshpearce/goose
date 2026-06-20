@@ -15,6 +15,7 @@
 - ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
 - ✅ **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (shipped 2026-06-19)
 - ✅ **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (shipped 2026-06-20)
+- 🔄 **v14.0 Android Port, BLE Reliability & Protocol Depth** — Phases 98-111 (in progress)
 
 ## Phases
 
@@ -738,6 +739,256 @@ Plans:
 
 ---
 
+## v14.0 Android Port, BLE Reliability & Protocol Depth (Phases 98–111)
+
+#### Phase 98: Gen5 Historical Sync Routing Fix + HPS Ring Buffer
+
+**Goal**: Gen5 historical body packets routed to sync handler; HPS ring buffer fields parsed from `GET_DATA_RANGE`
+**Depends on**: None
+**Requirements**: SYNC-08, SYNC-10
+**Success Criteria** (what must be TRUE):
+
+  1. `historicalData` and `historicalIMUDataStream` packet types dispatched to main handler when `isHistoricalSyncing == true`; `historicalPacketsReceivedThisSync` increments during active sync
+  2. `ring_capacity`, `current_page`, `read_pointer` parsed from `GET_DATA_RANGE` response; wrap-around correctly detected
+  3. `#24` and `#160` closed; `cargo test --locked` + iOS build pass clean
+
+**Plans**:
+
+- [ ] 98-01-PLAN.md — Gen5 historical routing fix in `GooseBLEClient+PeripheralDelegate.swift` (SYNC-08)
+- [ ] 98-02-PLAN.md — HPS ring buffer parsing in Rust `historical_sync.rs` + GET_DATA_RANGE response decode (SYNC-10)
+
+---
+
+#### Phase 99: Gen4 Packet47 Reassembly + Identity Validation
+
+**Goal**: Gen4 historical bodies no longer dropped on `61080005`; device identity validated in `HISTORICAL_DATA_RESULT` ACK
+**Depends on**: None
+**Requirements**: SYNC-09, SYNC-11
+**Success Criteria** (what must be TRUE):
+
+  1. Gen4 historical sync produces type-47 bodies in decoded_frames; `reassembly.dropped` count is 0 during sync
+  2. `HISTORICAL_DATA_RESULT` ACK reads 8-byte identity payload and validates against connected device; mismatch logged + sync aborted cleanly
+  3. `#20` and `#163` closed; all existing Rust tests pass
+
+**Plans**:
+
+- [ ] 99-01-PLAN.md — Gen4 characteristic `61080005` reassembly fix in Rust frame parser (SYNC-09)
+- [ ] 99-02-PLAN.md — Device identity validation in `HISTORICAL_DATA_RESULT` ACK handler (SYNC-11)
+
+---
+
+#### Phase 100: BLE Reliability — MTU 247 + LE 2M PHY + Off-Wrist Detection
+
+**Goal**: BLE throughput maximised via MTU/PHY negotiation; off-wrist state tracked via cmd `0x54`
+**Depends on**: None
+**Requirements**: BLE-01, BLE-02
+**Success Criteria** (what must be TRUE):
+
+  1. `peripheral.maximumWriteValueLength` ≥ 244 after MTU request; LE 2M PHY set on connect; effective MTU logged in BLE session start event
+  2. `GET_BODY_LOCATION_AND_STATUS` (cmd `0x54`) sent on connect; response parsed; `isOnWrist: Bool` exposed in `BLEState`; UI shows on-wrist/off-wrist indicator
+  3. `#159` and `#161` closed; no regression on Gen4/Gen5/MG connect flow
+
+**Plans**:
+
+- [ ] 100-01-PLAN.md — MTU 247 request + LE 2M PHY in `CoreBluetoothBLETransport` (BLE-01)
+- [ ] 100-02-PLAN.md — Off-wrist detection via cmd 0x54 + `BLEState.isOnWrist` + UI indicator (BLE-02)
+
+---
+
+#### Phase 101: HPS Telemetry + Coach Crash + Protocol Cleanup
+
+**Goal**: Sync quality telemetry logged per session; Coach crash fixed; protocol layer cleaned up
+**Depends on**: None
+**Requirements**: SYNC-12, BUG-COACH-01, PROTO-08, PROTO-09, PROTO-10, PROTO-11
+**Success Criteria** (what must be TRUE):
+
+  1. Each historical sync session logs: throughput (bytes/s), burst duration (ms), gap count; data visible in Debug > Logs
+  2. Tapping Coach after setup no longer crashes; root cause fixed
+  3. `PACKET_TYPE_*` constants promoted to Rust enum; `parse_data_packet_body_summary` has no silent `_ =>` arm; `data_packet_domain()` in sync with parse arms; `CommandDefinition` registry in bridge
+  4. `#162`, `#170`, `#157` closed; `cargo test --locked` passes clean
+
+**Plans**:
+
+- [ ] 101-01-PLAN.md — HPS sync quality telemetry (throughput, burst, gaps) in Rust historical sync + Swift Debug view (SYNC-12)
+- [ ] 101-02-PLAN.md — Coach crash root cause fix (BUG-COACH-01)
+- [ ] 101-03-PLAN.md — Protocol enum + silent arm + registry cleanup in Rust (PROTO-08/09/10/11)
+
+---
+
+#### Phase 102: Gen4 Undecoded Metrics
+
+**Goal**: `respiratory_rate`, `skin_temp_delta_c`, HRV RR intervals decoded from Gen4 historical packet bytes
+**Depends on**: Phase 99 (clean Gen4 packet47 data)
+**Requirements**: GEN4-07
+**Success Criteria** (what must be TRUE):
+
+  1. Gen4 `MetricFeatures` populates `respiratory_rate` and `skin_temp_delta_c` from packet bytes; no longer always `None`
+  2. RR intervals extracted from Gen4 historical stream; HRV candidates not blocked by scale-unverified gate if units confirmed
+  3. `#21` closed or progress comment posted with specific remaining gate
+
+**Plans**:
+
+- [ ] 102-01-PLAN.md — Gen4 metric byte offsets research + `MetricFeatures` decode impl (GEN4-07)
+
+---
+
+#### Phase 103: Android Scaffold + JNI Bridge
+
+**Goal**: `android/` Kotlin/Compose project skeleton; `GooseBridge.kt` JNI wrapper calling `libgoose_core.so`
+**Depends on**: None
+**Requirements**: AND-01
+**Success Criteria** (what must be TRUE):
+
+  1. `android/` directory with `build.gradle`, `settings.gradle`, `app/` module; Kotlin/Compose skeleton with 4-tab structure (Home/Health/Coach/More)
+  2. `GooseBridge.kt` class with `System.loadLibrary("goose_core")` and `external fun handle(request: String): String`
+  3. `./gradlew assembleDebug` builds successfully with `libgoose_core.so` from `android-libs/`; `GooseBridge.handle("{}")` returns JSON without crash in a unit test
+
+**Plans**:
+
+- [ ] 103-01-PLAN.md — Android project scaffold + Kotlin/Compose skeleton + GooseBridge.kt JNI (AND-01)
+
+---
+
+#### Phase 104: Android BLE Stack
+
+**Goal**: Android connects to WHOOP Gen4/Gen5/MG via `BluetoothGatt`; packet framing mirrors iOS
+**Depends on**: Phase 103
+**Requirements**: AND-02
+**Success Criteria** (what must be TRUE):
+
+  1. `WhoopBleClient` (Android) connects to device matching Gen4 (`61080001`) or Gen5 (`FD4B0001`) service UUID via `BluetoothGatt`
+  2. Characteristic notification subscribed on data characteristic; incoming bytes passed through packet framer matching iOS `NotificationFrameParser` logic
+  3. Decoded packets forwarded to `GooseBridge.handle()` for parse; raw frame stored in SQLite via bridge
+
+**Plans**:
+
+- [ ] 104-01-PLAN.md — Android BLE GATT client + packet framing + Rust bridge integration (AND-02)
+
+---
+
+#### Phase 105: Android Historical Sync
+
+**Goal**: Android runs historical sync end-to-end; packet type 47 bodies routed correctly
+**Depends on**: Phase 104, Phase 98
+**Requirements**: AND-03
+**Success Criteria** (what must be TRUE):
+
+  1. Android sends `GET_DATA_RANGE` + `SEND_HISTORICAL_DATA`; body packets (type 47) received and stored in SQLite
+  2. SYNC-08 routing fix applied: type-47 packets dispatched to sync handler (not dropped) during active Android sync
+  3. At least one complete Gen5 historical sync produces `decoded_frames` rows on Android
+
+**Plans**:
+
+- [ ] 105-01-PLAN.md — Android historical sync port (AND-03)
+
+---
+
+#### Phase 106: Android Metrics + Server Upload
+
+**Goal**: Android displays WHOOP metrics; POSTs captured frames to configured server URL
+**Depends on**: Phase 105
+**Requirements**: AND-04
+**Success Criteria** (what must be TRUE):
+
+  1. Home tab shows live HR; Health tab shows Recovery/Strain/Sleep from `GooseBridge.handle("metrics.*")` calls
+  2. Captured frames uploaded to server via HTTP POST; server URL configurable in settings
+  3. Feature parity with iOS v13.0 data surface (same metric queries, same server endpoint)
+
+**Plans**:
+
+- [ ] 106-01-PLAN.md — Android metrics display + server upload (AND-04)
+
+---
+
+#### Phase 107: Android CI APK
+
+**Goal**: Unsigned APK built and attached to every GitHub release via CI
+**Depends on**: Phase 106
+**Requirements**: AND-05
+**Success Criteria** (what must be TRUE):
+
+  1. APK build step uncommented in `android-core.yml`; `./gradlew assembleRelease` runs clean in CI
+  2. `app-release-unsigned.apk` attached to GitHub release on every `v*` tag push
+  3. CI run passes on `v14.0` tag
+
+**Plans**:
+
+- [ ] 107-01-PLAN.md — Enable APK CI step in android-core.yml (AND-05)
+
+---
+
+#### Phase 108: Battery Level Gen4+Gen5
+
+**Goal**: Battery percentage shown in iOS app for all device generations
+**Depends on**: None
+**Requirements**: BAT-01
+**Success Criteria** (what must be TRUE):
+
+  1. Event-48 battery payload parsed automatically (~every 8 min); `BLEState.batteryPercent` updated
+  2. Cmd-26 (`GET_BATTERY_LEVEL`) response parsed on explicit query
+  3. Gen5 R22 realtime battery parsed from live data stream; merged with event/cmd sources
+  4. Battery level displayed in device status UI (top of Home or device card)
+
+**Plans**:
+
+- [ ] 108-01-PLAN.md — Battery level parsing (event-48 + cmd-26 + R22) + UI display (BAT-01)
+
+---
+
+#### Phase 109: WHOOP MG Sync Fix
+
+**Goal**: WHOOP MG historical sync completes; detection hardened beyond name heuristic
+**Depends on**: None
+**Requirements**: MG-03
+**Success Criteria** (what must be TRUE):
+
+  1. `#22` root cause identified (advertisement detection gap or sync routing mismatch); fix applied
+  2. MG detection does not rely solely on `peripheral.name?.contains(" mg")` — advertisement byte confirmed or safe fallback documented in code
+  3. MG historical sync completes without "no packet bodies" failure on a real or simulated MG device
+
+**Plans**:
+
+- [ ] 109-01-PLAN.md — WHOOP MG sync root cause fix + detection hardening (MG-03)
+
+---
+
+#### Phase 110: Code Health — Unwraps + Connection Pool + Bot Audit
+
+**Goal**: 0 naked `.unwrap()` in Rust production code; SQLite connection pool; bot audit findings resolved
+**Depends on**: None
+**Requirements**: ARCH-11, BP-03, AUDIT-01
+**Success Criteria** (what must be TRUE):
+
+  1. `grep -rn '\.unwrap()' Rust/core/src/` excluding tests returns 0 matches; each replaced with `?` or `expect("invariant: …")`
+  2. Rust bridge handlers use a shared SQLite connection pool (`r2d2` or `deadpool`); per-request `Connection::open()` eliminated
+  3. Bot audit findings (#59) verified: `let_chains` syntax checked against Rust edition 2024; `partial_plan_state` and `EnergyCaptureValidationReport` completeness verified; genuine bugs fixed; `#59` closed
+
+**Plans**:
+
+- [ ] 110-01-PLAN.md — Replace 38 naked `.unwrap()` with `?` / `expect` in production Rust (ARCH-11)
+- [ ] 110-02-PLAN.md — SQLite connection pool setup + bridge handler migration (BP-03)
+- [ ] 110-03-PLAN.md — Bot audit #59 findings verify + fix (AUDIT-01)
+
+---
+
+#### Phase 111: Protocol Offset + FFI Safety Comments
+
+**Goal**: WHY comments at all empirical protocol byte offsets; FFI safety contracts documented
+**Depends on**: Phase 110
+**Requirements**: COMM-04, COMM-05
+**Success Criteria** (what must be TRUE):
+
+  1. Every empirical WHOOP byte offset in Rust source has a `//` comment explaining the offset origin (event-48 battery layout, cmd-26 response, Gen4 `61080005` framing, MG advertisement candidate)
+  2. `goose_bridge_handle_json` (C FFI) and `Java_com_goose_core_GooseBridge_handle` (JNI) both have `// SAFETY:` comment blocks explaining caller contract
+  3. No WHAT comments added; only WHY — explains non-obvious constraints or empirical derivation
+
+**Plans**:
+
+- [ ] 111-01-PLAN.md — Protocol offset WHY comments in Rust (COMM-04)
+- [ ] 111-02-PLAN.md — FFI safety contract comments at C and JNI entry points (COMM-05)
+
+---
+
 ## Progress
 
 | Phase | Milestone | Status | Completed |
@@ -757,12 +1008,26 @@ Plans:
 | 89 | 3/3 | Complete   | 2026-06-18 |
 | 90 | 4/4 | Complete   | 2026-06-18 |
 | 91 | 2/2 | Complete   | 2026-06-18 |
-| 92 | 1/3 | In Progress|  |
-| 93 | v13.0 | Pending | — |
-| 94 | v13.0 | Pending | — |
-| 95 | 2/2 | Complete   | 2026-06-19 |
-| 96 | 1/2 | In Progress|  |
-| 97 | 4/4 | Complete   | 2026-06-20 |
+| 92 | v13.0 | Complete | 2026-06-20 |
+| 93 | v13.0 | Complete | 2026-06-20 |
+| 94 | v13.0 | Complete | 2026-06-20 |
+| 95 | v13.0 | Complete | 2026-06-19 |
+| 96 | v13.0 | Complete | 2026-06-20 |
+| 97 | v13.0 | Complete | 2026-06-20 |
+| 98 | v14.0 | Pending | — |
+| 99 | v14.0 | Pending | — |
+| 100 | v14.0 | Pending | — |
+| 101 | v14.0 | Pending | — |
+| 102 | v14.0 | Pending | — |
+| 103 | v14.0 | Pending | — |
+| 104 | v14.0 | Pending | — |
+| 105 | v14.0 | Pending | — |
+| 106 | v14.0 | Pending | — |
+| 107 | v14.0 | Pending | — |
+| 108 | v14.0 | Pending | — |
+| 109 | v14.0 | Pending | — |
+| 110 | v14.0 | Pending | — |
+| 111 | v14.0 | Pending | — |
 
 ## Backlog
 
