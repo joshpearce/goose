@@ -17,40 +17,50 @@ If you don't know what Xcode is, or how to build the Rust core, this build is no
 
 ![Goose app hero showing a connected WHOOP 5.0 device](docs/assets/readme-hero.png)
 
-This prototype targets WHOOP 5.0 and WHOOP 4.0. Other WHOOP generations are not supported in this build.
+This prototype targets WHOOP 5.0, WHOOP 4.0, and WHOOP MG. Other WHOOP generations are not supported in this build.
 
 The app and backend have had very little attention put into performance. The app will lag, very considerably. Performance PRs are welcome, or you can wait until I address it in due course.
 
 Goose is a local-first WHOOP data and health metrics project. The iOS app connects to WHOOP bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views. An optional self-hosted server lets you persist decoded biometric streams outside the device.
 
-## What Shipped in v12.0
+## What Shipped in v13.0
 
-v12.0 is the most recent milestone. It is a code health and protocol foundation release — no new user-visible features, but substantial architectural improvements that make v13.0 work safer and faster.
+v13.0 is the most recent milestone. It is a bug fixes, protocol reliability, device coverage, and HealthKit export release.
 
-**Protocol foundation**
+**Bug fixes and reliability**
 
-- `DeviceKind`, `DeviceCapabilities`, and `WireProtocol` types introduced — device-aware dispatch replaces per-call conditionals.
-- BLE layer migrated to a Swift actor for safe concurrent access.
+- Auth exhaustion recovery — `authRetryCount` / `authExhausted` state with a user-visible alert on `ConnectionView` when auth retries are spent.
+- Export OOM guard — large SQLite DB (> 20 MB) now blocks the raw bytes toggle instead of crashing.
+- Manifest pipeline corrected — by-reference pipeline and bridge arg alignment fixed.
 
-**Rust core restructuring**
+**Protocol cleanup**
 
-- `bridge.rs` split into focused dispatch modules — individual concern files instead of a single 500+ arm match.
-- `store.rs` split into domain submodules — schema, capture, metrics, sleep, activity, and sync concerns separated.
-- SQLite schema v22.
-- 47 integration test files in `Rust/core/tests/`.
+- `PacketType` enum introduced — 17 `PACKET_TYPE_*` constants removed.
+- `DataPacketBodySummary::Unknown` variant replaces the silent wildcard arm.
+- `CommandDefinition` registry parity test added.
 
-**Crash safety**
+**Gen4 historical sync**
 
-- `unwrap()` audit across Rust core — panicking calls replaced with proper error propagation.
+- `V24History` guard and `respiratory_rate_plan_from_payload` arm for Gen4 packets.
+- `R22Whoop5Hr` added to HR trusted frames.
 
-**Swift architecture**
+**WHOOP MG support**
 
-- `HealthDataStore` ownership rationalised — single creation site, injected at scene root.
-- Domain ViewModels introduced — sleep, recovery, strain, and cardio views no longer read directly from the global store.
+- `DeviceKind::WhoopMg` added to Rust core; `DeviceType::Maverick` remapped.
+- 3-way MG detection in Swift + `onCapabilitiesUpdated` callback for `connectedDeviceGeneration`.
+- `DeviceCapabilities` carries `deviceKind` through the bridge.
 
-**Threading**
+**Swift reliability**
 
-- `THREADING:` invariant comments added to all queue-protected types and Swift bridge entry points.
+- 9 silent `try?` bridge call sites replaced with `do/catch` and proper error logging.
+- `r2d2` connection pool added to the Rust bridge — replaces per-call connection creation.
+
+**HealthKit export (Bevel integration)**
+
+- `GooseHealthKitExporter` — writes HR, SpO2, and sleep sessions to HealthKit after each sync.
+- HRV write path added (HK-02).
+- Export trigger wired to `enableHealthKitExport()` and post-sleep-sync hook.
+- Toggle in More > Apple Health to enable/disable export.
 
 ## Project Layout
 
