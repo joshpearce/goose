@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, default_correlation_end,
-    default_correlation_start, metric_result_to_value, open_bridge_store,
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok,
+    default_correlation_end, default_correlation_start, metric_result_to_value,
     register_built_in_definitions, request_args,
 };
 use crate::{
@@ -1254,7 +1254,7 @@ struct RecoveryV1BridgeArgs {
 }
 
 fn goose_recovery_v1_bridge(args: RecoveryV1BridgeArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let baseline = EwmaBaseline::fold_history(&store)?;
     let input = RecoveryV1Input {
         device_id: args.device_id,
@@ -1306,7 +1306,7 @@ struct ExerciseSessionsBetweenArgs {
 fn exercise_detect_sessions_bridge(
     args: DetectExerciseSessionsArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let hr: Vec<crate::exercise_detection::HrSample> = args
         .hr_samples
         .iter()
@@ -1364,7 +1364,7 @@ fn exercise_detect_sessions_bridge(
 fn exercise_sessions_between_bridge(
     args: ExerciseSessionsBetweenArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows = store.exercise_sessions_between(&args.device_id, args.ts_start, args.ts_end)?;
     Ok(json!({ "sessions": rows }))
 }
@@ -1429,7 +1429,7 @@ struct Spo2FromRawArgs {
 fn insert_v24_biometric_batch_bridge(args: InsertV24BatchArgs) -> GooseResult<serde_json::Value> {
     use crate::store::V24BiometricBatch;
 
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let mut warnings: Vec<String> = Vec::new();
 
     // Build SpO2 tuples with plausibility gate
@@ -1491,7 +1491,7 @@ fn insert_v24_biometric_batch_bridge(args: InsertV24BatchArgs) -> GooseResult<se
 }
 
 fn v24_biometric_samples_between_bridge(args: V24BetweenArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let window =
         store.v24_biometric_samples_between(&args.device_id, args.start_ts, args.end_ts)?;
 
@@ -1555,7 +1555,7 @@ fn default_resp_available() -> bool {
 }
 
 fn sleep_staging_bridge(args: SleepStagingBridgeArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let gravity_rows: Vec<GravityRow> =
         store.gravity_rows_between(&args.device_id, args.sleep_start_ts, args.sleep_end_ts)?;
     let tuples: Vec<(f64, f64, f64, f64)> =
@@ -1665,7 +1665,7 @@ fn normalize_sleep_v1_input_value(input: serde_json::Value) -> serde_json::Value
 }
 
 fn metric_input_readiness_bridge(args: MetricInputReadinessArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let correlation = run_capture_correlation_for_store(
         &store,
         &args.database_path,
@@ -1692,7 +1692,7 @@ fn metric_input_readiness_bridge(args: MetricInputReadinessArgs) -> GooseResult<
 }
 
 fn motion_features_bridge(args: MotionFeaturesArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_motion_feature_report_for_store(
         &store,
         &args.database_path,
@@ -1711,7 +1711,7 @@ fn motion_features_bridge(args: MotionFeaturesArgs) -> GooseResult<serde_json::V
 }
 
 fn heart_rate_features_bridge(args: HeartRateFeaturesArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_heart_rate_feature_report_for_store(
         &store,
         &args.database_path,
@@ -1732,7 +1732,7 @@ fn heart_rate_features_bridge(args: HeartRateFeaturesArgs) -> GooseResult<serde_
 }
 
 fn vital_event_features_bridge(args: VitalEventFeaturesArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_vital_event_feature_report_for_store(
         &store,
         &args.database_path,
@@ -1753,7 +1753,7 @@ fn vital_event_features_bridge(args: VitalEventFeaturesArgs) -> GooseResult<serd
 }
 
 fn step_packet_discovery_bridge(args: StepPacketDiscoveryArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_step_packet_discovery_for_store(
         &store,
         &args.database_path,
@@ -1773,7 +1773,7 @@ fn step_packet_discovery_bridge(args: StepPacketDiscoveryArgs) -> GooseResult<se
 fn step_capture_validation_bridge(
     args: StepCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_step_capture_validation_for_store(
         &store,
         &args.database_path,
@@ -1798,7 +1798,7 @@ fn step_capture_validation_bridge(
 fn raw_motion_step_estimate_bridge(
     args: RawMotionStepEstimateArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_raw_motion_step_estimate_for_store(
         &store,
         &args.database_path,
@@ -1829,7 +1829,7 @@ fn raw_motion_step_estimate_bridge(
 }
 
 fn step_counter_ingest_bridge(args: StepCounterIngestArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_step_counter_ingest_for_store(
         &store,
         &args.database_path,
@@ -1849,7 +1849,7 @@ fn step_counter_ingest_bridge(args: StepCounterIngestArgs) -> GooseResult<serde_
 fn step_counter_daily_rollup_bridge(
     args: StepCounterDailyRollupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_device_step_counter_day(
         &store,
         StepCounterDailyRollupOptions {
@@ -1871,7 +1871,7 @@ fn step_counter_daily_rollup_bridge(
 fn step_counter_hourly_rollup_bridge(
     args: StepCounterHourlyRollupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_device_step_counter_hour(
         &store,
         StepCounterHourlyRollupOptions {
@@ -1893,7 +1893,7 @@ fn step_counter_hourly_rollup_bridge(
 fn activity_unavailable_daily_status_bridge(
     args: ActivityUnavailableDailyStatusArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_activity_unavailable_daily_status_for_store(
         &store,
         ActivityUnavailableDailyStatusOptions {
@@ -1915,7 +1915,7 @@ fn activity_unavailable_daily_status_bridge(
 fn daily_activity_metrics_bridge(
     args: DailyActivityMetricListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metrics =
         store.daily_activity_metrics_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     Ok(json!({
@@ -1931,7 +1931,7 @@ fn daily_activity_metrics_bridge(
 fn hourly_activity_metrics_bridge(
     args: HourlyActivityMetricListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metrics =
         store.hourly_activity_metrics_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     Ok(json!({
@@ -1947,7 +1947,7 @@ fn hourly_activity_metrics_bridge(
 fn daily_recovery_metrics_bridge(
     args: DailyRecoveryMetricListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metrics =
         store.daily_recovery_metrics_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     Ok(json!({
@@ -1961,7 +1961,7 @@ fn daily_recovery_metrics_bridge(
 }
 
 fn energy_daily_rollup_bridge(args: EnergyDailyRollupArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_energy_day_for_store(
         &store,
         &args.database_path,
@@ -1994,7 +1994,7 @@ fn energy_daily_rollup_bridge(args: EnergyDailyRollupArgs) -> GooseResult<serde_
 fn energy_unavailable_daily_status_bridge(
     args: EnergyDailyRollupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_energy_unavailable_daily_status_for_store(
         &store,
         &args.database_path,
@@ -2025,7 +2025,7 @@ fn energy_unavailable_daily_status_bridge(
 }
 
 fn energy_hourly_rollup_bridge(args: EnergyHourlyRollupArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_energy_hour_for_store(
         &store,
         &args.database_path,
@@ -2057,7 +2057,7 @@ fn energy_hourly_rollup_bridge(args: EnergyHourlyRollupArgs) -> GooseResult<serd
 fn energy_capture_validation_bridge(
     args: EnergyCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = validate_energy_capture_for_store(
         &store,
         &args.database_path,
@@ -2136,7 +2136,7 @@ fn hrv_features_bridge(args: HrvFeaturesArgs) -> GooseResult<serde_json::Value> 
         GOOSE_HRV_V0_ID,
         GOOSE_HRV_V0_VERSION,
     )?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_hrv_feature_report_for_store(
         &store,
         &args.database_path,
@@ -2167,7 +2167,7 @@ fn hrv_features_bridge(args: HrvFeaturesArgs) -> GooseResult<serde_json::Value> 
 }
 
 fn hrv_capture_validation_bridge(args: HrvCaptureValidationArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_hrv_capture_validation_for_store(
         &store,
         &args.database_path,
@@ -2199,7 +2199,7 @@ fn hrv_capture_validation_bridge(args: HrvCaptureValidationArgs) -> GooseResult<
 fn respiratory_rate_capture_validation_bridge(
     args: RespiratoryRateCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_respiratory_rate_capture_validation_for_store(
         &store,
         &args.database_path,
@@ -2228,7 +2228,7 @@ fn respiratory_rate_capture_validation_bridge(
 fn oxygen_saturation_capture_validation_bridge(
     args: OxygenSaturationCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_oxygen_saturation_capture_validation_for_store(
         &store,
         &args.database_path,
@@ -2257,7 +2257,7 @@ fn oxygen_saturation_capture_validation_bridge(
 fn temperature_capture_validation_bridge(
     args: TemperatureCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_temperature_capture_validation_for_store(
         &store,
         &args.database_path,
@@ -2286,7 +2286,7 @@ fn temperature_capture_validation_bridge(
 fn recovery_sensor_discovery_bridge(
     args: RecoverySensorDiscoveryArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_recovery_sensor_discovery_report_for_store(
         &store,
         &args.database_path,
@@ -2310,7 +2310,7 @@ fn recovery_sensor_discovery_bridge(
 fn recovery_unavailable_daily_status_bridge(
     args: RecoveryUnavailableDailyStatusArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_recovery_unavailable_daily_status_for_store(
         &store,
         &args.database_path,
@@ -2337,7 +2337,7 @@ fn recovery_unavailable_daily_status_bridge(
 fn recovery_sensor_daily_rollup_bridge(
     args: RecoverySensorDailyRollupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_recovery_sensor_daily_for_store(
         &store,
         &args.database_path,
@@ -2362,7 +2362,7 @@ fn recovery_sensor_daily_rollup_bridge(
 }
 
 fn metric_window_features_bridge(args: MetricWindowFeaturesArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_metric_window_feature_report_for_store(
         &store,
         &args.database_path,
@@ -2387,7 +2387,7 @@ fn metric_window_features_bridge(args: MetricWindowFeaturesArgs) -> GooseResult<
 fn resting_heart_rate_features_bridge(
     args: RestingHeartRateFeaturesArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_resting_heart_rate_feature_report_for_store(
         &store,
         &args.database_path,
@@ -2412,7 +2412,7 @@ fn resting_heart_rate_features_bridge(
 fn resting_heart_rate_daily_rollup_bridge(
     args: RestingHeartRateDailyRollupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = rollup_resting_heart_rate_day_for_store(
         &store,
         &args.database_path,
@@ -2441,7 +2441,7 @@ fn resting_heart_rate_daily_rollup_bridge(
 fn resting_heart_rate_capture_validation_bridge(
     args: RestingHeartRateCaptureValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = validate_resting_heart_rate_capture_for_store(
         &store,
         &args.database_path,
@@ -3217,7 +3217,7 @@ fn sleep_feature_score_bridge(args: SleepFeatureScoreArgs) -> GooseResult<serde_
             )));
         }
     };
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_sleep_feature_score_report_for_store(
         &store,
         &args.database_path,
@@ -3296,7 +3296,7 @@ fn recovery_feature_score_bridge(args: RecoveryFeatureScoreArgs) -> GooseResult<
         GOOSE_RECOVERY_V0_ID,
         GOOSE_RECOVERY_V0_VERSION,
     )?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let hrv_start = args.hrv_start.as_deref().unwrap_or(&args.start);
     let hrv_end = args.hrv_end.as_deref().unwrap_or(&args.end);
     let sleep_start = args.sleep_start.as_deref().unwrap_or(&args.start);
@@ -3378,7 +3378,7 @@ fn strain_feature_score_bridge(args: StrainFeatureScoreArgs) -> GooseResult<serd
         GOOSE_STRAIN_V0_ID,
         GOOSE_STRAIN_V0_VERSION,
     )?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let resting_start = args.resting_start.as_deref().unwrap_or(&args.start);
     let resting_end = args.resting_end.as_deref().unwrap_or(&args.end);
     let report = run_strain_feature_score_report_for_store(
@@ -3421,7 +3421,7 @@ fn stress_feature_score_bridge(args: StressFeatureScoreArgs) -> GooseResult<serd
         GOOSE_STRESS_V0_ID,
         GOOSE_STRESS_V0_VERSION,
     )?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let hrv_start = args.hrv_start.as_deref().unwrap_or(&args.start);
     let hrv_end = args.hrv_end.as_deref().unwrap_or(&args.end);
     let report = run_stress_feature_score_report_for_store(
@@ -3496,7 +3496,7 @@ fn evaluate_stored_calibration_labels_bridge(
         return Err(GooseError::message("start must be earlier than end"));
     }
 
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let algorithm_runs = store.algorithm_runs_overlapping(&args.start, &args.end)?;
     let labels = store.calibration_labels_between(&args.start, &args.end)?;
     let (dataset, matched_records, dataset_issues) =
@@ -3550,7 +3550,7 @@ fn import_calibration_labels_bridge(
             "at least one calibration label is required",
         ));
     }
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let mut inserted = 0usize;
     let mut existing = 0usize;
     let mut labels = Vec::new();
@@ -3601,7 +3601,7 @@ fn list_calibration_labels_bridge(
     if args.start >= args.end {
         return Err(GooseError::message("start must be earlier than end"));
     }
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let labels = store.calibration_labels_between(&args.start, &args.end)?;
     Ok(json!({
         "schema": "goose.calibration-label-list.v1",
@@ -3615,7 +3615,7 @@ fn list_calibration_labels_bridge(
 }
 
 fn apply_calibration_bridge(args: ApplyCalibrationArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let calibration_run = match args.calibration_run_id.as_deref() {
         Some(calibration_run_id) if !calibration_run_id.trim().is_empty() => {
             store.calibration_run(calibration_run_id)?.ok_or_else(|| {
@@ -3666,7 +3666,7 @@ fn maybe_persist_calibration_report(
         .ok_or_else(|| {
             GooseError::message("calibration_run_id is required when persist is true")
         })?;
-    let store = open_bridge_store(database_path)?;
+    let store = acquire_bridge_conn(database_path)?;
     register_built_in_definitions(&store)?;
     let record = calibration_run_record(calibration_run_id, report)?;
     store.insert_calibration_run(&record)
@@ -3845,7 +3845,7 @@ fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serd
             args.metric_name
         )));
     }
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let inserted =
         store.insert_metric_series(&args.source, &args.metric_name, &args.date, args.value)?;
     Ok(json!({
@@ -3858,7 +3858,7 @@ fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serd
 fn metric_series_query_range_bridge(
     args: MetricSeriesQueryRangeArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows = store.query_metric_series_range(
         &args.metric_name,
         &args.start_date,
@@ -4053,7 +4053,7 @@ fn default_property_cases() -> usize {
 fn imu_step_count_from_decoded_frames_bridge(
     args: ImuStepCountFromDecodedFramesArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
 
     let start_dt = chrono_from_unix(args.start_ts);
     let end_dt = chrono_from_unix(args.end_ts);

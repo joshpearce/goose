@@ -15,7 +15,7 @@ use goose_core::{
         algorithm_run_record, built_in_algorithm_definitions, goose_hrv_v0, goose_sleep_v1,
         hrv_run_record,
     },
-    protocol::{DeviceType, PACKET_TYPE_REALTIME_RAW_DATA, build_v5_payload_frame},
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     store::{
         ActivityIntervalInput, ActivityLabelInput, ActivityMetricInput, ActivitySessionInput,
         AlgorithmDefinitionRecord, AlgorithmRunRecord, CalibrationLabelInput, CalibrationRunRecord,
@@ -3670,7 +3670,7 @@ fn k10_motion_frame_hex_with_timestamp_subseconds(
     timestamp_subseconds: u16,
 ) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     put_u32(&mut payload, 7, timestamp_seconds);

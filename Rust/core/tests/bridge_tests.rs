@@ -21,10 +21,7 @@ use goose_core::{
     export::validate_export_bundle,
     fixtures::build_fixture_index,
     metrics::{GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION, built_in_algorithm_definitions},
-    protocol::{
-        DeviceType, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_R22_REALTIME_DATA,
-        PACKET_TYPE_REALTIME_RAW_DATA, build_v5_payload_frame, parse_frame_hex,
-    },
+    protocol::{DeviceType, PacketType, build_v5_payload_frame, parse_frame_hex},
     recovery_rollup::{
         GOOSE_RECOVERY_UNAVAILABLE_STATUS_V0_ID, GOOSE_RECOVERY_UNAVAILABLE_STATUS_V0_VERSION,
         GOOSE_RESTING_HEART_RATE_DEVICE_SENSOR_V0_ID,
@@ -8993,7 +8990,7 @@ fn k10_motion_frame_hex() -> String {
 
 fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     for offset in [85, 285, 485, 688, 888, 1088] {
@@ -9006,7 +9003,7 @@ fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
 
 fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 84;
     for offset in [85, 285, 485] {
@@ -9019,7 +9016,7 @@ fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
 
 fn historical_k18_frame_hex(marker_value: u8) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -9049,7 +9046,7 @@ fn historical_k18_frame_hex(marker_value: u8) -> String {
 
 fn temperature_event_frame_hex(body: &[u8]) -> String {
     let mut payload = vec![
-        PACKET_TYPE_EVENT,
+        u8::from(PacketType::Event),
         2,
         17,
         0,
@@ -9072,7 +9069,7 @@ fn historical_k18_frame_hex_with_vital_candidates(
     respiratory_rate_tenths_rpm: u16,
 ) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -9104,7 +9101,7 @@ fn historical_k18_frame_hex_with_vital_candidates(
 
 fn r17_frame_hex(rr_candidates: &[i16]) -> String {
     let mut payload = vec![0; 26 + rr_candidates.len() * 2];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 17;
     payload[2] = 1;
     put_u16(&mut payload, 13, (1 << 9) | (1 << 11));
@@ -9670,7 +9667,7 @@ fn bridge_gravity_insert_query_roundtrip() {
 // Phase 50-01: V24History gravity extraction tests
 // ---------------------------------------------------------------------------
 
-/// Build a synthetic K24 (PACKET_TYPE_HISTORICAL_DATA, packet_k=24) frame
+/// Build a synthetic K24 (u8::from(PacketType::HistoricalData), packet_k=24) frame
 /// with the given gravity_x/y/z values encoded as f32 LE at data offsets 33/37/41.
 /// The timestamp_seconds field (payload[7..11]) is left at zero — ts_unix = Some(0.0)
 /// is sufficient for the gravity if-let gate in upload_get_recent_decoded_streams_bridge.
@@ -9679,7 +9676,7 @@ fn historical_k24_frame_hex_with_gravity(gx: f32, gy: f32, gz: f32) -> String {
     // V24 body requires data.len() >= 77 → total payload >= 80 bytes.
     // Use 82 bytes (3 header + 79 data) matching the canonical make_82_byte_payload size.
     let mut payload = vec![0u8; 82];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA; // 47
+    payload[0] = u8::from(PacketType::HistoricalData); // 47
     payload[1] = 24u8; // packet_k = 24
     payload[2] = 1u8; // version
 
@@ -9967,7 +9964,7 @@ fn bridge_band_sleep_no_duplicate() {
 
 fn r22_frame_hex() -> String {
     // R22 realtime packet: battery 80%, HR 132.9 BPM (same fixture as protocol_tests)
-    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x31, 0x05];
+    let payload = [u8::from(PacketType::R22RealtimeData), 0x50, 0x31, 0x05];
     hex::encode(build_v5_payload_frame(&payload))
 }
 

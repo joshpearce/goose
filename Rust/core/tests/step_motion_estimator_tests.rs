@@ -1,6 +1,6 @@
 use goose_core::{
     capture_import::{CapturedFrameBatchOptions, CapturedFrameInput, import_captured_frame_batch},
-    protocol::{DeviceType, PACKET_TYPE_REALTIME_RAW_DATA, build_v5_payload_frame},
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     step_motion_estimator::{
         GOOSE_STEPS_RAW_MOTION_ESTIMATE_V0_ID, GOOSE_STEPS_RAW_MOTION_ESTIMATE_V0_VERSION,
         RawMotionStepEstimateOptions, run_raw_motion_step_estimate_for_store,
@@ -367,7 +367,7 @@ fn import_partial_axis_raw_motion_step_frame(
 
 fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 84;
     for offset in [85, 285, 485] {
@@ -380,7 +380,7 @@ fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
 
 fn partial_axis_k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 84;
     for index in peak_indices {

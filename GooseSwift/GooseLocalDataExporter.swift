@@ -462,6 +462,15 @@ enum GooseLocalDataExporter {
     var sourceReadFailureCount = 0
     var sourceReadFailureIssues: [String] = []
 
+    // Hoist validate() so the result is available in both the do block (bundle JSON summary)
+    // and after the do/catch block (resultValidation). validate() is pure — same args → same result.
+    let baseValidation = validate(
+      exportedRelativePaths: exportedRelativePaths,
+      requiredOvernightSessionID: requiredOvernightSessionID,
+      documentsDirectory: documentsDirectory,
+      fileManager: fileManager
+    ).withBundleJSONValidation(valid: true, error: nil)
+
     do {
       try writeString("{", to: handle)
       try writeJSONObjectFields([
@@ -540,14 +549,7 @@ enum GooseLocalDataExporter {
       if sourceReadFailureCount > sourceReadFailureIssues.count {
         sourceReadFailureIssues.append("failed to read \(sourceReadFailureCount - sourceReadFailureIssues.count) additional selected export files")
       }
-      let validation = sourceReadFailureIssues.reduce(
-        validate(
-          exportedRelativePaths: exportedRelativePaths,
-          requiredOvernightSessionID: requiredOvernightSessionID,
-          documentsDirectory: documentsDirectory,
-          fileManager: fileManager
-        ).withBundleJSONValidation(valid: true, error: nil)
-      ) { validation, issue in
+      let validation = sourceReadFailureIssues.reduce(baseValidation) { validation, issue in
         validation.withAdditionalIssue(issue)
       }
       try writeString("],\"summary\":", to: handle)
@@ -575,14 +577,7 @@ enum GooseLocalDataExporter {
       try? fileManager.removeItem(at: temporaryURL)
       throw error
     }
-    let validation = sourceReadFailureIssues.reduce(
-      validate(
-        exportedRelativePaths: exportedRelativePaths,
-        requiredOvernightSessionID: requiredOvernightSessionID,
-        documentsDirectory: documentsDirectory,
-        fileManager: fileManager
-      ).withBundleJSONValidation(valid: true, error: nil)
-    ) { validation, issue in
+    let validation = sourceReadFailureIssues.reduce(baseValidation) { validation, issue in
       validation.withAdditionalIssue(issue)
     }
     let manifestURL: URL?

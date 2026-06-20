@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use super::{
-    BridgeRequest, BridgeResponse, CAPTURE_ARRIVAL_PLAN_REPORT_SCHEMA, bridge_error, bridge_ok,
-    default_capture_sanitize_salt, default_correlation_end, default_correlation_start,
-    default_device_type, default_parser_version, default_true, open_bridge_store,
+    BridgeRequest, BridgeResponse, CAPTURE_ARRIVAL_PLAN_REPORT_SCHEMA, acquire_bridge_conn,
+    bridge_error, bridge_ok, default_capture_sanitize_salt, default_correlation_end,
+    default_correlation_start, default_device_type, default_parser_version, default_true,
     open_bridge_store_hot, parse_device_type, parse_event48_battery_from_data, request_args,
 };
 use crate::{
@@ -506,6 +506,7 @@ fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
         Some(DataPacketBodySummary::V24History { .. }) => "v24_history",
         Some(DataPacketBodySummary::R22Whoop5Hr { .. }) => "r22_whoop5_hr",
         Some(DataPacketBodySummary::V18History { .. }) => "v18_history",
+        Some(DataPacketBodySummary::Unknown { .. }) => "unknown",
         None => "none",
     }
 }
@@ -659,7 +660,7 @@ fn capture_timeline_bridge(args: CaptureTimelineArgs) -> GooseResult<serde_json:
     if args.start >= args.end {
         return Err(GooseError::message("start must be earlier than end"));
     }
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows = packet_timeline_between(&store, &args.start, &args.end)?;
     serde_json::to_value(rows)
         .map_err(|error| GooseError::message(format!("cannot serialize capture timeline: {error}")))
@@ -689,7 +690,7 @@ fn capture_observability_timeline_bridge(
         ));
     }
 
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let raw_rows = store.raw_evidence_between(&args.start, &args.end)?;
     let packet_rows = packet_timeline_between(&store, &args.start, &args.end)?;
     let debug_rows = store.debug_events_between(args.start_unix_ms, args.end_unix_ms)?;
@@ -742,7 +743,7 @@ fn capture_finish_session_bridge(args: CaptureFinishSessionArgs) -> GooseResult<
 }
 
 fn capture_list_sessions_bridge(args: CaptureListSessionsArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let sessions = store.capture_sessions_between(args.start_unix_ms, args.end_unix_ms)?;
     serde_json::to_value(json!({
         "schema": "goose.capture-session-list.v1",
@@ -753,7 +754,7 @@ fn capture_list_sessions_bridge(args: CaptureListSessionsArgs) -> GooseResult<se
 }
 
 fn capture_correlation_bridge(args: CaptureCorrelationArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = run_capture_correlation_for_store(
         &store,
         &args.database_path,
@@ -774,7 +775,7 @@ fn capture_correlation_bridge(args: CaptureCorrelationArgs) -> GooseResult<serde
 }
 
 fn capture_arrival_plan_bridge(args: CaptureArrivalPlanArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let min_owned_captures = args
         .min_owned_captures
         .unwrap_or(DEFAULT_MIN_OWNED_CAPTURES_PER_SUMMARY);
@@ -1508,7 +1509,7 @@ fn push_arrival_action(
 }
 
 fn sync_mark_synced_bridge(args: SyncMarkSyncedArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let count = store.mark_synced_rows(&args.stream, &args.row_ids)?;
     Ok(json!({"marked": count}))
 }
@@ -1516,13 +1517,13 @@ fn sync_mark_synced_bridge(args: SyncMarkSyncedArgs) -> GooseResult<serde_json::
 fn sync_rows_pending_upload_bridge(
     args: SyncRowsPendingUploadArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows = store.rows_pending_upload(&args.stream, args.limit)?;
     Ok(json!({"rows": rows}))
 }
 
 fn sync_backfill_streams_bridge(args: SyncBackfillStreamsArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report: BackfillReport =
         store.backfill_streams_from_decoded_frames(&args.device_id, args.start_ts, args.end_ts)?;
     Ok(json!({

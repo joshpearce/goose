@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -36,9 +37,9 @@ use crate::{
 };
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, default_algorithm_scope,
-    default_raw_export_app_version, default_raw_export_core_version, default_true,
-    empty_json_object, open_bridge_store, register_built_in_definitions, request_args,
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok,
+    default_algorithm_scope, default_raw_export_app_version, default_raw_export_core_version,
+    default_true, empty_json_object, register_built_in_definitions, request_args,
 };
 
 // ---------------------------------------------------------------------------
@@ -228,7 +229,7 @@ fn raw_export_bridge(args: RawExportArgs) -> GooseResult<serde_json::Value> {
     if args.output_dir.trim().is_empty() {
         return Err(GooseError::message("output_dir is required"));
     }
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let database_path = Path::new(&args.database_path);
     let sqlite_source_path = if args.include_sqlite {
         Some(database_path)
@@ -336,32 +337,42 @@ fn local_health_validation_manifest_scaffold_bridge(
 
 #[derive(Debug, Clone, Deserialize)]
 struct LocalHealthValidationManifestRunbookArgs {
-    manifest: serde_json::Value,
+    #[serde(default)]
+    manifest: Option<serde_json::Value>,
+    #[serde(default)]
+    manifest_path: Option<String>,
 }
 
 fn local_health_validation_manifest_runbook_bridge(
     args: LocalHealthValidationManifestRunbookArgs,
 ) -> GooseResult<serde_json::Value> {
-    if !args.manifest.is_object() {
+    let manifest = if let Some(path) = args.manifest_path {
+        let raw = fs::read_to_string(&path)
+            .map_err(|e| GooseError::message(format!("manifest_path read failed: {e}")))?;
+        serde_json::from_str::<serde_json::Value>(&raw)
+            .map_err(|e| GooseError::message(format!("manifest_path parse failed: {e}")))?
+    } else if let Some(m) = args.manifest {
+        m
+    } else {
+        return Err(GooseError::message("manifest or manifest_path is required"));
+    };
+    if !manifest.is_object() {
         return Err(GooseError::message("manifest object is required"));
     }
-    let markdown = local_health_validation_manifest_runbook_markdown(&args.manifest);
-    let manifest_schema = args
-        .manifest
+    let markdown = local_health_validation_manifest_runbook_markdown(&manifest);
+    let manifest_schema = manifest
         .get("schema")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("unknown");
     Ok(json!({
         "schema": "goose.local-health-validation-runbook.v1",
         "manifest_schema": manifest_schema,
-        "markdown_report_path": args
-            .manifest
+        "markdown_report_path": manifest
             .get("run_validation")
             .and_then(|value| value.get("markdown_report_path"))
             .and_then(serde_json::Value::as_str)
             .unwrap_or("local-health-validation-report.md"),
-        "json_report_path": args
-            .manifest
+        "json_report_path": manifest
             .get("run_validation")
             .and_then(|value| value.get("json_report_path"))
             .and_then(serde_json::Value::as_str)
@@ -372,16 +383,29 @@ fn local_health_validation_manifest_runbook_bridge(
 
 #[derive(Debug, Clone, Deserialize)]
 struct LocalHealthValidationManifestReviewArgs {
-    manifest: serde_json::Value,
+    #[serde(default)]
+    manifest: Option<serde_json::Value>,
+    #[serde(default)]
+    manifest_path: Option<String>,
 }
 
 fn local_health_validation_manifest_review_bridge(
     args: LocalHealthValidationManifestReviewArgs,
 ) -> GooseResult<serde_json::Value> {
-    if !args.manifest.is_object() {
+    let manifest = if let Some(path) = args.manifest_path {
+        let raw = fs::read_to_string(&path)
+            .map_err(|e| GooseError::message(format!("manifest_path read failed: {e}")))?;
+        serde_json::from_str::<serde_json::Value>(&raw)
+            .map_err(|e| GooseError::message(format!("manifest_path parse failed: {e}")))?
+    } else if let Some(m) = args.manifest {
+        m
+    } else {
+        return Err(GooseError::message("manifest or manifest_path is required"));
+    };
+    if !manifest.is_object() {
         return Err(GooseError::message("manifest object is required"));
     }
-    Ok(review_local_health_validation_manifest(&args.manifest))
+    Ok(review_local_health_validation_manifest(&manifest))
 }
 
 // ---------------------------------------------------------------------------
@@ -466,7 +490,7 @@ struct WorkoutUpsertArgs {
 
 fn workout_upsert_bridge(args: WorkoutUpsertArgs) -> GooseResult<serde_json::Value> {
     let provenance_json = super::json_object_string("provenance", &args.provenance)?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let inserted = store.insert_workout(
         &args.date,
         &args.source,
@@ -610,7 +634,7 @@ fn command_validate_evidence_bridge(
             .database_path
             .as_deref()
             .ok_or_else(|| GooseError::message("database_path is required when persist is true"))?;
-        let store = open_bridge_store(database_path)?;
+        let store = acquire_bridge_conn(database_path)?;
         persist_command_validation_results(&store, &report.commands)?;
     }
     serde_json::to_value(report).map_err(|error| {
@@ -666,7 +690,7 @@ fn command_promote_local_frame_matches_bridge(
 fn command_direct_send_gate_bridge(
     args: CommandDirectSendGateArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let result = match store.command_validation_record(&args.command)? {
         Some(record) => Some(command_result_from_report_json(&record.report_json)?),
         None => None,
@@ -679,7 +703,7 @@ fn command_direct_send_gate_bridge(
 fn command_direct_send_preflight_bridge(
     args: CommandDirectSendPreflightArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let result = match store.command_validation_record(&args.command)? {
         Some(record) => Some(command_result_from_report_json(&record.report_json)?),
         None => None,
@@ -711,7 +735,7 @@ fn command_direct_send_preflight_bridge(
 }
 
 fn command_capture_plan_bridge(args: CommandCapturePlanArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let records = store.command_validation_records()?;
     let mut results = Vec::new();
     let mut parse_issues = Vec::new();
@@ -735,7 +759,7 @@ fn command_capture_plan_bridge(args: CommandCapturePlanArgs) -> GooseResult<serd
 fn command_list_validation_records_bridge(
     args: ListCommandValidationRecordsArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let records = store.command_validation_records()?;
     serde_json::to_value(records).map_err(|error| {
         GooseError::message(format!(
@@ -827,7 +851,7 @@ fn command_import_validation_records_bridge(
     let mut ready_count = 0usize;
     let mut blocked_count = 0usize;
     if issues.is_empty() {
-        let store = open_bridge_store(&args.database_path)?;
+        let store = acquire_bridge_conn(&args.database_path)?;
         for record in &records {
             store.upsert_command_validation_record(record)?;
         }
@@ -1059,7 +1083,7 @@ struct DebugSessionSnapshotArgs {
 }
 
 fn debug_start_session_bridge(args: DebugStartSessionArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let snapshot = start_debug_session(
         &store,
         &DebugSessionStartInput {
@@ -1074,7 +1098,7 @@ fn debug_start_session_bridge(args: DebugStartSessionArgs) -> GooseResult<serde_
 }
 
 fn debug_start_command_bridge(args: DebugStartCommandArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let snapshot = start_debug_command(
         &store,
         &DebugCommandStartInput {
@@ -1089,7 +1113,7 @@ fn debug_start_command_bridge(args: DebugStartCommandArgs) -> GooseResult<serde_
 }
 
 fn debug_finish_command_bridge(args: DebugFinishCommandArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let snapshot = finish_debug_command(
         &store,
         &DebugCommandFinishInput {
@@ -1107,7 +1131,7 @@ fn debug_finish_command_bridge(args: DebugFinishCommandArgs) -> GooseResult<serd
 }
 
 fn debug_record_event_bridge(args: DebugRecordEventArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let event = append_debug_event(
         &store,
         &DebugEventInput {
@@ -1126,7 +1150,7 @@ fn debug_record_event_bridge(args: DebugRecordEventArgs) -> GooseResult<serde_js
 }
 
 fn debug_session_snapshot_bridge(args: DebugSessionSnapshotArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let snapshot = debug_session_snapshot(&store, &args.session_id)?;
     serde_json::to_value(snapshot).map_err(|error| {
         GooseError::message(format!("cannot serialize debug session snapshot: {error}"))
@@ -1144,7 +1168,14 @@ struct DeviceCapabilitiesArgs {
 
 fn device_capabilities_bridge(args: DeviceCapabilitiesArgs) -> GooseResult<serde_json::Value> {
     let caps = DeviceCapabilities::for_kind(args.device_kind);
-    serde_json::to_value(caps).map_err(|e| GooseError::message(e.to_string()))
+    let mut value = serde_json::to_value(caps).map_err(|e| GooseError::message(e.to_string()))?;
+    // Inject device_kind so Swift can decode it into DeviceCapabilities.deviceKind.
+    let kind_value =
+        serde_json::to_value(&args.device_kind).map_err(|e| GooseError::message(e.to_string()))?;
+    if let Some(obj) = value.as_object_mut() {
+        obj.insert("device_kind".to_string(), kind_value);
+    }
+    Ok(value)
 }
 
 // ---------------------------------------------------------------------------
@@ -1191,7 +1222,7 @@ fn ewma_baseline_fold_history_bridge(
     args: EwmaBaselineFoldHistoryArgs,
 ) -> GooseResult<serde_json::Value> {
     use crate::baselines::EwmaBaseline;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let baseline = EwmaBaseline::fold_history(&store)?;
     Ok(json!({
         "hrv": ewma_state_to_json(&baseline.hrv, baseline.hrv.trust_level()),
@@ -1213,13 +1244,13 @@ fn ewma_state_to_json(
 }
 
 fn ewma_baseline_update_bridge(args: EwmaBaselineUpdateArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let wrote = store.ewma_baseline_update(&args.date_key, args.hrv_rmssd, args.rhr_bpm)?;
     Ok(json!({"skipped": !wrote}))
 }
 
 fn insert_gravity_rows_bridge(args: InsertGravityRowsArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let tuples: Vec<(f64, f64, f64, f64)> =
         args.rows.iter().map(|r| (r.ts, r.x, r.y, r.z)).collect();
     let inserted = store.insert_gravity_rows(&args.device_id, &tuples)?;
@@ -1227,7 +1258,7 @@ fn insert_gravity_rows_bridge(args: InsertGravityRowsArgs) -> GooseResult<serde_
 }
 
 fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows: Vec<GravityRow> =
         store.gravity_rows_between(&args.device_id, args.ts_start, args.ts_end)?;
     let json_rows: Vec<serde_json::Value> = rows
@@ -1238,7 +1269,7 @@ fn gravity_rows_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serd
 }
 
 fn insert_gravity2_batch_bridge(args: InsertGravityRowsArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let tuples: Vec<(f64, f64, f64, f64)> =
         args.rows.iter().map(|r| (r.ts, r.x, r.y, r.z)).collect();
     let inserted = store.insert_gravity2_batch(&args.device_id, &tuples)?;
@@ -1246,12 +1277,80 @@ fn insert_gravity2_batch_bridge(args: InsertGravityRowsArgs) -> GooseResult<serd
 }
 
 fn gravity2_samples_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let rows: Vec<GravityRow> =
         store.gravity2_samples_between(&args.device_id, args.ts_start, args.ts_end)?;
     let json_rows: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| json!({"ts": r.ts, "x": r.x, "y": r.y, "z": r.z}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
+// store.* — HealthKit export queries
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkHrSamplesBetweenArgs {
+    database_path: String,
+    device_id: String,
+    start_unix_s: f64,
+    end_unix_s: f64,
+}
+
+fn hk_hr_samples_between_bridge(args: HkHrSamplesBetweenArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.hr_samples_between(&args.device_id, args.start_unix_s, args.end_unix_s)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(ts, bpm)| json!({"ts": ts, "bpm": bpm}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkSpo2SamplesBetweenArgs {
+    database_path: String,
+    device_id: String,
+    start_unix_s: f64,
+    end_unix_s: f64,
+}
+
+fn hk_spo2_samples_between_bridge(
+    args: HkSpo2SamplesBetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.spo2_samples_between(&args.device_id, args.start_unix_s, args.end_unix_s)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(ts, spo2_percent)| json!({"ts": ts, "spo2_percent": spo2_percent}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkSleepSessionsBetweenArgs {
+    database_path: String,
+    start_unix_ms: i64,
+    end_unix_ms: i64,
+}
+
+fn hk_sleep_sessions_between_bridge(
+    args: HkSleepSessionsBetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.external_sleep_sessions_between(args.start_unix_ms, args.end_unix_ms)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            json!({
+                "sleep_id": r.sleep_id,
+                "start_time_unix_ms": r.start_time_unix_ms,
+                "end_time_unix_ms": r.end_time_unix_ms,
+                "source": r.source,
+            })
+        })
         .collect();
     Ok(json!({"rows": json_rows}))
 }
@@ -1297,7 +1396,7 @@ struct ListPreferencesArgs {
 fn apply_default_preferences_bridge(
     args: ApplyDefaultPreferencesArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     register_built_in_definitions(&store)?;
     let preferences = default_algorithm_preferences_for_scope(&args.scope);
     for preference in &preferences {
@@ -1308,7 +1407,7 @@ fn apply_default_preferences_bridge(
 }
 
 fn set_algorithm_preference_bridge(args: SetPreferenceArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     if args.register_built_ins {
         register_built_in_definitions(&store)?;
     }
@@ -1324,14 +1423,14 @@ fn set_algorithm_preference_bridge(args: SetPreferenceArgs) -> GooseResult<serde
 }
 
 fn get_algorithm_preference_bridge(args: GetPreferenceArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let preference = store.algorithm_preference(&args.scope, &args.metric_family)?;
     serde_json::to_value(preference)
         .map_err(|error| GooseError::message(format!("cannot serialize preference: {error}")))
 }
 
 fn list_algorithm_preferences_bridge(args: ListPreferencesArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let preferences = store.algorithm_preferences(args.scope.as_deref())?;
     serde_json::to_value(preferences)
         .map_err(|error| GooseError::message(format!("cannot serialize preferences: {error}")))
@@ -1369,7 +1468,7 @@ fn storage_check_bridge(args: StorageCheckArgs) -> GooseResult<serde_json::Value
 fn storage_compact_raw_evidence_bridge(
     args: StorageCompactRawEvidenceArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let report = store.compact_raw_evidence_payloads_to_limit(args.limit_bytes)?;
     serde_json::to_value(report).map_err(|error| {
         GooseError::message(format!("cannot serialize compaction report: {error}"))
@@ -1403,7 +1502,7 @@ fn default_raw_frames_limit() -> usize {
 fn upload_get_recent_decoded_streams_bridge(
     args: UploadGetRecentDecodedStreamsArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
 
     // Convert unix timestamp to ISO-8601 for decoded_frames_between query
     let since_dt = chrono_from_unix(args.since_ts);
@@ -1658,6 +1757,9 @@ fn upload_get_recent_decoded_streams_bridge(
                                 step.push((ts, count as i64));
                             }
                         }
+                        DataPacketBodySummary::Unknown { .. } => {
+                            // Unknown packet_k — no upload stream; skip gracefully.
+                        }
                     }
                 }
 
@@ -1790,7 +1892,7 @@ fn upload_get_recent_decoded_streams_bridge(
 fn upload_get_raw_frames_for_upload_bridge(
     args: UploadGetRawFramesArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let since_dt = chrono_from_unix(args.since_ts);
     let now_dt = chrono_now();
     let all_rows = store.raw_evidence_between(&since_dt, &now_dt)?;
@@ -1973,6 +2075,18 @@ pub(crate) fn dispatch_debug(request: &BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "store.insert_gravity2_batch" => request_args::<InsertGravityRowsArgs>(request)
             .and_then(insert_gravity2_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_hr_samples_between" => request_args::<HkHrSamplesBetweenArgs>(request)
+            .and_then(hk_hr_samples_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_sleep_sessions_between" => request_args::<HkSleepSessionsBetweenArgs>(request)
+            .and_then(hk_sleep_sessions_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_spo2_samples_between" => request_args::<HkSpo2SamplesBetweenArgs>(request)
+            .and_then(hk_spo2_samples_between_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
 

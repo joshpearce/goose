@@ -14,6 +14,7 @@
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
 - ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
 - ✅ **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (shipped 2026-06-19)
+- ✅ **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (shipped 2026-06-20)
 
 ## Phases
 
@@ -318,8 +319,10 @@ Plans:
 
 **Plans**: 2 plans
 Plans:
+
 - [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
 - [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+
 **UI hint**: yes
 
 ---
@@ -338,6 +341,7 @@ Plans:
 
 **Plans**: 3 plans
 Plans:
+
 - [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
 - [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
 - [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
@@ -357,10 +361,12 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
+
 - [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
 - [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
 - [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
 - [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+
 **UI hint**: yes
 
 ---
@@ -527,8 +533,10 @@ Plans:
 
 **Plans**: 2 plans
 Plans:
+
 - [ ] 88-01-PLAN.md — Transfer HealthDataStore ownership into GooseAppModel; wire environmentObject
 - [ ] 88-02-PLAN.md — Convert all child views from parameter to @EnvironmentObject
+
 **UI hint**: yes
 
 ### Phase 89: BLE Actor Refactor
@@ -545,6 +553,7 @@ Plans:
 
 **Plans**: 3 plans
 Plans:
+
 - [ ] 89-01-PLAN.md — BLETransport protocol + rename GooseBLEClient → CoreBluetoothBLETransport (13 files)
 - [ ] 89-02-PLAN.md — BLESessionCoordinator actor + GooseAppModel.ble → any BLETransport
 - [ ] 89-03-PLAN.md — DeviceCatalog struct + replace Gen4/Gen5 capability guards
@@ -562,10 +571,12 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
+
 - [ ] 90-01-PLAN.md — Create BLEState.swift, SyncState.swift, HealthState.swift + register in Xcode project
 - [ ] 90-02-PLAN.md — Migrate GooseAppModel.swift: remove 36 var properties, add 3 domain object lets
 - [ ] 90-03-PLAN.md — Update GooseAppModel extension files to write through domain objects
 - [ ] 90-04-PLAN.md — Inject domain objects in GooseSwiftApp, update view files, build gate
+
 **UI hint**: yes
 
 ### Phase 91: Threading & Algorithm Comments
@@ -582,8 +593,150 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+
 - [ ] 91-01-PLAN.md — Swift threading invariant comments (COMM-02): GooseRustBridge, CaptureFrameWriteQueue, OvernightSQLiteMirrorQueue, GooseAppModel
 - [ ] 91-02-PLAN.md — Rust algorithm coefficient comments (COMM-03): Banister eTRIMP, EWMA alpha, Cole-Kripke scale
+
+</details>
+
+## v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export (Phases 92–97)
+
+### Phase Details
+
+#### Phase 92: Export & Auth Bug Fixes
+
+**Goal**: Export pipeline no longer OOMs on large databases; WHOOP 5.0 auth stuck state surfaces a clear recovery path
+**Depends on**: Phase 91
+**Requirements**: BUG-AUTH-01, BUG-EXP-01, BUG-EXP-02, BUG-EXP-03, BUG-EXP-04
+**Success Criteria** (what must be TRUE):
+
+  1. Export on a > 100 MB database completes without crash — validation pipeline passes manifest by reference, not serialised object
+  2. `runFullRawExport()` does not override `includeRawBytes = false`
+  3. `validate()` is called once inside `createBundle()` — redundant call removed
+  4. "Include Database" button is disabled when SQLite file exceeds 20 MB
+  5. WHOOP 5.0 that exhausts 12 auth retries surfaces a "Reconnect WHOOP" prompt and stops retrying
+  6. iOS build compiles without new warnings
+
+**Plans**:
+1/3 plans executed
+
+- [x] 92-02-PLAN.md — Fix export defaults + disable OOM-risk button (BUG-EXP-02, BUG-EXP-04)
+- [x] 92-03-PLAN.md — Fix WHOOP 5.0 auth stuck state recovery (BUG-AUTH-01)
+
+---
+
+#### Phase 93: HR Data Investigation & Protocol Cleanup
+
+**Goal**: Root cause of no HR data on WHOOP 5.0 fw 50.38.1.0 identified and fixed; protocol.rs PACKET_TYPE constants replaced with enum; silent parse drops eliminated
+**Depends on**: Phase 91
+**Requirements**: BUG-HR-01, PROTO-08, PROTO-09, PROTO-10, PROTO-11
+**Success Criteria** (what must be TRUE):
+
+  1. WHOOP 5.0 firmware 50.38.1.0 successfully streams HR data in the app
+  2. `PACKET_TYPE_*` u16 constants replaced with a Rust enum; all match sites are exhaustive
+  3. `parse_data_packet_body_summary` has no silent wildcard arm — unhandled packet_k values produce a warning string
+  4. Every packet type in `data_packet_domain()` has a corresponding parse arm in `parse_data_packet_body_summary()`
+  5. Bridge routing uses a central dispatch registry; `CommandDefinition` array is in sync
+  6. `cargo test --locked` passes clean
+
+**Plans**: 3 plans
+
+Plans:
+
+- [x] 93-01-PLAN.md — Fix BUG-HR-01: add R22Whoop5Hr arm to heart_rate_plan_from_row + r22_whoop5_hr to trusted_frames (Wave 1)
+- [x] 93-02-PLAN.md — Introduce PacketType enum, delete 17 PACKET_TYPE_* constants, migrate 5 match sites (Wave 1)
+- [x] 93-03-PLAN.md — Unknown variant in DataPacketBodySummary, replace wildcard, COMMAND_DEFINITIONS registry test (Wave 2)
+
+---
+
+#### Phase 94: Gen4 Protocol Completeness
+
+**Goal**: WHOOP 4.0 users see respiratory rate and skin temperature in Recovery; Gen4 historical sync completes without dropping packet47 bodies
+**Depends on**: Phase 93
+**Requirements**: GEN4-06, SYNC-07
+**Success Criteria** (what must be TRUE):
+
+  1. `MetricFeatures.respiratory_rate_rpm` and `skin_temp_delta_c` are populated from Gen4 packet bytes — not `None`
+  2. Gen4 historical sync on service UUID `61080005` produces packet47 body rows in SQLite — no bodies dropped
+  3. `cargo test --locked` passes clean; Rust test fixtures updated for new parse paths
+
+**Plans**:
+
+- [x] 94-01-PLAN.md — Gen4 recovery metric parsing: respiratory_rate + skin_temp byte offsets in Rust (GEN4-06)
+- [x] 94-02-PLAN.md — Gen4 packet47 page_sequence reassembly fix (SYNC-07)
+
+---
+
+#### Phase 95: WHOOP MG DeviceKind
+
+**Goal**: WHOOP MG devices are identified as a separate DeviceKind; sync no longer fails with generic Whoop5 capabilities
+**Depends on**: Phase 83 (DeviceKind infrastructure)
+**Requirements**: MG-01, MG-02
+**Success Criteria** (what must be TRUE):
+
+  1. `DeviceKind::WhoopMg` exists in Rust capabilities.rs with `DeviceCapabilities` reflecting MG-specific flags
+  2. `DeviceType::MG` (or equivalent) maps to `DeviceKind::WhoopMg` in `protocol.rs`
+  3. iOS app parses WHOOP MG BLE advertisement and sets `connectedCapabilities` to WhoopMg
+  4. Device view shows "WHOOP MG" label for MG devices; no regression on Whoop4/Whoop5 identification
+  5. `cargo test --locked` passes clean
+
+**Plans**: 2/2 plans complete
+
+Plans:
+
+- [x] 95-01-PLAN.md — Add DeviceKind::WhoopMg to Rust capabilities.rs + remap Maverick in protocol.rs (MG-01)
+- [x] 95-02-PLAN.md — Swift: 3-way MG BLE detection + deviceKind bridge field + connectedDeviceGeneration label (MG-02)
+
+---
+
+#### Phase 96: Best Practices Gaps
+
+**Goal**: Critical data paths no longer silently swallow bridge errors; Rust core uses a connection pool
+**Depends on**: Phase 91
+**Requirements**: BP-01, BP-02
+**Success Criteria** (what must be TRUE):
+
+  1. All 9 silent `try?` bridge calls in Swift replaced with `do/catch` + `ble.record(level: .error, ...)` — failures are logged
+  2. Rust core opens SQLite via a connection pool — per-request `Connection::open()` calls eliminated in bridge handlers
+  3. iOS build compiles without new warnings; `cargo test --locked` passes clean
+
+**Plans**:
+
+1/2 plans executed
+
+- [x] 96-02-PLAN.md — Rust SQLite connection pool (BP-02)
+
+---
+
+#### Phase 97: HealthKit Export — Bevel Integration
+
+**Goal**: WHOOP metrics written to HealthKit automatically; Bevel and other apps can read WHOOP data via HealthKit
+**Depends on**: Phase 96 (bridge error handling in place before new HK write paths)
+**Requirements**: HK-01, HK-02, HK-03, HK-04, HK-05
+**Success Criteria** (what must be TRUE):
+
+  1. HR samples captured from WHOOP appear in Health app under Heart Rate source "Goose"
+  2. HRV (RMSSD or SDNN), SpO2, and sleep session data appear in Health app under respective categories
+  3. HealthKit write is controlled by a toggle in More settings (default off); no data written without user opt-in
+  4. Write errors are logged — HK permission denied is handled gracefully without crash
+  5. iOS build compiles without new warnings; existing HealthKit read functionality unaffected
+
+**Plans**: 4/4 plans complete
+
+**Wave 1** (parallel)
+
+- [x] 97-01-PLAN.md — Rust bridge methods: store.hr_samples_between, store.spo2_samples_between (inline SpO2), store.external_sleep_sessions_between (HK-01, HK-03, HK-04)
+- [x] 97-04-PLAN.md — More settings toggle: @AppStorage goose.healthkit.export.enabled + UI in Section("Apple Health") + write gating (HK-05)
+
+**Wave 2** (blocked on Wave 1)
+
+- [x] 97-02-PLAN.md — GooseHealthKitExporter.swift: HKHealthStore setup, requestAuthorization, write helpers for HR/HRV/SpO2/sleep, project.pbxproj registration (HK-01..HK-05)
+
+**Wave 3** (blocked on Wave 2)
+
+- [x] 97-03-PLAN.md — Trigger integration: exportAfterSleepSync() call at end of syncBandSleepHistory() + enableHealthKitExport() full impl + permission-denied recovery (HK-01..HK-05)
+
+---
 
 ## Progress
 
@@ -604,6 +757,12 @@ Plans:
 | 89 | 3/3 | Complete   | 2026-06-18 |
 | 90 | 4/4 | Complete   | 2026-06-18 |
 | 91 | 2/2 | Complete   | 2026-06-18 |
+| 92 | 1/3 | In Progress|  |
+| 93 | v13.0 | Pending | — |
+| 94 | v13.0 | Pending | — |
+| 95 | 2/2 | Complete   | 2026-06-19 |
+| 96 | 1/2 | In Progress|  |
+| 97 | 4/4 | Complete   | 2026-06-20 |
 
 ## Backlog
 
@@ -642,6 +801,11 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 5/6 plans executed
 Plans:
+
+- [x] 96-01-PLAN.md
+
+- [x] 92-01-PLAN.md
+
 **Wave 1**
 
 - [x] 60-01-PLAN.md — Delete overnight guard subsystem core (3 files + GooseAppModel state + overnight struct types)

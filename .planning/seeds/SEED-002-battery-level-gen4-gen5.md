@@ -1,6 +1,6 @@
 ---
 id: SEED-002
-status: dormant
+status: active
 planted: 2026-06-14
 planted_during: v11.0 — PR Integration, Code Health & App Polish
 trigger_when: when relevant

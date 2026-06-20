@@ -3,6 +3,8 @@
 
 This guide covers the day-to-day development workflow for Goose. It assumes you have already completed the first-run setup from [Getting Started](getting-started.md). It is structured around the three development surfaces: the iOS app (Swift/SwiftUI), the Rust core library, and the self-hosted server (FastAPI + TimescaleDB).
 
+**v12.0 note:** The Rust `bridge.rs` and `store.rs` monoliths have been split into domain modules under `Rust/core/src/bridge/` and `Rust/core/src/store/`. All references in this guide reflect the new layout.
+
 ---
 
 ## Project Structure
@@ -11,6 +13,8 @@ This guide covers the day-to-day development workflow for Goose. It assumes you 
 GooseSwift/                    iOS app source — Swift/SwiftUI
 GooseWorkoutLiveActivityExtension/  ActivityKit Live Activity widget
 Rust/core/src/                 Rust static library source
+Rust/core/src/bridge/         Bridge dispatch module (mod.rs + domain files)
+Rust/core/src/store/          Store module (mod.rs + domain files)
 Rust/core/include/             C bridge header (goose_core_bridge.h)
 Rust/core/tests/               Rust integration tests (40+ files)
 Rust/iphoneos/                 Staged libgoose_core.a for device builds
@@ -80,18 +84,14 @@ GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
 GooseAppModel+SleepSync.swift               Band sleep session sync from BLE history
 GooseAppModel+Upload.swift                  Server upload trigger
 
-GooseBLEClient.swift                        @Published BLE state + callback vars
-GooseBLEClient+CentralDelegate.swift        CBCentralManagerDelegate
-GooseBLEClient+PeripheralDelegate.swift     CBPeripheralDelegate
-GooseBLEClient+Commands.swift               WHOOP command writes
-GooseBLEClient+Parsing.swift                Packet framing helpers
-GooseBLEClient+HistoricalCommands.swift     Historical sync command dispatch
-GooseBLEClient+HistoricalHandlers.swift     Historical sync response handling
-GooseBLEClient+HRMonitor.swift              HR monitor peripheral support
-GooseBLEClient+DebugAndSync.swift           Debug session + sync utilities
-GooseBLEClient+Haptics.swift                Haptic feedback on BLE events
-GooseBLEClient+UserActions.swift            User-facing BLE actions
-GooseBLEClient+VitalsAndLogging.swift       Vitals forwarding and BLE logging
+GooseBLEClient.swift                        Legacy BLE coordinator (state + callbacks); BLE connection now via CoreBluetoothBLETransport
+GooseBLEClient+BatteryCommands.swift        Battery command dispatch
+
+CoreBluetoothBLETransport.swift             @Observable concrete BLETransport; CoreBluetooth central manager
+CoreBluetoothBLETransport+CentralDelegate.swift   CBCentralManagerDelegate
+CoreBluetoothBLETransport+PeripheralDelegate.swift CBPeripheralDelegate
+CoreBluetoothBLETransport+HistoricalCommands.swift Historical sync command dispatch
+CoreBluetoothBLETransport+HistoricalHandlers.swift Historical sync response handling
 
 HealthDataStore.swift                       Metric query coordinator
 HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
@@ -166,6 +166,16 @@ The Rust bridge (`GooseRustBridge.request(...)`) is a **blocking synchronous cal
 
 ### Running tests
 
+Before running tests, verify the crate compiles cleanly:
+
+```bash
+# From Rust/core directory
+cargo check
+
+# Or scoped from project root
+cargo check -p goose-core
+```
+
 The Rust core has integration test files in `Rust/core/tests/`. Run the full test suite with Cargo from the project root or from `Rust/core`:
 
 ```bash
@@ -173,7 +183,7 @@ The Rust core has integration test files in `Rust/core/tests/`. Run the full tes
 cargo test -p goose-core
 
 # From Rust/core directory
-cd Rust/core && cargo test
+cargo test
 ```
 
 Run a specific test file:
@@ -202,7 +212,19 @@ void goose_bridge_free_string(char *value);
 char *goose_core_version_json(void);
 ```
 
-`goose_bridge_handle_json` deserialises a JSON request, dispatches to `handle_bridge_request_inner` in `bridge.rs`, and returns a JSON response string that the caller must free with `goose_bridge_free_string`.
+`goose_bridge_handle_json` deserialises a JSON request, dispatches to `handle_bridge_request_inner` in `Rust/core/src/bridge/mod.rs`, and returns a JSON response string that the caller must free with `goose_bridge_free_string`.
+
+**Bridge module layout.** The bridge is now a module directory (`Rust/core/src/bridge/`) rather than a single file. Domain-specific dispatch helpers live in the sibling files; `mod.rs` owns the public entry points, `BRIDGE_METHODS`, and `handle_bridge_request_inner`:
+
+```
+Rust/core/src/bridge/
+  mod.rs        Public FFI entry points, BRIDGE_METHODS constant, handle_bridge_request_inner
+  activity.rs   Activity-domain bridge helpers
+  capture.rs    Capture-domain bridge helpers
+  debug.rs      Debug/diagnostics bridge helpers
+  metrics.rs    Metrics-domain bridge helpers
+  sleep.rs      Sleep-domain bridge helpers
+```
 
 **Request schema:**
 
@@ -229,19 +251,30 @@ char *goose_core_version_json(void);
 
 On failure `ok` is `false` and `error: { "code": "method_error", "message": "..." }` is present.
 
-`BRIDGE_METHODS` (a `&[&str]` constant in `bridge.rs`) lists all 148 dispatched methods and is verified by the unit test `bridge_methods_constant_matches_dispatcher`.
+`BRIDGE_METHODS` (a `&[&str]` constant in `bridge/mod.rs`) lists all 154 dispatched methods and is verified by the unit test `bridge_methods_constant_matches_dispatcher`.
 
 ### SQLite schema
 
-The Rust store manages the SQLite schema at **version 21** (`CURRENT_SCHEMA_VERSION = 21` in `src/store.rs`). Migrations are applied automatically by `GooseStore::open` on every startup. When adding or modifying tables, increment `CURRENT_SCHEMA_VERSION` and add a migration arm to the migration match block in `store.rs`.
+The Rust store manages the SQLite schema at **version 22** (`CURRENT_SCHEMA_VERSION = 22` in `Rust/core/src/store/mod.rs`). Migrations are applied automatically by `GooseStore::open` on every startup. When adding or modifying tables, increment `CURRENT_SCHEMA_VERSION` and add a migration arm to the migration match block in `store/mod.rs`.
+
+**Store module layout.** Like the bridge, the store is now a module directory rather than a single file. Domain data-access logic lives in sibling files; `mod.rs` owns `GooseStore`, `CURRENT_SCHEMA_VERSION`, schema migrations, and the `GooseStore::open` constructor:
+
+```
+Rust/core/src/store/
+  mod.rs        GooseStore struct, CURRENT_SCHEMA_VERSION, migrations, open()
+  activity.rs   Activity data-access methods
+  capture.rs    Capture frame persistence methods
+  metrics.rs    Metrics data-access methods
+  sleep.rs      Sleep data-access methods
+```
 
 ### Adding a new bridge method
 
 When adding a new method:
 
-1. Add the method name string to `BRIDGE_METHODS` in alphabetical order within its namespace prefix.
-2. Add a `#[derive(Debug, Clone, Deserialize)]` args struct (e.g. `struct MyMethodArgs { database_path: String, ... }`).
-3. Add a match arm in `handle_bridge_request_inner`:
+1. Add the method name string to `BRIDGE_METHODS` in `bridge/mod.rs` in alphabetical order within its namespace prefix.
+2. Add a `#[derive(Debug, Clone, Deserialize)]` args struct (e.g. `struct MyMethodArgs { database_path: String, ... }`). For domain-scoped methods, place the struct in the relevant `bridge/<domain>.rs` file.
+3. Add a match arm in `handle_bridge_request_inner` in `bridge/mod.rs`:
 
 ```rust
 "my.new_method" => request_args::<MyMethodArgs>(&request)
@@ -250,8 +283,8 @@ When adding a new method:
     .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
 ```
 
-4. Implement the bridge function returning `GooseResult<serde_json::Value>`.
-5. Run `cargo test -p goose-core bridge_methods_constant_matches_dispatcher` — this unit test in `src/bridge.rs` verifies that `BRIDGE_METHODS` and the match arms stay in sync. (Note: `--test bridge_tests` targets only the integration test file and will not run this unit test.)
+4. Implement the bridge function returning `GooseResult<serde_json::Value>`. Place the implementation in the matching `bridge/<domain>.rs` file (e.g. `bridge/metrics.rs` for a `metrics.*` method).
+5. Run `cargo test -p goose-core bridge_methods_constant_matches_dispatcher` — this unit test in `bridge/mod.rs` verifies that `BRIDGE_METHODS` and the match arms stay in sync. (Note: `--test bridge_tests` targets only the integration test file and will not run this unit test.)
 
 ### Build artifacts
 
@@ -328,8 +361,8 @@ When adding support for a new GATT characteristic or packet type, add a handler 
 ### Adding a new WHOOP packet type
 
 1. Add frame parsing logic in `Rust/core/src/protocol.rs` (parse the new packet family into a `ParsedPayload` variant).
-2. Update `capture.import_frame_batch` in `Rust/core/src/capture_import.rs` to persist the new decoded fields to SQLite (add column migrations in `store.rs` if the schema changes).
-3. Add the compact summary extraction to `Rust/core/src/bridge.rs` if the packet needs real-time UI feedback.
+2. Update `capture.import_frame_batch` in `Rust/core/src/capture_import.rs` to persist the new decoded fields to SQLite (add column migrations in `store/mod.rs` if the schema changes; bump `CURRENT_SCHEMA_VERSION`).
+3. Add the compact summary extraction to `Rust/core/src/bridge/capture.rs` if the packet needs real-time UI feedback.
 4. Add a `GooseBLEClient+` extension handler in Swift to route the new characteristic notifications into `onNotification`.
 5. Add a Rust integration test in `Rust/core/tests/` exercising the new parse path.
 
@@ -481,5 +514,7 @@ let result = try bridge.request(
 - Put debug tooling, packet details, and raw export behaviour under More or Debug surfaces — not in everyday health views.
 - Update the relevant doc in `docs/guides/` when a change completes or changes an open task.
 - Mention any build warnings, skipped checks, or device-only assumptions in the PR description.
+
+**GSD workflow.** Planned development goes through a GSD phase (`/gsd-execute-phase`) so that planning artifacts and execution context stay in sync. Use `/gsd-quick` for small fixes and doc updates, `/gsd-debug` for investigation and bug fixing. Direct repo edits outside a GSD workflow require explicit agreement with the team.
 
 See [GETTING-STARTED.md](getting-started.md) for prerequisites and first-run setup.

@@ -13,10 +13,7 @@ use goose_core::{
         run_strain_feature_score_report_for_store, run_stress_feature_score_report_for_store,
         run_vital_event_feature_report_for_store,
     },
-    protocol::{
-        DeviceType, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
-        build_v5_payload_frame,
-    },
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     store::GooseStore,
 };
 
@@ -2947,7 +2944,7 @@ fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
 
 fn k10_motion_frame_hex_with_value_and_heart_rate(sample_value: i16, heart_rate: u8) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = heart_rate;
     for offset in [85, 285, 485, 688, 888, 1088] {
@@ -2964,7 +2961,7 @@ fn k10_motion_frame_hex_with_value_and_timestamp_subseconds(
     timestamp_subseconds: u16,
 ) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     put_u32(&mut payload, 7, timestamp_seconds);
@@ -2979,7 +2976,7 @@ fn k10_motion_frame_hex_with_value_and_timestamp_subseconds(
 
 fn historical_k21_motion_frame_hex_with_timestamp(timestamp_seconds: u32) -> String {
     let mut payload = vec![0; 1038];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 21;
     put_u32(&mut payload, 7, timestamp_seconds);
     put_u16(&mut payload, 14, 321);
@@ -2996,7 +2993,7 @@ fn historical_k21_motion_frame_hex_with_timestamp(timestamp_seconds: u32) -> Str
 
 fn temperature_event_frame_hex(body: &[u8]) -> String {
     let mut payload = vec![
-        PACKET_TYPE_EVENT,
+        u8::from(PacketType::Event),
         2,
         17,
         0,
@@ -3015,7 +3012,7 @@ fn temperature_event_frame_hex(body: &[u8]) -> String {
 
 fn r17_frame_hex(rr_candidates: &[i16]) -> String {
     let mut payload = vec![0; 26 + rr_candidates.len() * 2];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 17;
     payload[2] = 1;
     put_u16(&mut payload, 13, (1 << 9) | (1 << 11));
@@ -3029,7 +3026,7 @@ fn r17_frame_hex(rr_candidates: &[i16]) -> String {
 
 fn historical_k18_frame_hex(marker_value: u8) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -3059,7 +3056,7 @@ fn historical_k18_frame_hex_with_skin_temperature(
     temperature_centi_c: i16,
 ) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -3091,7 +3088,7 @@ fn historical_k18_frame_hex_with_vital_candidates(
     respiratory_rate_tenths_rpm: u16,
 ) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -3120,7 +3117,7 @@ fn historical_k18_frame_hex_with_vital_candidates(
 
 fn historical_k18_frame_hex_with_timestamp(marker_value: u8, timestamp_seconds: u32) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -3156,6 +3153,98 @@ fn put_u32(bytes: &mut [u8], offset: usize, value: u32) {
 
 fn put_i16(bytes: &mut [u8], offset: usize, value: i16) {
     bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+}
+
+// R22 frame builder: [0x10, battery_pct, hr_milli_bpm_lo, hr_milli_bpm_hi, ...]
+// parse_r22_payload reads payload[2..3] as u16 LE hr_milli_bpm; hr_bpm = raw / 10.0
+fn r22_frame_hex(hr_milli_bpm: u16, battery_pct: u8) -> String {
+    let [lo, hi] = hr_milli_bpm.to_le_bytes();
+    let payload = vec![0x10u8, battery_pct, lo, hi];
+    hex::encode(build_v5_payload_frame(&payload))
+}
+
+fn import_r22_frame(store: &GooseStore, sensitivity: &str, hr_milli_bpm: u16) {
+    let frames = vec![CapturedFrameInput {
+        evidence_id: format!("app.r22.{sensitivity}.{hr_milli_bpm}"),
+        frame_id: Some(format!("app.r22.{sensitivity}.{hr_milli_bpm}.frame.0")),
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-05-27T13:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: r22_frame_hex(hr_milli_bpm, 85),
+        sensitivity: sensitivity.to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::Goose,
+        device_uuid: None,
+    }];
+    let report = import_captured_frame_batch(
+        store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+    assert!(report.pass, "{:?}", report.issues);
+}
+
+#[test]
+fn r22_heart_rate_plan_extracted_from_owned_r22_frame() {
+    let store = GooseStore::open_in_memory().unwrap();
+    // hr_milli_bpm = 720 → hr_bpm = 72.0 → round() as u8 = 72
+    import_r22_frame(&store, "user-owned-live-notification", 720);
+
+    let report = run_heart_rate_feature_report_for_store(
+        &store,
+        "test-db",
+        "2026-05-27T00:00:00Z",
+        "2026-05-28T00:00:00Z",
+        HeartRateFeatureOptions {
+            min_owned_captures_per_summary: 1,
+            require_trusted_evidence: true,
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+    assert_eq!(report.candidate_frame_count, 1);
+    assert_eq!(report.feature_count, 1);
+    assert_eq!(report.trusted_feature_count, 1);
+    let feature = &report.features[0];
+    assert_eq!(feature.body_summary_kind, "r22_whoop5_hr");
+    assert_eq!(feature.source_signal, "r22_whoop5_hr_milli_bpm");
+    assert_eq!(feature.heart_rate_bpm, 72.0);
+    assert_eq!(feature.marker_value, 72);
+    assert!(feature.trusted_metric_input);
+    assert!(
+        feature
+            .quality_flags
+            .iter()
+            .any(|flag| flag == "preliminary_r22_whoop5_hr")
+    );
+}
+
+#[test]
+fn r22_heart_rate_plan_none_when_hr_bpm_missing() {
+    let store = GooseStore::open_in_memory().unwrap();
+    // hr_milli_bpm = 0 → hr_bpm = 0.0 → marker_value = 0 → dropped by heart_rate_feature_from_plan
+    import_r22_frame(&store, "user-owned-live-notification", 0);
+
+    let report = run_heart_rate_feature_report_for_store(
+        &store,
+        "test-db",
+        "2026-05-27T00:00:00Z",
+        "2026-05-28T00:00:00Z",
+        HeartRateFeatureOptions {
+            min_owned_captures_per_summary: 1,
+            require_trusted_evidence: true,
+        },
+    )
+    .unwrap();
+
+    // hr_milli_bpm=0 → hr_bpm=0.0 → round() as u8 = 0 → marker_value==0 guard drops the frame
+    assert_eq!(report.candidate_frame_count, 1);
+    assert_eq!(report.feature_count, 0);
 }
 
 fn widget<'a>(

@@ -319,6 +319,9 @@ struct DeviceCapabilities: Decodable {
   let batteryViaEvent48: Bool
   let batteryViaCMD26: Bool
   let r22Realtime: Bool
+  // Plain String (not enum) to avoid decode failures on unknown future variants.
+  // Valid values: "WHOOP4", "WHOOP5", "WHOOP_MG", "HR_MONITOR".
+  let deviceKind: String
 
   enum CodingKeys: String, CodingKey {
     case wireProtocol = "wire_protocol"
@@ -327,6 +330,7 @@ struct DeviceCapabilities: Decodable {
     case batteryViaEvent48 = "battery_via_event48"
     case batteryViaCMD26 = "battery_via_cmd26"
     case r22Realtime = "r22_realtime"
+    case deviceKind = "device_kind"
   }
 }
 

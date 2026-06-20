@@ -403,15 +403,19 @@ final class GooseUploadService: @unchecked Sendable {
       // the limit. Without it, Rust returns the 500 oldest rows (all with synced=0,
       // ordered by ts ASC) and the Swift-side ts filter below discards them all if
       // they are below effectiveSince — leaving newer rows (indices 501+) uncaptured.
-      guard let pendingReport = try? rust.request(
-        method: "sync.rows_pending_upload",
-        args: [
-          "database_path": databasePath,
-          "stream": entry.table,
-          "since_ts": sinceTs,
-          "limit": 500, // limit=500 matches upload batch cap — intentional
-        ]
-      ) else {
+      let pendingReport: [String: Any]
+      do {
+        pendingReport = try rust.request(
+          method: "sync.rows_pending_upload",
+          args: [
+            "database_path": databasePath,
+            "stream": entry.table,
+            "since_ts": sinceTs,
+            "limit": 500, // limit=500 matches upload batch cap — intentional
+          ]
+        )
+      } catch {
+        logger.warning("sync.rows_pending_upload failed: \(String(describing: error))")
         result[entry.table] = []
         continue
       }

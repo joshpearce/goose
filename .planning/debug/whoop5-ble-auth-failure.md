@@ -1,8 +1,9 @@
 ---
-status: root_cause_identified
+status: resolved
 trigger: "WHOOP 5.0 enters semi-connected state — 'Authentication failed' but HR notifications still flowing; auth retry timer stale-state unsafe; stream retry loop continues (writes blocked by connectionState guard, but not cancelled)"
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-20
+resolution: "Fixed in v13.0 Phase 92 (BUG-AUTH-01) — authRetryCount counter added; alert fires after 12 failures; disconnect+forget+reconnect flow implemented."
 cross_ai_review: "Codex o4-mini: PARTIALLY_CONFIRMED. Gemini: PARTIALLY_CONFIRMED. Both corrected two claims."
 ---
 

@@ -1,19 +1,17 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**Goose — Servidor Remoto + Contribuições Upstream**
+**Goose — Self-Hosted Biometric Platform**
 
-Fork do `b-nnett/goose`: app iOS (SwiftUI + Rust core) que lê dados biométricos de dispositivos WHOOP via BLE.
-Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted FastAPI+TimescaleDB para armazenar dados biométricos, (2) upload automático desses dados do iOS para o servidor, (3) review e integração dos PRs abertos do upstream `b-nnett/goose`.
+Fork of `b-nnett/goose`: iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via BLE and persists it to a self-hosted server.
 
-**Core Value:** O utilizador deve poder capturar dados WHOOP no iPhone e tê-los persistidos automaticamente no seu servidor pessoal — sem depender de infraestrutura externa.
+**Core Value:** Users must be able to capture WHOOP data on iPhone and have it automatically persisted on their personal server — without depending on external infrastructure.
 
 ### Constraints
 
-- **Tech stack iOS**: Swift / SwiftUI / URLSession — não introduzir dependências externas
-- **Tech stack servidor**: FastAPI + TimescaleDB (manter compatibilidade com my-whoop existente)
-- **Git**: planning docs no git (commit_docs: true)
-- **Servidor**: deve correr em Docker no servidor pessoal do utilizador
+- **iOS stack**: Swift / SwiftUI / URLSession — no external dependencies
+- **Server stack**: FastAPI + TimescaleDB (Docker, self-hosted)
+- **Git**: planning docs committed (commit_docs: true)
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
@@ -21,7 +19,7 @@ Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted Fast
 
 ## Languages
 - Swift 5.0 — iOS app, all UI and business logic in `GooseSwift/`, live activity extension in `GooseWorkoutLiveActivityExtension/`
-- Rust (Edition 2024, MSRV 1.94) — Rust core library in `Rust/core/src/`, protocol parsing, metric computation, SQLite persistence, FFI bridge
+- Rust (Edition 2024, MSRV 1.96) — Rust core library in `Rust/core/src/`, protocol parsing, metric computation, SQLite persistence, FFI bridge
 - Python — Reference algorithm scripts only (`Rust/core/tools/reference/*.py`); not used at runtime
 - Bash — Rust cross-compilation script at `Scripts/build_ios_rust.sh`
 ## Runtime
@@ -42,7 +40,7 @@ Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted Fast
 - CryptoKit — SHA-256 file integrity checksums for export; 5 files import CryptoKit
 - Security — iOS Keychain for OAuth token storage; `GooseSwift/CodexEmbeddedAuth.swift`
 - UserNotifications — notification permission onboarding; `GooseSwift/OnboardingModels.swift`, `GooseSwift/OnboardingPermissions.swift`
-- Rust: Cargo's built-in test runner (`cargo test`). Integration tests in `Rust/core/tests/` (40+ test files). No Swift test target detected in the project.
+- Rust: Cargo's built-in test runner (`cargo test`). Integration tests in `Rust/core/tests/` (47 files). Swift tests in `GooseSwiftTests/` target (69 tests across 16 files).
 - Xcode project: `GooseSwift.xcodeproj`
 - Rust cross-compile: `Scripts/build_ios_rust.sh` — invoked as an Xcode build phase, produces `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`
 - Python reference tools: `Rust/core/tools/reference/` — neurokit2, pyhrv, pyactigraphy, ggir; used only for algorithm validation/comparison, not production
@@ -60,15 +58,15 @@ Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted Fast
 - No `.env` files. Configuration driven by `ProcessInfo.processInfo` launch arguments and environment variables at runtime:
 - `GooseSwift.xcodeproj` — main Xcode project
 - `Scripts/build_ios_rust.sh` — Rust cross-compilation invoked as Xcode build phase; reads `PLATFORM_NAME`, `CONFIGURATION`, `CURRENT_ARCH`, `IPHONEOS_DEPLOYMENT_TARGET` from Xcode environment
-- Bundle ID: `com.goose.swift` (main app), `com.goose.swift.WorkoutLiveActivityExtension` (extension)
-- Marketing version: `0.1.0`, build: `1`
-- URL scheme: `gooseswift://` (`CFBundleURLSchemes` in `GooseSwift/Info.plist`)
+- Bundle ID: `com.goose.app` (main app), `com.goose.app.WorkoutLiveActivityExtension` (extension)
+- Marketing version: `8.0`, build: `8`
+- URL scheme: `gooseapp://` (`CFBundleURLSchemes` in `GooseSwift/Info.plist`)
 ## Platform Requirements
 - macOS with Xcode (iOS 26.0 SDK)
 - Rust toolchain with targets: `aarch64-apple-ios`, `aarch64-apple-ios-sim`, `x86_64-apple-ios`
 - Cargo (installed separately or via rustup)
 - iOS device or simulator, iOS 26.0+
-- Pre-built static libraries committed at `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` (build incremental — script skips rebuild if inputs unchanged)
+- Static libraries `Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a` are **gitignored** — built automatically by Xcode via `Scripts/build_ios_rust.sh` build phase
 - Bluetooth background mode required (`UIBackgroundModes: bluetooth-central`)
 - Location background mode required (`UIBackgroundModes: location`)
 - Local networking allowed (`NSAllowsLocalNetworking: true`) for debug WebSocket
@@ -141,14 +139,14 @@ Este milestone adiciona três capacidades ao fork: (1) servidor self-hosted Fast
 | `HealthDataStore` | Rust bridge consumer for metric scores; @MainActor; owns packet input reports | `GooseSwift/HealthDataStore.swift` + `HealthDataStore+*.swift` |
 | `AppRouter` | Tab selection, deep-link handling, navigation paths | `GooseSwift/AppRouter.swift` |
 | `RootView` | Onboarding gate; renders either `OnboardingView` or `AppShellView` | `GooseSwift/RootView.swift` |
-| `AppShellView` | Tab bar with Home/Health/Coach/More; creates `HealthDataStore` | `GooseSwift/AppShellView.swift` |
+| `AppShellView` | Tab bar with Home/Health/Coach/More | `GooseSwift/AppShellView.swift` |
 | `NotificationFrameParser` | Delegates raw BLE bytes to Rust for frame parsing; compact summary extraction | `GooseSwift/NotificationFrameParsing.swift` |
 | `CaptureFrameWriteQueue` | Batched SQLite inserts of captured BLE frames via Rust bridge | `GooseSwift/CaptureFrameWriteQueue.swift` |
 | `OvernightSQLiteMirrorQueue` | During overnight guard, queues raw notification rows → Rust bridge insert | `GooseSwift/OvernightSQLiteMirrorQueue.swift` |
 | `WhoopDataSignalPipeline` | Ingests `WhoopDataSignalSample` on a dedicated queue; forwards to aggregators | `GooseSwift/WhoopDataSignalPipeline.swift` |
 | `PassiveActivityDetectionPipeline` | Heuristic motion/HR analysis to auto-detect workout sessions | `GooseSwift/PassiveActivityDetector.swift` |
 | `WorkoutLiveActivityController` | Manages `ActivityKit` Live Activity lifecycle for workouts | `GooseSwift/WorkoutLiveActivityController.swift` |
-| Rust core (bridge) | Protocol parsing, SQLite persistence, metric algorithms, BLE frame import | `Rust/core/src/bridge.rs` (58+ dispatched methods) |
+| Rust core (bridge) | Protocol parsing, SQLite persistence, metric algorithms, BLE frame import | `Rust/core/src/bridge/mod.rs` (154 dispatched methods across domain files) |
 | `GooseWorkoutLiveActivityWidget` | WidgetKit / ActivityKit extension; renders Dynamic Island + lock-screen UI | `GooseWorkoutLiveActivityExtension/GooseWorkoutLiveActivityWidget.swift` |
 ## Pattern Overview
 - `GooseAppModel` is the single `@MainActor` coordinator; UI observes it via `@EnvironmentObject`.

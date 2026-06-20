@@ -107,6 +107,7 @@ import OSLog
   var onHistoricalSyncProgress: ((GooseHistoricalSyncProgress) -> Void)?
   var onHistoricalRangeTelemetry: ((GooseHistoricalRangeTelemetry) -> Void)?
   var onMessage: ((GooseMessage) -> Void)?
+  var onCapabilitiesUpdated: (() -> Void)?
 
   let logger = Logger(subsystem: "com.goose.swift", category: "ble")
   let coreBluetoothQueue = DispatchQueue(label: "com.goose.swift.corebluetooth", qos: .utility)
@@ -340,6 +341,12 @@ import OSLog
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?
   // BLE-REL-01: tracks whether a single auth retry is already pending. Reset on connect/disconnect.
   var authRetryPending = false
+  // BUG-AUTH-01: counts how many retry cycles have exhausted (second auth failure each time).
+  // Alert fires when this reaches 12. Reset to 0 on disconnect and on successful write.
+  var authRetryCount: Int = 0
+  // BUG-AUTH-01: set to true when authRetryCount reaches 12, triggering the recovery alert.
+  // Reset to false on disconnect and on successful write.
+  var authExhausted: Bool = false
 
   enum DefaultsKey {
     static let rememberedDeviceID = "goose.swift.rememberedDeviceID"

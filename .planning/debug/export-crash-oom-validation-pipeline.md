@@ -1,8 +1,9 @@
 ---
-status: root_cause_identified
+status: resolved
 trigger: "Export crash on all presets — any selection crashes after 2–3 seconds on large databases (> 100 MB)"
 created: 2026-06-14
-updated: 2026-06-14
+updated: 2026-06-20
+resolution: "Fixed in v13.0 Phase 92 (BUG-EXP-01..04) — manifest by-reference in validation pipeline; runFullRawExport defaults fixed; sqlite button disabled at 20 MB."
 issue: "https://github.com/tigercraft4/goose/issues/155"
 reporter: "@andrii-tropin (Discussion #128)"
 ---

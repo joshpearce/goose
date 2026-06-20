@@ -308,6 +308,16 @@ final class GooseAppModel {
       self.ble.updateConnectionState(newState.connectionStateString)
       self.bleState.bondingState = newState
     }
+    ble.onCapabilitiesUpdated = { [weak self] in
+      Task { @MainActor in
+        guard let self else { return }
+        // candidate_MG_advertisement_byte_unverified — per D-06, set "MG" generation label
+        // when the bridge confirms deviceKind == "WHOOP_MG" after GATT characteristics discovery.
+        if self.ble.connectedCapabilities?.deviceKind == "WHOOP_MG" {
+          self.bleState.connectedDeviceGeneration = "MG"
+        }
+      }
+    }
     ble.onConnectionStateChange = { [weak self] state in
       Task { @MainActor in
         self?.handleBLEConnectionStateChange(state)
@@ -365,13 +375,21 @@ final class GooseAppModel {
     // nonisolated: called from DispatchQueue.global background queue (Pitfall 6).
     // Uses a local GooseRustBridge() — the Rust side is stateless across instances.
     let localRust = GooseRustBridge()
-    guard let report = try? localRust.request(
-      method: "storage.compact_raw_evidence",
-      args: [
-        "database_path": HealthDataStore.defaultDatabasePath(),
-        "limit_bytes": 25_165_824,
-      ]
-    ) else { return }
+    let report: [String: Any]
+    do {
+      report = try localRust.request(
+        method: "storage.compact_raw_evidence",
+        args: [
+          "database_path": HealthDataStore.defaultDatabasePath(),
+          "limit_bytes": 25_165_824,
+        ]
+      )
+    } catch {
+      DispatchQueue.main.async { [weak self] in
+        self?.ble.record(level: .error, source: "bridge", title: "storage.compact_raw_evidence", body: "\(error)")
+      }
+      return
+    }
 
     let compactedRows = (report["compacted_rows"] as? Int) ?? 0
     let freedBytes = (report["freed_bytes"] as? Int) ?? 0

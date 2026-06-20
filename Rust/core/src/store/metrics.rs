@@ -2467,4 +2467,74 @@ impl GooseStore {
         };
         Ok(rows)
     }
+
+    // -------------------------------------------------------------------------
+    // HealthKit export queries
+    // -------------------------------------------------------------------------
+
+    /// Return HR samples in [start_unix_s, end_unix_s) for a device.
+    pub fn hr_samples_between(
+        &self,
+        device_id: &str,
+        start_unix_s: f64,
+        end_unix_s: f64,
+    ) -> GooseResult<Vec<(f64, i64)>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT ts, bpm FROM hr_samples \
+             WHERE device_id = ?1 AND ts >= ?2 AND ts < ?3 ORDER BY ts",
+        )?;
+        let rows = stmt
+            .query_map(params![device_id, start_unix_s, end_unix_s], |row| {
+                Ok((row.get::<_, f64>(0)?, row.get::<_, i64>(1)?))
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(GooseError::from)?;
+        Ok(rows)
+    }
+
+    /// Return SpO2 samples in [start_unix_s, end_unix_s) for a device,
+    /// with inline ratio-of-ratios conversion (110 − 25·(red/ir)).
+    /// Samples where the computed value falls outside 70–100 % are omitted.
+    pub fn spo2_samples_between(
+        &self,
+        device_id: &str,
+        start_unix_s: f64,
+        end_unix_s: f64,
+    ) -> GooseResult<Vec<(f64, f64)>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT ts, red, ir FROM spo2_samples \
+             WHERE device_id = ?1 AND ts >= ?2 AND ts < ?3 ORDER BY ts",
+        )?;
+        let rows: Vec<(f64, f64)> = stmt
+            .query_map(params![device_id, start_unix_s, end_unix_s], |row| {
+                Ok((
+                    row.get::<_, f64>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, i64>(2)?,
+                ))
+            })?
+            .filter_map(|r| r.ok())
+            .filter_map(|(ts, red, ir)| {
+                if ir == 0 {
+                    return None;
+                }
+                let ratio = (red as f64) / (ir as f64);
+                let spo2 = 110.0 - 25.0 * ratio;
+                if (70.0..=100.0).contains(&spo2) {
+                    Some((ts, spo2))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(rows)
+    }
 }

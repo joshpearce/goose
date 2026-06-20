@@ -1,6 +1,6 @@
 ---
 id: SEED-006
-status: dormant
+status: active
 planted: 2026-06-14
 planted_during: v12.0 — Protocol Architecture Refactor
 trigger_when: support for WHOOP MG is confirmed or when a user connects a WHOOP MG device

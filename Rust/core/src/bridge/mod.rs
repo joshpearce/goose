@@ -1,7 +1,9 @@
 use std::{
+    collections::HashSet,
     ffi::{CStr, CString},
     os::raw::c_char,
     path::{Path, PathBuf},
+    sync::{Mutex, OnceLock},
     time::Instant,
 };
 
@@ -182,6 +184,9 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "store.ewma_baseline_update",
     "store.gravity2_samples_between",
     "store.gravity_rows_between",
+    "store.hk_hr_samples_between",
+    "store.hk_sleep_sessions_between",
+    "store.hk_spo2_samples_between",
     "store.insert_gravity2_batch",
     "store.insert_gravity_rows",
     "sync.backfill_streams",
@@ -697,6 +702,52 @@ pub(crate) fn open_bridge_store_hot(database_path: &str) -> GooseResult<GooseSto
     GooseStore::open_existing_current(path).or_else(|_| GooseStore::open(path))
 }
 
+/// Set of database paths that have been opened and migrated at least once in this
+/// process lifetime. Used by `acquire_bridge_conn` to skip redundant migrations
+/// on subsequent opens of the same path, reducing per-call overhead.
+static BRIDGE_MIGRATED_PATHS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+
+/// Acquire a `GooseStore` for `database_path`, skipping the schema migration on
+/// subsequent calls for the same path within this process lifetime.
+///
+/// First call for a given path: validates the path, opens the store, and runs
+/// `migrate()` (same as `open_bridge_store`). Records the path as migrated.
+///
+/// Subsequent calls for the same path: opens via `open_existing_current` (no
+/// migration), falling back to a full `open` only if the schema version check
+/// fails — matching the behaviour of `open_bridge_store_hot`.
+///
+/// This is a drop-in replacement for `open_bridge_store` at call sites that are
+/// called on every bridge request: it eliminates per-call migration overhead while
+/// keeping the first-open correctness guarantee.
+#[allow(dead_code)]
+pub(crate) fn acquire_bridge_conn(database_path: &str) -> GooseResult<GooseStore> {
+    if database_path.trim().is_empty() {
+        return Err(GooseError::message("database_path is required"));
+    }
+    validate_no_traversal("database_path", database_path)?;
+
+    let migrated = BRIDGE_MIGRATED_PATHS.get_or_init(|| Mutex::new(HashSet::new()));
+    let already_migrated = migrated
+        .lock()
+        .map_err(|_| GooseError::message("bridge migrated-paths lock poisoned"))?
+        .contains(database_path);
+
+    if already_migrated {
+        // Fast path: schema is current — skip migration.
+        let path = Path::new(database_path);
+        GooseStore::open_existing_current(path).or_else(|_| GooseStore::open(path))
+    } else {
+        // First open for this path: run full open + migrate, then record as migrated.
+        let store = GooseStore::open(Path::new(database_path))?;
+        migrated
+            .lock()
+            .map_err(|_| GooseError::message("bridge migrated-paths lock poisoned"))?
+            .insert(database_path.to_string());
+        Ok(store)
+    }
+}
+
 #[allow(dead_code)]
 pub(crate) fn json_object_string(
     field_name: &str,
@@ -1186,6 +1237,23 @@ mod tests {
             .as_u64()
             .expect("battery_pct must be present");
         assert_eq!(battery_pct, 85);
+    }
+
+    /// PROTO-11: COMMAND_DEFINITIONS must serialise to a non-empty JSON array without error.
+    ///
+    /// This mirrors the "commands.definitions" bridge dispatch arm (debug.rs) which calls
+    /// serde_json::to_value(COMMAND_DEFINITIONS) at runtime. If the type ever loses its
+    /// Serialize impl, this test fails at compile time / test time — catching registry
+    /// drift before it reaches the bridge.
+    #[test]
+    fn commands_definitions_serialises_without_error() {
+        use crate::commands::COMMAND_DEFINITIONS;
+        let value = serde_json::to_value(COMMAND_DEFINITIONS)
+            .expect("COMMAND_DEFINITIONS must serialise to JSON without error");
+        let arr = value
+            .as_array()
+            .expect("COMMAND_DEFINITIONS must serialise as a JSON array");
+        assert!(!arr.is_empty(), "COMMAND_DEFINITIONS must not be empty");
     }
 }
 

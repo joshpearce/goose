@@ -169,6 +169,24 @@ extension GooseAppModel {
       // Refresh sleep displays and set success status.
       await store.refreshSleepAfterBandSync(packetCount: 0)
       store.bandSleepImportStatus = String(localized: "Synced from band")
+
+      // Export biometric data to HealthKit after successful sync (D-01, D-04).
+      // Gated by isExportEnabled inside exportAfterSleepSync — no write when toggle is off.
+      // logError captures self weakly: if self is deallocated during async HK writes,
+      // errors are silently dropped (app is exiting; non-crashing by design, T-97-12).
+      #if canImport(HealthKit)
+      await GooseHealthKitExporter.exportAfterSleepSync(
+        dbPath: dbPath,
+        deviceId: deviceId,
+        startTs: overnightStart,
+        endTs: overnightEnd,
+        bridge: localRust,
+        logError: { [weak self] typeLabel, errorDesc in
+          self?.ble.record(level: .error, source: "healthkit", title: typeLabel, body: errorDesc)
+        }
+      )
+      #endif
+
       let notifDurationMinutes = Int(stageSummary.values.reduce(0, +))
       let notifHRV: Double? = {
         guard UserDefaults.standard.object(forKey: "goose.swift.liveHRVRMSSD") != nil else { return nil }

@@ -2400,6 +2400,9 @@ fn export_sensor_samples(
                 // V18 WHOOP 5.0 historical data is persisted via the upload pipeline.
                 // Sensor sample export path does not export V18 frames — skip gracefully.
             }
+            DataPacketBodySummary::Unknown { .. } => {
+                // Unknown packet_k — no sensor sample export path; skip gracefully.
+            }
         }
     }
     Ok(rows)

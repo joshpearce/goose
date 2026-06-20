@@ -11,10 +11,7 @@ use goose_core::{
     metrics::{
         SleepInput, SleepModelStatusInput, SleepNightHistoryInput, SleepStageSegment, SleepV1Input,
     },
-    protocol::{
-        DeviceType, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
-        build_v5_payload_frame,
-    },
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     sleep_validation::{
         SleepStageLabelValidationOptions, SleepStageLabelValidationReport,
         SleepV1EvidenceFolderOptions, SleepV1ExplanationStabilityOptions, SleepV1ReleaseGateInput,
@@ -6594,7 +6591,7 @@ fn sleep_v1_prior_night(
 
 fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     for offset in [85, 285, 485, 688, 888, 1088] {
@@ -6607,7 +6604,7 @@ fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
 
 fn historical_k18_frame_hex(marker_value: u8) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,

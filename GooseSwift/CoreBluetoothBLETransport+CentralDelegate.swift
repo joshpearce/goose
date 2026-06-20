@@ -276,6 +276,8 @@ extension CoreBluetoothBLETransport: CBCentralManagerDelegate {
     autoConnectForPhysiologyCapture = false
     autoStartedPhysiologyCapture = false
     authRetryPending = false
+    authRetryCount = 0
+    authExhausted = false
     readySyncWorkItem?.cancel()
     if isHistoricalSyncing {
       failHistoricalSync("WHOOP disconnected during historical sync. \(error?.localizedDescription ?? "No CoreBluetooth error was provided.")")

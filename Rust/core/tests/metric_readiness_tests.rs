@@ -11,7 +11,7 @@ use goose_core::{
         MetricInputReadinessOptions, run_metric_input_readiness,
         run_metric_input_readiness_with_activity_classifier,
     },
-    protocol::{DeviceType, PACKET_TYPE_HISTORICAL_DATA, build_v5_payload_frame},
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     store::GooseStore,
 };
 use serde_json::json;
@@ -543,7 +543,7 @@ fn metric_input_readiness_reports_activity_session_promotion_blockers_from_class
 
 fn r17_frame_hex(rr_candidates: &[i16]) -> String {
     let mut payload = vec![0; 26 + rr_candidates.len() * 2];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 17;
     payload[2] = 1;
     put_u16(&mut payload, 13, (1 << 9) | (1 << 11));
@@ -557,7 +557,7 @@ fn r17_frame_hex(rr_candidates: &[i16]) -> String {
 
 fn historical_k18_frame_hex(marker_value: u8) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,

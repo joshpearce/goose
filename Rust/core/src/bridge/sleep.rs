@@ -1,10 +1,9 @@
 use std::{collections::BTreeSet, path::Path};
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, default_active_status,
-    default_decode_status, default_manual_source, default_overnight_mode,
-    default_raw_notification_source, empty_json_object, json_object_string, open_bridge_store,
-    request_args,
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok,
+    default_active_status, default_decode_status, default_manual_source, default_overnight_mode,
+    default_raw_notification_source, empty_json_object, json_object_string, request_args,
 };
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -366,7 +365,7 @@ fn health_sync_dry_run_bridge(input: HealthSyncDryRunInput) -> GooseResult<serde
     })
 }
 fn overnight_mirror_batch_bridge(args: OvernightMirrorBatchArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let sessions: Vec<OvernightSyncSessionInput<'_>> = args
         .sessions
         .iter()
@@ -452,7 +451,7 @@ fn overnight_mirror_batch_bridge(args: OvernightMirrorBatchArgs) -> GooseResult<
 fn overnight_mirror_counts_bridge(
     args: OvernightMirrorCountsArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let counts = store.overnight_mirror_counts(&args.session_id)?;
     serde_json::to_value(counts).map_err(|error| {
         GooseError::message(format!("cannot serialize overnight mirror counts: {error}"))
@@ -461,7 +460,7 @@ fn overnight_mirror_counts_bridge(
 fn external_sleep_history_import_bridge(
     args: ExternalSleepHistoryImportArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let (inserted_sessions, unchanged_sessions, inserted_stages, unchanged_stages) = store
         .immediate_transaction(|conn| {
             let mut inserted_sessions = 0usize;
@@ -541,7 +540,7 @@ fn external_sleep_history_import_bridge(
 }
 
 fn sleep_correction_label_bridge(args: SleepCorrectionLabelArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let value_json = json_object_string("value", &args.value)?;
     let provenance_json = json_object_string("provenance", &args.provenance)?;
     let inserted = store.insert_sleep_correction_label(SleepCorrectionLabelInput {
@@ -570,7 +569,7 @@ fn sleep_correction_label_bridge(args: SleepCorrectionLabelArgs) -> GooseResult<
 fn sleep_correction_label_list_bridge(
     args: SleepCorrectionLabelListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let labels =
         store.sleep_correction_labels_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     let sleep_window_label_count = labels
@@ -608,7 +607,7 @@ fn sleep_correction_label_list_bridge(
 fn sleep_window_label_validation_bridge(
     args: SleepWindowLabelValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let defaults = SleepWindowLabelValidationOptions::default();
     let report = run_sleep_window_label_validation_for_store(
         &store,
@@ -656,7 +655,7 @@ fn sleep_window_label_validation_bridge(
 fn sleep_stage_label_validation_bridge(
     args: SleepStageLabelValidationArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let defaults = SleepStageLabelValidationOptions::default();
     let report = validate_sleep_v1_stage_labels_for_store(
         &store,

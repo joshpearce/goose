@@ -1,8 +1,7 @@
 use goose_core::protocol::{
     COMMAND_GET_HELLO, DataPacketBodySummary, DeviceType, FrameAccumulator, I16SeriesSummary,
-    PACKET_TYPE_COMMAND_RESPONSE, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA,
-    PACKET_TYPE_R22_REALTIME_DATA, PACKET_TYPE_REALTIME_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
-    ParsedPayload, build_v5_command_frame, build_v5_payload_frame, parse_frame, parse_frame_hex,
+    PacketType, ParsedPayload, build_v5_command_frame, build_v5_payload_frame, parse_frame,
+    parse_frame_hex,
 };
 
 const GET_HELLO_FRAME: &str = "aa0108000001e67123019101363e5c8d";
@@ -87,7 +86,7 @@ fn malformed_length_fails_safely() {
 #[test]
 fn parses_generic_command_response_payload_contract() {
     let frame = build_v5_payload_frame(&[
-        PACKET_TYPE_COMMAND_RESPONSE,
+        u8::from(PacketType::CommandResponse),
         9,
         COMMAND_GET_HELLO,
         1,
@@ -116,7 +115,7 @@ fn parses_generic_command_response_payload_contract() {
 #[test]
 fn parses_event_header_and_preserves_unknown_event_body() {
     let frame = build_v5_payload_frame(&[
-        PACKET_TYPE_EVENT,
+        u8::from(PacketType::Event),
         2,
         17,
         0,
@@ -156,7 +155,7 @@ fn parses_history_packet_stable_header_and_hr_marker() {
     // A short v18 payload produces V18History with v18_payload_too_short warning;
     // the outer header fields (packet_k, hr_marker_offset, etc.) remain unchanged.
     let frame = build_v5_payload_frame(&[
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,
@@ -217,7 +216,7 @@ fn parses_history_packet_stable_header_and_hr_marker() {
 
 #[test]
 fn normal_history_zero_hr_marker_is_not_treated_as_hr_present() {
-    let mut payload = vec![PACKET_TYPE_HISTORICAL_DATA, 9, 1];
+    let mut payload = vec![u8::from(PacketType::HistoricalData), 9, 1];
     payload.extend_from_slice(&1u32.to_le_bytes());
     payload.extend_from_slice(&2u32.to_le_bytes());
     payload.extend_from_slice(&3u16.to_le_bytes());
@@ -248,7 +247,7 @@ fn normal_history_zero_hr_marker_is_not_treated_as_hr_present() {
 #[test]
 fn parses_r17_optical_body_offsets_and_signed_sample_stats() {
     let mut payload = vec![0; 32];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 17;
     payload[2] = 1;
     put_u16(&mut payload, 13, (1 << 9) | (1 << 11));
@@ -303,7 +302,7 @@ fn parses_r17_optical_body_offsets_and_signed_sample_stats() {
 #[test]
 fn r17_truncated_samples_warn_without_losing_available_values() {
     let mut payload = vec![0; 28];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 17;
     put_u16(&mut payload, 24, 4);
     put_i16(&mut payload, 26, -7);
@@ -335,7 +334,7 @@ fn r17_truncated_samples_warn_without_losing_available_values() {
 #[test]
 fn parses_k10_raw_motion_offsets_without_claiming_units() {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     put_i16(&mut payload, 85, 1);
@@ -390,7 +389,7 @@ fn parses_k10_raw_motion_offsets_without_claiming_units() {
 #[test]
 fn parses_k21_grouped_motion_offsets_and_counts() {
     let mut payload = vec![0; 1038];
-    payload[0] = PACKET_TYPE_REALTIME_DATA;
+    payload[0] = u8::from(PacketType::RealtimeData);
     payload[1] = 21;
     put_u16(&mut payload, 14, 321);
     put_u16(&mut payload, 16, 3);
@@ -445,7 +444,7 @@ fn parses_k21_grouped_motion_offsets_and_counts() {
 #[test]
 fn truncated_long_motion_frame_keeps_partial_samples_with_quality_warnings() {
     let mut payload = vec![0; 1038];
-    payload[0] = PACKET_TYPE_REALTIME_DATA;
+    payload[0] = u8::from(PacketType::RealtimeData);
     payload[1] = 21;
     put_u16(&mut payload, 14, 321);
     put_u16(&mut payload, 16, 100);
@@ -513,7 +512,7 @@ fn truncated_non_data_frame_fails_instead_of_becoming_decoded_evidence() {
 #[test]
 fn short_data_packets_preserve_raw_body_and_warn() {
     // Packet k=9 (NormalHistory) with a very short payload — existing behaviour unchanged.
-    let frame = build_v5_payload_frame(&[PACKET_TYPE_HISTORICAL_DATA, 9, 1, 2]);
+    let frame = build_v5_payload_frame(&[u8::from(PacketType::HistoricalData), 9, 1, 2]);
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
     assert!(
@@ -569,7 +568,7 @@ fn put_f32(bytes: &mut [u8], offset: usize, value: f32) {
 #[test]
 fn r22_4byte_parses_battery_and_hr() {
     // BTSnoop fixture: 10 50 31 05 — battery 80%, HR 132.9 BPM
-    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x31, 0x05];
+    let payload = [u8::from(PacketType::R22RealtimeData), 0x50, 0x31, 0x05];
     let frame = build_v5_payload_frame(&payload);
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
@@ -612,7 +611,14 @@ fn r22_4byte_parses_battery_and_hr() {
 #[test]
 fn r22_6byte_parses_battery_hr_and_extra_raw() {
     // BTSnoop fixture: 10 48 40 06 7a 02 — battery 72%, HR 160.0 BPM, extra [0x7a, 0x02]
-    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x48, 0x40, 0x06, 0x7a, 0x02];
+    let payload = [
+        u8::from(PacketType::R22RealtimeData),
+        0x48,
+        0x40,
+        0x06,
+        0x7a,
+        0x02,
+    ];
     let frame = build_v5_payload_frame(&payload);
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
@@ -650,7 +656,7 @@ fn r22_zero_hr_bytes_parse_as_zero_not_error() {
     // build_v5_payload_frame always pads to 4-byte alignment, so a 3-byte payload
     // [0x10, battery, hr_lo] is padded with one 0x00 byte → hr = u16::from_le_bytes([hr_lo, 0x00]).
     // This verifies the parser handles low HR readings (e.g., resting BPM) without warnings.
-    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x14, 0x00]; // HR = 0x0014 = 20 milli-bpm = 2.0 BPM (edge case)
+    let payload = [u8::from(PacketType::R22RealtimeData), 0x50, 0x14, 0x00]; // HR = 0x0014 = 20 milli-bpm = 2.0 BPM (edge case)
     let frame = build_v5_payload_frame(&payload);
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
@@ -686,10 +692,10 @@ fn r22_zero_hr_bytes_parse_as_zero_not_error() {
 
 #[test]
 fn parses_v18_historical_body_fields() {
-    // payload[0] = PACKET_TYPE_HISTORICAL_DATA, [1] = 18 (version), [2] = 1 (stream)
+    // payload[0] = u8::from(PacketType::HistoricalData), [1] = 18 (version), [2] = 1 (stream)
     // Body starts at payload[3]; field N is at payload[3+N].
     let mut payload = vec![0u8; 90];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 18;
     payload[2] = 1;
     // HR at body offset 22 = payload[25]
@@ -754,7 +760,7 @@ fn parses_v18_historical_body_fields() {
 fn v18_too_short_yields_warning() {
     // payload shorter than 75 body bytes → v18_payload_too_short, all fields None
     let mut payload = vec![0u8; 20];
-    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[0] = u8::from(PacketType::HistoricalData);
     payload[1] = 18;
     payload[2] = 1;
 
@@ -780,5 +786,150 @@ fn v18_too_short_yields_warning() {
             other => panic!("expected V18History, got {other:?}"),
         },
         other => panic!("expected DataPacket, got {other:?}"),
+    }
+}
+
+// --- PacketType enum round-trip tests (PROTO-08) ---
+
+/// Every named PacketType variant must round-trip through u8 and back without loss.
+#[test]
+fn packet_type_from_u8_known_values() {
+    let known: &[(u8, PacketType)] = &[
+        (35, PacketType::Command),
+        (36, PacketType::CommandResponse),
+        (37, PacketType::PuffinCommand),
+        (38, PacketType::PuffinCommandResponse),
+        (40, PacketType::RealtimeData),
+        (43, PacketType::RealtimeRawData),
+        (47, PacketType::HistoricalData),
+        (48, PacketType::Event),
+        (49, PacketType::Metadata),
+        (50, PacketType::ConsoleLogs),
+        (51, PacketType::RealtimeImuDataStream),
+        (52, PacketType::HistoricalImuDataStream),
+        (53, PacketType::RelativePuffinEvents),
+        (54, PacketType::PuffinEventsFromStrap),
+        (55, PacketType::RelativeBatteryPackConsoleLogs),
+        (56, PacketType::PuffinMetadata),
+        (0x10, PacketType::R22RealtimeData),
+    ];
+    for &(byte, expected_variant) in known {
+        let got = PacketType::from(byte);
+        assert_eq!(
+            got, expected_variant,
+            "from({byte}) did not produce expected variant"
+        );
+        let round_tripped = u8::from(got);
+        assert_eq!(
+            round_tripped, byte,
+            "u8::from(PacketType::from({byte})) did not round-trip"
+        );
+    }
+}
+
+/// Unknown byte values must produce Unknown(u8) and round-trip back to the original byte.
+#[test]
+fn packet_type_from_u8_unknown_round_trips() {
+    let pt = PacketType::from(99u8);
+    assert_eq!(
+        pt,
+        PacketType::Unknown(99),
+        "unexpected variant for byte 99"
+    );
+    assert_eq!(u8::from(pt), 99u8, "Unknown(99) did not round-trip to 99");
+}
+
+/// R22RealtimeData (0x10 = 16) is the WHOOP 5.0 realtime data packet type.
+#[test]
+fn packet_type_from_u8_r22() {
+    assert_eq!(PacketType::from(0x10u8), PacketType::R22RealtimeData);
+    assert_eq!(u8::from(PacketType::R22RealtimeData), 0x10u8);
+}
+
+/// PROTO-09: an unhandled packet_k (99) must produce Unknown { packet_k: 99 } in body_summary
+/// and a warning string "unhandled_packet_k_99" — not a silent None drop.
+#[test]
+fn unknown_packet_k_warning() {
+    // Build a minimal data-packet payload: byte 0 = HistoricalData packet type,
+    // byte 1 = packet_k (99 — unhandled), bytes 2..13 = header filler, rest padding.
+    let mut payload = vec![u8::from(PacketType::HistoricalData), 99u8, 0u8];
+    // counter_or_page (4 bytes), timestamp_seconds (4 bytes), timestamp_subseconds (2 bytes)
+    payload.extend_from_slice(&0u32.to_le_bytes());
+    payload.extend_from_slice(&42u32.to_le_bytes());
+    payload.extend_from_slice(&0u16.to_le_bytes());
+    // body padding (a few extra bytes so body_offset=13 is in range)
+    payload.extend_from_slice(&[0u8; 4]);
+
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket {
+            packet_k,
+            body_summary,
+            warnings,
+            ..
+        } => {
+            assert_eq!(packet_k, Some(99));
+            assert_eq!(
+                body_summary,
+                Some(DataPacketBodySummary::Unknown { packet_k: 99 }),
+                "packet_k=99 must produce Unknown variant, not None"
+            );
+            assert!(
+                warnings.iter().any(|w| w == "unhandled_packet_k_99"),
+                "warnings must contain 'unhandled_packet_k_99', got: {warnings:?}"
+            );
+        }
+        other => panic!("expected DataPacket payload, got {other:?}"),
+    }
+}
+
+/// PROTO-09: DataPacketBodySummary::Unknown must serialise with kind="unknown" via the
+/// serde tag. This validates the JSON representation without needing bridge round-trip.
+#[test]
+fn unknown_packet_k_body_summary_kind() {
+    let summary = DataPacketBodySummary::Unknown { packet_k: 11 };
+    let value = serde_json::to_value(&summary).expect("Unknown must serialise to JSON");
+    assert_eq!(
+        value["kind"].as_str(),
+        Some("unknown"),
+        "Unknown must serialise with kind='unknown', got: {value}"
+    );
+    assert_eq!(
+        value["packet_k"].as_u64(),
+        Some(11),
+        "Unknown must preserve packet_k=11 in JSON, got: {value}"
+    );
+}
+
+/// PROTO-10: data_packet_domain() gap values (11, 16, 19, 20, 22, 25, 26) that have no
+/// dedicated parse arm must be handled by the Unknown catch-all — not silently dropped.
+#[test]
+fn domain_gap_packet_ks_produce_unknown() {
+    // These are the packet_k values listed in data_packet_domain() but absent from
+    // parse_data_packet_body_summary's explicit match arms (as of PROTO-09 fix).
+    let gap_ks: &[u8] = &[11, 16, 19, 20, 22, 25, 26];
+
+    for &k in gap_ks {
+        let mut payload = vec![u8::from(PacketType::HistoricalData), k, 0u8];
+        payload.extend_from_slice(&0u32.to_le_bytes()); // counter_or_page
+        payload.extend_from_slice(&0u32.to_le_bytes()); // timestamp_seconds
+        payload.extend_from_slice(&0u16.to_le_bytes()); // timestamp_subseconds
+        payload.extend_from_slice(&[0u8; 4]); // body padding
+
+        let frame = build_v5_payload_frame(&payload);
+        let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+        match parsed.parsed_payload.unwrap() {
+            ParsedPayload::DataPacket { body_summary, .. } => {
+                assert_eq!(
+                    body_summary,
+                    Some(DataPacketBodySummary::Unknown { packet_k: k }),
+                    "packet_k={k} (domain gap) must produce Unknown variant (PROTO-10)"
+                );
+            }
+            other => panic!("packet_k={k}: expected DataPacket, got {other:?}"),
+        }
     }
 }

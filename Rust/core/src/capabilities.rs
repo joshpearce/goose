@@ -6,6 +6,8 @@ pub enum DeviceKind {
     Whoop4,
     Whoop5,
     HrMonitor,
+    // WHOOP MG (Maverick hardware codename) — candidate_MG_capabilities_unverified; identical to Whoop5 per APK Gen5 protocol analysis; pending hardware BLE capture.
+    WhoopMg,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -45,6 +47,14 @@ impl DeviceCapabilities {
                 battery_via_event48: false,
                 battery_via_cmd26: false,
                 r22_realtime: false,
+            },
+            DeviceKind::WhoopMg => Self {
+                wire_protocol: "gen5".to_string(),
+                historical_sync: "stream".to_string(),
+                battery_via_r22: true,
+                battery_via_event48: true,
+                battery_via_cmd26: true,
+                r22_realtime: true,
             },
         }
     }
@@ -128,5 +138,26 @@ mod capabilities_tests {
         let decoded: DeviceCapabilities = serde_json::from_str(&json)
             .expect("serialised DeviceCapabilities JSON should deserialise back cleanly");
         assert_eq!(caps, decoded);
+    }
+
+    #[test]
+    fn whoop_mg_capabilities() {
+        let caps = DeviceCapabilities::for_kind(DeviceKind::WhoopMg);
+        assert_eq!(caps.wire_protocol, "gen5");
+        assert_eq!(caps.historical_sync, "stream");
+        assert!(caps.battery_via_r22);
+        assert!(caps.battery_via_event48);
+        assert!(caps.battery_via_cmd26);
+        assert!(caps.r22_realtime);
+    }
+
+    #[test]
+    fn device_kind_whoop_mg_serde() {
+        let json = serde_json::to_string(&DeviceKind::WhoopMg)
+            .expect("DeviceKind::WhoopMg should serialise to JSON");
+        assert_eq!(json, r#""WHOOP_MG""#);
+        let kind: DeviceKind = serde_json::from_str(r#""WHOOP_MG""#)
+            .expect("WHOOP_MG JSON string should deserialise to DeviceKind::WhoopMg");
+        assert_eq!(kind, DeviceKind::WhoopMg);
     }
 }

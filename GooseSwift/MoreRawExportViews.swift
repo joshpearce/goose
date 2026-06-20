@@ -41,6 +41,7 @@ struct MoreRawExportView: View {
             get: { store.selectedRawFamilies.contains(family) },
             set: { store.setRawFamily(family, enabled: $0) }
           ))
+          .disabled(family == "sqlite" && store.isDatabaseTooLarge)
         }
       }
 

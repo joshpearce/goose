@@ -4,24 +4,91 @@ use crate::capabilities::DeviceKind;
 use crate::{GooseError, GooseResult};
 
 pub const FRAME_START: u8 = 0xaa;
-pub const PACKET_TYPE_COMMAND: u8 = 35;
-pub const PACKET_TYPE_COMMAND_RESPONSE: u8 = 36;
-pub const PACKET_TYPE_PUFFIN_COMMAND: u8 = 37;
-pub const PACKET_TYPE_PUFFIN_COMMAND_RESPONSE: u8 = 38;
-pub const PACKET_TYPE_REALTIME_DATA: u8 = 40;
-pub const PACKET_TYPE_REALTIME_RAW_DATA: u8 = 43;
-pub const PACKET_TYPE_HISTORICAL_DATA: u8 = 47;
-pub const PACKET_TYPE_EVENT: u8 = 48;
-pub const PACKET_TYPE_METADATA: u8 = 49;
-pub const PACKET_TYPE_CONSOLE_LOGS: u8 = 50;
-pub const PACKET_TYPE_REALTIME_IMU_DATA_STREAM: u8 = 51;
-pub const PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM: u8 = 52;
-pub const PACKET_TYPE_RELATIVE_PUFFIN_EVENTS: u8 = 53;
-pub const PACKET_TYPE_PUFFIN_EVENTS_FROM_STRAP: u8 = 54;
-pub const PACKET_TYPE_RELATIVE_BATTERY_PACK_CONSOLE_LOGS: u8 = 55;
-pub const PACKET_TYPE_PUFFIN_METADATA: u8 = 56;
-pub const PACKET_TYPE_R22_REALTIME_DATA: u8 = 0x10; // = 16 decimal; WHOOP 5.0 BLE handle 0x0022
 pub const COMMAND_GET_HELLO: u8 = 145;
+
+/// BLE packet type byte from the WHOOP wire protocol.
+///
+/// Each variant corresponds to a known packet type byte value. Unrecognised
+/// bytes — including any firmware-added types added after this list was written —
+/// are captured by `Unknown(u8)` so that all match sites remain exhaustive at
+/// compile time without panicking on novel packet types.
+///
+/// `From<u8>` is infallible: every byte maps to exactly one variant.
+/// `From<PacketType> for u8` round-trips for logging and frame construction.
+///
+/// Note: `#[repr(u8)]` is intentionally absent — the `Unknown(u8)` tuple variant
+/// is incompatible with `#[repr(u8)]`; the `From` impls replace it cleanly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PacketType {
+    Command,                        // 35
+    CommandResponse,                // 36
+    PuffinCommand,                  // 37
+    PuffinCommandResponse,          // 38
+    RealtimeData,                   // 40
+    RealtimeRawData,                // 43
+    HistoricalData,                 // 47
+    Event,                          // 48
+    Metadata,                       // 49
+    ConsoleLogs,                    // 50
+    RealtimeImuDataStream,          // 51
+    HistoricalImuDataStream,        // 52
+    RelativePuffinEvents,           // 53
+    PuffinEventsFromStrap,          // 54
+    RelativeBatteryPackConsoleLogs, // 55
+    PuffinMetadata,                 // 56
+    R22RealtimeData,                // 16 (0x10) — WHOOP 5.0 BLE handle 0x0022
+    Unknown(u8),                    // catch-all: firmware-added or unrecognised values
+}
+
+impl From<u8> for PacketType {
+    fn from(byte: u8) -> Self {
+        match byte {
+            35 => PacketType::Command,
+            36 => PacketType::CommandResponse,
+            37 => PacketType::PuffinCommand,
+            38 => PacketType::PuffinCommandResponse,
+            40 => PacketType::RealtimeData,
+            43 => PacketType::RealtimeRawData,
+            47 => PacketType::HistoricalData,
+            48 => PacketType::Event,
+            49 => PacketType::Metadata,
+            50 => PacketType::ConsoleLogs,
+            51 => PacketType::RealtimeImuDataStream,
+            52 => PacketType::HistoricalImuDataStream,
+            53 => PacketType::RelativePuffinEvents,
+            54 => PacketType::PuffinEventsFromStrap,
+            55 => PacketType::RelativeBatteryPackConsoleLogs,
+            56 => PacketType::PuffinMetadata,
+            0x10 => PacketType::R22RealtimeData,
+            other => PacketType::Unknown(other),
+        }
+    }
+}
+
+impl From<PacketType> for u8 {
+    fn from(pt: PacketType) -> u8 {
+        match pt {
+            PacketType::Command => 35,
+            PacketType::CommandResponse => 36,
+            PacketType::PuffinCommand => 37,
+            PacketType::PuffinCommandResponse => 38,
+            PacketType::RealtimeData => 40,
+            PacketType::RealtimeRawData => 43,
+            PacketType::HistoricalData => 47,
+            PacketType::Event => 48,
+            PacketType::Metadata => 49,
+            PacketType::ConsoleLogs => 50,
+            PacketType::RealtimeImuDataStream => 51,
+            PacketType::HistoricalImuDataStream => 52,
+            PacketType::RelativePuffinEvents => 53,
+            PacketType::PuffinEventsFromStrap => 54,
+            PacketType::RelativeBatteryPackConsoleLogs => 55,
+            PacketType::PuffinMetadata => 56,
+            PacketType::R22RealtimeData => 0x10,
+            PacketType::Unknown(b) => b,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -99,7 +166,9 @@ impl DeviceType {
     pub fn device_kind(self) -> DeviceKind {
         match self {
             DeviceType::Gen4 => DeviceKind::Whoop4,
-            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
+            // WHOOP MG (Maverick hardware codename) is a distinct device kind
+            DeviceType::Maverick => DeviceKind::WhoopMg,
+            DeviceType::Puffin | DeviceType::Goose => DeviceKind::Whoop5,
             DeviceType::HrMonitor => DeviceKind::HrMonitor,
         }
     }
@@ -250,6 +319,9 @@ pub enum DataPacketBodySummary {
         step_motion_counter: Option<u16>,
         warnings: Vec<String>,
     },
+    /// Catch-all for packet_k values with no dedicated parse arm.
+    /// Serialises as { "kind": "unknown", "packet_k": N }.
+    Unknown { packet_k: u8 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -388,7 +460,8 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
     let partial_packet_type = frame.get(header_len).copied();
     if frame_truncated
         && (!header_crc_valid
-            || !partial_packet_type.is_some_and(is_partial_data_packet_type_allowed))
+            || !partial_packet_type
+                .is_some_and(|pt| is_partial_data_packet_type_allowed(PacketType::from(pt))))
     {
         return Err(GooseError::message(format!(
             "frame length {} does not match declared length {expected_len}",
@@ -440,7 +513,10 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
         header_crc_valid,
         payload_crc_valid,
         packet_type,
-        packet_type_name: packet_type.and_then(packet_type_name).map(str::to_string),
+        packet_type_name: packet_type
+            .map(PacketType::from)
+            .and_then(packet_type_name)
+            .map(str::to_string),
         sequence: payload.get(1).copied(),
         command_or_event: payload.get(2).copied(),
         parsed_payload,
@@ -449,7 +525,7 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
 }
 
 pub fn build_v5_command_frame(sequence: u8, command: u8, data: &[u8]) -> Vec<u8> {
-    let mut payload = vec![PACKET_TYPE_COMMAND, sequence, command];
+    let mut payload = vec![u8::from(PacketType::Command), sequence, command];
     payload.extend_from_slice(data);
     build_v5_payload_frame(&payload)
 }
@@ -471,31 +547,31 @@ pub fn build_v5_payload_frame(payload: &[u8]) -> Vec<u8> {
     frame
 }
 
-pub fn packet_type_name(packet_type: u8) -> Option<&'static str> {
+pub fn packet_type_name(packet_type: PacketType) -> Option<&'static str> {
     Some(match packet_type {
-        PACKET_TYPE_COMMAND => "COMMAND",
-        PACKET_TYPE_COMMAND_RESPONSE => "COMMAND_RESPONSE",
-        PACKET_TYPE_PUFFIN_COMMAND => "PUFFIN_COMMAND",
-        PACKET_TYPE_PUFFIN_COMMAND_RESPONSE => "PUFFIN_COMMAND_RESPONSE",
-        PACKET_TYPE_REALTIME_DATA => "REALTIME_DATA",
-        PACKET_TYPE_REALTIME_RAW_DATA => "REALTIME_RAW_DATA",
-        PACKET_TYPE_HISTORICAL_DATA => "HISTORICAL_DATA",
-        PACKET_TYPE_EVENT => "EVENT",
-        PACKET_TYPE_METADATA => "METADATA",
-        PACKET_TYPE_CONSOLE_LOGS => "CONSOLE_LOGS",
-        PACKET_TYPE_REALTIME_IMU_DATA_STREAM => "REALTIME_IMU_DATA_STREAM",
-        PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM => "HISTORICAL_IMU_DATA_STREAM",
-        PACKET_TYPE_RELATIVE_PUFFIN_EVENTS => "RELATIVE_PUFFIN_EVENTS",
-        PACKET_TYPE_PUFFIN_EVENTS_FROM_STRAP => "PUFFIN_EVENTS_FROM_STRAP",
-        PACKET_TYPE_RELATIVE_BATTERY_PACK_CONSOLE_LOGS => "RELATIVE_BATTERY_PACK_CONSOLE_LOGS",
-        PACKET_TYPE_PUFFIN_METADATA => "PUFFIN_METADATA",
-        PACKET_TYPE_R22_REALTIME_DATA => "R22_REALTIME_DATA",
-        _ => return None,
+        PacketType::Command => "COMMAND",
+        PacketType::CommandResponse => "COMMAND_RESPONSE",
+        PacketType::PuffinCommand => "PUFFIN_COMMAND",
+        PacketType::PuffinCommandResponse => "PUFFIN_COMMAND_RESPONSE",
+        PacketType::RealtimeData => "REALTIME_DATA",
+        PacketType::RealtimeRawData => "REALTIME_RAW_DATA",
+        PacketType::HistoricalData => "HISTORICAL_DATA",
+        PacketType::Event => "EVENT",
+        PacketType::Metadata => "METADATA",
+        PacketType::ConsoleLogs => "CONSOLE_LOGS",
+        PacketType::RealtimeImuDataStream => "REALTIME_IMU_DATA_STREAM",
+        PacketType::HistoricalImuDataStream => "HISTORICAL_IMU_DATA_STREAM",
+        PacketType::RelativePuffinEvents => "RELATIVE_PUFFIN_EVENTS",
+        PacketType::PuffinEventsFromStrap => "PUFFIN_EVENTS_FROM_STRAP",
+        PacketType::RelativeBatteryPackConsoleLogs => "RELATIVE_BATTERY_PACK_CONSOLE_LOGS",
+        PacketType::PuffinMetadata => "PUFFIN_METADATA",
+        PacketType::R22RealtimeData => "R22_REALTIME_DATA",
+        PacketType::Unknown(_) => return None,
     })
 }
 
 pub fn packet_type_debug_name(packet_type: u8) -> String {
-    packet_type_name(packet_type)
+    packet_type_name(PacketType::from(packet_type))
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("unknown_0x{:02x}", packet_type))
 }
@@ -512,21 +588,21 @@ pub fn decode_hex_with_whitespace(hex_value: &str) -> GooseResult<Vec<u8>> {
 }
 
 fn parse_payload(payload: &[u8]) -> Option<ParsedPayload> {
-    let packet_type = *payload.first()?;
+    let packet_type = PacketType::from(*payload.first()?);
     match packet_type {
-        PACKET_TYPE_COMMAND | PACKET_TYPE_PUFFIN_COMMAND => Some(parse_command_payload(payload)),
-        PACKET_TYPE_COMMAND_RESPONSE | PACKET_TYPE_PUFFIN_COMMAND_RESPONSE => {
+        PacketType::Command | PacketType::PuffinCommand => Some(parse_command_payload(payload)),
+        PacketType::CommandResponse | PacketType::PuffinCommandResponse => {
             Some(parse_command_response_payload(payload))
         }
-        PACKET_TYPE_EVENT
-        | PACKET_TYPE_RELATIVE_PUFFIN_EVENTS
-        | PACKET_TYPE_PUFFIN_EVENTS_FROM_STRAP => Some(parse_event_payload(payload)),
-        PACKET_TYPE_REALTIME_DATA
-        | PACKET_TYPE_REALTIME_RAW_DATA
-        | PACKET_TYPE_HISTORICAL_DATA
-        | PACKET_TYPE_REALTIME_IMU_DATA_STREAM
-        | PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM => Some(parse_data_packet_payload(payload)),
-        PACKET_TYPE_R22_REALTIME_DATA => Some(parse_r22_payload(payload)),
+        PacketType::Event
+        | PacketType::RelativePuffinEvents
+        | PacketType::PuffinEventsFromStrap => Some(parse_event_payload(payload)),
+        PacketType::RealtimeData
+        | PacketType::RealtimeRawData
+        | PacketType::HistoricalData
+        | PacketType::RealtimeImuDataStream
+        | PacketType::HistoricalImuDataStream => Some(parse_data_packet_payload(payload)),
+        PacketType::R22RealtimeData => Some(parse_r22_payload(payload)),
         _ => Some(ParsedPayload::Raw {
             data_offset: 1.min(payload.len()),
             data_hex: hex::encode(&payload[1.min(payload.len())..]),
@@ -535,15 +611,15 @@ fn parse_payload(payload: &[u8]) -> Option<ParsedPayload> {
     }
 }
 
-fn is_partial_data_packet_type_allowed(packet_type: u8) -> bool {
+fn is_partial_data_packet_type_allowed(packet_type: PacketType) -> bool {
     matches!(
         packet_type,
-        PACKET_TYPE_REALTIME_DATA
-            | PACKET_TYPE_REALTIME_RAW_DATA
-            | PACKET_TYPE_HISTORICAL_DATA
-            | PACKET_TYPE_REALTIME_IMU_DATA_STREAM
-            | PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM
-            | PACKET_TYPE_R22_REALTIME_DATA
+        PacketType::RealtimeData
+            | PacketType::RealtimeRawData
+            | PacketType::HistoricalData
+            | PacketType::RealtimeImuDataStream
+            | PacketType::HistoricalImuDataStream
+            | PacketType::R22RealtimeData
     )
 }
 
@@ -617,7 +693,10 @@ fn parse_data_packet_payload(payload: &[u8]) -> ParsedPayload {
     // the structured body_summary already carries all useful motion data,
     // and the large hex dump roughly doubles the stored JSON for these types.
     // body_hex remains populated for all other packet_k values.
-    let body_hex = if matches!(packet_k, Some(10) | Some(21) | Some(24)) {
+    // NOTE: pk=24 (V24History, Gen4 recovery data) is NOT a high-volume motion
+    // packet and must NOT be suppressed — its body_hex is consumed by Gen4 metric
+    // extraction. Only K10/K21 raw-motion frames qualify for PERF-05 suppression.
+    let body_hex = if matches!(packet_k, Some(10) | Some(21)) {
         String::new()
     } else {
         hex::encode(&payload[13.min(payload.len())..])
@@ -662,7 +741,10 @@ fn parse_data_packet_body_summary(
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),
         24 => parse_v24_body_summary(payload),
-        _ => (None, Vec::new()),
+        _ => (
+            Some(DataPacketBodySummary::Unknown { packet_k }),
+            vec![format!("unhandled_packet_k_{packet_k}")],
+        ),
     }
 }
 
@@ -1257,8 +1339,8 @@ mod wire_protocol_tests {
     }
 
     #[test]
-    fn device_kind_maverick_is_whoop5() {
-        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::Whoop5);
+    fn device_kind_maverick_is_whoop_mg() {
+        assert_eq!(DeviceType::Maverick.device_kind(), DeviceKind::WhoopMg);
     }
 
     #[test]

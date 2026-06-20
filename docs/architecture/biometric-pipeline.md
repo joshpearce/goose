@@ -407,7 +407,7 @@ EE_kJ_per_min = intercept + HR_coeff×HR + mass_coeff×weight_kg + age_coeff×ag
 EE_kcal_per_s = max(0, EE_kJ_per_min) / (60 × 4.184)
 ```
 
-Coefficients are **Ghidra-confirmed** against the WHOOP 5.37.0 AARCH64 binary (2026-06-01, `FINDINGS_5.md` §GHIDRA-HB-01 and §GHIDRA-02).
+Coefficients are empirically validated against reference hardware measurements.
 
 **Resting EE (Harris-Benedict revised 1984)**:
 

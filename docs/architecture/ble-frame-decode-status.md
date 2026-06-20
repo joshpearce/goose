@@ -211,7 +211,7 @@ Applies to Gen4 and Gen5 WHOOP devices unless noted.
 
 ## 7. Frame Envelope (by Device Generation)
 
-See [`protocol-reverse-engineering.md#frame-protocol`](protocol-reverse-engineering.md#frame-protocol) for the full frame layout, header bytes, CRC types, and Gen4 vs Gen5 differences.
+See [`ble-protocol-reference.md#frame-protocol`](ble-protocol-reference.md#frame-protocol) for the full frame layout, header bytes, CRC types, and Gen4 vs Gen5 differences.
 
 ---
 

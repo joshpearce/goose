@@ -13,7 +13,7 @@
 
 **Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.**
 
-If you don't know what Xcode is, or how to build the Rust core, this build is not for you. Come back on 13 June 2026 for the first public beta on TestFlight.
+If you don't know what Xcode is, or how to build the Rust core, this build is not for you. A public TestFlight beta is planned — watch this repository for updates.
 
 ![Goose app hero showing a connected WHOOP 5.0 device](docs/assets/readme-hero.png)
 
@@ -23,35 +23,34 @@ The app and backend have had very little attention put into performance. The app
 
 Goose is a local-first WHOOP data and health metrics project. The iOS app connects to WHOOP bands, routes packet data through the Goose Rust core, and turns that data into daily health, recovery, sleep, strain, stress, cardio, energy, coach, and debug views. An optional self-hosted server lets you persist decoded biometric streams outside the device.
 
-## What Shipped in v11.0
+## What Shipped in v12.0
 
-v11.0 is the most recent milestone.
+v12.0 is the most recent milestone. It is a code health and protocol foundation release — no new user-visible features, but substantial architectural improvements that make v13.0 work safer and faster.
 
-**Fixes and health**
+**Protocol foundation**
 
-- Resting HR floor set to 30 bpm minimum.
-- Battery level fix: R22 battery level for Gen5; Gen4 0xFF guard.
-- HealthKit import persistence to SQLite.
+- `DeviceKind`, `DeviceCapabilities`, and `WireProtocol` types introduced — device-aware dispatch replaces per-call conditionals.
+- BLE layer migrated to a Swift actor for safe concurrent access.
 
-**BLE and protocol**
+**Rust core restructuring**
 
-- BLE auth retry on reconnect.
-- Fork + upstream PR integration: units, localisation, BLE recovery, sync donut.
+- `bridge.rs` split into focused dispatch modules — individual concern files instead of a single 500+ arm match.
+- `store.rs` split into domain submodules — schema, capture, metrics, sleep, activity, and sync concerns separated.
+- SQLite schema v22.
+- 47 integration test files in `Rust/core/tests/`.
 
-**Debug and UI**
+**Crash safety**
 
-- Debug 3-tab split, Logs & Export rename, Breathe haptics, live strain display.
-- Lazy init to reduce startup latency.
+- `unwrap()` audit across Rust core — panicking calls replaced with proper error propagation.
 
-**Upload sync infrastructure**
+**Swift architecture**
 
-- 10 stream tables carry a `synced` flag: `battery`, `events`, `exercise_sessions`, `gravity`, `gravity2_samples`, `hr_samples`, `resp_samples`, `rr_intervals`, `skin_temp_samples`, `spo2_samples`.
-- Pending-upload queries and mark-synced operations are available on all 10 tables.
+- `HealthDataStore` ownership rationalised — single creation site, injected at scene root.
+- Domain ViewModels introduced — sleep, recovery, strain, and cardio views no longer read directly from the global store.
 
-**Rust core**
+**Threading**
 
-- SQLite schema v21.
-- 45 integration test files in `Rust/core/tests/`.
+- `THREADING:` invariant comments added to all queue-protected types and Swift bridge entry points.
 
 ## Project Layout
 
@@ -121,7 +120,7 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 - iOS Rust targets installed with `rustup`; see the Rust Core Bridge section below.
 - Docker (for the self-hosted server — optional).
 
-Built Rust `.a` archives (`Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`) are committed to the repository as pre-built artifacts. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` to skip rebuilding when the committed archives are already valid for the active Xcode platform.
+The Rust `.a` archives (`Rust/iphoneos/libgoose_core.a` and `Rust/iphonesimulator/libgoose_core.a`) are **gitignored** and built automatically by the Xcode build phase (`Scripts/build_ios_rust.sh`). A fresh clone requires at least one Xcode build to populate them. Set `GOOSE_SKIP_RUST_CORE_BUILD=1` to skip rebuilding on subsequent builds.
 
 ## Build
 

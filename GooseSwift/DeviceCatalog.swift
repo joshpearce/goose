@@ -38,4 +38,14 @@ struct DeviceCatalog {
   var historicalDeviceType: String {
     usesPageSequenceSync ? "GEN4" : (capabilities?.wireProtocol.bridgeString ?? "GOOSE")
   }
+
+  // Human-readable generation for display in device views (e.g. DeviceConnectionHeader).
+  // Returns "4.0", "MG", "5.0", or "unknown".
+  // Distinct from generationLabel ("gen4"/"gen5") which is used for log messages only.
+  var displayGeneration: String {
+    guard let caps = capabilities else { return "unknown" }
+    if caps.wireProtocol == .gen4 { return "4.0" }
+    if caps.deviceKind == "WHOOP_MG" { return "MG" }
+    return "5.0"
+  }
 }

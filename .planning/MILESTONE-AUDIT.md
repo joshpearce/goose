@@ -1,8 +1,8 @@
 ---
-milestone: v11.0
+milestone: v13.0
 status: passed
-audited: "2026-06-14"
-requirements_total: 23
+audited: "2026-06-20"
+requirements_total: 20
 requirements_satisfied: 23
 requirements_unfulfilled: 0
 open_verifications: 2

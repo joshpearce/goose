@@ -3,10 +3,7 @@ use goose_core::{
     local_health_validation::{
         local_health_validation_manifest_runbook_markdown, review_local_health_validation_manifest,
     },
-    protocol::{
-        DeviceType, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
-        build_v5_payload_frame,
-    },
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     store::{CaptureSessionInput, GooseStore, RawEvidenceInput},
 };
 use rusqlite::{Connection, params};
@@ -5482,7 +5479,7 @@ fn seed_processed_capture_sqlite_frames(path: &Path, frames: &[(&str, &str)]) {
 
 fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 84;
     for offset in [85, 285, 485] {
@@ -5495,7 +5492,7 @@ fn k10_motion_step_frame_hex(peak_indices: &[usize]) -> String {
 
 fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     for offset in [85, 285, 485, 688, 888, 1088] {
@@ -5508,7 +5505,7 @@ fn k10_motion_frame_hex_with_value(sample_value: i16) -> String {
 
 fn historical_k18_frame_hex(marker_value: u8) -> String {
     let mut payload = vec![
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         18,
         1,
         0x04,

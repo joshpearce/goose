@@ -11,7 +11,7 @@ This guide walks you from zero to a running Goose build with a connected WHOOP d
 
 | Tool | Version | Notes |
 |---|---|---|
-| macOS with Xcode | Xcode with iOS 26 SDK | Required to build the app |
+| macOS with Xcode | Xcode 26.5+ (local); CI uses Xcode 26.3 on macos-15 | Required to build the app |
 | iOS 26 SDK | 26.0 | Must be installed inside Xcode |
 | Apple Developer account | Any (free or paid) | Required for signing; bundle ID defaults to `com.goose.app` |
 | Rust toolchain | MSRV 1.96 | Install via [rustup.rs](https://rustup.rs) |
@@ -263,7 +263,7 @@ For the full list of server environment variables and iOS configuration options,
 Run `rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios` and rebuild.
 
 **Xcode cannot find `libgoose_core.a`**
-The static library is built by the Xcode build phase on every build. Do not commit or copy pre-built `.a` files from another machine — the platform may not match. Clean the build folder (⇧⌘K) and rebuild.
+The static libraries at `Rust/iphoneos/` and `Rust/iphonesimulator/` are gitignored and never committed. After a fresh clone, Xcode must build the project at least once so `Scripts/build_ios_rust.sh` (the Xcode build phase) compiles the Rust core and places the `.a` files in the correct output directories. If the error persists, clean the build folder (⇧⌘K) and rebuild.
 
 **App does not scan for Bluetooth devices**
 Bluetooth permission must be granted. Go to **Settings > Privacy & Security > Bluetooth** and confirm Goose is listed and enabled.

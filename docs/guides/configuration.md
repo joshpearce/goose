@@ -7,7 +7,7 @@ Goose has two independently configurable components: the **iOS app** and the **s
 
 ## iOS App
 
-All iOS configuration is done at runtime through the app UI. There is no build-time configuration file.
+All iOS configuration is done at runtime through the app UI or, for developer builds, through Xcode launch arguments and environment variables. There is no build-time configuration file that affects runtime behaviour.
 
 ### Where to find the settings
 
@@ -24,7 +24,7 @@ All iOS configuration is done at runtime through the app UI. There is no build-t
 ### Validation rules
 
 - The server URL must have an `http` or `https` scheme and a non-empty hostname.
-- Private-range IP addresses (RFC 1918: `10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`) and loopback addresses (`127.x.x.x`, RFC 5735) are allowed over `http://`. Public IP addresses and public hostnames require `https://` to satisfy App Transport Security. Local hostnames (`localhost`, `*.local`) are allowed over `http://`.
+- Private-range IP addresses (RFC 1918: `10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`) and loopback addresses (`127.x.x.x`) are allowed over `http://`. Public IP addresses and public hostnames require `https://` to satisfy App Transport Security. Local hostnames (`localhost`, `*.local`) are allowed over `http://` via `NSAllowsLocalNetworking`.
 
 ### Status indicators
 
@@ -40,6 +40,181 @@ When upload is enabled and a URL is configured, the **More > Remote Server** scr
 ### Upload retry behaviour
 
 Each upload batch is attempted up to **7 times** (1 initial attempt + 6 retries) with exponential backoff capped at 60 s: delays between attempts are 1 s, 2 s, 4 s, 8 s, 16 s, 32 s, 60 s. 4xx client errors abort the retry loop immediately and are not retried. After all attempts fail, `uploadErrorState` is set to a human-readable error string and the pending batch count is decremented. The decoded-streams upload endpoint is `POST /v1/ingest-decoded`. On a successful upload, raw BLE frames are also sent to `POST /v1/ingest-frames` (no additional retry loop — a single attempt).
+
+### Debug WebSocket
+
+The app opens a local WebSocket connection to `ws://127.0.0.1:8765` for debug validation sessions. This connection is initiated from **More > Debug** and is allowed by `NSAllowsLocalNetworking: true` in `GooseSwift/Info.plist`. The current status is shown in **More > Debug > WebSocket**.
+
+---
+
+## iOS Developer Configuration
+
+### Build-time signing (Xcode)
+
+Signing identity is controlled by two xcconfig files:
+
+| File | Committed | Purpose |
+|---|---|---|
+| `Config/Signing.xcconfig` | Yes | Shared defaults; sets `APP_BUNDLE_ID = com.goose.app` |
+| `Config/SigningExtension.xcconfig` | Yes | Extension target; derives bundle ID from `APP_BUNDLE_ID` |
+| `Config/Local.xcconfig` | No (gitignored) | Per-developer overrides: `DEVELOPMENT_TEAM` and `APP_BUNDLE_ID` |
+
+To build on your own device, create `Config/Local.xcconfig` with:
+
+```
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+APP_BUNDLE_ID = com.yourname.goose
+```
+
+Find your team ID at developer.apple.com → Membership Details.
+
+### Launch arguments (Xcode scheme / `xcodebuild`)
+
+These flags are read at startup via `ProcessInfo.processInfo.arguments`. Pass them in the Xcode scheme editor under **Run > Arguments Passed On Launch**, or as `-arg` entries to `xcodebuild`.
+
+| Argument | Description |
+|---|---|
+| `--goose-start-health-packet-capture` | Auto-start health packet capture on BLE connection |
+| `--goose-start-temperature-packet-capture` | Auto-start temperature packet capture on BLE connection |
+| `--goose-start-physiology-packet-capture` | Auto-start physiology packet capture on BLE connection |
+| `--goose-start-respiratory-packet-watch` | Auto-start respiratory packet watch on BLE connection |
+| `--goose-start-physiology-capture` | Alias: starts physiology + enables historical sync |
+| `--goose-auto-historical-sync` | Trigger historical sync automatically after connection |
+| `--goose-auto-band-sleep-sync` | Trigger band sleep sync automatically on the health tab |
+| `--goose-sync-history-during-physiology-capture` | Also run historical sync while physiology capture runs |
+| `--goose-enable-diagnostics` | Force diagnostic BLE logging on |
+| `--goose-disable-diagnostics` | Force diagnostic BLE logging off |
+| `--goose-console-capture-status` | Print capture status snapshots to the console |
+| `--goose-afc-capture-status` | Write capture status to `Documents/GooseSwift/capture-status.txt` |
+| `--goose-afc-diagnostic-mirror` | Enable AFC diagnostic mirror mode |
+| `--goose-send-debug-skin-temp-command` | Send debug skin temperature command after connection |
+| `--goose-force-debug-menu-write` | Force a debug menu write command after connection |
+| `--goose-health-packet-capture-duration=N` | Override health capture duration (seconds; default 1800) |
+| `--goose-temperature-packet-capture-duration=N` | Override temperature capture duration (seconds; default 600) |
+| `--goose-physiology-packet-capture-duration=N` | Override physiology capture duration (seconds; default 1800) |
+| `--goose-respiratory-packet-watch-duration=N` | Override respiratory watch duration (seconds; default 600) |
+
+### Environment variables (Xcode scheme / `xcodebuild`)
+
+Most launch arguments have an equivalent environment variable. Set these under **Run > Environment Variables** in the Xcode scheme, or pass them to `xcodebuild` with `-e KEY=VALUE`.
+
+| Variable | Equivalent argument | Values |
+|---|---|---|
+| `GOOSE_START_HEALTH_PACKET_CAPTURE` | `--goose-start-health-packet-capture` | `1` to enable |
+| `GOOSE_START_TEMPERATURE_PACKET_CAPTURE` | `--goose-start-temperature-packet-capture` | `1` to enable |
+| `GOOSE_START_PHYSIOLOGY_PACKET_CAPTURE` | `--goose-start-physiology-packet-capture` | `1` to enable |
+| `GOOSE_START_RESPIRATORY_PACKET_WATCH` | `--goose-start-respiratory-packet-watch` | `1` to enable |
+| `GOOSE_AUTO_HISTORICAL_SYNC` | `--goose-auto-historical-sync` | `1` to enable |
+| `GOOSE_AUTO_BAND_SLEEP_SYNC` | `--goose-auto-band-sleep-sync` | `1` to enable |
+| `GOOSE_SYNC_HISTORY_DURING_PHYSIOLOGY_CAPTURE` | `--goose-sync-history-during-physiology-capture` | `1` to enable |
+| `GOOSE_DIAGNOSTIC_LOGGING` | `--goose-enable-diagnostics` / `--goose-disable-diagnostics` | `1` = on, `0` = off |
+| `GOOSE_CONSOLE_CAPTURE_STATUS` | `--goose-console-capture-status` | `1` to enable |
+| `GOOSE_AFC_CAPTURE_STATUS` | `--goose-afc-capture-status` | `1` to enable |
+| `GOOSE_AFC_DIAGNOSTIC_MIRROR` | `--goose-afc-diagnostic-mirror` | `1` to enable |
+| `GOOSE_SEND_DEBUG_SKIN_TEMP_COMMAND` | `--goose-send-debug-skin-temp-command` | `1` to enable |
+| `GOOSE_FORCE_DEBUG_MENU_WRITE` | `--goose-force-debug-menu-write` | `1` to enable |
+| `GOOSE_DEBUG_MENU_COMMAND` | — | Raw text command to send to debug menu after connection |
+| `GOOSE_DEBUG_MENU_COMMAND_HEX` | — | Hex-encoded command to send to debug menu after connection |
+| `GOOSE_HEALTH_PACKET_CAPTURE_DURATION_SECONDS` | `--goose-health-packet-capture-duration=N` | Integer seconds |
+| `GOOSE_TEMPERATURE_PACKET_CAPTURE_DURATION_SECONDS` | `--goose-temperature-packet-capture-duration=N` | Integer seconds |
+| `GOOSE_PHYSIOLOGY_PACKET_CAPTURE_DURATION_SECONDS` | `--goose-physiology-packet-capture-duration=N` | Integer seconds |
+| `GOOSE_RESPIRATORY_PACKET_WATCH_DURATION_SECONDS` | `--goose-respiratory-packet-watch-duration=N` | Integer seconds |
+
+### UserDefaults reference
+
+All persistent iOS state uses `UserDefaults.standard` with dot-namespaced reverse-DNS keys. The following table covers the keys that are most relevant to developers.
+
+#### Remote server
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.remote.serverURL` | String | Base URL of the self-hosted server |
+| `goose.remote.uploadEnabled` | Bool | Upload gate toggle |
+
+The bearer token is **not** in UserDefaults. It is stored in the iOS Keychain under service `goose.remote`, account `apiKey`, with accessibility `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
+
+#### BLE device identity
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.rememberedDeviceID` | String | Persisted WHOOP device hardware ID |
+| `goose.swift.rememberedDeviceName` | String | Persisted WHOOP device display name |
+| `goose.swift.device_uuid_map` | Data (JSON) | CoreBluetooth UUID → hardware ID mapping |
+| `goose.swift.rememberedDeviceValidatedWhoop` | Bool | Whether the remembered device passed WHOOP validation |
+| `goose.swift.ble.bondingState` | String | BLE bonding state machine value |
+| `goose.swift.ble.bondingDeviceID` | String | Device ID currently undergoing bonding |
+
+#### Live HRV (inter-session cache)
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.liveHRVRMSSD` | Double | Most recent live RMSSD value |
+| `goose.swift.liveHRVRRIntervalCount` | Int | RR interval sample count for current RMSSD |
+| `goose.swift.liveHRVRMSSDSampleCount` | Int | Total RMSSD sample count |
+| `goose.swift.liveHRVUpdatedAt` | Date | Timestamp of last live HRV update |
+| `goose.swift.liveHRVSource` | String | Source identifier for the HRV reading |
+
+#### Resting heart rate estimate
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.restingHeartRateEstimateBPM` | Double | Estimated resting HR in BPM |
+| `goose.swift.restingHeartRateEstimateSampleCount` | Int | Sample count for the estimate |
+| `goose.swift.restingHeartRateEstimateUpdatedAt` | Date | Timestamp of last estimate update |
+| `goose.swift.restingHeartRateEstimateSource` | String | Source identifier (BLE, HealthKit, etc.) |
+
+#### Battery
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.lastBatteryPercent` | Int | Last known device battery percentage |
+| `goose.swift.lastBatteryCapturedAt` | Date | When the battery reading was taken |
+| `goose.swift.inferredBatteryChargingUntil` | Date | Inferred end of charging window |
+
+#### Sync watermarks
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.upload.rawFramesWatermark` | — | Watermark for raw BLE frame upload progress |
+| `goose.swift.upload.decodedStreamsWatermark` | — | Watermark for decoded stream upload progress |
+| `goose.swift.lastHistorySyncAt` | Date | Last historical BLE sync timestamp |
+| `goose.swift.last_band_sleep_sync_date` | Date | Last band sleep sync timestamp |
+
+#### Coach
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.coach.activeProviderId` | String | Active AI coach provider ID |
+| `goose.coach.modelPreset` | String | Selected model preset for the coach |
+| `goose.coach.conversation.v1` | Data (JSON) | Persisted coach conversation history |
+| `goose.coach.journal.entries` | Data (JSON) | Coach journal entries |
+| `goose.coach.gemini.oauthClientId` | String | Gemini OAuth client ID (if Gemini provider is used) |
+| `goose.coach.custom.baseURL` | String | Base URL for custom endpoint coach provider |
+| `goose.coach.custom.modelID` | String | Model ID for custom endpoint coach provider |
+
+#### User profile (set during onboarding)
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.onboardingComplete` | Bool | Whether onboarding has been completed |
+| `goose.swift.profile.firstName` | String | User's first name |
+| `goose.swift.profile.dateOfBirth` | String | Date of birth (ISO 8601) |
+| `goose.swift.profile.unitSystem` | String | `"metric"` or `"imperial"` |
+| `goose.swift.profile.gender` | String | Gender for biometric calculations |
+| `goose.swift.profile.heightMm` | Int | Height in millimetres |
+| `goose.swift.profile.weightGrams` | Int | Weight in grams |
+| `goose.swift.profile.timezoneID` | String | User's timezone identifier |
+
+#### Keychain services (iOS)
+
+| Service | Account | Contents |
+|---|---|---|
+| `goose.remote` | `apiKey` | Remote server bearer token |
+| `com.goose.swift.claude` | — | Claude API key (Claude coach provider) |
+| `com.goose.swift.codex` | — | Codex embedded auth token |
+| `com.goose.swift.gemini` | — | Gemini OAuth token |
+| `com.goose.swift.custom-endpoint` | — | Custom endpoint auth token |
+| `com.goose.swift.onboarding` | — | Onboarding-related secrets |
 
 ---
 

@@ -17,8 +17,8 @@ use crate::{
 };
 
 use super::{
-    BridgeRequest, BridgeResponse, bridge_error, bridge_ok, empty_json_array, empty_json_object,
-    json_object_string, open_bridge_store, request_args,
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok, empty_json_array,
+    empty_json_object, json_object_string, request_args,
 };
 
 // ── Args structs ───────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ fn timeline_from_decoded_frames_bridge(args: TimelineArgs) -> GooseResult<serde_
 }
 
 fn journal_upsert_bridge(args: JournalUpsertArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let inserted = store.insert_journal(
         &args.date,
         &args.source,
@@ -332,7 +332,7 @@ fn journal_upsert_bridge(args: JournalUpsertArgs) -> GooseResult<serde_json::Val
 
 fn workout_upsert_bridge(args: WorkoutUpsertArgs) -> GooseResult<serde_json::Value> {
     let provenance_json = json_object_string("provenance", &args.provenance)?;
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let inserted = store.insert_workout(
         &args.date,
         &args.source,
@@ -357,7 +357,7 @@ fn workout_upsert_bridge(args: WorkoutUpsertArgs) -> GooseResult<serde_json::Val
 }
 
 fn apple_daily_upsert_bridge(args: AppleDailyUpsertArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let inserted = store.insert_apple_daily(
         &args.date,
         &args.source,
@@ -379,7 +379,7 @@ fn apple_daily_upsert_bridge(args: AppleDailyUpsertArgs) -> GooseResult<serde_js
 fn activity_create_session_bridge(
     args: ActivitySessionUpsertArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let provenance_json = json_object_string("provenance", &args.provenance)?;
     let inserted = store.insert_activity_session(ActivitySessionInput {
         session_id: &args.session_id,
@@ -407,7 +407,7 @@ fn activity_create_session_bridge(
 }
 
 fn activity_get_session_bridge(args: ActivitySessionLookupArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let session = store.activity_session(&args.session_id)?.ok_or_else(|| {
         GooseError::message(format!("activity session {} not found", args.session_id))
     })?;
@@ -419,7 +419,7 @@ fn activity_get_session_bridge(args: ActivitySessionLookupArgs) -> GooseResult<s
 }
 
 fn activity_list_sessions_bridge(args: ActivitySessionListArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let sessions =
         store.activity_sessions_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     Ok(json!({
@@ -435,7 +435,7 @@ fn activity_list_sessions_bridge(args: ActivitySessionListArgs) -> GooseResult<s
 fn activity_list_sessions_with_metrics_bridge(
     args: ActivitySessionListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let sessions =
         store.activity_sessions_between(args.start_time_unix_ms, args.end_time_unix_ms)?;
     let session_ids = sessions
@@ -465,7 +465,7 @@ fn activity_list_sessions_with_metrics_bridge(
 fn activity_update_session_bridge(
     args: ActivitySessionUpsertArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let provenance_json = json_object_string("provenance", &args.provenance)?;
     let updated = store.update_activity_session(ActivitySessionInput {
         session_id: &args.session_id,
@@ -512,7 +512,7 @@ fn activity_apply_correction_bridge(
         return Err(GooseError::message("provenance must be a JSON object"));
     }
 
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let existing = store.activity_session(&args.session_id)?.ok_or_else(|| {
         GooseError::message(format!("activity session {} not found", args.session_id))
     })?;
@@ -628,7 +628,7 @@ fn activity_apply_correction_bridge(
 fn activity_delete_session_bridge(
     args: ActivitySessionLookupArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let deleted = store.delete_activity_session(&args.session_id)?;
     Ok(json!({
         "schema": "goose.activity-session-delete-result.v1",
@@ -639,7 +639,7 @@ fn activity_delete_session_bridge(
 }
 
 fn activity_attach_metric_bridge(args: ActivityMetricAttachArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let provenance_json = json_object_string("provenance", &args.provenance)?;
     let quality_flags_json = serde_json::to_string(&args.quality_flags)
         .map_err(|error| GooseError::message(format!("cannot serialize quality_flags: {error}")))?;
@@ -668,7 +668,7 @@ fn activity_attach_metric_bridge(args: ActivityMetricAttachArgs) -> GooseResult<
 fn activity_attach_metrics_bridge(
     args: ActivityMetricAttachBatchArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let serialized = args
         .metrics
         .iter()
@@ -721,7 +721,7 @@ fn activity_attach_metrics_bridge(
 }
 
 fn activity_list_metrics_bridge(args: ActivityMetricListArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metrics = store.activity_metrics_for_session(&args.activity_session_id)?;
     Ok(json!({
         "schema": "goose.activity-metric-list.v1",
@@ -735,7 +735,7 @@ fn activity_list_metrics_bridge(args: ActivityMetricListArgs) -> GooseResult<ser
 fn activity_metrics_for_session_in_window_bridge(
     args: ActivityMetricWindowArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metrics = store.activity_metrics_for_session_in_window(
         &args.activity_session_id,
         args.start_time_unix_ms,
@@ -755,7 +755,7 @@ fn activity_metrics_for_session_in_window_bridge(
 fn activity_attach_interval_bridge(
     args: ActivityIntervalAttachArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let metadata_json = json_object_string("metadata", &args.metadata)?;
     let provenance_json = json_object_string("provenance", &args.provenance)?;
     let inserted = store.insert_activity_interval(ActivityIntervalInput {
@@ -782,7 +782,7 @@ fn activity_attach_interval_bridge(
 fn activity_list_intervals_bridge(
     args: ActivityIntervalListArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = acquire_bridge_conn(&args.database_path)?;
     let intervals = store.activity_intervals_for_session(&args.activity_session_id)?;
     Ok(json!({
         "schema": "goose.activity-interval-list.v1",

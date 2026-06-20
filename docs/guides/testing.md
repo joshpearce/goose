@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Testing
 
-Goose has three independent test surfaces: the **Rust core** (45 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
+Goose has three independent test surfaces: the **Rust core** (47 integration test files, runs on Linux and macOS), the **server stack** (pytest suite against FastAPI + TimescaleDB), and the **iOS app** (XCTest unit suite in `GooseSwiftTests/` with 16 test files and 69 test functions, plus 3 shared mock helpers, plus manual verification with a physical WHOOP device).
 
 ---
 
@@ -9,7 +9,7 @@ Goose has three independent test surfaces: the **Rust core** (45 integration tes
 
 ### Test framework
 
-Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (45 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate ships many binaries used by integration tests as CLI fixtures, including `goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`, `goose-local-health-validation-suite`, `goose-reference-algo-runner`, `goose-property-test-suite`, and others defined in `Rust/core/Cargo.toml`.
+Cargo's built-in test runner. Integration tests live in `Rust/core/tests/` (47 files). Unit tests are collocated with source modules in `Rust/core/src/`. The crate ships many binaries used by integration tests as CLI fixtures, including `goose-fixture-index`, `goose-parser-fixture-runner`, `goose-capture-import`, `goose-capture-sqlite-import`, `goose-local-health-validation-suite`, `goose-reference-algo-runner`, `goose-property-test-suite`, and others defined in `Rust/core/Cargo.toml`.
 
 A `Rust/core/fixtures/` directory provides golden hex frames and synthetic capture data (under `fixtures/owned/` and `fixtures/synthetic/`) consumed by tests such as `fixture_tests.rs`, `capture_import_tests.rs`, and `protocol_tests.rs`.
 
@@ -84,7 +84,9 @@ cargo build --all-targets --locked
 | `ui_coverage_tests.rs` | UI surface coverage audit |
 | `debug_ws_tests.rs` | WebSocket debug server contract |
 | `fake_ble_peripheral_tests.rs` | Simulated BLE peripheral for offline tests |
+| `comment_invariants_tests.rs` | THREADING: and SAFETY: invariant comment presence audit |
 | `tooling_inventory_tests.rs` | CLI tooling presence verification |
+| `store_schema_version_tests.rs` | SQLite schema version assertions |
 | `capture_arrival_plan_cli_tests.rs` | `goose-capture-arrival-plan` CLI output |
 | `command_capture_plan_cli_tests.rs` | `goose-command-capture-plan` CLI output |
 | `local_health_validation_suite_cli_tests.rs` | `goose-local-health-validation-suite` CLI |
@@ -315,7 +317,9 @@ Prerequisites: the self-hosted server must be running (see `server/README.md`).
 
 ## CI
 
-Six workflows run the automated test and quality gates on every push and pull request. Three additional housekeeping workflows (`branch-cleanup.yml`, `stale.yml`, `zizmor.yml`) manage branch hygiene and workflow security scanning but do not run tests.
+Six workflows run the automated test and quality gates on every push and pull request: `rust-core.yml`, `swift-build.yml`, `server-ci.yml`, `zizmor.yml`, `security.yml`, and `codeql.yml`. Each produces a named gate job that must pass before a PR can merge. Three additional workflows (`branch-cleanup.yml`, `stale.yml`, `release.yml`) handle branch hygiene and releases but do not gate PRs.
+
+The four required status checks are: **rust/gate**, **swift/gate**, **server/gate**, and **zizmor/gate**.
 
 ### `rust-core.yml` — Format, build, test (MSRV matrix)
 

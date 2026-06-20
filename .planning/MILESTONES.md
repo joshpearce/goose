@@ -1,5 +1,28 @@
 # Milestones
 
+## v13.0 v13.0 (Shipped: 2026-06-20)
+
+**Phases completed:** 6 phases, 16 plans, 4 tasks
+
+**Key accomplishments:**
+
+- 1. [Rule 2 - Missing critical functionality] Added writeManifestToDisk() and writeValidationSidecarsAfterManifest() helpers
+- Auth exhaustion counter (authRetryCount) and recovery alert (authExhausted) after 12 insufficientAuthentication retry cycles with Reconnect WHOOP / Cancel actions.
+- Complete
+- Complete
+- Complete
+- Added `DataPacketBodySummary::V24History { .. }` alongside `NormalHistory` and
+- Complete
+- Complete
+- Replaced all 9 silent `try? bridge.request` / `try? await bridge.requestAsync` calls with `do/catch` blocks using each file's established logging idiom — bridge errors now visible in Xcode console and OSLog.
+- Complete
+- Complete
+- Caseless Swift enum centralising all HK write logic — HR/HRV/SpO2/sleep — with requestAuthorization and exportAfterSleepSync entry points, gated by UserDefaults toggle.
+- Task 1 pre-read
+- HealthKit export opt-in toggle with @AppStorage persistence and HKHealthStore availability guard wired to GooseAppModel stub.
+
+---
+
 ## v12.0 v12.0 (Shipped: 2026-06-19)
 
 **Phases completed:** 9 phases, 38 plans, 39 tasks

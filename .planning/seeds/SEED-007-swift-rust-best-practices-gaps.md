@@ -1,6 +1,6 @@
 ---
 id: SEED-007
-status: dormant
+status: active
 planted: 2026-06-15
 planted_during: v12.0 — best practices audit (gsd-explore)
 trigger_when: próxima fase de code health, ou antes de qualquer fase que toque em CaptureFrameWriteQueue / HealthDataStore / GooseAppModel+Upload

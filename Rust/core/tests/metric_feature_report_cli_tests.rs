@@ -1,6 +1,6 @@
 use goose_core::{
     capture_import::{CapturedFrameBatchOptions, CapturedFrameInput, import_captured_frame_batch},
-    protocol::{DeviceType, PACKET_TYPE_REALTIME_RAW_DATA, build_v5_payload_frame},
+    protocol::{DeviceType, PacketType, build_v5_payload_frame},
     store::GooseStore,
 };
 
@@ -1092,7 +1092,7 @@ fn import_motion_frame(store: &GooseStore) {
 
 fn k10_motion_frame_hex() -> String {
     let mut payload = vec![0; 1288];
-    payload[0] = PACKET_TYPE_REALTIME_RAW_DATA;
+    payload[0] = u8::from(PacketType::RealtimeRawData);
     payload[1] = 10;
     payload[17] = 72;
     for offset in [85, 285, 485, 688, 888, 1088] {

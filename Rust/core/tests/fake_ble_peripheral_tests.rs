@@ -7,10 +7,7 @@ use goose_core::{
         WHOOP_COMMAND_FROM_STRAP_GEN5, WHOOP_COMMAND_TO_STRAP_GEN5, WHOOP_DATA_FROM_STRAP_GEN5,
         WHOOP_SERVICE_GEN5,
     },
-    protocol::{
-        PACKET_TYPE_COMMAND_RESPONSE, PACKET_TYPE_HISTORICAL_DATA, build_v5_command_frame,
-        build_v5_payload_frame,
-    },
+    protocol::{PacketType, build_v5_command_frame, build_v5_payload_frame},
 };
 
 const GET_DATA_RANGE_COMMAND: u8 = 34;
@@ -257,7 +254,7 @@ fn command_response_frame_hex_for_sequence(
     result_code: u8,
 ) -> String {
     hex::encode(build_v5_payload_frame(&[
-        PACKET_TYPE_COMMAND_RESPONSE,
+        u8::from(PacketType::CommandResponse),
         9,
         command,
         origin_sequence,
@@ -267,7 +264,7 @@ fn command_response_frame_hex_for_sequence(
 
 fn historical_data_notification_frame() -> String {
     hex::encode(build_v5_payload_frame(&[
-        PACKET_TYPE_HISTORICAL_DATA,
+        u8::from(PacketType::HistoricalData),
         0x10,
         0x11,
         0x12,

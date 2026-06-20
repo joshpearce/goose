@@ -1,0 +1,114 @@
+name: Android Rust Core
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (e.g. v13.0)"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  build-android-core:
+    name: Build Rust core for Android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Resolve tag
+        id: resolve-tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out repository at main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: >-
+            aarch64-linux-android
+            armv7-linux-androideabi
+            x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Set up Android NDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b9a41e2adef5edd8 # v3.2.1
+        with:
+          packages: "ndk;27.2.12479018"
+
+      - name: Build Rust core for Android targets
+        working-directory: Rust/core
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: |
+          cargo ndk \
+            -t arm64-v8a \
+            -t armeabi-v7a \
+            -t x86_64 \
+            -o ../../android-libs \
+            build --release --lib
+
+      - name: Package Android libs
+        id: package
+        env:
+          TAG: ${{ steps.resolve-tag.outputs.tag }}
+        run: |
+          ARCHIVE="goose-android-core-${TAG}.tar.gz"
+          tar -czf "$ARCHIVE" android-libs/
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          echo "size=$(du -sh "$ARCHIVE" | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # When android/ project exists (v14.0), enable this step to build and attach the APK:
+      # - name: Build release APK
+      #   working-directory: android
+      #   run: ./gradlew assembleRelease
+      # - name: Attach APK to release
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #     TAG: ${{ steps.resolve-tag.outputs.tag }}
+      #   run: |
+      #     gh release upload "$TAG" \
+      #       android/app/build/outputs/apk/release/app-release-unsigned.apk \
+      #       --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Attach to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.resolve-tag.outputs.tag }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          gh release upload "$TAG" "$ARCHIVE" \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.resolve-tag.outputs.tag }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          SIZE: ${{ steps.package.outputs.size }}
+        run: |
+          echo "## Android Rust Core Built" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tag:** $TAG" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Archive:** $ARCHIVE ($SIZE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Targets:** arm64-v8a, armeabi-v7a, x86_64" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Attach a Kotlin/Compose Android app using the JNI shim in \`Rust/core/src/\` to build a full Android port." >> "$GITHUB_STEP_SUMMARY"

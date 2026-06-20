@@ -8,8 +8,8 @@ use goose_core::commands::{
     validate_commands,
 };
 use goose_core::protocol::{
-    COMMAND_GET_HELLO, DeviceType, PACKET_TYPE_COMMAND_RESPONSE, ParsedPayload,
-    build_v5_command_frame, build_v5_payload_frame, parse_frame_hex,
+    COMMAND_GET_HELLO, DeviceType, PacketType, ParsedPayload, build_v5_command_frame,
+    build_v5_payload_frame, parse_frame_hex,
 };
 
 const GET_HELLO_FRAME: &str = "aa0108000001e67123019101363e5c8d";
@@ -2247,7 +2247,7 @@ fn command_response_frame_hex_for_sequence(
     result_code: u8,
 ) -> String {
     hex::encode(build_v5_payload_frame(&[
-        PACKET_TYPE_COMMAND_RESPONSE,
+        u8::from(PacketType::CommandResponse),
         9,
         command,
         origin_sequence,
