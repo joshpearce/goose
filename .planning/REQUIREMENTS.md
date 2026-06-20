@@ -9,33 +9,33 @@
 ## Bug Fixes
 
 - [x] **BUG-AUTH-01**: User can recover from WHOOP 5.0 auth stuck state — app detects retry exhaustion, surfaces clear "Reconnect WHOOP" prompt, halts retry loop (closes #154)
-- [ ] **BUG-EXP-01**: User can export on databases > 100 MB without OOM crash — validation pipeline passes manifest by reference/ID, not serialised object (closes #155 primary)
-- [ ] **BUG-EXP-02**: User running full raw export does not silently bypass safe defaults — `runFullRawExport()` respects `includeRawBytes = false` (closes #155 Bug 1)
-- [ ] **BUG-EXP-03**: User's export bundle creation calls `validate()` once — redundant bridge call in `createBundle()` removed (closes #155 Bug 2)
-- [ ] **BUG-EXP-04**: User cannot trigger OOM-risk database export by accident — "Include Database" button disabled when SQLite > 20 MB (closes #155 Bug 3)
-- [ ] **BUG-HR-01**: User with WHOOP 5.0 firmware 50.38.1.0 receives HR data and metrics — root cause identified and fixed (closes #156)
+- [x] **BUG-EXP-01**: User can export on databases > 100 MB without OOM crash — validation pipeline passes manifest by reference/ID, not serialised object (closes #155 primary)
+- [x] **BUG-EXP-02**: User running full raw export does not silently bypass safe defaults — `runFullRawExport()` respects `includeRawBytes = false` (closes #155 Bug 1)
+- [x] **BUG-EXP-03**: User's export bundle creation calls `validate()` once — redundant bridge call in `createBundle()` removed (closes #155 Bug 2)
+- [x] **BUG-EXP-04**: User cannot trigger OOM-risk database export by accident — "Include Database" button disabled when SQLite > 20 MB (closes #155 Bug 3)
+- [x] **BUG-HR-01**: User with WHOOP 5.0 firmware 50.38.1.0 receives HR data and metrics — root cause identified and fixed (closes #156)
 
 ## Protocol Layer
 
-- [ ] **PROTO-08**: Rust `PACKET_TYPE_*` u16 constants replaced with enum — compiler enforces exhaustion at match sites (closes #157 finding 1/2)
-- [ ] **PROTO-09**: `parse_data_packet_body_summary` has no silent wildcard — unhandled packet_k values push an explicit warning string (closes #157 finding 3)
-- [ ] **PROTO-10**: `data_packet_domain()` and `parse_data_packet_body_summary()` are in sync — every domain-annotated packet type has a parse arm (closes #157 finding 5)
-- [ ] **PROTO-11**: Bridge routing uses central dispatch registry — `CommandDefinition` array kept in sync with bridge handlers (closes #157 finding 6/7)
+- [x] **PROTO-08**: Rust `PACKET_TYPE_*` u16 constants replaced with enum — compiler enforces exhaustion at match sites (closes #157 finding 1/2)
+- [x] **PROTO-09**: `parse_data_packet_body_summary` has no silent wildcard — unhandled packet_k values push an explicit warning string (closes #157 finding 3)
+- [x] **PROTO-10**: `data_packet_domain()` and `parse_data_packet_body_summary()` are in sync — every domain-annotated packet type has a parse arm (closes #157 finding 5)
+- [x] **PROTO-11**: Bridge routing uses central dispatch registry — `CommandDefinition` array kept in sync with bridge handlers (closes #157 finding 6/7)
 
 ## Gen4 Protocol Completeness
 
-- [ ] **GEN4-06**: User with WHOOP 4.0 sees respiratory rate and skin temperature in Recovery dashboard — Gen4 byte offsets parsed into `MetricFeatures.respiratory_rate_rpm` and `skin_temp_delta_c` (closes #21)
-- [ ] **SYNC-07**: WHOOP 4.0 historical sync completes without dropping packet47 bodies — page_sequence reassembly fixed for service UUID `61080005` (closes #20)
+- [x] **GEN4-06**: User with WHOOP 4.0 sees respiratory rate and skin temperature in Recovery dashboard — Gen4 byte offsets parsed into `MetricFeatures.respiratory_rate_rpm` and `skin_temp_delta_c` (closes #21)
+- [x] **SYNC-07**: WHOOP 4.0 historical sync completes without dropping packet47 bodies — page_sequence reassembly fixed for service UUID `61080005` (closes #20)
 
 ## WHOOP MG Support
 
-- [ ] **MG-01**: `DeviceKind::WhoopMg` variant added to Rust core with `DeviceCapabilities` reflecting MG-specific protocol flags — MG devices no longer misidentified as Whoop5 (closes #22, SEED-006)
+- [x] **MG-01**: `DeviceKind::WhoopMg` variant added to Rust core with `DeviceCapabilities` reflecting MG-specific protocol flags — MG devices no longer misidentified as Whoop5 (closes #22, SEED-006)
 - [x] **MG-02**: iOS app identifies WHOOP MG from BLE advertisement and sets `connectedCapabilities` to `WhoopMg` — device view shows correct generation label
 
 ## Best Practices
 
 - [x] **BP-01**: 9 silent `try?` bridge calls in Swift replaced with `do/catch` + `ble.record(level: .error, ...)` — critical data paths (capture.import_frame_batch, sync.backfill_streams) log failures instead of discarding them silently (SEED-007 Gap 1)
-- [ ] **BP-02**: Rust core uses a SQLite connection pool — per-request connection open overhead eliminated; pool size tuned to bridge concurrency model (SEED-007 Gap 2)
+- [x] **BP-02**: Rust core uses a SQLite connection pool — per-request connection open overhead eliminated; pool size tuned to bridge concurrency model (SEED-007 Gap 2)
 
 ## HealthKit Export — Bevel Integration
 
