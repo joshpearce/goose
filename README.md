@@ -111,12 +111,12 @@ The self-hosted server and biometric algorithm pipeline are adapted from [my-who
 
 - SwiftUI app shell with Home, Health, Coach, and More tabs.
 - Onboarding and persisted profile state.
-- CoreBluetooth scan/connect flows for WHOOP 5.0 and WHOOP 4.0 devices.
+- CoreBluetooth scan/connect flows for WHOOP 5.0, WHOOP 4.0, and WHOOP MG devices.
 - JSON-over-C bridge into the Goose Rust core.
 - Self-hosted server (`server/`): FastAPI + TimescaleDB, Dockerized; supports both device generations via `device_generation` field.
 - Automatic upload of decoded biometric data from iOS to server (10 stream tables with `synced` flag).
 - Health metric surfaces for Sleep, Recovery, Strain, Stress, Cardio Load, Energy Bank, Health Monitor, Packet Inputs, Algorithms, References, and Calibration.
-- HealthKit sleep import and workout write support.
+- HealthKit export: HR, SpO2, HRV, and sleep sessions written to Apple Health after each sync.
 - Coach surfaces that summarize local metrics and explain missing data.
 - More/Debug operational surfaces for device state, capture, sync, algorithms, storage, privacy, and support.
 - Workout Live Activity extension.
@@ -299,4 +299,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines including code style,
 
 ## License
 
-GPL-3.0-or-later. See [LICENSE](LICENSE).
+PolyForm Noncommercial License 1.0.0. See [LICENSE](LICENSE).

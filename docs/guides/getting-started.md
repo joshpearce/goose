@@ -186,7 +186,7 @@ Bluetooth permission is mandatory. Without it the app cannot scan for or connect
 
 ## Connecting to your WHOOP device
 
-Goose supports **WHOOP 5.0** and **WHOOP 4.0**. Other WHOOP generations are not supported.
+Goose supports **WHOOP 5.0**, **WHOOP 4.0**, and **WHOOP MG**. Other WHOOP generations are not supported.
 
 1. Open the **Home** tab.
 2. Tap **Scan** in the device panel.
@@ -243,7 +243,7 @@ Expected response: `{"status":"ok"}`
 
 ### 3. Configure the iOS app
 
-In Goose, go to **More > Settings > Remote Server** and fill in:
+In Goose, go to **More > Remote Server** and fill in:
 
 | Field | Value |
 |---|---|

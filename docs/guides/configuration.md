@@ -51,22 +51,29 @@ The app opens a local WebSocket connection to `ws://127.0.0.1:8765` for debug va
 
 ### Build-time signing (Xcode)
 
-Signing identity is controlled by two xcconfig files:
+Signing identity is controlled by xcconfig files:
 
 | File | Committed | Purpose |
 |---|---|---|
 | `Config/Signing.xcconfig` | Yes | Shared defaults; sets `APP_BUNDLE_ID = com.goose.app` |
 | `Config/SigningExtension.xcconfig` | Yes | Extension target; derives bundle ID from `APP_BUNDLE_ID` |
 | `Config/Local.xcconfig` | No (gitignored) | Per-developer overrides: `DEVELOPMENT_TEAM` and `APP_BUNDLE_ID` |
+| `Config/Local.xcconfig.template` | Yes | Template to copy when setting up a new dev machine |
 
-To build on your own device, create `Config/Local.xcconfig` with:
+To build on your own device, copy the template and fill in your values:
+
+```bash
+cp Config/Local.xcconfig.template Config/Local.xcconfig
+```
+
+Then edit `Config/Local.xcconfig`:
 
 ```
 DEVELOPMENT_TEAM = YOUR_TEAM_ID
 APP_BUNDLE_ID = com.yourname.goose
 ```
 
-Find your team ID at developer.apple.com → Membership Details.
+Find your team ID at developer.apple.com → Membership Details. Both targets (main app and `WorkoutLiveActivityExtension`) derive their bundle IDs from `APP_BUNDLE_ID` automatically.
 
 ### Launch arguments (Xcode scheme / `xcodebuild`)
 
@@ -197,13 +204,27 @@ The bearer token is **not** in UserDefaults. It is stored in the iOS Keychain un
 | Key | Type | Description |
 |---|---|---|
 | `goose.swift.onboardingComplete` | Bool | Whether onboarding has been completed |
+| `goose.swift.onboardingRedoRequested` | Bool | Whether the user has requested to redo onboarding |
+| `goose.swift.onboarding.persistedState` | Data (JSON) | Persisted onboarding wizard state |
 | `goose.swift.profile.firstName` | String | User's first name |
 | `goose.swift.profile.dateOfBirth` | String | Date of birth (ISO 8601) |
 | `goose.swift.profile.unitSystem` | String | `"metric"` or `"imperial"` |
 | `goose.swift.profile.gender` | String | Gender for biometric calculations |
 | `goose.swift.profile.heightMm` | Int | Height in millimetres |
+| `goose.swift.profile.heightInput` | String | Raw height input string (metric) |
+| `goose.swift.profile.heightFeetInput` | String | Raw feet component (imperial) |
+| `goose.swift.profile.heightInchesInput` | String | Raw inches component (imperial) |
 | `goose.swift.profile.weightGrams` | Int | Weight in grams |
+| `goose.swift.profile.weightInput` | String | Raw weight input string |
 | `goose.swift.profile.timezoneID` | String | User's timezone identifier |
+| `goose.swift.profile.createdAtUnixMs` | Int | Profile creation timestamp (Unix ms) |
+
+#### Activity
+
+| Key | Type | Description |
+|---|---|---|
+| `goose.swift.activity.recentWorkouts` | String (JSON) | Recently detected workout sessions |
+| `goose.swift.activity.lockHintSeen` | Bool | Whether the activity lock hint has been shown |
 
 #### Keychain services (iOS)
 

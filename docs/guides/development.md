@@ -3,8 +3,6 @@
 
 This guide covers the day-to-day development workflow for Goose. It assumes you have already completed the first-run setup from [Getting Started](getting-started.md). It is structured around the three development surfaces: the iOS app (Swift/SwiftUI), the Rust core library, and the self-hosted server (FastAPI + TimescaleDB).
 
-**v12.0 note:** The Rust `bridge.rs` and `store.rs` monoliths have been split into domain modules under `Rust/core/src/bridge/` and `Rust/core/src/store/`. All references in this guide reflect the new layout.
-
 ---
 
 ## Project Structure
@@ -16,7 +14,7 @@ Rust/core/src/                 Rust static library source
 Rust/core/src/bridge/         Bridge dispatch module (mod.rs + domain files)
 Rust/core/src/store/          Store module (mod.rs + domain files)
 Rust/core/include/             C bridge header (goose_core_bridge.h)
-Rust/core/tests/               Rust integration tests (40+ files)
+Rust/core/tests/               Rust integration tests (47 files)
 Rust/iphoneos/                 Staged libgoose_core.a for device builds
 Rust/iphonesimulator/          Staged libgoose_core.a for simulator builds
 Scripts/build_ios_rust.sh      Xcode build phase — cross-compiles Rust to iOS
@@ -79,19 +77,27 @@ GooseAppModel+ActivityRecording.swift       Activity session lifecycle
 GooseAppModel+ActivityTimeline.swift        Activity timeline refresh
 GooseAppModel+BandFirstSync.swift           Band first-sync coordination
 GooseAppModel+HealthCapture.swift           Health packet capture sessions
+GooseAppModel+HealthKitExport.swift         HealthKit export coordination
 GooseAppModel+Lifecycle.swift               App lifecycle events
 GooseAppModel+PacketPublishing.swift        BLE packet publishing to pipeline
 GooseAppModel+SleepSync.swift               Band sleep session sync from BLE history
 GooseAppModel+Upload.swift                  Server upload trigger
 
-GooseBLEClient.swift                        Legacy BLE coordinator (state + callbacks); BLE connection now via CoreBluetoothBLETransport
-GooseBLEClient+BatteryCommands.swift        Battery command dispatch
-
 CoreBluetoothBLETransport.swift             @Observable concrete BLETransport; CoreBluetooth central manager
+CoreBluetoothBLETransport+BatteryCommands.swift   Battery command dispatch
 CoreBluetoothBLETransport+CentralDelegate.swift   CBCentralManagerDelegate
-CoreBluetoothBLETransport+PeripheralDelegate.swift CBPeripheralDelegate
+CoreBluetoothBLETransport+Commands.swift          Command write helpers
+CoreBluetoothBLETransport+DebugAndSync.swift      Debug session and sync command dispatch
+CoreBluetoothBLETransport+Haptics.swift           Haptic feedback commands
 CoreBluetoothBLETransport+HistoricalCommands.swift Historical sync command dispatch
 CoreBluetoothBLETransport+HistoricalHandlers.swift Historical sync response handling
+CoreBluetoothBLETransport+HRMonitor.swift         Heart-rate monitor mode
+CoreBluetoothBLETransport+Parsing.swift           Frame reassembly helpers
+CoreBluetoothBLETransport+PeripheralDelegate.swift CBPeripheralDelegate
+CoreBluetoothBLETransport+UserActions.swift       User-initiated BLE actions (scan, disconnect)
+CoreBluetoothBLETransport+VitalsAndLogging.swift  Real-time vitals forwarding and diagnostic logging
+
+BLETransport.swift                          Protocol GooseAppModel depends on; CoreBluetoothBLETransport is the sole conformer
 
 HealthDataStore.swift                       Metric query coordinator
 HealthDataStore+ActivitySnapshots.swift     Activity snapshot queries
@@ -114,7 +120,7 @@ HealthDataStore+V24Biometrics.swift         v24 biometric metric queries
 HealthDataStore+Vitals.swift                Vitals metric queries
 ```
 
-When adding a new concern to `GooseAppModel`, `GooseBLEClient`, or `HealthDataStore`, create a new `+<Concern>.swift` extension file rather than growing the primary file.
+When adding a new concern to `GooseAppModel` or `HealthDataStore`, create a new `+<Concern>.swift` extension file rather than growing the primary file. When adding BLE functionality, add an extension on `CoreBluetoothBLETransport` and expose it through `BLETransport` if consumers outside the transport need it.
 
 **Threading rules.** All `@Published` state mutations and SwiftUI rendering happen on `@MainActor`. Each subsystem has a named `DispatchQueue`:
 
@@ -128,10 +134,10 @@ When adding a new concern to `GooseAppModel`, `GooseBLEClient`, or `HealthDataSt
 | `com.goose.swift.capture-status-snapshot` | `GooseAppModel` | Capture status snapshot writes |
 | `com.goose.swift.capture-frame-enqueue` | `CaptureFrameWriteQueue` | Frame enqueue and back-pressure |
 | `com.goose.swift.capture-frame-writes` | `CaptureFrameWriteQueue` | SQLite batch writes via Rust |
-| `com.goose.swift.corebluetooth` | `GooseBLEClient` | CBCentralManager callbacks |
-| `com.goose.swift.historical-write` | `GooseBLEClient` | Historical sync SQLite writes |
-| `com.goose.swift.realtime-vitals` | `GooseBLEClient` | Real-time vitals forwarding |
-| `com.goose.swift.diagnostic-log` | `GooseBLEClient` | BLE diagnostic logging |
+| `com.goose.swift.corebluetooth` | `CoreBluetoothBLETransport` | CBCentralManager callbacks |
+| `com.goose.swift.historical-write` | `CoreBluetoothBLETransport` | Historical sync SQLite writes |
+| `com.goose.swift.realtime-vitals` | `CoreBluetoothBLETransport` | Real-time vitals forwarding |
+| `com.goose.swift.diagnostic-log` | `CoreBluetoothBLETransport` | BLE diagnostic logging |
 | `com.goose.swift.ble-ui-state` | `BLEUIStateAggregator` | BLE UI state throttling |
 | `com.goose.swift.packet-ui-state` | `PacketUIStateAggregator` | Packet UI state throttling |
 | `com.goose.swift.heart-rate-sample-pipeline` | `HeartRateSeriesStores` | HR sample ingestion |
@@ -153,7 +159,7 @@ The Rust bridge (`GooseRustBridge.request(...)`) is a **blocking synchronous cal
 **Database path convention.** The SQLite file is always resolved via `HealthDataStore.defaultDatabasePath()` (resolves to `ApplicationSupport/GooseSwift/goose.sqlite`). Every bridge call that accesses storage must include `"database_path"` in its `args` dictionary.
 
 **Naming conventions:**
-- File names: PascalCase matching the primary type (`GooseBLEClient.swift`); extensions use `+` notation (`GooseBLEClient+Commands.swift`)
+- File names: PascalCase matching the primary type (`CoreBluetoothBLETransport.swift`); extensions use `+` notation (`CoreBluetoothBLETransport+Commands.swift`)
 - Properties: camelCase; booleans prefixed `is`, `can`, `has`, `should`
 - `UserDefaults` keys: dot-namespaced reverse-DNS strings as `static let` (`"goose.remote.serverURL"`)
 - `DispatchQueue` labels: reverse-DNS format (`"com.goose.swift.capture-frame-writes"`)
@@ -214,7 +220,7 @@ char *goose_core_version_json(void);
 
 `goose_bridge_handle_json` deserialises a JSON request, dispatches to `handle_bridge_request_inner` in `Rust/core/src/bridge/mod.rs`, and returns a JSON response string that the caller must free with `goose_bridge_free_string`.
 
-**Bridge module layout.** The bridge is now a module directory (`Rust/core/src/bridge/`) rather than a single file. Domain-specific dispatch helpers live in the sibling files; `mod.rs` owns the public entry points, `BRIDGE_METHODS`, and `handle_bridge_request_inner`:
+**Bridge module layout.** The bridge is a module directory (`Rust/core/src/bridge/`) rather than a single file. Domain-specific dispatch helpers live in the sibling files; `mod.rs` owns the public entry points, `BRIDGE_METHODS`, and `handle_bridge_request_inner`:
 
 ```
 Rust/core/src/bridge/
@@ -251,13 +257,13 @@ Rust/core/src/bridge/
 
 On failure `ok` is `false` and `error: { "code": "method_error", "message": "..." }` is present.
 
-`BRIDGE_METHODS` (a `&[&str]` constant in `bridge/mod.rs`) lists all 154 dispatched methods and is verified by the unit test `bridge_methods_constant_matches_dispatcher`.
+`BRIDGE_METHODS` (a `&[&str]` constant in `bridge/mod.rs`) lists all 157 dispatched methods and is verified by the unit test `bridge_methods_constant_matches_dispatcher`.
 
 ### SQLite schema
 
 The Rust store manages the SQLite schema at **version 22** (`CURRENT_SCHEMA_VERSION = 22` in `Rust/core/src/store/mod.rs`). Migrations are applied automatically by `GooseStore::open` on every startup. When adding or modifying tables, increment `CURRENT_SCHEMA_VERSION` and add a migration arm to the migration match block in `store/mod.rs`.
 
-**Store module layout.** Like the bridge, the store is now a module directory rather than a single file. Domain data-access logic lives in sibling files; `mod.rs` owns `GooseStore`, `CURRENT_SCHEMA_VERSION`, schema migrations, and the `GooseStore::open` constructor:
+**Store module layout.** The store is a module directory rather than a single file. Domain data-access logic lives in sibling files; `mod.rs` owns `GooseStore`, `CURRENT_SCHEMA_VERSION`, schema migrations, and the `GooseStore::open` constructor:
 
 ```
 Rust/core/src/store/
@@ -324,8 +330,8 @@ The Cargo target directory is `build/rust-target/goose-core` (configurable via `
 BLE bytes flow through a three-queue pipeline before being written to SQLite:
 
 ```
-GooseBLEClient (CBCentralManagerDelegate callbacks)
-  │ raw notification bytes
+CoreBluetoothBLETransport (CBCentralManagerDelegate / CBPeripheralDelegate callbacks)
+  │ raw notification bytes via onRawNotificationWithContext callback
   ▼ notificationIngestQueue
 GooseAppModel.handleNotification
   │ hex bytes + device context
@@ -340,7 +346,7 @@ CaptureFrameWriteQueue → Rust bridge: capture.import_frame_batch
   ▼ GooseAppModel.triggerUpload → GooseUploadService
 ```
 
-**`GooseBLEClient`** (`GooseBLEClient.swift` + extensions) exposes callback properties set by `GooseAppModel`:
+**`CoreBluetoothBLETransport`** (`CoreBluetoothBLETransport.swift` + extensions) is the `@Observable` concrete BLE implementation. It conforms to the `BLETransport` protocol (`BLETransport.swift`) and exposes callback properties consumed by `GooseAppModel`:
 
 ```swift
 var onNotification: ((GooseNotificationEvent) -> Void)?
@@ -348,7 +354,7 @@ var onRawNotification: ((GooseNotificationEvent) -> Void)?
 var onRawNotificationWithContext: ((GooseNotificationEvent, GooseBLENotificationContext) -> Void)?
 ```
 
-When adding support for a new GATT characteristic or packet type, add a handler in `GooseBLEClient+PeripheralDelegate.swift` (for `didUpdateValueFor`) or `GooseBLEClient+Parsing.swift` (for frame reassembly helpers).
+`GooseAppModel` holds the transport as `let ble: any BLETransport`. When adding support for a new GATT characteristic or packet type, add a handler in `CoreBluetoothBLETransport+PeripheralDelegate.swift` (for `didUpdateValueFor`) or `CoreBluetoothBLETransport+Parsing.swift` (for frame reassembly helpers). Expose any new state the app model needs through `BLETransport.swift`.
 
 **`NotificationFrameParser`** (`NotificationFrameParsing.swift`) calls `protocol.parse_frame_hex_batch` on the Rust bridge. Each parsed frame includes a compact summary (`NotificationFrameCompactSummary`) used for real-time UI metrics without blocking on full decoding.
 
@@ -363,7 +369,7 @@ When adding support for a new GATT characteristic or packet type, add a handler 
 1. Add frame parsing logic in `Rust/core/src/protocol.rs` (parse the new packet family into a `ParsedPayload` variant).
 2. Update `capture.import_frame_batch` in `Rust/core/src/capture_import.rs` to persist the new decoded fields to SQLite (add column migrations in `store/mod.rs` if the schema changes; bump `CURRENT_SCHEMA_VERSION`).
 3. Add the compact summary extraction to `Rust/core/src/bridge/capture.rs` if the packet needs real-time UI feedback.
-4. Add a `GooseBLEClient+` extension handler in Swift to route the new characteristic notifications into `onNotification`.
+4. Add a `CoreBluetoothBLETransport+` extension handler in Swift to route the new characteristic notifications into `onNotification`.
 5. Add a Rust integration test in `Rust/core/tests/` exercising the new parse path.
 
 ---

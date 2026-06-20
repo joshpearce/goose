@@ -682,7 +682,7 @@ Every caller creates its own `GooseRustBridge` instance — the bridge is statel
 
 ### Method Catalogue
 
-The bridge supports 154 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
+The bridge supports 157 RPC methods at compile time. The full live list is available at runtime via `core.list_methods`. Methods are grouped by namespace:
 
 #### Core / Discovery
 
@@ -827,6 +827,9 @@ Methods in the `store` namespace provide direct access to EWMA baseline state an
 | `store.gravity_rows_between` | `database_path`, `device_id`, `ts_start: f64`, `ts_end: f64` | Query gravity (v1) samples within a Unix-seconds time window. Returns `{"rows": [{ts, x, y, z}]}`. |
 | `store.insert_gravity2_batch` | `database_path`, `device_id`, `rows: [{ts, x, y, z}]` | Insert gravity second-generation triplet samples into the `gravity2` table. Uses the same `InsertGravityRowsArgs` shape as `store.insert_gravity_rows`. |
 | `store.gravity2_samples_between` | `database_path`, `device_id`, `ts_start: f64`, `ts_end: f64` | Query gravity2 samples within a Unix-seconds time window. Returns `{"rows": [{ts, x, y, z}]}`. |
+| `store.hk_hr_samples_between` | `database_path`, `device_id`, `start_unix_s: f64`, `end_unix_s: f64` | Query HR samples from the local SQLite store within a Unix-seconds time window. Returns `{"rows": [{ts, bpm}]}`. Used for HealthKit export. |
+| `store.hk_spo2_samples_between` | `database_path`, `device_id`, `start_unix_s: f64`, `end_unix_s: f64` | Query SpO2 samples from the local store within a Unix-seconds window. Returns `{"rows": [{ts, spo2_percent}]}`. Used for HealthKit export. |
+| `store.hk_sleep_sessions_between` | `database_path`, `start_unix_ms: i64`, `end_unix_ms: i64` | Query externally-imported sleep sessions within a Unix-milliseconds time window (device-agnostic). Returns `{"rows": [{sleep_id, start_time_unix_ms, end_time_unix_ms, source}]}`. Used for HealthKit export. |
 
 #### Sync (v5.0)
 

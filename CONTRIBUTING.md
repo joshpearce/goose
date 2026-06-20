@@ -16,7 +16,7 @@ See [Getting Started](docs/guides/getting-started.md) for prerequisites and firs
 ### Prerequisites
 
 - macOS with Xcode 26.5 (iOS 26.0 SDK required)
-- Apple Developer account with signing configured; override locally via `Config/Local.xcconfig` (see `Config/Signing.xcconfig` for the template — set `DEVELOPMENT_TEAM` and optionally `APP_BUNDLE_ID`)
+- Apple Developer account with signing configured; override locally via `Config/Local.xcconfig` (copy from `Config/Local.xcconfig.template` — set `DEVELOPMENT_TEAM` to your 10-character team ID)
 - Rust toolchain via `rustup`
 - iOS Rust targets:
 
@@ -193,7 +193,7 @@ Before making structural changes, read `docs/architecture/overview.md`. Key boun
 
 ## Issue Reporting
 
-Open an issue on GitHub using the appropriate template (bug report, feature request, enhancement, chore). Include:
+Open an issue on GitHub using the appropriate template (Bug Report, Feature Request, Enhancement, Chore). Include:
 
 1. What you expected to happen.
 2. What actually happened (include any console output or crash log if applicable).

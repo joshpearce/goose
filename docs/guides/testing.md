@@ -317,7 +317,7 @@ Prerequisites: the self-hosted server must be running (see `server/README.md`).
 
 ## CI
 
-Six workflows run the automated test and quality gates on every push and pull request: `rust-core.yml`, `swift-build.yml`, `server-ci.yml`, `zizmor.yml`, `security.yml`, and `codeql.yml`. Each produces a named gate job that must pass before a PR can merge. Three additional workflows (`branch-cleanup.yml`, `stale.yml`, `release.yml`) handle branch hygiene and releases but do not gate PRs.
+Eight workflow files cover automated test and quality gates: `rust-core.yml`, `swift-build.yml`, `server-ci.yml`, `zizmor.yml`, `security.yml`, `codeql.yml`, `cargo-audit.yml`, and `android-core.yml`. The first four produce the named gate jobs that must pass before a PR can merge. The remaining workflows are either advisory, scheduled-only, or release-triggered.
 
 The four required status checks are: **rust/gate**, **swift/gate**, **server/gate**, and **zizmor/gate**.
 
@@ -334,12 +334,16 @@ Jobs:
 - **clippy** — `cargo clippy --lib --no-deps -- -D warnings` (advisory, `continue-on-error: true`)
 - **rust-gate** — aggregates fmt + build-test results; fails if either job fails or is cancelled
 
-### `security.yml` — Dependency audit
+### `security.yml` — Dependency audit and filesystem scan
 
-Runs on a weekly schedule (Mondays, 07:00 UTC) and on pushes/PRs that touch dependency manifests.
+Runs on a weekly schedule (Mondays, 07:00 UTC) and on pushes/PRs that touch dependency manifests (`Cargo.toml`, `Cargo.lock`, `Dockerfile`, `requirements.txt`).
 
-- **cargo-audit** — audits `Rust/core/Cargo.lock` against the RustSec advisory database; fails on any known-vulnerable dependency.
-- **trivy** — filesystem scan for vulnerable dependencies, secrets, and misconfigurations across Rust, Python, and workflow files; fails on HIGH or CRITICAL findings.
+- **cargo-audit** — audits `Rust/core/Cargo.lock` against the RustSec advisory database using `cargo audit --deny warnings`; fails on any known-vulnerable dependency.
+- **trivy-fs** — filesystem scan for vulnerable dependencies, secrets, and misconfigurations across Rust, Python, and workflow files; fails on HIGH or CRITICAL findings.
+
+### `cargo-audit.yml` — Rust dependency advisory check (PR-integrated)
+
+A separate Rust advisory workflow that runs on pushes and PRs touching `Cargo.lock` or `Cargo.toml`, plus a weekly schedule (Mondays, 06:17 UTC). Uses `rustsec/audit-check` to post advisory results directly as PR checks. This workflow is distinct from the `cargo-audit` job in `security.yml`.
 
 ### `codeql.yml` — Static analysis
 
@@ -373,3 +377,7 @@ Steps:
 4. Confirm the Docker daemon is reachable (`docker info`).
 5. `pytest tests/ -v --tb=short` — all tests; the `conftest.py` fixtures self-manage the TimescaleDB container.
 6. **server-gate** — aggregates the pytest result; fails if the job fails or is cancelled.
+
+### `android-core.yml` — Android Rust core build (release-triggered)
+
+Triggered on version tags (`v*`) and `workflow_dispatch`. Builds the Rust core for Android targets (`arm64-v8a`, `armeabi-v7a`, `x86_64`) using `cargo-ndk` and attaches the resulting `.tar.gz` archive to the GitHub release. Does not gate PRs.
