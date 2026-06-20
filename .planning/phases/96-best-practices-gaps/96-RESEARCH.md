@@ -347,22 +347,16 @@ let pool = Pool::builder().max_size(4).build(manager)?;
 | A3 | Pool path is always the same in production (goose.sqlite in ApplicationSupport) | BP-02 Architecture | If path varies per user session, OnceLock needs to be keyed by path |
 | A4 | CaptureFrameWriteQueue has no logger — the existing comment ("No ble.record here") is intentional and line 342 should remain silent or get a print | BP-01 Audit | If D-06 applies strictly, a logger must be added to CaptureFrameWriteQueue |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **BP-01 count discrepancy (8 vs 9)**
-   - What we know: Grep found 8 silent bridge `try?` calls. SEED-007 and CONTEXT.md say 9.
-   - What's unclear: The 9th may be `HealthDataStore+V24Biometrics.swift:92` (`biometrics.spo2_from_raw`) which was listed in SEED-007's table but uses `if let` (graceful nil handling, not purely silent).
-   - Recommendation: Planner treats this as 8 mandatory + 1 optional. Include the V24Biometrics call in BP-01 to match CONTEXT.md's count of 9.
+   - RESOLVED: Include all 9 (V24Biometrics counts). Planner covers 8 mandatory + V24Biometrics as optional-but-included.
 
 2. **D-06 strictness in HealthDataStore and GooseUploadService**
-   - What we know: D-06 says "use `ble.record(level: .error, ...)`" but neither `HealthDataStore` nor `GooseUploadService` has `ble`.
-   - What's unclear: Whether D-06 means "always `ble.record`" (requiring a refactor to inject `ble`) or "use the existing established error-logging idiom."
-   - Recommendation: Use each file's established idiom (OSLog `logger` in GooseUploadService, status strings in HealthDataStore). D-06 is scoped to GooseAppModel-family files.
+   - RESOLVED: Use each file's established idiom. `ble.record` only in GooseAppModel-family files. `logger` in GooseUploadService, status strings in HealthDataStore, `print` in CaptureFrameWriteQueue.
 
 3. **BP-02 pool strategy: narrow vs wide**
-   - What we know: 110 call sites use `open_bridge_store`, 4 use `open_bridge_store_hot`.
-   - What's unclear: Whether to replace `open_bridge_store` to return a pooled connection wrapper vs adding `acquire_bridge_conn` as a new parallel path.
-   - Recommendation: Narrow strategy — add `acquire_bridge_conn`, update callers in bridge domain files. Keep `open_bridge_store_hot` unchanged.
+   - RESOLVED: Narrow — add `acquire_bridge_conn()` as new pooled helper, update bridge domain callers. `open_bridge_store_hot` unchanged.
 
 ## Environment Availability
 
