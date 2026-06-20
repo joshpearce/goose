@@ -1171,7 +1171,7 @@ fn device_capabilities_bridge(args: DeviceCapabilitiesArgs) -> GooseResult<serde
     let mut value = serde_json::to_value(caps).map_err(|e| GooseError::message(e.to_string()))?;
     // Inject device_kind so Swift can decode it into DeviceCapabilities.deviceKind.
     let kind_value =
-        serde_json::to_value(&args.device_kind).map_err(|e| GooseError::message(e.to_string()))?;
+        serde_json::to_value(args.device_kind).map_err(|e| GooseError::message(e.to_string()))?;
     if let Some(obj) = value.as_object_mut() {
         obj.insert("device_kind".to_string(), kind_value);
     }
