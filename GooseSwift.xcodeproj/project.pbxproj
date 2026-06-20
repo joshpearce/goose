@@ -158,6 +158,7 @@
 		D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000055 /* RemoteServerPersistence.swift */; };
 		D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000056 /* MoreRemoteServerViews.swift */; };
 		D10000000000000000000057 /* GooseAppModel+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000057 /* GooseAppModel+Upload.swift */; };
+		D10000000000000000000060 /* GooseAppModel+HealthKitExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000060 /* GooseAppModel+HealthKitExport.swift */; };
 		D10000000000000000000058 /* CoreBluetoothBLETransport+HRMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000058 /* CoreBluetoothBLETransport+HRMonitor.swift */; };
 		D10000000000000000000059 /* GooseBLEReconnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000059 /* GooseBLEReconnect.swift */; };
 		D1000000000000000000005A /* HRMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005A /* HRMonitorView.swift */; };
@@ -415,6 +416,7 @@
 		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
 		D2000000000000000000005D /* GooseAppModel+SleepSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+SleepSync.swift"; sourceTree = "<group>"; };
 		D2000000000000000000005E /* GooseAppModel+BandFirstSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+BandFirstSync.swift"; sourceTree = "<group>"; };
+		D20000000000000000000060 /* GooseAppModel+HealthKitExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+HealthKitExport.swift"; sourceTree = "<group>"; };
 		E2000000000000000000001 /* CoachProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderProtocol.swift; sourceTree = "<group>"; };
 		E2000000000000000000002 /* CoachChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatModel.swift; sourceTree = "<group>"; };
 		E2000000000000000000003 /* ChatGPTCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTCoachProvider.swift; sourceTree = "<group>"; };
@@ -527,6 +529,7 @@
 				A20000000000000000000002 /* GooseAppModel.swift */,
 				D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */,
 				D2000000000000000000005D /* GooseAppModel+SleepSync.swift */,
+				D20000000000000000000060 /* GooseAppModel+HealthKitExport.swift */,
 				D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */,
 				D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */,
 				D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */,
@@ -1118,6 +1121,7 @@
 				D1000000000000000000005A /* HRMonitorView.swift in Sources */,
 				D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */,
 				D1000000000000000000005D /* GooseAppModel+SleepSync.swift in Sources */,
+				D10000000000000000000060 /* GooseAppModel+HealthKitExport.swift in Sources */,
 				D10000000000000000000037 /* CoreBluetoothBLETransport+Parsing.swift in Sources */,
 				D10000000000000000000038 /* CoreBluetoothBLETransport+CentralDelegate.swift in Sources */,
 				D10000000000000000000039 /* CoreBluetoothBLETransport+PeripheralDelegate.swift in Sources */,

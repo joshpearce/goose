@@ -16,6 +16,7 @@ struct MoreView: View {
   @AppStorage(OnboardingStorage.unitSystem) private var profileUnitSystemRaw = "imperial"
   @AppStorage(OnboardingStorage.heightMm) private var profileHeightMm = 0
   @AppStorage(OnboardingStorage.weightGrams) private var profileWeightGrams = 0
+  @AppStorage("goose.healthkit.export.enabled") private var hkExportEnabled = false
   @State private var isImportingSleep = false
 
   @MainActor
@@ -71,6 +72,18 @@ struct MoreView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
+        #if canImport(HealthKit)
+        if HKHealthStore.isHealthDataAvailable() {
+          Toggle(isOn: $hkExportEnabled) {
+            Label("Export WHOOP data to Health", systemImage: "heart.text.clipboard")
+          }
+          .onChange(of: hkExportEnabled) { _, newValue in
+            if newValue {
+              Task { await model.enableHealthKitExport() }
+            }
+          }
+        }
+        #endif
       }
 
       Section("Wellness") {
