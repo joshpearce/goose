@@ -721,20 +721,20 @@ Plans:
   4. Write errors are logged — HK permission denied is handled gracefully without crash
   5. iOS build compiles without new warnings; existing HealthKit read functionality unaffected
 
-**Plans**: 4 plans
+**Plans**: 4/4 plans complete
 
 **Wave 1** (parallel)
 
-- [ ] 97-01-PLAN.md — Rust bridge methods: store.hr_samples_between, store.spo2_samples_between (inline SpO2), store.external_sleep_sessions_between (HK-01, HK-03, HK-04)
-- [ ] 97-04-PLAN.md — More settings toggle: @AppStorage goose.healthkit.export.enabled + UI in Section("Apple Health") + write gating (HK-05)
+- [x] 97-01-PLAN.md — Rust bridge methods: store.hr_samples_between, store.spo2_samples_between (inline SpO2), store.external_sleep_sessions_between (HK-01, HK-03, HK-04)
+- [x] 97-04-PLAN.md — More settings toggle: @AppStorage goose.healthkit.export.enabled + UI in Section("Apple Health") + write gating (HK-05)
 
 **Wave 2** (blocked on Wave 1)
 
-- [ ] 97-02-PLAN.md — GooseHealthKitExporter.swift: HKHealthStore setup, requestAuthorization, write helpers for HR/HRV/SpO2/sleep, project.pbxproj registration (HK-01..HK-05)
+- [x] 97-02-PLAN.md — GooseHealthKitExporter.swift: HKHealthStore setup, requestAuthorization, write helpers for HR/HRV/SpO2/sleep, project.pbxproj registration (HK-01..HK-05)
 
 **Wave 3** (blocked on Wave 2)
 
-- [ ] 97-03-PLAN.md — Trigger integration: exportAfterSleepSync() call at end of syncBandSleepHistory() + enableHealthKitExport() full impl + permission-denied recovery (HK-01..HK-05)
+- [x] 97-03-PLAN.md — Trigger integration: exportAfterSleepSync() call at end of syncBandSleepHistory() + enableHealthKitExport() full impl + permission-denied recovery (HK-01..HK-05)
 
 ---
 
@@ -762,7 +762,7 @@ Plans:
 | 94 | v13.0 | Pending | — |
 | 95 | 2/2 | Complete   | 2026-06-19 |
 | 96 | 1/2 | In Progress|  |
-| 97 | v13.0 | Pending | — |
+| 97 | 4/4 | Complete   | 2026-06-20 |
 
 ## Backlog
 

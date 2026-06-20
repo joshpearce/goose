@@ -39,11 +39,11 @@
 
 ## HealthKit Export — Bevel Integration
 
-- [ ] **HK-01**: User can have WHOOP HR samples written to HealthKit (`HKQuantityTypeIdentifierHeartRate`) automatically (closes #109)
-- [ ] **HK-02**: User can have WHOOP HRV written to HealthKit (`HKQuantityTypeIdentifierHeartRateVariabilitySDNN`)
-- [ ] **HK-03**: User can have WHOOP SpO2 written to HealthKit (`HKQuantityTypeIdentifierOxygenSaturation`)
-- [ ] **HK-04**: User can have WHOOP sleep sessions written to HealthKit (`HKCategoryTypeIdentifierSleepAnalysis`)
-- [ ] **HK-05**: User controls HealthKit export via toggle in More settings (opt-in, default off) — no data written without explicit opt-in
+- [x] **HK-01**: User can have WHOOP HR samples written to HealthKit (`HKQuantityTypeIdentifierHeartRate`) automatically (closes #109)
+- [x] **HK-02**: User can have WHOOP HRV written to HealthKit (`HKQuantityTypeIdentifierHeartRateVariabilitySDNN`)
+- [x] **HK-03**: User can have WHOOP SpO2 written to HealthKit (`HKQuantityTypeIdentifierOxygenSaturation`)
+- [x] **HK-04**: User can have WHOOP sleep sessions written to HealthKit (`HKCategoryTypeIdentifierSleepAnalysis`)
+- [x] **HK-05**: User controls HealthKit export via toggle in More settings (opt-in, default off) — no data written without explicit opt-in
 
 ---
 
