@@ -1031,6 +1031,18 @@ Plans:
 
 ## Backlog
 
+### Deferred to v15.0
+
+| Issue | Title | Priority | Reason deferred |
+|-------|-------|----------|-----------------|
+| #164 | Harvard sleep need model (age-adjusted debt + activity load) | P2 | Algorithm work, not blocking Android or BLE reliability |
+| #165 | GET_FF_VALUE 0x80 — read device feature flags | P2 | Nice-to-have capability discovery; no user-facing gap today |
+| #166 | Body composition history table (weight, BMI, body fat over time) | P2 | New data domain, own schema migration needed |
+| #167 | UI stealth mode — hide individual metrics from dashboard | P3 | UI polish; no data or protocol dependency |
+| #168 | PIP upload — separate data pipeline for Pulse Information Packets | P3 | Infrastructure work; upload path functional today |
+
+---
+
 #### Archived phase 999.5 — GooseAppModel @Observable Migration (promoted to Phase 17 — v4.0)
 
 Promoted to Phase 17: @Observable Migration.
