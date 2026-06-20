@@ -702,7 +702,8 @@ Plans:
 
 **Plans**:
 
-- [ ] 96-01-PLAN.md — Fix 9 silent try? bridge calls in Swift (BP-01)
+1/2 plans executed
+
 - [ ] 96-02-PLAN.md — Rust SQLite connection pool (BP-02)
 
 ---
@@ -752,7 +753,7 @@ Plans:
 | 93 | v13.0 | Pending | — |
 | 94 | v13.0 | Pending | — |
 | 95 | 2/2 | Complete   | 2026-06-19 |
-| 96 | v13.0 | Pending | — |
+| 96 | 1/2 | In Progress|  |
 | 97 | v13.0 | Pending | — |
 
 ## Backlog
@@ -792,6 +793,8 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 5/6 plans executed
 Plans:
+
+- [x] 96-01-PLAN.md
 
 - [x] 92-01-PLAN.md
 

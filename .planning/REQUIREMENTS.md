@@ -34,7 +34,7 @@
 
 ## Best Practices
 
-- [ ] **BP-01**: 9 silent `try?` bridge calls in Swift replaced with `do/catch` + `ble.record(level: .error, ...)` — critical data paths (capture.import_frame_batch, sync.backfill_streams) log failures instead of discarding them silently (SEED-007 Gap 1)
+- [x] **BP-01**: 9 silent `try?` bridge calls in Swift replaced with `do/catch` + `ble.record(level: .error, ...)` — critical data paths (capture.import_frame_batch, sync.backfill_streams) log failures instead of discarding them silently (SEED-007 Gap 1)
 - [ ] **BP-02**: Rust core uses a SQLite connection pool — per-request connection open overhead eliminated; pool size tuned to bridge concurrency model (SEED-007 Gap 2)
 
 ## HealthKit Export — Bevel Integration
