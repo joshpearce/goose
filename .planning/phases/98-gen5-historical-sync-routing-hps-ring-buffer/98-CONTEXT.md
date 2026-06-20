@@ -1,6 +1,7 @@
 # Phase 98: Gen5 Historical Sync Routing Fix + HPS Ring Buffer — Context
 
 **Gathered:** 2026-06-20
+**Updated:** 2026-06-20 (post-research corrections)
 **Status:** Ready for planning
 
 <domain>
@@ -8,7 +9,7 @@
 
 Two complementary fixes for historical sync data reliability on Gen5:
 
-1. **SYNC-08** — Route `historicalData` (type 47) and `historicalIMUDataStream` (type 52) BLE notifications to the main sync handler when `isHistoricalSyncing == true`. Currently these high-rate data-stream packets are intentionally kept off the main thread as a performance optimization, but this also drops historical body packets during an active sync, causing `historicalPacketsReceivedThisSync` to never increment and sync to fail.
+1. **SYNC-08** ✅ ALREADY IMPLEMENTED — The `historicalData` (type 47) + `historicalIMUDataStream` (type 52) guard is committed in `CoreBluetoothBLETransport+PeripheralDelegate.swift:163-170` (added in Phase 89 BLE actor refactor). Plan 98-01 = verify correctness, add D-03 SAFETY comment, confirm `historicalPacketsReceivedThisSync` increments, close issue #24.
 
 2. **SYNC-10** — Parse ring buffer fields (`ring_capacity`, `current_page`, `read_pointer`) from `GET_DATA_RANGE` response. Use them to detect ring wrap-around and compute correct `pages_behind`. Log results via existing `ble.record()` — no SQLite schema migration.
 
@@ -39,7 +40,7 @@ Issues closed: #24 (SYNC-08), #160 (SYNC-10)
 
 ### SYNC-10: HPS Ring Buffer Parsing
 
-- **D-05:** Parse ring buffer fields from `GET_DATA_RANGE` command response bytes in Rust `historical_sync.rs`. The existing `pages_behind` field in `store/mod.rs` and the `historical_sync` table are already present — no schema migration needed.
+- **D-05:** ⚠️ CORRECTED BY RESEARCH — Parse ring buffer fields in **Swift** (`CoreBluetoothBLETransport+Parsing.swift`), NOT Rust. All GET_DATA_RANGE response parsing lives in Swift. `historical_sync.rs` is a sync state machine only; it does not parse BLE response bytes. Extend the existing Swift parse at the point where `pages_behind` / `pageCurrent` / `pageOldest` are already extracted (~line 753).
 
 - **D-06:** Ring wrap-around detection formula:
   ```rust
