@@ -405,7 +405,7 @@ final class GooseUploadService: @unchecked Sendable {
       // they are below effectiveSince — leaving newer rows (indices 501+) uncaptured.
       let pendingReport: [String: Any]
       do {
-        guard let report = try rust.request(
+        pendingReport = try rust.request(
           method: "sync.rows_pending_upload",
           args: [
             "database_path": databasePath,
@@ -413,11 +413,7 @@ final class GooseUploadService: @unchecked Sendable {
             "since_ts": sinceTs,
             "limit": 500, // limit=500 matches upload batch cap — intentional
           ]
-        ) else {
-          result[entry.table] = []
-          continue
-        }
-        pendingReport = report
+        )
       } catch {
         logger.warning("sync.rows_pending_upload failed: \(String(describing: error))")
         result[entry.table] = []

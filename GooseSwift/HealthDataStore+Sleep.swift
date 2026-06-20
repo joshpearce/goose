@@ -230,7 +230,7 @@ extension HealthDataStore {
     let source = "apple.health"
 
     func queryLatest(_ metric: String) async -> Double? {
-      let rows: [String: Any]?
+      let rows: [String: Any]
       do {
         rows = try await bridge.requestAsync(
           method: "metric_series.query_range",
@@ -239,8 +239,7 @@ extension HealthDataStore {
       } catch {
         return nil
       }
-      guard let rows,
-            let arr = rows["rows"] as? [[String: Any]],
+      guard let arr = rows["rows"] as? [[String: Any]],
             let last = arr.last,
             let value = last["value"] as? Double
       else { return nil }
@@ -248,7 +247,7 @@ extension HealthDataStore {
     }
 
     func queryHistory(_ metric: String) async -> [(value: Double, date: Date)] {
-      let rows: [String: Any]?
+      let rows: [String: Any]
       do {
         rows = try await bridge.requestAsync(
           method: "metric_series.query_range",
@@ -257,7 +256,7 @@ extension HealthDataStore {
       } catch {
         return []
       }
-      guard let rows, let arr = rows["rows"] as? [[String: Any]] else { return [] }
+      guard let arr = rows["rows"] as? [[String: Any]] else { return [] }
       return arr.compactMap { row -> (Double, Date)? in
         guard let value = row["value"] as? Double, let dateStr = row["date"] as? String,
               let date = df.date(from: dateStr) else { return nil }

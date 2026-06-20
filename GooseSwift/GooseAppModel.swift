@@ -377,14 +377,13 @@ final class GooseAppModel {
     let localRust = GooseRustBridge()
     let report: [String: Any]
     do {
-      guard let r = try localRust.request(
+      report = try localRust.request(
         method: "storage.compact_raw_evidence",
         args: [
           "database_path": HealthDataStore.defaultDatabasePath(),
           "limit_bytes": 25_165_824,
         ]
-      ) else { return }
-      report = r
+      )
     } catch {
       DispatchQueue.main.async { [weak self] in
         self?.ble.record(level: .error, source: "bridge", title: "storage.compact_raw_evidence", body: "\(error)")
