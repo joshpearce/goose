@@ -14,7 +14,7 @@
 - ✅ **v10.0 Protocol Parity, Haptics & Feature Completeness** — Phases 67-73 (shipped 2026-06-13)
 - ✅ **v11.0 PR Integration, Code Health & App Polish** — Phases 74-82 (shipped 2026-06-14)
 - ✅ **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (shipped 2026-06-19)
-- 🚀 **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (active)
+- ✅ **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (shipped 2026-06-20)
 
 ## Phases
 
