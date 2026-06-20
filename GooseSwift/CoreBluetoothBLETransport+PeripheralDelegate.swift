@@ -167,6 +167,7 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
         // should stay off-main for performance. Without this guard,
         // historicalPacketsReceivedThisSync is never incremented and every
         // sync fails with "no packet47 bodies" even when the band is streaming.
+        // SAFETY: isHistoricalSyncing set+read on same CB notification queue — no lock needed.
         if isHistoricalSyncing {
           return true
         }
