@@ -499,6 +499,27 @@ import OSLog
     let pageOldest: UInt32
     let pageEnd: UInt32
 
+    // Ring buffer fields — present only when the GET_DATA_RANGE response body is >= 37 bytes
+    var ringCapacity: UInt32?
+    var ringCurrentPage: UInt32?
+    var ringReadPointer: UInt32?
+
+    // When the ring has wrapped, corrected pages behind accounts for wrap-around distance
+    var ringWrapped: Bool {
+      guard let current = ringCurrentPage, let readPtr = ringReadPointer else { return false }
+      return current < readPtr
+    }
+
+    var pagesBehindCorrected: Int? {
+      guard let capacity = ringCapacity,
+            let current = ringCurrentPage,
+            let readPtr = ringReadPointer else { return nil }
+      let corrected: UInt32 = ringWrapped
+        ? (capacity - readPtr) + current
+        : current - readPtr
+      return Int(corrected)
+    }
+
     var pagesBehind: Int64 {
       pageCurrent < pageOldest
         ? Int64(pageCurrent) + Int64(pageEnd) - Int64(pageOldest)

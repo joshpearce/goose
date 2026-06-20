@@ -673,10 +673,26 @@ extension CoreBluetoothBLETransport {
     guard words.count >= 6 else {
       return nil
     }
+
+    // Ring buffer fields present when body is long enough to contain words[6..8]
+    // (body offset 25 = words[6], 29 = words[7], 33 = words[8]; needs 37 bytes total)
+    let ringCapacityPresent = body.count >= 37
+    var ringCapacity: UInt32?
+    var ringCurrentPage: UInt32?
+    var ringReadPointer: UInt32?
+    if ringCapacityPresent {
+      ringCapacity = Self.readUInt32LE(body, at: 25)
+      ringCurrentPage = Self.readUInt32LE(body, at: 29)
+      ringReadPointer = Self.readUInt32LE(body, at: 33)
+    }
+
     return HistoricalRangePageState(
       pageCurrent: words[2],
       pageOldest: words[3],
-      pageEnd: words[5]
+      pageEnd: words[5],
+      ringCapacity: ringCapacity,
+      ringCurrentPage: ringCurrentPage,
+      ringReadPointer: ringReadPointer
     )
   }
 
@@ -774,6 +790,26 @@ extension CoreBluetoothBLETransport {
         notes: notes
       )
     )
+
+    let ringCapacityPresent = body.count >= 37
+    if ringCapacityPresent,
+       let capacity = pageState?.ringCapacity,
+       let current = pageState?.ringCurrentPage,
+       let readPtr = pageState?.ringReadPointer {
+      let ringWrapped = pageState?.ringWrapped ?? false
+      let pagesBehindCorrected = pageState?.pagesBehindCorrected ?? -1
+      record(
+        source: "ble.sync",
+        title: "historical_sync.get_data_range.ring",
+        body: "ring_capacity=\(capacity) current_page=\(current) read_pointer=\(readPtr) ring_wrapped=\(ringWrapped) pages_behind_corrected=\(pagesBehindCorrected)"
+      )
+    } else {
+      record(
+        source: "ble.sync",
+        title: "historical_sync.get_data_range.ring",
+        body: "ring_fields_absent=true body_bytes=\(body.count)"
+      )
+    }
   }
 
   func alarmResponseDetail(command: AlarmCommandKind, body: [UInt8]) -> String {
