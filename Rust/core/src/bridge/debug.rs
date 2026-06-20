@@ -1288,6 +1288,74 @@ fn gravity2_samples_between_bridge(args: GravityRowsBetweenArgs) -> GooseResult<
 }
 
 // ---------------------------------------------------------------------------
+// store.* — HealthKit export queries
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkHrSamplesBetweenArgs {
+    database_path: String,
+    device_id: String,
+    start_unix_s: f64,
+    end_unix_s: f64,
+}
+
+fn hk_hr_samples_between_bridge(args: HkHrSamplesBetweenArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.hr_samples_between(&args.device_id, args.start_unix_s, args.end_unix_s)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(ts, bpm)| json!({"ts": ts, "bpm": bpm}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkSpo2SamplesBetweenArgs {
+    database_path: String,
+    device_id: String,
+    start_unix_s: f64,
+    end_unix_s: f64,
+}
+
+fn hk_spo2_samples_between_bridge(
+    args: HkSpo2SamplesBetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.spo2_samples_between(&args.device_id, args.start_unix_s, args.end_unix_s)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|(ts, spo2_percent)| json!({"ts": ts, "spo2_percent": spo2_percent}))
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct HkSleepSessionsBetweenArgs {
+    database_path: String,
+    start_unix_ms: i64,
+    end_unix_ms: i64,
+}
+
+fn hk_sleep_sessions_between_bridge(
+    args: HkSleepSessionsBetweenArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.external_sleep_sessions_between(args.start_unix_ms, args.end_unix_ms)?;
+    let json_rows: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            json!({
+                "sleep_id": r.sleep_id,
+                "start_time_unix_ms": r.start_time_unix_ms,
+                "end_time_unix_ms": r.end_time_unix_ms,
+                "source": r.source,
+            })
+        })
+        .collect();
+    Ok(json!({"rows": json_rows}))
+}
+
+// ---------------------------------------------------------------------------
 // settings.*
 // ---------------------------------------------------------------------------
 
@@ -2007,6 +2075,18 @@ pub(crate) fn dispatch_debug(request: &BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "store.insert_gravity2_batch" => request_args::<InsertGravityRowsArgs>(request)
             .and_then(insert_gravity2_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_hr_samples_between" => request_args::<HkHrSamplesBetweenArgs>(request)
+            .and_then(hk_hr_samples_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_sleep_sessions_between" => request_args::<HkSleepSessionsBetweenArgs>(request)
+            .and_then(hk_sleep_sessions_between_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "store.hk_spo2_samples_between" => request_args::<HkSpo2SamplesBetweenArgs>(request)
+            .and_then(hk_spo2_samples_between_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
 
