@@ -223,18 +223,23 @@ extension GooseAppModel {
           }
 
           if !bridgeFrames.isEmpty {
-            _ = try? bridge.request(
-              method: "capture.import_frame_batch",
-              args: [
-                "database_path": db,
-                "parser_version": "server-import/1.0",
-                "include_timeline_rows": false,
-                "compact_raw_payloads": false,
-                "include_results": false,
-                "frames": bridgeFrames,
-              ]
-            )
-            totalFrames += bridgeFrames.count
+            do {
+              _ = try bridge.request(
+                method: "capture.import_frame_batch",
+                args: [
+                  "database_path": db,
+                  "parser_version": "server-import/1.0",
+                  "include_timeline_rows": false,
+                  "compact_raw_payloads": false,
+                  "include_results": false,
+                  "frames": bridgeFrames,
+                ]
+              )
+              totalFrames += bridgeFrames.count
+            } catch {
+              ble.record(level: .error, source: "bridge", title: "capture.import_frame_batch", body: "\(error)")
+              continue
+            }
           }
 
           // Paginate: advance fromTs past the last frame's timestamp.
@@ -248,15 +253,19 @@ extension GooseAppModel {
         } while true
 
         // Step 4: backfill decoded HR/RR streams from the imported raw frames.
-        _ = try? bridge.request(
-          method: "sync.backfill_streams",
-          args: [
-            "database_path": db,
-            "device_id": deviceID,
-            "start_ts": 0.0,
-            "end_ts": Date().timeIntervalSince1970,
-          ]
-        )
+        do {
+          _ = try bridge.request(
+            method: "sync.backfill_streams",
+            args: [
+              "database_path": db,
+              "device_id": deviceID,
+              "start_ts": 0.0,
+              "end_ts": Date().timeIntervalSince1970,
+            ]
+          )
+        } catch {
+          ble.record(level: .error, source: "bridge", title: "sync.backfill_streams", body: "\(error)")
+        }
       }
 
       let frames = totalFrames

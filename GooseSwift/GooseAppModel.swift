@@ -375,13 +375,22 @@ final class GooseAppModel {
     // nonisolated: called from DispatchQueue.global background queue (Pitfall 6).
     // Uses a local GooseRustBridge() — the Rust side is stateless across instances.
     let localRust = GooseRustBridge()
-    guard let report = try? localRust.request(
-      method: "storage.compact_raw_evidence",
-      args: [
-        "database_path": HealthDataStore.defaultDatabasePath(),
-        "limit_bytes": 25_165_824,
-      ]
-    ) else { return }
+    let report: [String: Any]
+    do {
+      guard let r = try localRust.request(
+        method: "storage.compact_raw_evidence",
+        args: [
+          "database_path": HealthDataStore.defaultDatabasePath(),
+          "limit_bytes": 25_165_824,
+        ]
+      ) else { return }
+      report = r
+    } catch {
+      DispatchQueue.main.async { [weak self] in
+        self?.ble.record(level: .error, source: "bridge", title: "storage.compact_raw_evidence", body: "\(error)")
+      }
+      return
+    }
 
     let compactedRows = (report["compacted_rows"] as? Int) ?? 0
     let freedBytes = (report["freed_bytes"] as? Int) ?? 0
