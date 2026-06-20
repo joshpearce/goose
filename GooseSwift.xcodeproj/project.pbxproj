@@ -43,6 +43,7 @@
 		A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* CoachLocalToolContext.swift */; };
 		A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000041 /* HealthKitFullImporter.swift */; };
 		A10000000000000000000042 /* CoachRouteViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000042 /* CoachRouteViews.swift */; };
+		A10000000000000000000043 /* GooseHealthKitExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000043 /* GooseHealthKitExporter.swift */; };
 		B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
 		B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* WorkoutLiveActivityController.swift */; };
 		B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */; };
@@ -287,6 +288,7 @@
 		A20000000000000000000040 /* CoachLocalToolContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLocalToolContext.swift; sourceTree = "<group>"; };
 		A20000000000000000000041 /* HealthKitFullImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitFullImporter.swift; sourceTree = "<group>"; };
 		A20000000000000000000042 /* CoachRouteViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachRouteViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000043 /* GooseHealthKitExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseHealthKitExporter.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityAttributes.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* WorkoutLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityController.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseWorkoutLiveActivityWidget.swift; sourceTree = "<group>"; };
@@ -648,6 +650,7 @@
 				C2000000000000000000000E /* HealthPreviews.swift */,
 				A2000000000000000000001B /* HealthKitSleepImporter.swift */,
 				A20000000000000000000041 /* HealthKitFullImporter.swift */,
+				A20000000000000000000043 /* GooseHealthKitExporter.swift */,
 				A20000000000000000000042 /* CoachRouteViews.swift */,
 				A20000000000000000000025 /* CodexCoachSupport.swift */,
 				A20000000000000000000021 /* CodexEmbeddedAuth.swift */,
@@ -1045,6 +1048,7 @@
 				A1000000000000000000002B /* CoachComposer.swift in Sources */,
 				A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */,
 				A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */,
+				A10000000000000000000043 /* GooseHealthKitExporter.swift in Sources */,
 				A10000000000000000000042 /* CoachRouteViews.swift in Sources */,
 				A10000000000000000000019 /* OnboardingPersistence.swift in Sources */,
 				A1000000000000000000001A /* MoreView.swift in Sources */,
