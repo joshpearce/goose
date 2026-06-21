@@ -1015,7 +1015,7 @@ Plans:
 | 96 | v13.0 | Complete | 2026-06-20 |
 | 97 | v13.0 | Complete | 2026-06-20 |
 | 98 | 2/2 | Complete | 2026-06-21 |
-| 99 | v14.0 | Pending | — |
+| 99 | 2/2 | Complete | 2026-06-21 |
 | 100 | v14.0 | Pending | — |
 | 101 | v14.0 | Pending | — |
 | 102 | v14.0 | Pending | — |
