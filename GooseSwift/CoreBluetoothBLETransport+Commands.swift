@@ -1004,6 +1004,8 @@ extension CoreBluetoothBLETransport {
         // advertised name containing " mg" (e.g. "WHOOP MG 1A2B"); gen5 otherwise.
         // candidate_MG_advertisement_byte_unverified — identifies MG by peripheral name per D-03;
         // falls back to WHOOP5 if peripheral name is absent or does not contain " mg".
+        // hardware_gate: MG historical sync follows Gen5 protocol path; full verification requires
+        // hardware testing on a physical WHOOP MG device.
         let deviceKindString: String
         if detectedGeneration == .gen4 {
           deviceKindString = "WHOOP4"
