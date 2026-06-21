@@ -41,7 +41,7 @@ All biometric computations (SpO2, HRV, resp, skin temp) are gated on `skin_conta
 
 ### Goose Implementation
 
-Phase 27 (V24 Biometric Decode) — shipped (v5.0). Rust: `protocol.rs` `DataPacketBodySummary`, `store.rs` schema (`spo2_samples`, `skin_temp_samples`, `resp_samples`, `gravity2_samples`), `bridge.rs` `biometrics.insert_v24_batch` / `biometrics.v24_between`.
+Phase 27 (V24 Biometric Decode) — shipped (v5.0). Rust: `protocol.rs` `DataPacketBodySummary`, `store/mod.rs` schema (`spo2_samples`, `skin_temp_samples`, `resp_samples`, `gravity2_samples`), `bridge.rs` `biometrics.insert_v24_batch` / `biometrics.v24_between`.
 
 ---
 
@@ -496,7 +496,7 @@ BLE bytes (V24 packet_k=24)
                              (Z-score composite + logistic)
                                         │
                                         ▼
-                              RecoveryV2DashboardView
+                              RecoveryV2OverviewPage
 ```
 
 ---

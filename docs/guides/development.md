@@ -140,9 +140,9 @@ When adding a new concern to `GooseAppModel` or `HealthDataStore`, create a new 
 | `com.goose.swift.diagnostic-log` | `CoreBluetoothBLETransport` | BLE diagnostic logging |
 | `com.goose.swift.ble-ui-state` | `BLEUIStateAggregator` | BLE UI state throttling |
 | `com.goose.swift.packet-ui-state` | `PacketUIStateAggregator` | Packet UI state throttling |
-| `com.goose.swift.heart-rate-sample-pipeline` | `HeartRateSeriesStores` | HR sample ingestion |
-| `com.goose.swift.heart-rate-series` | `HeartRateSeriesStores` | HR series write serialisation |
-| `com.goose.swift.hrv-series` | `HeartRateSeriesStores` | HRV series write serialisation |
+| `com.goose.swift.heart-rate-sample-pipeline` | `HeartRateSamplePipeline` | HR sample ingestion |
+| `com.goose.swift.heart-rate-series` | `HeartRateSeriesStore` | HR series write serialisation |
+| `com.goose.swift.hrv-series` | `HRVSeriesStore` | HRV series write serialisation |
 | `com.goose.swift.health-packet-family-aggregator` | `HealthPacketCaptureTypes` | Packet family aggregation |
 | `com.goose.swift.whoop-data-signal` | `WhoopDataSignalPipeline` | Inbound biometric signal dispatch |
 | `com.goose.swift.passive-activity-detection` | `PassiveActivityDetector` | Heuristic workout detection |

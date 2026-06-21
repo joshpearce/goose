@@ -83,20 +83,20 @@ beginHistoricalSync
 | Change | File | Detail |
 |--------|------|--------|
 | `WhoopGeneration` enum | `GooseBLETypes.swift` | Enum with `.gen4`/`.gen5`; `detect(from:)`, `helloFrame`, `buildCommandFrame` |
-| `activeDeviceGeneration` property | `GooseBLEClient.swift` | Default `.gen5`; set in `processDiscoveredCharacteristics` |
-| `gen4HistoricalPageSeq` property | `GooseBLEClient.swift` | UInt32 page counter, reset to 0 on sync start |
-| `gen4Frames(in:)` / `gen4Payload(in:)` | `GooseBLEClient+Parsing.swift` | Static Gen4 frame parsers |
-| `frames(in:)` / `payload(in:)` | `GooseBLEClient+Parsing.swift` | Instance dispatch to gen4/gen5 based on `activeDeviceGeneration` |
-| `gen4PageRequestPayload(seq:)` | `GooseBLEClient+HistoricalCommands.swift` | Builds cmd 23 payload `[0x01, LE32 seq, 0x10, 0x00, 0x00, 0x00]` |
-| Gen4 fast-path in `beginHistoricalSync` | `GooseBLEClient+HistoricalCommands.swift` | Returns early for Gen4, ignores `firstCommandOverride` |
-| Gen4 payload override in `writeHistoricalCommand` | `GooseBLEClient+HistoricalCommands.swift` | Sends `[0x00]` for cmd 34/22 on Gen4 |
-| Gen4 frame builder in `writeHistoricalCommand` | `GooseBLEClient+HistoricalCommands.swift` | Uses `activeDeviceGeneration.buildCommandFrame` |
-| Gen4 cmd 22 short-circuit | `GooseBLEClient+HistoricalHandlers.swift` | Bypasses Gen5 result-code logic; advances to cmd 23 |
-| Gen4 cmd 34 parsing | `GooseBLEClient+HistoricalHandlers.swift` | Reads `last_synced` from bytes[10..13]; sets `gen4HistoricalPageSeq` |
-| Gen4 `historyEnd` handler | `GooseBLEClient+HistoricalHandlers.swift` | Increments `gen4HistoricalPageSeq`, builds next page request |
-| Gen4 retry-skip | `GooseBLEClient+DebugAndSync.swift` | Skips transfer retry when `historyCompleteReceived` is true |
-| Gen4 hello frame | `GooseBLEClient+UserActions.swift` | Sends `GET_HELLO` (cmd 145) in Gen4 framing instead of the Gen5 client hello |
-| Reset on disconnect | `GooseBLEClient+Parsing.swift` | `activeDeviceGeneration = .gen5` in `resetLiveDeviceFieldsIfNeeded(for:)` |
+| `whoopGenerationFromCapabilities()` method | `CoreBluetoothBLETransport+Commands.swift` | Derives `.gen4`/`.gen5` from `connectedCapabilities.wireProtocol`; called at sync start |
+| `gen4HistoricalPageSeq` property | `GooseBLEHistoricalManager.swift` | UInt32 page counter, reset to 0 on sync start |
+| `gen4Frames(in:)` / `gen4Payload(in:)` | `CoreBluetoothBLETransport+Parsing.swift` | Static Gen4 frame parsers |
+| `frames(in:)` / `payload(in:)` | `CoreBluetoothBLETransport+Parsing.swift` | Instance dispatch to gen4/gen5 based on `whoopGenerationFromCapabilities()` |
+| `gen4PageRequestPayload(seq:)` | `CoreBluetoothBLETransport+HistoricalCommands.swift` | Builds cmd 23 payload `[0x01, LE32 seq, 0x10, 0x00, 0x00, 0x00]` |
+| Gen4 fast-path in `beginHistoricalSync` | `CoreBluetoothBLETransport+HistoricalCommands.swift` | Returns early for Gen4, ignores `firstCommandOverride` |
+| Gen4 payload override in `writeHistoricalCommand` | `CoreBluetoothBLETransport+HistoricalCommands.swift` | Sends `[0x00]` for cmd 34/22 on Gen4 |
+| Gen4 frame builder in `writeHistoricalCommand` | `CoreBluetoothBLETransport+HistoricalCommands.swift` | Uses `WhoopGeneration.buildCommandFrame` |
+| Gen4 cmd 22 short-circuit | `CoreBluetoothBLETransport+HistoricalHandlers.swift` | Bypasses Gen5 result-code logic; advances to cmd 23 |
+| Gen4 cmd 34 parsing | `CoreBluetoothBLETransport+HistoricalHandlers.swift` | Reads `last_synced` from bytes[10..13]; sets `gen4HistoricalPageSeq` |
+| Gen4 `historyEnd` handler | `CoreBluetoothBLETransport+HistoricalHandlers.swift` | Increments `gen4HistoricalPageSeq`, builds next page request |
+| Gen4 retry-skip | `CoreBluetoothBLETransport+DebugAndSync.swift` | Skips transfer retry when `historyCompleteReceived` is true |
+| Gen4 hello frame | `CoreBluetoothBLETransport+UserActions.swift` | Sends `GET_HELLO` (cmd 145) in Gen4 framing instead of the Gen5 client hello |
+| Reset on disconnect | `CoreBluetoothBLETransport+Parsing.swift` | Generation re-derived from capabilities in `resetLiveDeviceFieldsIfNeeded(for:)` |
 
 ## Known limitations
 

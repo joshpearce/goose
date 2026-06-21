@@ -451,7 +451,7 @@ When `POST /v1/ingest-decoded` is received, the server calls `daily.compute_day`
 | `CaptureFrameWriteQueue` | `GooseSwift/CaptureFrameWriteQueue.swift` | Batches parsed BLE frames and writes them to SQLite via Rust bridge `capture.import_frame_batch`. |
 | `NotificationFrameParser` | `GooseSwift/NotificationFrameParsing.swift` | Delegates raw BLE bytes to Rust for frame reassembly and compact summary extraction. |
 | `OvernightSQLiteMirrorQueue` | `GooseSwift/OvernightSQLiteMirrorQueue.swift` | During overnight guard mode, queues raw notification rows for Rust bridge SQLite insert (flush every 2 s, batch limit 256, max 4096 queued rows). |
-| Rust core (`libgoose_core.a`) | `Rust/core/src/bridge/` | 157 dispatched methods across domain handler modules: protocol parsing, SQLite persistence, metric algorithms, BLE frame import, exercise detection, upload sync, export. Entry point: `bridge/mod.rs`. |
+| Rust core (`libgoose_core.a`) | `Rust/core/src/bridge/` | 158 dispatched methods across domain handler modules: protocol parsing, SQLite persistence, metric algorithms, BLE frame import, exercise detection, upload sync, export. Entry point: `bridge/mod.rs`. |
 | FastAPI ingest service | `server/ingest/app/main.py` | Bearer-gated REST API: `POST /v1/ingest-decoded`, read endpoints, daily compute. No OpenAPI schema exposed publicly (`docs_url=None`). |
 
 ---
@@ -462,7 +462,7 @@ The Rust library (`Rust/core/src/`) is compiled to `libgoose_core.a` and linked 
 
 | Module | File | Responsibility |
 |---|---|---|
-| `bridge` | `bridge/mod.rs` | FFI dispatch table; routes JSON `method` strings to domain handler modules; 157 methods |
+| `bridge` | `bridge/mod.rs` | FFI dispatch table; routes JSON `method` strings to domain handler modules; 158 methods |
 | `bridge/metrics` | `bridge/metrics.rs` | Bridge handlers for `metrics.*` and `baselines.*` methods |
 | `bridge/sleep` | `bridge/sleep.rs` | Bridge handlers for `sleep.*` and `metrics.sleep_staging` methods |
 | `bridge/capture` | `bridge/capture.rs` | Bridge handlers for `capture.*` and `sync.*` methods |

@@ -83,7 +83,7 @@ Key Swift entry points:
 - `RootView.swift`: onboarding gate and global sync toast host.
 - `AppShellView.swift`: tab shell and shared health store wiring.
 - `GooseAppModel.swift`: app state, BLE ownership, lifecycle, and bridge summaries.
-- `GooseBLEClient.swift`: Bluetooth scan/connect/sync logic.
+- `GooseBLEManaging.swift`, `GooseBLEHistoricalManager.swift`, `GooseBLEBondingManager.swift`, `GooseBLEReconnect.swift`, `GooseBLEDataValidator.swift`: Bluetooth scan/connect/sync logic.
 - `GooseRustBridge.swift`: Swift wrapper around the Rust C bridge.
 - `HealthView.swift` and `Health*` files: health dashboards, metric pages, trends, and sheets.
 - `CoachView.swift` and `Coach*` files: coach UI and chat support.

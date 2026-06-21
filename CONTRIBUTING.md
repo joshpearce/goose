@@ -106,7 +106,7 @@ There are 47 integration test files in `Rust/core/tests/`, covering protocol par
 
 ### Swift unit tests
 
-The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 69 unit tests across 16 files covering BLE types, upload service, HR monitor state, coach providers (Claude, Gemini, custom endpoint, registry, keychain), wearable descriptors, workout entries, live activity attributes, historical range parsing, temperature formatting, trends fetch, and baseline progress. Run them from Xcode (Product → Test) or via `xcodebuild test`:
+The `GooseSwiftTests` target in `GooseSwift.xcodeproj` contains 69 unit tests across 16 test files (plus 3 mock helpers: `MockBLEClient.swift`, `MockHealthStore.swift`, `MockRustBridge.swift`) covering BLE types, upload service, HR monitor state, coach providers (Claude, Gemini, custom endpoint, registry, keychain), wearable descriptors, workout entries, live activity attributes, historical range parsing, temperature formatting, trends fetch, and baseline progress. Run them from Xcode (Product → Test) or via `xcodebuild test`:
 
 ```bash
 xcodebuild test \
@@ -124,10 +124,10 @@ xcodebuild test \
 
 - **Indentation:** 2 spaces throughout — no tabs.
 - **Braces:** Opening brace on the same line as the declaration (K&R style).
-- **Types:** PascalCase — `GooseBLEClient`, `HealthDataStore`, `ActivityModels`.
+- **Types:** PascalCase — `GooseBLEManaging`, `HealthDataStore`, `ActivityModels`.
 - **Methods and properties:** camelCase — `handleNotification`, `isScanning`, `liveHeartRateBPM`.
 - **Booleans:** Prefix with `is`, `can`, `has`, or `should`.
-- **File naming:** Match the primary type — `GooseBLEClient.swift`. Use `+` suffix files for concern-scoped extensions — `GooseBLEClient+Commands.swift`, `GooseAppModel+OvernightRun.swift`.
+- **File naming:** Match the primary type — `GooseBLEManaging.swift`. Use `+` suffix files for concern-scoped extensions — `GooseBLEClient+BatteryCommands.swift`, `GooseAppModel+ActivityRecording.swift`.
 - **One blank line** between methods within a type; **two blank lines** between top-level declarations in an extension file.
 - `private` for all internal state; `private(set)` for read-only `@Published` properties.
 - No `///` doc comments — inline `//` comments explain non-obvious logic only.

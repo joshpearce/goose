@@ -231,7 +231,7 @@ Historical sync packets follow a parallel path:
 CBPeripheralDelegate.didUpdateValue
   │  (for historical notification characteristics)
   ▼
-GooseBLEClient.handleHistoricalSyncValue  [GooseBLEClient+HistoricalHandlers.swift]
+CoreBluetoothBLETransport.handleHistoricalSyncValue  [CoreBluetoothBLETransport+HistoricalHandlers.swift]
   │  frames(in: value)  →  gen4Frames or v5Frames based on activeDeviceGeneration
   │  payload(in: frame) →  gen4Payload or v5Payload
   ▼
