@@ -194,7 +194,7 @@ struct CoachSleepRouteView: View {
             model.ble.buzz(loops: 2)
           }
         } label: {
-          Text(bleState.alarmIsArmed ? "Cancelar Alarme" : "Armar Alarme")
+          Text(bleState.alarmIsArmed ? "Cancel Alarm" : "Arm Alarm")
             .font(.body.weight(.semibold))
             .foregroundStyle(bleState.alarmIsArmed ? Color.red : Color.indigo)
             .frame(maxWidth: .infinity, minHeight: 44)
@@ -204,7 +204,7 @@ struct CoachSleepRouteView: View {
             )
         }
         .disabled(isDisconnected)
-        .accessibilityLabel(bleState.alarmIsArmed ? "Cancelar alarme armado" : "Armar alarme de despertar")
+        .accessibilityLabel(bleState.alarmIsArmed ? "Cancel armed alarm" : "Arm wake alarm")
       }
     }
   }
