@@ -933,3 +933,41 @@ fn domain_gap_packet_ks_produce_unknown() {
         }
     }
 }
+
+/// PROTO-10: data_packet_domain() must return "v24_biometric_stream" for packet_k=24
+/// and continue to return "normal_history_with_hr_marker" for packet_k=9, 12, 18.
+/// Verifies the match-arm split introduced in Phase 101.
+#[test]
+fn data_packet_domain_24() {
+    // Helper: build a minimal HistoricalData frame for a given packet_k and
+    // extract the domain string from the parsed DataPacket.
+    fn domain_for_k(packet_k: u8) -> Option<String> {
+        let mut payload = vec![u8::from(PacketType::HistoricalData), packet_k, 0u8];
+        payload.extend_from_slice(&0u32.to_le_bytes()); // counter_or_page
+        payload.extend_from_slice(&0u32.to_le_bytes()); // timestamp_seconds
+        payload.extend_from_slice(&0u16.to_le_bytes()); // timestamp_subseconds
+        payload.extend_from_slice(&[0u8; 4]);           // body padding
+        let frame = build_v5_payload_frame(&payload);
+        let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+        match parsed.parsed_payload.unwrap() {
+            ParsedPayload::DataPacket { domain, .. } => domain,
+            other => panic!("packet_k={packet_k}: expected DataPacket, got {other:?}"),
+        }
+    }
+
+    // packet_k=24 must use the new split arm.
+    assert_eq!(
+        domain_for_k(24).as_deref(),
+        Some("v24_biometric_stream"),
+        "packet_k=24 must have domain 'v24_biometric_stream' (PROTO-10)"
+    );
+
+    // packet_k=9, 12, 18 must remain unchanged.
+    for k in [9u8, 12, 18] {
+        assert_eq!(
+            domain_for_k(k).as_deref(),
+            Some("normal_history_with_hr_marker"),
+            "packet_k={k} must still have domain 'normal_history_with_hr_marker'"
+        );
+    }
+}
