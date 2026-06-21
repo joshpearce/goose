@@ -628,7 +628,10 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
         ));
     }
 
-    // The caller owns the input C string and must provide a valid null-terminated UTF-8 buffer.
+    // SAFETY: request_json is non-null (checked above) and points to a valid
+    //   null-terminated C string owned by the caller for the duration of this call.
+    //   No mutable alias exists — caller contract in the # Safety doc comment above.
+    //   Called from Swift via GooseSwift-Bridging-Header.h (iOS) and from the JNI shim (Android).
     let request = match unsafe { CStr::from_ptr(request_json) }.to_str() {
         Ok(request) => request,
         Err(error) => {
