@@ -192,7 +192,7 @@ extension GooseAppModel {
         guard UserDefaults.standard.object(forKey: "goose.swift.liveHRVRMSSD") != nil else { return nil }
         return UserDefaults.standard.double(forKey: "goose.swift.liveHRVRMSSD")
       }()
-      let notifRecovery = Double(store.snapshot(for: .recovery).value ?? "")
+      let notifRecovery = Double(store.snapshot(for: .recovery).value)
       Task {
         await NotificationScheduler.shared.scheduleSleepProcessed(
           durationMinutes: notifDurationMinutes,
