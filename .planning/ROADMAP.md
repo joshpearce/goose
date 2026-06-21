@@ -932,7 +932,7 @@ Plans:
 
 **Plans**:
 
-- [ ] 108-01-PLAN.md — Battery level parsing (event-48 + cmd-26 + R22) + UI display (BAT-01)
+1/1 plans complete
 
 ---
 
@@ -1025,7 +1025,7 @@ Plans:
 | 105 | 1/1 | Complete   | 2026-06-21 |
 | 106 | 1/1 | Complete   | 2026-06-21 |
 | 107 | 1/1 | Complete    | 2026-06-21 |
-| 108 | v14.0 | Pending | — |
+| 108 | 1/1 | Complete   | 2026-06-21 |
 | 109 | 1/1 | Complete   | 2026-06-21 |
 | 110 | v14.0 | Pending | — |
 | 111 | v14.0 | Pending | — |
@@ -1079,6 +1079,8 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 1/1 plans complete
 Plans:
+
+- [x] 108-01-PLAN.md
 
 - [x] 109-01-PLAN.md
 
