@@ -1229,7 +1229,8 @@ fn strap_event_name(event_id: u16) -> Option<&'static str> {
 fn data_packet_domain(packet_k: u8) -> Option<&'static str> {
     Some(match packet_k {
         7 => "legacy_raw_or_research_counted",
-        9 | 12 | 18 | 24 => "normal_history_with_hr_marker",
+        9 | 12 | 18 => "normal_history_with_hr_marker",
+        24 => "v24_biometric_stream",
         10 | 21 => "raw_motion_stream_result",
         11 => "raw_stream_counted",
         16 => "raw_ecg_labrador",
