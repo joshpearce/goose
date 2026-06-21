@@ -72,7 +72,8 @@ pub unsafe extern "C" fn Java_com_goose_app_bridge_GooseBridge_handle(
     };
 
     // Call the existing C-exported bridge function
-    let response_ptr = goose_bridge_handle_json(c_request.as_ptr());
+    // SAFETY: c_request is a valid NUL-terminated CString; lifetime bounded to this frame.
+    let response_ptr = unsafe { goose_bridge_handle_json(c_request.as_ptr()) };
 
     if response_ptr.is_null() {
         let error_json = r#"{"ok":false,"result":null,"error":{"message":"goose_bridge_handle_json returned null"},"timing":null}"#;
@@ -84,13 +85,13 @@ pub unsafe extern "C" fn Java_com_goose_app_bridge_GooseBridge_handle(
 
     // SAFETY: response_ptr is non-null (checked above) and points to a Rust CString
     //   allocated by goose_bridge_handle_json; valid until goose_bridge_free_string is called below.
-    // Convert C string response → Rust String
-    let response_str = std::ffi::CStr::from_ptr(response_ptr)
-        .to_string_lossy()
-        .into_owned();
-
-    // Free the Rust-allocated buffer before returning to Java
-    goose_bridge_free_string(response_ptr);
+    let response_str = unsafe {
+        let s = std::ffi::CStr::from_ptr(response_ptr)
+            .to_string_lossy()
+            .into_owned();
+        goose_bridge_free_string(response_ptr);
+        s
+    };
 
     // Convert Rust String → Java String
     match env.new_string(response_str) {
