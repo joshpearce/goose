@@ -592,6 +592,14 @@ extension CoreBluetoothBLETransport {
           failHistoricalSync("Gen4 cmd 34 response too short: \(payload.count) bytes payload=\(Data(payload).hexString)")
           return
         }
+        // SYNC-11: capture strap hardware identity for later validation against cmd 23 response
+        historicalManager.connectedStrapIdentity = Array(payload[5..<13])
+        record(
+          level: .debug,
+          source: "ble.sync",
+          title: "historical_sync.identity.captured",
+          body: "cmd34 identity=\(Data(payload[5..<13]).hexString)"
+        )
         let lastSynced = UInt32(payload[10])
           | (UInt32(payload[11]) << 8)
           | (UInt32(payload[12]) << 16)
@@ -609,6 +617,15 @@ extension CoreBluetoothBLETransport {
         writeHistoricalCommand(.sendHistoricalData)
         return
       }
+      if !catalog.usesPageSequenceSync, payload.count >= 13 {
+        historicalManager.connectedStrapIdentity = Array(payload[5..<13])
+        record(
+          level: .debug,
+          source: "ble.sync",
+          title: "historical_sync.identity.captured",
+          body: "cmd34 identity=\(Data(payload[5..<13]).hexString)"
+        )
+      }
       if historicalManager.historicalRangePollOnly {
         completeHistoricalSync(reason: "historical_range_poll_complete")
         return
@@ -622,6 +639,31 @@ extension CoreBluetoothBLETransport {
     case .sendHistoricalData:
       scheduleHistoricalIdleCompletion(reason: "historical_transfer_idle")
     case .historicalDataResult:
+      // SYNC-11: validate 8-byte strap identity echoed in cmd 23 response
+      if payload.count >= 13 {
+        let respondingIdentity = Array(payload[5..<13])
+        if let expectedIdentity = historicalManager.connectedStrapIdentity {
+          if respondingIdentity != expectedIdentity {
+            let expectedHex = Data(expectedIdentity).hexString
+            let gotHex = Data(respondingIdentity).hexString
+            record(
+              level: .error,
+              source: "ble.sync",
+              title: "historical_sync.identity_mismatch",
+              body: "expected=\(expectedHex) got=\(gotHex)"
+            )
+            failHistoricalSync("HISTORICAL_DATA_RESULT identity mismatch: expected \(expectedHex), got \(gotHex).")
+            return
+          }
+        } else {
+          record(
+            level: .warn,
+            source: "ble.sync",
+            title: "historical_sync.identity_check_skipped",
+            body: "connectedStrapIdentity not set; skipping cmd 23 identity check"
+          )
+        }
+      }
       historicalManager.pendingHistoryEndAckPayload = nil
       if historicalManager.historyCompleteReceived {
         completeHistoricalSync(reason: "history_complete")
@@ -751,6 +793,8 @@ extension CoreBluetoothBLETransport {
   func completeHistoricalSync(reason: String) {
     // SYNC-09: clear reassembly buffer so stale bytes never carry into the next session.
     historicalManager.gen4HistoricalFrameBuffer = Data()
+    // SYNC-11: clear strap identity so stale identity never carries into the next session.
+    historicalManager.connectedStrapIdentity = nil
     historicalManager.historicalCommandTimeoutWorkItem?.cancel()
     historicalManager.historicalIdleWorkItem?.cancel()
     historicalManager.historicalRangeRetryWorkItem?.cancel()
@@ -796,6 +840,8 @@ extension CoreBluetoothBLETransport {
   func failHistoricalSync(_ message: String) {
     // SYNC-09: clear reassembly buffer so stale bytes never carry into the next session.
     historicalManager.gen4HistoricalFrameBuffer = Data()
+    // SYNC-11: clear strap identity so stale identity never carries into the next session.
+    historicalManager.connectedStrapIdentity = nil
     historicalManager.historicalCommandTimeoutWorkItem?.cancel()
     historicalManager.historicalIdleWorkItem?.cancel()
     historicalManager.historicalRangeRetryWorkItem?.cancel()
