@@ -946,7 +946,7 @@ fn data_packet_domain_24() {
         payload.extend_from_slice(&0u32.to_le_bytes()); // counter_or_page
         payload.extend_from_slice(&0u32.to_le_bytes()); // timestamp_seconds
         payload.extend_from_slice(&0u16.to_le_bytes()); // timestamp_subseconds
-        payload.extend_from_slice(&[0u8; 4]);           // body padding
+        payload.extend_from_slice(&[0u8; 4]); // body padding
         let frame = build_v5_payload_frame(&payload);
         let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
         match parsed.parsed_payload.unwrap() {
