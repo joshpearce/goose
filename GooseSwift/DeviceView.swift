@@ -32,7 +32,8 @@ private struct DeviceContentView: View {
             statusText: connectionHeadline,
             deviceName: ble.activeDeviceName,
             lastSync: lastSyncSummary,
-            generation: bleState.connectedDeviceGeneration
+            generation: bleState.connectedDeviceGeneration,
+            batteryPercent: ble.batteryLevelPercent
           )
           .padding(.bottom, 30)
 
@@ -213,6 +214,7 @@ private struct DeviceConnectionHeader: View {
   let deviceName: String
   let lastSync: String
   let generation: String?  // nil when disconnected
+  var batteryPercent: Int? = nil  // D-02: show alongside generation when available
 
   var body: some View {
     HStack(alignment: .bottom, spacing: 16) {
@@ -227,7 +229,10 @@ private struct DeviceConnectionHeader: View {
           .lineLimit(2)
           .minimumScaleFactor(0.78)
         if let gen = generation, gen != "unknown" {
-          Text("Gen \(gen.prefix(1))")
+          // D-02: combine generation + battery percentage in one chip label
+          let genLabel = "Gen \(gen.prefix(1))"
+          let chipLabel = batteryPercent.map { "\(genLabel) · \($0)%" } ?? genLabel
+          Text(chipLabel)
             .font(deviceLabelFont)
             .foregroundStyle(secondaryText)
         }

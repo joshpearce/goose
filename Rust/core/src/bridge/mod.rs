@@ -323,7 +323,8 @@ fn parse_event48_battery_bridge(args: ParseEvent48BatteryArgs) -> GooseResult<se
     let payload = hex::decode(&args.payload_hex)
         .map_err(|e| GooseError::message(format!("invalid hex: {e}")))?;
     let pct = parse_event48_battery(&payload)?;
-    Ok(json!({ "battery_pct": pct }))
+    // Key matches what NotificationFrameParsing.swift reads at raw["event48_battery_pct"]
+    Ok(json!({ "event48_battery_pct": pct }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -1227,16 +1228,16 @@ mod tests {
     }
 
     // Bridge round-trip: hex-encode a valid Event-48 payload and call the bridge wrapper,
-    // asserting the returned JSON contains the expected battery_pct.
+    // asserting the returned JSON contains the expected event48_battery_pct.
     #[test]
     fn event48_bridge_round_trip() {
         let raw_payload = event48_payload(30, 850);
         let payload_hex = hex::encode(&raw_payload);
         let args = ParseEvent48BatteryArgs { payload_hex };
         let result = parse_event48_battery_bridge(args).expect("bridge should succeed");
-        let battery_pct = result["battery_pct"]
+        let battery_pct = result["event48_battery_pct"]
             .as_u64()
-            .expect("battery_pct must be present");
+            .expect("event48_battery_pct must be present");
         assert_eq!(battery_pct, 85);
     }
 

@@ -1026,6 +1026,8 @@ extension CoreBluetoothBLETransport {
             DispatchQueue.main.async {
               self.connectedCapabilities = caps
               self.onCapabilitiesUpdated?()
+              // battery: auto-sent on Gen4 connect (cmd-26 provides initial value before first event-48)
+              // event-48 fires only every ~8 min; without this initial query the battery UI stays blank.
               if caps.batteryViaCMD26, caps.wireProtocol == .gen4 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                   self?.sendCmd26BatteryRequest()
