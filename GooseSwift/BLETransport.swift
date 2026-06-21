@@ -163,7 +163,9 @@ protocol BLETransport: AnyObject, Sendable {
   func enterHighFrequencyHistorySync(intervalSeconds: Int, durationSeconds: Int)
   func exitHighFrequencyHistorySync()
   @discardableResult func sendDebugResearchCommand(id: String, payloadHex: String?, source: String) -> Bool
+  #if DEBUG
   func previewHelloWorldToast()
+  #endif
   func setDebugCommandStatus(_ status: String)
   func startHRMonitorScan()
   func stopHRMonitorScan()
