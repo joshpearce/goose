@@ -356,14 +356,14 @@ peripheral(_:didUpdateValueFor:)
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **cmd 0x54 response on Gen4 vs Gen5**
+1. **cmd 0x54 response on Gen4 vs Gen5** — RESOLVED
    - What we know: the command exists in the enum for all generations; the APK parser `bi0/e.java` does not gate on generation
    - What's unclear: whether WHOOP 4.0 straps actually respond to 0x54 (it may be Gen5-only)
    - Recommendation: send on all generations; if no response arrives within 3–5 seconds, leave `isOnWrist = nil`. No timeout state machine needed — nil is the correct "unknown" state per D-03.
 
-2. **`payload[3]` sequence byte matching for 0x54**
+2. **`payload[3]` sequence byte matching for 0x54** — RESOLVED
    - What we know: debug commands use a sequence byte in `pendingDebugCommands` dict to match response to request
    - What's unclear: whether 0x54 should be sent via the existing debug command infrastructure (which handles timeouts and sequence matching) or as a fire-and-forget write like sensor stream commands
    - Recommendation: Fire-and-forget write (not via debug command infrastructure). The `isOnWrist` state is resilient to non-response (stays nil). Using the debug command path would require registering a pending command and handling timeout — unnecessary complexity for a simple status query.
