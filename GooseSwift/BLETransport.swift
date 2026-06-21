@@ -2,7 +2,7 @@ import Foundation
 
 // BLETransport — the interface GooseAppModel and views depend on.
 // CoreBluetoothBLETransport is the sole concrete implementation.
-protocol BLETransport: AnyObject {
+protocol BLETransport: AnyObject, Sendable {
 
   // MARK: - State properties
 

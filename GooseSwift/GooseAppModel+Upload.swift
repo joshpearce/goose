@@ -237,7 +237,8 @@ extension GooseAppModel {
               )
               totalFrames += bridgeFrames.count
             } catch {
-              ble.record(level: .error, source: "bridge", title: "capture.import_frame_batch", body: "\(error)")
+              let msg = "\(error)"
+              Task { @MainActor [weak self] in self?.ble.record(level: .error, source: "bridge", title: "capture.import_frame_batch", body: msg) }
               continue
             }
           }
@@ -264,7 +265,8 @@ extension GooseAppModel {
             ]
           )
         } catch {
-          ble.record(level: .error, source: "bridge", title: "sync.backfill_streams", body: "\(error)")
+          let msg = "\(error)"
+          Task { @MainActor [weak self] in self?.ble.record(level: .error, source: "bridge", title: "sync.backfill_streams", body: msg) }
         }
       }
 
