@@ -16,6 +16,7 @@
 - ✅ **v12.0 Code Health & Protocol Foundation** — Phases 83-91 (shipped 2026-06-19)
 - ✅ **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (shipped 2026-06-20)
 - ✅ **v14.0 Android Port, BLE Reliability & Protocol Depth** — Phases 98-111 (shipped 2026-06-21)
+- **v15.0 Protocol Depth, Algorithms & UX** — Phases 112-126 (in progress)
 
 ## Phases
 
@@ -750,6 +751,247 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 
 </details>
 
+
+## v15.0 Protocol Depth, Algorithms & UX (Phases 112–126)
+
+### Phase Summary
+
+- [ ] **Phase 112: Optical Protocol Decode (v20/v21/v26)** — Rust parse variants for WHOOP 5.0 bulk sensor streams and 24 Hz PPG waveform
+- [ ] **Phase 113: Optical Schema & Bridge** — schema v24 for optical_channel_samples + device_feature_flags + body_composition_history + realtime_frames (single migration batch) plus bridge methods and cargo test gate
+- [ ] **Phase 114: Harvard Sleep Need Model** — sleep_need.rs algorithm + replace hardcoded 480 constant
+- [ ] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table
+- [ ] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods
+- [ ] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity
+- [ ] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer
+- [ ] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter
+- [ ] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended")
+- [ ] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart
+- [ ] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering
+- [ ] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging
+- [ ] **Phase 124: PIP Server Endpoint** — POST /v1/ingest-realtime + TimescaleDB hypertable
+- [ ] **Phase 125: Cap Sense UUID Discovery** — BLE scan to identify capacitive sense GATT UUID + subscribe
+- [ ] **Phase 126: Wake-Window Engine (HAP-04)** — fill GooseWakeWindowManager stub (hardware+RE gated)
+
+### Phase Details
+
+#### Phase 112: Optical Protocol Decode (v20/v21/v26)
+
+**Goal**: WHOOP 5.0 type-47 v20/v21 multi-channel and v26 PPG waveform packets are parsed in protocol.rs instead of silently falling to Unknown
+**Depends on**: Phase 111
+**Requirements**: OPT-01, OPT-02
+**Success Criteria** (what must be TRUE):
+  1. `DataPacketBodySummary::V20V21OpticalMultiChannel` variant exists; packet_k 20 and 21 decode presence-byte logic (0x19=active, 0x00=empty) and 3×100-sample i16 arrays without panicking on a valid synthetic payload
+  2. `DataPacketBodySummary::V26PpgWaveform` variant exists; packet_k 26 decodes 24×LE-i16 at offsets [27:74] with ppg_channel gated 1–26; integration test with synthetic 88 B payload passes
+  3. WHY comments at all new byte offsets; `cargo test --locked` passes clean with no regression in existing protocol tests
+  4. No silent wildcard fallthrough for packet_k 20, 21, or 26 — all three route to named variants in `parse_data_packet_body_summary`
+
+**Plans**: TBD
+**Dependencies**: Pure Rust — no Swift or Android changes in this phase
+
+---
+
+#### Phase 113: Schema v24 + Optical Bridge Methods
+
+**Goal**: A single schema v24 migration creates all four new tables (optical_channel_samples, device_feature_flags, body_composition_history, realtime_frames), bridge insert/query methods are registered, and `cargo test --locked` passes as the gate for all subsequent Swift consumer phases
+**Depends on**: Phase 112
+**Requirements**: OPT-03, FF-03, BODY-01 (schema only), PIP-02 (schema only)
+**Success Criteria** (what must be TRUE):
+  1. `CURRENT_SCHEMA_VERSION = 24` in store.rs; migration block creates all four tables in a single transaction; the schema version guard on open returns an error for any on-disk version below 24
+  2. `biometrics.insert_v20v21_batch` and `biometrics.insert_v26_batch` bridge methods insert rows into `optical_channel_samples`; range query methods return rows by (device_uuid, ts range)
+  3. `BRIDGE_METHODS` constant is updated; `bridge_methods_constant_matches_dispatcher` test passes
+  4. `cargo test --locked` passes clean — this is the green gate before any Swift consumer work begins
+
+**Plans**: TBD
+
+---
+
+#### Phase 114: Harvard Sleep Need Model
+
+**Goal**: The Harvard sleep need model (age-bracket baseline + EWMA debt + strain adjustment) replaces the hardcoded 480-minute constant throughout the Rust codebase
+**Depends on**: Phase 113
+**Requirements**: SLP-NEED-01, SLP-NEED-02
+**Success Criteria** (what must be TRUE):
+  1. `sleep_need.rs` exists with `compute_sleep_need(age_years, 5-night history, prior_strain) -> SleepNeedResult`; age-bracket baselines (18–25: 8h, 26–64: 7.5h, 65+: 7h) are correct; Rust unit tests cover cold-start, each age bracket, and strain adjustment thresholds
+  2. The hardcoded `480.0` constant in `SleepFeatureScoreOptions` and `RecoveryFeatureScoreOptions` is replaced with a bridge call to `sleep.compute_need`; `age_years: Option<u8>` is accepted in the options struct
+  3. `bridge_methods_constant_matches_dispatcher` test passes; `cargo test --locked` passes clean
+
+**Plans**: TBD
+
+---
+
+#### Phase 115: Feature Flag Discovery (GET_FF_VALUE)
+
+**Goal**: The app discovers WHOOP device feature flags by sending GET_FF_VALUE (cmd 0x80) after handshake and storing results in SQLite and DeviceCapabilities
+**Depends on**: Phase 113
+**Requirements**: FF-01, FF-02, FF-03
+**Success Criteria** (what must be TRUE):
+  1. `GET_FF_VALUE` (cmd 0x80) is sent from Swift after `GET_HELLO` handshake completes; a 3-second timeout triggers fallback to `DeviceKind`-derived `DeviceCapabilities` if no response arrives
+  2. The response is parsed into `DeviceCapabilities.feature_flags: [UInt8: UInt8]`; raw index→value is stored without semantic name claims; the flag map is visible in the Debug tab
+  3. `device_feature_flags` table exists (schema v24 already landed in Phase 113); `capabilities.get_feature_flags` bridge method inserts and retrieves rows; `BRIDGE_METHODS` updated
+
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+#### Phase 116: Body Composition Rust Layer
+
+**Goal**: The Rust bridge can upsert and query body composition records; the schema v24 table is the single source of truth for weight, BMI, body fat, and muscle mass history
+**Depends on**: Phase 113
+**Requirements**: BODY-01
+**Success Criteria** (what must be TRUE):
+  1. `body_composition_history` table exists (schema v24 already landed in Phase 113); UNIQUE(source, date) constraint is enforced; INSERT OR REPLACE semantics work for healthkit-sourced rows
+  2. `body_composition.upsert` and `body_composition.history_between` bridge methods are registered in `BRIDGE_METHODS` and the dispatcher; `cargo test --locked` passes with at least one test per method
+  3. `source` column accepts only 'manual', 'healthkit', or 'scale' (CHECK constraint); inserting an invalid source returns an error, not a panic
+
+**Plans**: TBD
+
+---
+
+#### Phase 117: Android Optical Routing
+
+**Goal**: Android WhoopBleClient forwards packet_k 20, 21, and 26 frames to GooseBridge.safeHandle() achieving parity with the iOS v15.0 optical decode path
+**Depends on**: Phase 112
+**Requirements**: OPT-04
+**Success Criteria** (what must be TRUE):
+  1. `WhoopBleClient.kt` routing table handles packet_k 20, 21, and 26 — frames are forwarded to `GooseBridge.safeHandle()` rather than discarded or logged as unknown
+  2. The existing Android CI APK build (`android-core.yml`) compiles without new warnings or errors after the routing change
+  3. Unit test or log assertion confirms that a synthetic v20/v21/v26 frame received by `FrameReassembler` reaches the bridge call
+
+**Plans**: TBD
+
+---
+
+#### Phase 118: PIP Realtime Queue
+
+**Goal**: A dedicated Swift queue tags BLE frames as FRAME_SOURCE_REALTIME and inserts them into the realtime_frames SQLite table via bridge, keeping realtime capture isolated from historical capture
+**Depends on**: Phase 113
+**Requirements**: PIP-01, PIP-02
+**Success Criteria** (what must be TRUE):
+  1. `RealtimePIPQueue` Swift class exists as a parallel to `CaptureFrameWriteQueue` with its own `NSLock` and `writeQueue`; frames are tagged `FRAME_SOURCE_REALTIME` before insertion
+  2. Realtime frames land in `realtime_frames` (schema v24, already present from Phase 113); `synced = 0` on insert; a covering index on (device_uuid, captured_at) exists
+  3. `CaptureFrameWriteQueue` and `RealtimePIPQueue` are distinct — no shared queue or table; backpressure accounting is independent
+
+**Plans**: TBD
+
+---
+
+#### Phase 119: Stealth Mode (Rust + Swift core)
+
+**Goal**: Per-metric UserDefaults toggles suppress individual metric values from dashboard views and replace them with a sentinel in Coach context so the LLM cannot read hidden values
+**Depends on**: Phase 111
+**Requirements**: STEALTH-01, STEALTH-02
+**Success Criteria** (what must be TRUE):
+  1. `GooseStealthMode.isHidden(metric:)` exists with `StealthStorage` enum holding `static let` UserDefaults keys for all 6 metrics (recovery_score, strain_score, hrv_rmssd, resting_hr, sleep_performance, stress_score)
+  2. `StealthMask` value type is passed into `CoachLocalToolContext.build()`; hidden metric values are replaced with `"hidden_by_user"` sentinel string (key preserved); Coach still receives full unmasked data for recommendations
+  3. Neither class reads UserDefaults with ad-hoc string literals — all key references go through `StealthStorage` constants
+
+**Plans**: TBD
+
+---
+
+#### Phase 120: Sleep Need UI
+
+**Goal**: The Sleep dashboard displays a dynamic nightly sleep need derived from the Harvard model instead of the static "8h recommended" label
+**Depends on**: Phase 114
+**Requirements**: SLP-NEED-03
+**Success Criteria** (what must be TRUE):
+  1. Sleep dashboard shows `SleepNeedResult.total_need_minutes` expressed as hours and minutes (e.g. "7h 45m recommended tonight")
+  2. An optional breakdown row shows base / debt / strain components when available; the label is absent when the bridge call returns an error or no history exists
+  3. The iOS build compiles without new warnings; SwiftUI `#Preview` macro compiles in DEBUG
+
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+#### Phase 121: Body Composition UI + HealthKit Import
+
+**Goal**: Users can manually log body composition entries and import HealthKit weight history; both appear on a trend chart in the Health tab
+**Depends on**: Phase 116
+**Requirements**: BODY-02, BODY-03
+**Success Criteria** (what must be TRUE):
+  1. `BodyCompositionEntrySheet` appears in the Health tab; user can enter weight, body fat %, and muscle mass; tapping Confirm calls `body_composition.upsert` via bridge with source='manual'
+  2. HealthKit import reads `HKQuantityTypeIdentifierBodyMass` and `HKQuantityTypeIdentifierBodyFatPercentage`; rows are written with source='healthkit' using INSERT OR REPLACE
+  3. A weight sparkline or trend chart in the Health tab renders at least 7 days of history when data is present; the chart is absent (not crashed) when no data exists
+
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+#### Phase 122: Stealth UI
+
+**Goal**: A Settings → Metrics toggle list lets users hide individual metrics; dashboard views render "—" for hidden metrics at the view layer
+**Depends on**: Phase 119
+**Requirements**: STEALTH-03, STEALTH-04
+**Success Criteria** (what must be TRUE):
+  1. Settings → Metrics section lists all 6 stealth-eligible metrics with Toggle controls backed by `StealthStorage` UserDefaults keys (no ad-hoc string literals)
+  2. All dashboard views that render stealth-eligible metric values call `GooseStealthMode.isHidden(metric:)` at the render site and display "—" when the metric is hidden
+  3. `#if DEBUG` previews use `StealthMask` environment value rather than direct UserDefaults reads; SwiftUI preview compiles clean
+
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+#### Phase 123: Real-Device Algorithm Validation (VAL-HRV-04, VAL-SLP-04)
+
+**Goal**: RMSSD and 4-class sleep staging are cross-validated on ≥7 real WHOOP 5 overnight sessions, closing the hardware-gated validation items open since v5.0
+**Depends on**: Phase 111
+**Requirements**: VAL-HRV-04, VAL-SLP-04
+**Success Criteria** (what must be TRUE):
+  1. RMSSD delta vs the Python reference pipeline is ≤1 ms on all ≥7 real overnight sessions; validation fixtures (synthetic equivalents) are committed to `Rust/core/tests/`
+  2. 4-class sleep staging concordance is ≥70% on all ≥7 real overnight sessions; results are documented as a validation artifact in `.planning/phases/123-*/`
+  3. `cargo test --locked` passes with the new Rust fixture tests; no algorithm coefficients or constants were changed to force concordance
+
+**Plans**: TBD
+
+---
+
+#### Phase 124: PIP Server Endpoint
+
+**Goal**: The server accepts realtime BLE frames via POST /v1/ingest-realtime and stores them in a TimescaleDB hypertable
+**Depends on**: Phase 118
+**Requirements**: PIP-03
+**Success Criteria** (what must be TRUE):
+  1. `POST /v1/ingest-realtime` endpoint exists in the FastAPI server with Bearer token auth matching the pattern of `/v1/ingest-frames`; the endpoint returns 200 on valid payloads and 401 on missing/invalid auth
+  2. `realtime_frames` TimescaleDB hypertable is created on first deploy; time-partitioned on `captured_at`; existing server tests pass
+  3. The endpoint rejects payloads missing `device_uuid` or `frame_hex` with a 422 response; pytest test suite confirms all three cases
+
+**Plans**: TBD
+
+---
+
+#### Phase 125: Cap Sense UUID Discovery
+
+**Goal**: With a real WHOOP 5 device available, the capacitive sense GATT characteristic UUID is identified and on-wrist detection is subscribed separately from the cmd 0x54 optical fallback
+**Depends on**: Phase 111
+**Requirements**: CAPSENSE-01
+**Success Criteria** (what must be TRUE):
+  1. The GATT characteristic UUID for the WHOOP 5 capacitive sense sensor is identified (via BLE scan log or Ghidra) and documented in `.planning/research/whoop-re/CAPSENSE-UUID.md`
+  2. Swift subscribes to the characteristic; `isOnWrist` is updated from the cap sense notification stream — distinct from the cmd 0x54 BLE-02 path already in production
+  3. The Debug tab shows the cap sense UUID and its current value; no regression in the existing cmd 0x54 off-wrist detection
+
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
+#### Phase 126: Wake-Window Engine (HAP-04)
+
+**Goal**: GooseWakeWindowManager stub is filled with the wake-window algorithm using the confirmed SetAlarmInfoCommandPacketRev4 wire format
+**Depends on**: Phase 111, `.planning/research/whoop-re/SetAlarmInfoCommandPacketRev4.md` existing
+**Requirements**: HAP-04
+**Success Criteria** (what must be TRUE):
+  1. `SetAlarmInfoCommandPacketRev4.md` exists in `.planning/research/whoop-re/` with confirmed byte layout before any implementation begins
+  2. `GooseWakeWindowManager` sends the correct alarm command payload using the confirmed wire format; BTSnoop capture of `STRAP_DRIVEN_ALARM_EXECUTED` confirms the device fires at the target window
+  3. HAP-03 smart alarm UI (Phase 73) continues to function — no regression; the wake-window engine is activated only when the RE prerequisite file is present
+
+**Note**: **DEFERRED TO v16.0** if `.planning/research/whoop-re/SetAlarmInfoCommandPacketRev4.md` does not exist at execution time. Do not begin implementation tasks for this phase until that file is confirmed present.
+
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Status | Completed |
@@ -789,6 +1031,21 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 | 109 | 1/1 | Complete   | 2026-06-21 |
 | 110 | 3/3 | Complete   | 2026-06-21 |
 | 111 | 2/2 | Complete    | 2026-06-21 |
+| 112 | 0/0 | Not started | — |
+| 113 | 0/0 | Not started | — |
+| 114 | 0/0 | Not started | — |
+| 115 | 0/0 | Not started | — |
+| 116 | 0/0 | Not started | — |
+| 117 | 0/0 | Not started | — |
+| 118 | 0/0 | Not started | — |
+| 119 | 0/0 | Not started | — |
+| 120 | 0/0 | Not started | — |
+| 121 | 0/0 | Not started | — |
+| 122 | 0/0 | Not started | — |
+| 123 | 0/0 | Not started | — |
+| 124 | 0/0 | Not started | — |
+| 125 | 0/0 | Not started | — |
+| 126 | 0/0 | Not started | — |
 
 ## Backlog
 

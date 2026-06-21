@@ -4,16 +4,16 @@ milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
 current_phase: 0
 status: planning
-last_updated: "2026-06-21"
-last_activity: 2026-06-21
-last_activity_desc: v15.0 started — defining requirements
+last_updated: "2026-06-22"
+last_activity: 2026-06-22
+last_activity_desc: v15.0 roadmap created — 15 phases (112-126)
 progress:
-  total_phases: 0
+  total_phases: 15
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
   percent: 0
-current_phase_name: ""
+current_phase_name: "Phase 112: Optical Protocol Decode"
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 112 (next to plan)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-21 — Milestone v15.0 started
+Status: Roadmap approved — ready to plan Phase 112
+Last activity: 2026-06-22 — v15.0 roadmap created (15 phases, 112-126)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - v14.0 Phases 98–111 defined 2026-06-20: historical sync (98-99), BLE reliability (100), telemetry+crash+protocol (101), Gen4 metrics (102), Android port (103-107), battery (108), MG (109), code health (110), comments (111)
+- v15.0 Phases 112–126 defined 2026-06-22: optical protocol (112-113), Harvard sleep need (114), feature flags (115), body composition (116), Android parity (117), PIP queue (118), stealth mode (119), sleep need UI (120), body composition UI (121), stealth UI (122), real-device validation (123), PIP server (124), cap sense (125), wake-window RE-gated (126)
 - v13.0 Phases 92–97 shipped 2026-06-20 (all complete)
 
 ### Pending Todos
@@ -124,9 +125,9 @@ Items deferred from previous milestones:
 Last session: 2026-06-21T22:03:02.666Z
 Stopped at: context exhaustion at 82% (2026-06-21)
 Resume file: .planning/phases/98-gen5-historical-sync-routing-hps-ring-buffer/98-CONTEXT.md
-Next action: /gsd-plan-phase 98
+Next action: /gsd-discuss-phase 112
 
 ## Operator Next Steps
 
-- Research in progress → requirements → roadmap
-- Next: `/gsd-discuss-phase 112` after roadmap approved
+- Roadmap approved — 15 phases (112-126) defined
+- Next: `/gsd-discuss-phase 112` to plan Phase 112 (Optical Protocol Decode)

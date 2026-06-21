@@ -81,27 +81,27 @@
 
 | Req | Issue | Phase | Status |
 |-----|-------|-------|--------|
-| OPT-01 | #172 | TBD | — |
-| OPT-02 | #173 | TBD | — |
-| OPT-03 | #172/#173 | TBD | — |
-| OPT-04 | #172/#173 | TBD | — |
-| SLP-NEED-01 | #164 | TBD | — |
-| SLP-NEED-02 | #164 | TBD | — |
-| SLP-NEED-03 | #164 | TBD | — |
-| VAL-HRV-04 | ALG-HRV-04 | TBD | — |
-| VAL-SLP-04 | ALG-SLP-04 | TBD | — |
-| FF-01 | #165 | TBD | — |
-| FF-02 | #165 | TBD | — |
-| FF-03 | #165 | TBD | — |
-| BODY-01 | #166 | TBD | — |
-| BODY-02 | #166 | TBD | — |
-| BODY-03 | #166 | TBD | — |
-| STEALTH-01 | #167 | TBD | — |
-| STEALTH-02 | #167 | TBD | — |
-| STEALTH-03 | #167 | TBD | — |
-| STEALTH-04 | #167 | TBD | — |
-| PIP-01 | #168 | TBD | — |
-| PIP-02 | #168 | TBD | — |
-| PIP-03 | #168 | TBD | — |
-| CAPSENSE-01 | CAPSENSE-01 | TBD | — |
-| HAP-04 | HAP-04 | TBD | — |
+| OPT-01 | #172 | Phase 112 | — |
+| OPT-02 | #173 | Phase 112 | — |
+| OPT-03 | #172/#173 | Phase 113 | — |
+| OPT-04 | #172/#173 | Phase 117 | — |
+| SLP-NEED-01 | #164 | Phase 114 | — |
+| SLP-NEED-02 | #164 | Phase 114 | — |
+| SLP-NEED-03 | #164 | Phase 120 | — |
+| VAL-HRV-04 | ALG-HRV-04 | Phase 123 | — |
+| VAL-SLP-04 | ALG-SLP-04 | Phase 123 | — |
+| FF-01 | #165 | Phase 115 | — |
+| FF-02 | #165 | Phase 115 | — |
+| FF-03 | #165 | Phase 113 | — |
+| BODY-01 | #166 | Phase 116 | — |
+| BODY-02 | #166 | Phase 121 | — |
+| BODY-03 | #166 | Phase 121 | — |
+| STEALTH-01 | #167 | Phase 119 | — |
+| STEALTH-02 | #167 | Phase 119 | — |
+| STEALTH-03 | #167 | Phase 122 | — |
+| STEALTH-04 | #167 | Phase 122 | — |
+| PIP-01 | #168 | Phase 118 | — |
+| PIP-02 | #168 | Phase 118 | — |
+| PIP-03 | #168 | Phase 124 | — |
+| CAPSENSE-01 | CAPSENSE-01 | Phase 125 | — |
+| HAP-04 | HAP-04 | Phase 126 | — |
