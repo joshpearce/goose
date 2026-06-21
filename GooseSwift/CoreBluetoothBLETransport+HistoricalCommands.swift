@@ -47,6 +47,7 @@ extension CoreBluetoothBLETransport {
     historicalManager.pendingHistoryEndAckPayload = nil
     historicalManager.gen4HistoricalPageSeq = 0
     historicalManager.gen4HistoricalFrameBuffer = Data() // SYNC-09: clear reassembly buffer at sync start
+    historicalManager.connectedStrapIdentity = nil // SYNC-11: clear strap identity at sync start
     historicalManager.historyEndReceived = false
     historicalManager.historyCompleteReceived = false
     historicalManager.historyStartReceived = false

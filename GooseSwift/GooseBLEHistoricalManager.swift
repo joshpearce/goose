@@ -61,6 +61,13 @@ final class GooseBLEHistoricalManager {
   /// into complete frames rather than discarded.
   var gen4HistoricalFrameBuffer: Data = Data()
 
+  // MARK: - Gen4 strap identity (SYNC-11)
+
+  /// 8-byte hardware identity captured from the cmd 34 (GET_DATA_RANGE) response.
+  /// Compared against the identity echoed in the cmd 23 (HISTORICAL_DATA_RESULT) response.
+  /// Cleared on sync begin, complete, and fail.
+  var connectedStrapIdentity: [UInt8]? = nil
+
   // MARK: - Configuration constants
 
   let requestHistoricalRangeBeforeTransfer = true
