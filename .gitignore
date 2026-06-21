@@ -34,3 +34,4 @@ server/**/*.pyo
 
 # Local protocol research notes — not for version control
 re-assets/
+android-libs/
