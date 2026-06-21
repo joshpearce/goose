@@ -897,7 +897,7 @@ Plans:
 
 **Plans**:
 
-- [ ] 106-01-PLAN.md — Android metrics display + server upload (AND-04)
+1/1 plans complete
 
 ---
 
@@ -1023,7 +1023,7 @@ Plans:
 | 103 | 1/1 | Complete   | 2026-06-21 |
 | 104 | 1/1 | Complete   | 2026-06-21 |
 | 105 | 1/1 | Complete   | 2026-06-21 |
-| 106 | v14.0 | Pending | — |
+| 106 | 1/1 | Complete   | 2026-06-21 |
 | 107 | v14.0 | Pending | — |
 | 108 | v14.0 | Pending | — |
 | 109 | v14.0 | Pending | — |
@@ -1079,6 +1079,8 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 5/6 plans executed
 Plans:
+
+- [x] 106-01-PLAN.md
 
 - [x] 105-01-PLAN.md
 
