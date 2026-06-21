@@ -8,7 +8,32 @@ extension CoreBluetoothBLETransport {
     guard isHistoricalSyncing else {
       return
     }
-    for frame in frames(in: value) {
+    // SYNC-09: Prepend any buffered tail bytes from the previous notification so
+    // that Gen4 type-47 body frames spanning multiple 512-byte BLE notifications
+    // are reassembled into complete frames rather than discarded.
+    let inputBytes: Data
+    if historicalManager.gen4HistoricalFrameBuffer.isEmpty {
+      inputBytes = value
+    } else {
+      inputBytes = historicalManager.gen4HistoricalFrameBuffer + value
+    }
+    historicalManager.gen4HistoricalFrameBuffer = Data()
+    let returnedFrames = frames(in: inputBytes)
+    // Compute how many bytes were consumed by complete frames and store the
+    // unconsumed tail back to the buffer (capped at 8192 bytes to prevent
+    // unbounded growth from malformed frames — threat T-99-01-01/T-99-01-02).
+    let consumedCount = returnedFrames.reduce(0) { acc, frame in
+      guard frame.count >= 4 else { return acc }
+      let declaredLength = Int(frame[1]) | Int(frame[2]) << 8
+      return acc + 4 + declaredLength
+    }
+    let tail = consumedCount < inputBytes.count
+      ? Data(inputBytes[consumedCount...])
+      : Data()
+    historicalManager.gen4HistoricalFrameBuffer = tail.count > 0 && tail.count <= 8192
+      ? tail
+      : Data()
+    for frame in returnedFrames {
       handleHistoricalSyncFrame(frame, characteristic: characteristic)
     }
   }
@@ -724,6 +749,8 @@ extension CoreBluetoothBLETransport {
   }
 
   func completeHistoricalSync(reason: String) {
+    // SYNC-09: clear reassembly buffer so stale bytes never carry into the next session.
+    historicalManager.gen4HistoricalFrameBuffer = Data()
     historicalManager.historicalCommandTimeoutWorkItem?.cancel()
     historicalManager.historicalIdleWorkItem?.cancel()
     historicalManager.historicalRangeRetryWorkItem?.cancel()
@@ -767,6 +794,8 @@ extension CoreBluetoothBLETransport {
   }
 
   func failHistoricalSync(_ message: String) {
+    // SYNC-09: clear reassembly buffer so stale bytes never carry into the next session.
+    historicalManager.gen4HistoricalFrameBuffer = Data()
     historicalManager.historicalCommandTimeoutWorkItem?.cancel()
     historicalManager.historicalIdleWorkItem?.cancel()
     historicalManager.historicalRangeRetryWorkItem?.cancel()

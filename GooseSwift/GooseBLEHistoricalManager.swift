@@ -53,6 +53,14 @@ final class GooseBLEHistoricalManager {
 
   var gen4HistoricalPageSeq: UInt32 = 0
 
+  // MARK: - Gen4 frame reassembly buffer (SYNC-09)
+
+  /// Unconsumed tail bytes from the previous Gen4 historical BLE notification.
+  /// Prepended to the next incoming notification before frame slicing so that
+  /// type-47 body frames that span multiple 512-byte notifications are reassembled
+  /// into complete frames rather than discarded.
+  var gen4HistoricalFrameBuffer: Data = Data()
+
   // MARK: - Configuration constants
 
   let requestHistoricalRangeBeforeTransfer = true
