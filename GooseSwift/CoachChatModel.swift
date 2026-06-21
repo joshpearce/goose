@@ -12,6 +12,7 @@ final class CoachChatModel {
 
   private let registry: CoachProviderRegistry
   private var sendTask: Task<Void, Never>?
+  private var signInTask: Task<Void, Never>?
 
   // Passthrough auth state — delegates to the ChatGPT provider when it is active
   var isSignedIn: Bool { registry.activeProvider?.isAuthenticated ?? false }
@@ -66,7 +67,8 @@ final class CoachChatModel {
   func startOAuthSignIn() {
     errorMessage = nil
     guard let chatGPT = registry.activeProvider as? ChatGPTCoachProvider else { return }
-    Task { [chatGPT, weak self] in
+    signInTask?.cancel()
+    signInTask = Task { [chatGPT, weak self] in
       do {
         try await chatGPT.startOAuthSignIn()
         self?.seedAssistantPromptIfNeeded()

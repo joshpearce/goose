@@ -291,6 +291,7 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
     handleSensorStreamValue(value, characteristic: characteristic)
     handleClockValue(value, characteristic: characteristic)
     handleBatteryValue(value, characteristic: characteristic)
+    handleBodyLocationValue(value, characteristic: characteristic)
 
     bleUIStateAggregator.publishLastSyncAt(event.capturedAt)
     record(
@@ -412,4 +413,5 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
       record(source: "ble", title: "notify.state", body: "\(characteristic.uuid.uuidString) \(state)")
     }
   }
+
 }

@@ -1004,6 +1004,8 @@ extension CoreBluetoothBLETransport {
         // advertised name containing " mg" (e.g. "WHOOP MG 1A2B"); gen5 otherwise.
         // candidate_MG_advertisement_byte_unverified — identifies MG by peripheral name per D-03;
         // falls back to WHOOP5 if peripheral name is absent or does not contain " mg".
+        // hardware_gate: MG historical sync follows Gen5 protocol path; full verification requires
+        // hardware testing on a physical WHOOP MG device.
         let deviceKindString: String
         if detectedGeneration == .gen4 {
           deviceKindString = "WHOOP4"
@@ -1024,6 +1026,8 @@ extension CoreBluetoothBLETransport {
             DispatchQueue.main.async {
               self.connectedCapabilities = caps
               self.onCapabilitiesUpdated?()
+              // battery: auto-sent on Gen4 connect (cmd-26 provides initial value before first event-48)
+              // event-48 fires only every ~8 min; without this initial query the battery UI stays blank.
               if caps.batteryViaCMD26, caps.wireProtocol == .gen4 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                   self?.sendCmd26BatteryRequest()
@@ -1113,6 +1117,7 @@ extension CoreBluetoothBLETransport {
         bondingManager.transition(to: .completed(deviceID: peripheralID))
       }
       sendClientHelloIfNeeded(reason: cached ? "cached_gatt" : "gatt_discovery")
+      sendGetBodyLocationAndStatus()  // BLE-02: query body location on connect
       scheduleDebugSkinTemperatureCommandIfNeeded(reason: cached ? "cached_ready" : "ready")
       scheduleAutomaticHistoricalSyncIfNeeded()
       scheduleAutomaticPhysiologyCaptureIfNeeded()
@@ -1167,6 +1172,38 @@ extension CoreBluetoothBLETransport {
     readySyncWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: workItem)
     record(source: "ble.sync", title: "historical_sync.scheduled", body: reason)
+  }
+
+  // BLE-02: Query the WHOOP strap for its current body location and on-wrist status.
+  // Sent as a fire-and-forget command immediately after sendClientHelloIfNeeded on connect.
+  // Response is parsed by handleBodyLocationValue(_:characteristic:) in HistoricalHandlers.
+  func sendGetBodyLocationAndStatus() {
+    guard let activePeripheral, let commandCharacteristic else {
+      record(level: .debug, source: "ble.location", title: "cmd54.skipped", body: "no active peripheral or command characteristic")
+      return
+    }
+    guard let writeType = writeType(for: commandCharacteristic) else {
+      record(level: .debug, source: "ble.location", title: "cmd54.skipped", body: "command characteristic is not writable")
+      return
+    }
+    let sequence = consumeNextCmd54LocationSequence()
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
+      sequence: sequence,
+      command: 84,
+      data: []
+    )
+    activePeripheral.writeValue(frame, for: commandCharacteristic, type: writeType)
+    record(
+      source: "ble.location",
+      title: "cmd54.sent",
+      body: "seq=\(sequence) frame=\(frame.hexString)"
+    )
+  }
+
+  func consumeNextCmd54LocationSequence() -> UInt8 {
+    let sequence = nextCmd54LocationCommandSequence
+    nextCmd54LocationCommandSequence = nextCmd54LocationCommandSequence == UInt8.max ? 0 : nextCmd54LocationCommandSequence + 1
+    return sequence
   }
 
 }

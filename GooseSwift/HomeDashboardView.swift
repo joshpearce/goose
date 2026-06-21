@@ -314,6 +314,15 @@ private struct HomeDeviceStatusCard: View {
         Text(ble.connectionState.localizedConnectionState)
           .font(.caption.weight(.medium))
           .foregroundStyle(stateColor)
+        if isConnected, let onWrist = ble.isOnWrist {
+          HStack(spacing: 4) {
+            Image(systemName: onWrist ? "applewatch" : "applewatch.slash")
+              .font(.caption2)
+            Text(onWrist ? "On wrist" : "Off wrist")
+              .font(.caption.weight(.medium))
+          }
+          .foregroundStyle(onWrist ? Color.green : Color.orange)
+        }
       }
 
       if ble.isHistoricalSyncing {

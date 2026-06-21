@@ -197,6 +197,7 @@ extension GooseAppModel {
           // so repeated imports produce the same IDs (idempotent).
           let bridgeFrames: [[String: Any]] = rawFrames.compactMap { f in
             guard let capturedAtUnix = f["captured_at_unix"] as? Double,
+                  capturedAtUnix.isFinite, capturedAtUnix > 0,
                   let frameHex = f["frame_hex"] as? String else { return nil }
             let source = f["source"] as? String ?? "ios.corebluetooth.notification"
             let deviceModel = f["device_model"] as? String ?? "WHOOP 5.0 Goose"
@@ -237,7 +238,8 @@ extension GooseAppModel {
               )
               totalFrames += bridgeFrames.count
             } catch {
-              ble.record(level: .error, source: "bridge", title: "capture.import_frame_batch", body: "\(error)")
+              let msg = "\(error)"
+              Task { @MainActor [weak self] in self?.ble.record(level: .error, source: "bridge", title: "capture.import_frame_batch", body: msg) }
               continue
             }
           }
@@ -264,7 +266,8 @@ extension GooseAppModel {
             ]
           )
         } catch {
-          ble.record(level: .error, source: "bridge", title: "sync.backfill_streams", body: "\(error)")
+          let msg = "\(error)"
+          Task { @MainActor [weak self] in self?.ble.record(level: .error, source: "bridge", title: "sync.backfill_streams", body: msg) }
         }
       }
 

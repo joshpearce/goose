@@ -2,41 +2,41 @@
 gsd_state_version: 1.0
 milestone: v14.0
 milestone_name: Android Port, BLE Reliability & Protocol Depth
-current_phase: 0
-status: Awaiting first phase
-stopped_at: Milestone v14.0 initialized — ready for Phase 98
-last_updated: "2026-06-21T12:01:08.319Z"
-last_activity: 2026-06-20
-last_activity_desc: Milestone v14.0 planned and initialized
+current_phase: 111
+status: shipped
+last_updated: "2026-06-21"
+last_activity: 2026-06-21
+last_activity_desc: v14.0 milestone archived
 progress:
   total_phases: 14
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 3
-  percent: 7
+  completed_phases: 14
+  total_plans: 22
+  completed_plans: 22
+  percent: 100
+current_phase_name: protocol-offset-ffi-safety-comments
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-20)
+See: .planning/PROJECT.md (updated 2026-06-21)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v14.0 — Phase 98 discussed; ready for planning
+**Current focus:** v14.0 shipped — start v15.0 with `/gsd-new-milestone`
 
 ## Current Position
 
-Phase: v14.0 initialized
-Plan: —
-Status: Awaiting first phase
-Last activity: 2026-06-20 — Milestone v14.0 planned and initialized
+Phase: 111 (v14.0 complete)
+Plan: All complete
+Status: Milestone archived 2026-06-21
+Last activity: 2026-06-21 — v14.0 archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 16 (v13.0 complete)
+- Total plans completed: 19 (v13.0 complete)
 - Average duration: —
 - Total execution time: —
 
@@ -96,6 +96,21 @@ Items deferred from previous milestones:
 | deferred_v15 | #166 body composition history table | pending_v15 | v14.0 scope |
 | deferred_v15 | #167 UI stealth mode metric hiding | pending_v15 | v14.0 scope |
 | deferred_v15 | #168 PIP upload separate data pipeline | pending_v15 | v14.0 scope |
+| Phase 100 P01 | 15 min | 2 tasks | 2 files |
+| Phase 101 P02 | 1 min | 1 tasks | 1 files |
+| Phase 101 P03 | 5 min | 1 tasks | 1 files |
+| Phase 101 P01 | 30 min | 2 tasks | 6 files |
+| Phase 102 P01 | 92 min | 5 tasks | 2 files |
+| Phase 103 P01 | 90 min | 7 tasks | 27 files |
+| Phase 104 P01 | 90 min | 7 tasks | 11 files |
+| Phase 105 P01 | 25 min | 6 tasks | 1 files |
+| Phase 106 P01 | 45 min | 10 tasks | 13 files |
+| Phase 107 P01 | 8 min | 4 tasks | 1 files |
+| Phase 109 P01 | 8 min | 4 tasks | 2 files |
+| Phase 108 P01 | 25 min | 5 tasks | 4 files |
+| Phase 110 P01 | 5 min | 2 tasks | 1 files |
+| Phase 110 P02 | 20 min | 1 tasks | 1 files |
+| Phase 110 P03 | 3 min | 2 tasks | 0 files |
 
 ## Quick Tasks Completed
 
@@ -106,12 +121,11 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-21T12:01:08.288Z
-Stopped at: Milestone v14.0 initialized
+Last session: 2026-06-21T22:03:02.666Z
+Stopped at: context exhaustion at 82% (2026-06-21)
 Resume file: .planning/phases/98-gen5-historical-sync-routing-hps-ring-buffer/98-CONTEXT.md
 Next action: /gsd-plan-phase 98
 
 ## Operator Next Steps
 
-- Run /gsd-discuss-phase 98 to start Phase 98 (Gen5 Historical Sync Routing Fix + HPS Ring Buffer)
-- Or run /gsd-plan-phase 98 to skip discussion and plan directly
+- Run `/gsd-new-milestone` to start v15.0 (requirements → roadmap → phases)

@@ -14,6 +14,7 @@ v10.0 shipped (2026-06-13): Protocol parity + haptics + feature completeness —
 v11.0 shipped (2026-06-14): PR integration + code health + app polish — 7 fork PRs integrated (units, localisation, UUID hiding, ChatGPT auth, firmware recovery, warm-up progress, sync donut), 4 upstream PRs merged (main-thread offload, async FFI, scroll jitter fix), full codebase audit (7 documents + CRITICAL findings resolved), schema v21 indexes, lazy init, BLE auth retry (SEED-001), Debug 3-tab split, Logs & Export, Breathe haptics, live strain tile, resting HR floor (30 bpm), R22 battery display, HealthKit SQLite persistence.
 v12.0 shipped (2026-06-19): Code Health & Protocol Foundation — DeviceKind/DeviceCapabilities/WireProtocol enum replacing 17 string comparisons, Gen4 battery via Event-48 + cmd 26, Rust crash safety (catch_unwind + unwrap→Result + deny lint), bridge.rs BridgeRouter per-domain handlers, store.rs domain stores (SleepStore/CaptureStore/MetricsStore), HealthDataStore ownership to GooseAppModel, BLETransport actor + DeviceCatalog, domain @Observable ViewModels, threading + protocol offset + algorithm coefficient comments. Phases 83–91.
 v13.0 shipped (2026-06-20): Bug fixes, protocol reliability, device coverage & HealthKit export — auth exhaustion recovery (12-retry + Reconnect/Cancel alert), export OOM fix (writeManifestToDisk helpers), V24History packet parsing, 9 silent `try?` → `do/catch` error logging, WHOOP MG DeviceKind + name-based advertisement detection, HealthKit export (HR/HRV/SpO2/sleep) with opt-in toggle. Phases 92–97.
+v14.0 shipped (2026-06-21): Android port (Kotlin/Compose + JNI bridge + BLE stack + historical sync + metrics + server upload + CI APK), Gen5/Gen4 historical sync bugs fixed (SYNC-08/09/10/11), BLE reliability (MTU 247 + LE 2M PHY + off-wrist detection), battery level all generations (event-48 + cmd-26 + R22), WHOOP MG sync hardened, 0 production `.unwrap()` in Rust, SQLite connection pool (r2d2), protocol byte-offset WHY comments + FFI/JNI SAFETY blocks. Phases 98–111.
 
 ## Core Value
 
@@ -180,48 +181,33 @@ Known deferred: Ph74/75 BLE device-gate tests; CAPSENSE-01, HAP-04, BLE5-01/02 h
 - ✓ **HK-04**: Sleep samples written to HealthKit (`HKCategoryTypeIdentifierSleepAnalysis`) — v13.0 (Phase 97)
 - ✓ **HK-05**: HealthKit write toggle in More settings (opt-in, default off) — v13.0 (Phase 97)
 
-### Active (v14.0 — Android Port, BLE Reliability & Protocol Depth)
+### Validated (v14.0 — Android Port, BLE Reliability & Protocol Depth)
 
-**Historical Sync & BLE Reliability**
-- [ ] **SYNC-08**: Gen5 historical routing fix — `historicalData` + `historicalIMUDataStream` dispatched to main handler when `isHistoricalSyncing == true`; 0 dropped body packets during active sync (#24)
-- [ ] **SYNC-09**: Gen4 historical packet47 reassembly fix — no body dropped on service UUID `61080005` (#20)
-- [ ] **SYNC-10**: HPS ring buffer fields (`ring_capacity`, `current_page`, `read_pointer`) parsed from `GET_DATA_RANGE` response; wrap-around detection implemented (#160)
-- [ ] **SYNC-11**: `HISTORICAL_DATA_RESULT` ACK — device identity (8-byte payload) validated against connected device before accepting sync (#163)
-- [ ] **SYNC-12**: HPS sync quality telemetry — throughput (bytes/s), burst duration, gap count logged per sync session (#162)
-- [ ] **BLE-01**: MTU 247 requested + LE 2M PHY explicitly set on connect; effective MTU logged; throughput benefit measurable in sync speed (#159)
-- [ ] **BLE-02**: Off-wrist detection via `GET_BODY_LOCATION_AND_STATUS` (cmd `0x54`); UI reflects on-wrist / off-wrist state (#161)
-
-**Bug Fixes**
-- [ ] **BUG-COACH-01**: Coach screen crash after setup — root cause identified and fixed; no crash on CoachView first load (#170)
-- [ ] **GEN4-07**: Gen4 undecoded metrics — `respiratory_rate`, `skin_temp_delta_c`, HRV RR intervals decoded from Gen4 historical packet bytes; `MetricFeatures` populated (not always `None`) (#21)
-
-**Protocol Cleanup (carried from v13.0)**
-- [ ] **PROTO-08**: `PACKET_TYPE_*` constants → Rust enum with exhaustion check (`#[non_exhaustive]` or match guard) (#157)
-- [ ] **PROTO-09**: Silent `_ => (None, vec![])` in `parse_data_packet_body_summary` → explicit arms with warning strings for unhandled `packet_k` values (#157)
-- [ ] **PROTO-10**: `data_packet_domain()` and `parse_data_packet_body_summary()` in sync — every domain-annotated packet type gets a parse arm (#157)
-- [ ] **PROTO-11**: Bridge routing → `CommandDefinition` registry; enum arms self-document expected decode path (#157)
-
-**Android Port**
-- [ ] **AND-01**: `android/` Kotlin/Compose project skeleton — 4-tab structure (Home/Health/Coach/More); `GooseBridge.kt` JNI wrapper with `System.loadLibrary("goose_core")` and `external fun handle(request: String): String` (#169)
-- [ ] **AND-02**: Android BLE stack — `BluetoothGatt` connects to Gen4/Gen5/MG service UUIDs; packet framing + characteristic notification subscribe mirrors iOS `CoreBluetoothBLETransport` logic (#169)
-- [ ] **AND-03**: Android historical sync — port `GooseBLEHistoricalManager` logic; `SYNC-08` routing fix applied; packet type 47 routed correctly on Android (#169)
-- [ ] **AND-04**: Android metrics display + server upload — `GooseBridge.handle()` queries metrics; POST to configured server URL; parity with iOS v13.0 data surface (#169)
-- [ ] **AND-05**: Android CI — `android-core.yml` APK build step uncommented; unsigned APK attached to GitHub releases on every `v*` tag (#169)
-
-**Battery Level**
-- [ ] **BAT-01**: Battery level displayed in iOS app for Gen4+Gen5 — event-48 (`~`every 8 min) + cmd-26 response + Gen5 R22 realtime all parsed; UI shows % (SEED-002)
-
-**WHOOP MG Completion**
-- [ ] **MG-03**: WHOOP MG historical sync fix — `#22` root cause (advertisement detection or sync routing) identified and fixed; detection hardened beyond name-only heuristic (SEED-006)
-
-**Code Health**
-- [ ] **ARCH-11**: Remaining 38 `.unwrap()` in production Rust replaced with `?` or `expect("invariant: …")`; 0 naked unwraps in non-test code (SEED-004 tail)
-- [ ] **BP-03**: Rust SQLite connection pool — per-request `Connection::open()` eliminated in bridge handlers; `r2d2` or `deadpool` pool shared across calls (SEED-007 Gap 2)
-- [ ] **AUDIT-01**: Bot audit findings (#59) verified against live codebase — `let_chains` syntax check, `partial_plan_state` and `EnergyCaptureValidationReport` completeness verified; genuine issues fixed
-
-**Protocol Offset Comments**
-- [ ] **COMM-04**: WHY comments at all empirical WHOOP byte offsets in Rust source — event-48 battery layout, cmd-26 response, Gen4 `61080005` characteristic framing, MG advertisement candidate byte (SEED-005)
-- [ ] **COMM-05**: FFI safety contract comments at `goose_bridge_handle_json` (C FFI) and `Java_com_goose_core_GooseBridge_handle` (JNI) entry points (SEED-005)
+- ✓ **SYNC-08**: Gen5 historical routing fix — dispatched to main handler when `isHistoricalSyncing == true` — v14.0 (Phase 98)
+- ✓ **SYNC-09**: Gen4 packet47 reassembly — prepend-buffer; 0 dropped on `61080005` — v14.0 (Phase 99)
+- ✓ **SYNC-10**: HPS ring buffer fields parsed from `GET_DATA_RANGE`; wrap-around detected — v14.0 (Phase 98)
+- ✓ **SYNC-11**: `HISTORICAL_DATA_RESULT` ACK identity validation (8-byte payload) — v14.0 (Phase 99)
+- ✓ **SYNC-12**: HPS sync telemetry — throughput, burst duration, gap count logged per session — v14.0 (Phase 101)
+- ✓ **BLE-01**: MTU 247 + LE 2M PHY negotiated on connect; effective MTU logged — v14.0 (Phase 100)
+- ✓ **BLE-02**: Off-wrist detection via cmd `0x54`; `isOnWrist: Bool?` on transport + UI chip — v14.0 (Phase 100)
+- ✓ **BUG-COACH-01**: Coach freeze fixed — signInTask cancellation in CoachChatModel — v14.0 (Phase 101)
+- ✓ **GEN4-07**: Gen4 undecoded metrics — `respiratory_rate`, `skin_temp_delta_c` decoded — v14.0 (Phase 102)
+- ✓ **PROTO-08**: `PACKET_TYPE_*` → Rust enum (completed Phase 93); exhaustive match confirmed — v14.0 (Phase 101)
+- ✓ **PROTO-09**: Silent wildcard → explicit warning arms in `parse_data_packet_body_summary` — v14.0 (Phase 101)
+- ✓ **PROTO-10**: `data_packet_domain()` + `parse_data_packet_body_summary()` in sync (packet_k=24 fixed) — v14.0 (Phase 101)
+- ✓ **PROTO-11**: `CommandDefinition` registry in bridge — v14.0 (Phase 101)
+- ✓ **AND-01**: Android Kotlin/Compose 4-tab skeleton + GooseBridge.kt JNI wrapper — v14.0 (Phase 103)
+- ✓ **AND-02**: Android BLE stack — WhoopBleClient + FrameReassembler + Gen4 prepend-buffer — v14.0 (Phase 104)
+- ✓ **AND-03**: Android historical sync — SYNC-08 routing fix applied; packet type 47 routed — v14.0 (Phase 105)
+- ✓ **AND-04**: Android metrics + server upload — feature parity with iOS v13.0 — v14.0 (Phase 106)
+- ✓ **AND-05**: Android CI APK — `android-core.yml` dir casing fixed; unsigned APK on GitHub Release — v14.0 (Phase 107)
+- ✓ **BAT-01**: Battery level all generations — event-48 + cmd-26 + Gen5 R22 realtime; UI in HomeDeviceStatusCard — v14.0 (Phase 108)
+- ✓ **MG-03**: WHOOP MG sync hardened; `DeviceCatalog.generationLabel` returns `"mg"` — v14.0 (Phase 109)
+- ✓ **ARCH-11**: 0 production `.unwrap()` in Rust — v14.0 (Phase 110)
+- ✓ **BP-03**: SQLite connection pool (r2d2) replacing per-request `Connection::open()` — v14.0 (Phase 110)
+- ✓ **AUDIT-01**: Bot audit #59 resolved — v14.0 (Phase 110)
+- ✓ **COMM-04**: WHY comments at all empirical byte offsets (V24, event-48, cmd-26, MG) — v14.0 (Phase 111)
+- ✓ **COMM-05**: FFI SAFETY blocks at C FFI + JNI entry points — v14.0 (Phase 111)
 
 ### Deferred (hardware gate — sem device físico)
 
@@ -268,23 +254,18 @@ Known deferred: Ph74/75 BLE device-gate tests; CAPSENSE-01, HAP-04, BLE5-01/02 h
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current Milestone: v14.0 — Android Port, BLE Reliability & Protocol Depth
+## Current State
 
-**Goal:** Lançar Android (Kotlin/Compose + JNI, feature parity com iOS v13.0), fechar todos os bugs de historical sync em Gen4/Gen5, implementar BLE reliability (MTU, PHY, off-wrist), battery level, completar WHOOP MG, e limpar a protocol layer.
+**Shipped:** v14.0 (2026-06-21) — Phases 1–111 complete
+**Platform:** iOS (SwiftUI + Rust core) + Android (Kotlin/Compose + JNI, v14.0)
+**Codebase:** 1 533 tracked files; 212 Swift, 136 Rust; 1 672+ commits over 21 active days
 
-**Target features:**
-- Historical sync: Gen5 routing fix (#24), Gen4 reassembly (#20), HPS ring buffer (#160), identity validation (#163), telemetry (#162)
-- BLE reliability: MTU 247 + LE 2M PHY (#159), off-wrist detection (#161)
-- Bug fixes: Coach crash (#170), Gen4 undecoded metrics (#21)
-- Protocol cleanup: PROTO-08/09/10/11 (#157, carried from v13.0)
-- Android port: android/ scaffold + JNI + BLE + sync + metrics + CI (#169)
-- Battery level: event-48 + cmd-26 + R22 realtime (SEED-002)
-- WHOOP MG: sync fix + detection hardened (#22, SEED-006)
-- Code health: 38 unwraps → 0, connection pool, bot audit fixes (SEED-004 tail, SEED-007, #59)
-- Comments: protocol offsets + FFI safety contracts (SEED-005)
+Biometric data captured from WHOOP Gen4, Gen5, and MG via BLE; persisted to self-hosted FastAPI+TimescaleDB server; metrics (HRV, Recovery, Strain, Sleep, Battery) computed in Rust core; displayed in SwiftUI + Kotlin Compose UIs. HealthKit export opt-in. Android feature parity with iOS v13.0.
+
+**Next milestone:** v15.0 — define with `/gsd-new-milestone`
 
 ---
-*Last updated: 2026-06-20 after v13.0 milestone*
+*Last updated: 2026-06-21 after v14.0 milestone*
 
 ## Evolution
 

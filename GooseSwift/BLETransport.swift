@@ -2,7 +2,7 @@ import Foundation
 
 // BLETransport — the interface GooseAppModel and views depend on.
 // CoreBluetoothBLETransport is the sole concrete implementation.
-protocol BLETransport: AnyObject {
+protocol BLETransport: AnyObject, Sendable {
 
   // MARK: - State properties
 
@@ -32,6 +32,7 @@ protocol BLETransport: AnyObject {
   var batteryUpdatedAt: Date? { get }
   var batteryIsCharging: Bool? { get }
   var batteryPowerStatus: String { get }
+  var isOnWrist: Bool? { get }
   var firmwareVersion: String? { get }
   var modelNumber: String? { get }
   var hardwareRevision: String? { get }

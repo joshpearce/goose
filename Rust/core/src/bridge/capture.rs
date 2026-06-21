@@ -126,6 +126,10 @@ pub(crate) fn dispatch_capture(request: &BridgeRequest) -> BridgeResponse {
             .and_then(sync_backfill_streams_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sync.record_hps_telemetry" => request_args::<SyncRecordHpsTelemetryArgs>(request)
+            .and_then(sync_record_hps_telemetry_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         _ => unreachable!(
             "dispatch_capture called with non-capture method: {}",
             request.method
@@ -325,6 +329,19 @@ struct SyncBackfillStreamsArgs {
     device_id: String,
     start_ts: f64,
     end_ts: f64,
+}
+
+/// SYNC-12: Record HPS burst-level sync quality telemetry in sync_telemetry table.
+#[derive(Debug, Clone, Deserialize)]
+struct SyncRecordHpsTelemetryArgs {
+    database_path: String,
+    session_id: String,
+    burst_index: i64,
+    bytes_received: i64,
+    duration_ms: i64,
+    missing_packets: i64,
+    sequence_gaps: i64,
+    result: String,
 }
 
 fn parse_frame_hex_bridge(args: ParseFrameArgs) -> GooseResult<serde_json::Value> {
@@ -1532,4 +1549,21 @@ fn sync_backfill_streams_bridge(args: SyncBackfillStreamsArgs) -> GooseResult<se
         "events_inserted": report.events_inserted,
         "battery_inserted": report.battery_inserted,
     }))
+}
+
+/// SYNC-12: Persist one HPS burst-level telemetry row to sync_telemetry.
+fn sync_record_hps_telemetry_bridge(
+    args: SyncRecordHpsTelemetryArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    store.insert_sync_telemetry(
+        &args.session_id,
+        args.burst_index,
+        args.bytes_received,
+        args.duration_ms,
+        args.missing_packets,
+        args.sequence_gaps,
+        &args.result,
+    )?;
+    Ok(json!({"ok": true}))
 }

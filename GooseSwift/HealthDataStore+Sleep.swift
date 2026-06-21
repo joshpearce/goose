@@ -229,7 +229,7 @@ extension HealthDataStore {
     let startDate = df.string(from: Date().addingTimeInterval(-90 * 24 * 60 * 60))
     let source = "apple.health"
 
-    func queryLatest(_ metric: String) async -> Double? {
+    @Sendable func queryLatest(_ metric: String) async -> Double? {
       let rows: [String: Any]
       do {
         rows = try await bridge.requestAsync(
@@ -246,7 +246,7 @@ extension HealthDataStore {
       return value
     }
 
-    func queryHistory(_ metric: String) async -> [(value: Double, date: Date)] {
+    @Sendable func queryHistory(_ metric: String) async -> [(value: Double, date: Date)] {
       let rows: [String: Any]
       do {
         rows = try await bridge.requestAsync(

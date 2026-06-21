@@ -265,8 +265,8 @@ enum GooseHealthKitExporter {
     var samples: [HKObject] = []
     for row in rows {
       guard
-        let startMs = row["start_time_unix_ms"] as? Int64 ?? (row["start_time_unix_ms"] as? Double).map { Int64($0) },
-        let endMs = row["end_time_unix_ms"] as? Int64 ?? (row["end_time_unix_ms"] as? Double).map { Int64($0) },
+        let startMs = row["start_time_unix_ms"] as? Int64 ?? (row["start_time_unix_ms"] as? Double).map({ Int64($0) }),
+        let endMs = row["end_time_unix_ms"] as? Int64 ?? (row["end_time_unix_ms"] as? Double).map({ Int64($0) }),
         endMs > startMs
       else { continue }
       let sampleStart = Date(timeIntervalSince1970: Double(startMs) / 1000.0)

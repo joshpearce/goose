@@ -4223,25 +4223,27 @@ fn vital_event_plan_from_payload(parsed_payload: &Option<ParsedPayload>) -> Opti
 fn skin_temperature_plan_from_payload(
     parsed_payload: &Option<ParsedPayload>,
 ) -> Option<SkinTemperaturePlan> {
-    // Accept NormalHistory or V18History — skin temp is extracted from raw payload bytes,
-    // not from body_summary struct fields.
+    // Accept NormalHistory, V18History, or V24History — skin temp is extracted from raw
+    // payload bytes (raw_absolute_offset), not from body_summary struct fields.
+    // V24History (packet_k=24) is the Gen4 format; NormalHistory (packet_k=24) is Gen5.
+    // Both have packet_k=24 but at different byte offsets, so the match dispatches on
+    // the (packet_k, body_summary_variant) pair to avoid offset collisions.
     let Some(ParsedPayload::DataPacket {
         packet_k: Some(packet_k),
         timestamp_seconds,
         timestamp_subseconds,
-        body_summary:
-            Some(
-                DataPacketBodySummary::NormalHistory { .. }
-                | DataPacketBodySummary::V18History { .. },
-            ),
+        body_summary: Some(body_summary),
         ..
     }) = parsed_payload
     else {
         return None;
     };
 
-    match *packet_k {
-        18 => Some(SkinTemperaturePlan {
+    match (*packet_k, body_summary) {
+        (
+            18,
+            DataPacketBodySummary::NormalHistory { .. } | DataPacketBodySummary::V18History { .. },
+        ) => Some(SkinTemperaturePlan {
             packet_k: *packet_k,
             timestamp_seconds: *timestamp_seconds,
             timestamp_subseconds: *timestamp_subseconds,
@@ -4251,7 +4253,7 @@ fn skin_temperature_plan_from_payload(
             encoding: "i16_le_x100",
             scale: 100.0,
         }),
-        24 => Some(SkinTemperaturePlan {
+        (24, DataPacketBodySummary::NormalHistory { .. }) => Some(SkinTemperaturePlan {
             packet_k: *packet_k,
             timestamp_seconds: *timestamp_seconds,
             timestamp_subseconds: *timestamp_subseconds,
@@ -4261,6 +4263,24 @@ fn skin_temperature_plan_from_payload(
             encoding: "u16_le_x1000",
             scale: 1000.0,
         }),
+        // GEN4-07: Gen4 V24History body layout has skin_temp_raw (u16 LE) at body offset 65.
+        // Absolute payload offset: 3-byte data-packet header + 65 = 68.
+        // NTC linearisation formula: delta_c = (raw_u16 − 930) / 30.0
+        //   anchor: raw=930 → delta=0.0 (33°C absolute wrist temperature reference)
+        //   slope:  30 ADC units per °C
+        // Verified via BLE capture analysis (hardware captures 2026-06-14).
+        (24, DataPacketBodySummary::V24History { .. }) => {
+            Some(SkinTemperaturePlan {
+                packet_k: *packet_k,
+                timestamp_seconds: *timestamp_seconds,
+                timestamp_subseconds: *timestamp_subseconds,
+                schema_field: "v24_history_k24_body_65_skin_temp_delta_c",
+                raw_body_offset: 65,
+                raw_absolute_offset: 68, // 3-byte data-packet header + body offset 65
+                encoding: "u16_le_ntc_delta_c",
+                scale: 30.0,
+            })
+        }
         _ => None,
     }
 }
@@ -4652,6 +4672,10 @@ fn skin_temperature_feature_from_plan(
     let skin_temperature_c = match plan.encoding {
         "i16_le_x100" => raw_i16_le.map(|value| f64::from(value) / plan.scale),
         "u16_le_x1000" => raw_u16_le.map(|value| f64::from(value) / plan.scale),
+        // GEN4-07: NTC linearisation delta from 33°C baseline.
+        // delta_c = (raw_u16 − 930) / 30.0; anchor raw=930 → delta=0.0 (33°C absolute).
+        // Plausibility gate: delta in −8.0..=7.0 corresponds to absolute 25–40°C wrist range.
+        "u16_le_ntc_delta_c" => raw_u16_le.map(|value| (f64::from(value) - 930.0) / plan.scale),
         _ => None,
     };
 
@@ -4662,11 +4686,22 @@ fn skin_temperature_feature_from_plan(
     for warning in parse_warnings(row)? {
         quality_flags.insert(warning);
     }
-    let semantic_status = match skin_temperature_c {
-        Some(value) if (20.0..=45.0).contains(&value) => "plausible_unverified_units",
-        Some(value) if value == 0.0 => "zero_candidate_unresolved",
-        Some(_) => "outside_plausible_skin_temperature_range",
-        None => "unresolved_raw_encoding",
+    // Plausibility gate: delta encodings use a narrower range centred on 0.0 (33°C absolute).
+    // Absolute encodings use the broad 20–45°C range. Apply per encoding to avoid false flags.
+    let semantic_status = if plan.encoding == "u16_le_ntc_delta_c" {
+        match skin_temperature_c {
+            Some(value) if (-8.0..=7.0).contains(&value) => "plausible_unverified_units",
+            Some(value) if value == 0.0 => "plausible_unverified_units", // anchor point
+            Some(_) => "outside_plausible_skin_temperature_range",
+            None => "unresolved_raw_encoding",
+        }
+    } else {
+        match skin_temperature_c {
+            Some(value) if (20.0..=45.0).contains(&value) => "plausible_unverified_units",
+            Some(value) if value == 0.0 => "zero_candidate_unresolved",
+            Some(_) => "outside_plausible_skin_temperature_range",
+            None => "unresolved_raw_encoding",
+        }
     };
     if semantic_status != "plausible_unverified_units" {
         quality_flags.insert(semantic_status.to_string());

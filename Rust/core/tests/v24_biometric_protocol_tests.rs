@@ -615,3 +615,90 @@ fn v24_resp_raw_feature_extraction_from_decoded_row() {
         "raw_u16_le must be 240 (the seeded resp_raw value at payload[76..78])"
     );
 }
+
+// Task 1 (102-01, RED): V24History skin temperature extraction.
+// make_82_byte_payload() seeds skin_temp_raw=930 at data[65..67] (absolute payload offset 68..70).
+// With the NTC formula delta_c = (raw − 930) / 30.0, raw=930 → delta=0.0.
+// This test MUST FAIL before the V24History arm is added to skin_temperature_plan_from_payload
+// (skin_temperature_input_count will be 0 because the guard rejects V24History).
+// After Task 2 it MUST PASS with skin_temperature_input_count==1 and skin_temperature_c==Some(0.0).
+#[test]
+fn test_v24_skin_temperature_feature_extracted() {
+    let payload = make_82_byte_payload();
+    // Confirm skin_temp_raw=930 is present at absolute offset 68..70 (data[65..67]).
+    let raw_u16 = u16::from_le_bytes([payload[68], payload[69]]);
+    assert_eq!(
+        raw_u16, 930,
+        "fixture must have skin_temp_raw=930 at payload[68..70]"
+    );
+
+    let row = make_v24_decoded_frame_row(&payload, None);
+    let correlation = passing_correlation();
+    let report = run_vital_event_feature_report(
+        &[row],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.skin_temperature_input_count, 1,
+        "Expected 1 skin_temperature_input for pk=24 V24History row; got {}",
+        report.skin_temperature_input_count
+    );
+
+    let input = &report.skin_temperature_inputs[0];
+    assert_eq!(
+        input.raw_absolute_offset, 68,
+        "raw_absolute_offset must be 68 (3-byte header + body offset 65)"
+    );
+    assert_eq!(
+        input.schema_field, "v24_history_k24_body_65_skin_temp_delta_c",
+        "schema_field must identify this as the V24 NTC skin temp delta at body offset 65"
+    );
+    // NTC formula: (930 − 930) / 30.0 = 0.0 delta_c
+    let delta = input
+        .skin_temperature_c
+        .expect("skin_temperature_c must be Some");
+    assert!(
+        (delta - 0.0_f64).abs() < 1e-9,
+        "delta_c must be 0.0 for raw=930 (anchor point); got {delta}"
+    );
+}
+
+// Task 3 (102-01): Verify respiratory_rate extraction from V24History is already wired.
+// This test documents that GEN4-06 already wired resp_raw for packet_k=24.
+// It must pass both before and after Task 2 changes (no regression).
+#[test]
+fn test_v24_respiratory_rate_plan_already_wired() {
+    // Use resp_raw=300 to ensure a non-zero value reaches the feature report.
+    let row = make_v24_decoded_frame_row(&make_82_byte_payload(), Some(300));
+    let correlation = passing_correlation();
+    let report = run_vital_event_feature_report(
+        &[row],
+        &correlation,
+        VitalEventFeatureOptions {
+            min_owned_captures_per_summary: 0,
+            require_trusted_evidence: false,
+        },
+    )
+    .expect("run_vital_event_feature_report must not error");
+
+    assert_eq!(
+        report.respiratory_rate_input_count, 1,
+        "respiratory_rate must already be wired for V24History (GEN4-06); got {}",
+        report.respiratory_rate_input_count
+    );
+    let input = &report.respiratory_rate_inputs[0];
+    assert_eq!(
+        input.raw_absolute_offset, 76,
+        "resp_raw raw_absolute_offset must be 76 (header + body offset 73)"
+    );
+    assert_eq!(
+        input.schema_field,
+        "v24_history_k24_body_73_resp_raw_candidate"
+    );
+}

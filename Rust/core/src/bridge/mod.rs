@@ -7,6 +7,8 @@ use std::{
     time::Instant,
 };
 
+use r2d2_sqlite::SqliteConnectionManager;
+
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -191,6 +193,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "store.insert_gravity_rows",
     "sync.backfill_streams",
     "sync.mark_synced",
+    "sync.record_hps_telemetry",
     "sync.rows_pending_upload",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",
@@ -257,7 +260,9 @@ pub struct BridgeError {
 ///
 /// Guard (D-05): raw > 1100 is rejected (battery_pct_raw = raw / 10 would exceed 110%).
 fn parse_event48_battery(payload: &[u8]) -> GooseResult<u16> {
-    // Use absolute payload offset 17 (== data body offset 5; verified by unit tests).
+    // offset 17: u16 LE, battery_raw (÷10 = battery_pct, 0–100); max guard 1100
+    //   event-48 data body starts at payload[12]; absolute offset 17 = data body byte 5
+    //   empirically confirmed via hardware captures
     let raw = crate::protocol::read_u16_le(payload, 17)
         .ok_or_else(|| GooseError::message("event48 payload too short for battery offset 17"))?;
     if raw > 1100 {
@@ -278,6 +283,9 @@ fn parse_event48_battery(payload: &[u8]) -> GooseResult<u16> {
 ///   absolute payload offset 17 == data body offset 5 (because data body starts at offset 12).
 #[allow(dead_code)]
 pub(crate) fn parse_event48_battery_from_data(data: &[u8]) -> Option<u16> {
+    // offset 5 (data body): u16 LE, battery_raw (÷10 = battery_pct, 0–100)
+    //   data body passed as payload[12..]; same physical byte as absolute payload offset 17
+    //   empirically confirmed via hardware captures
     let raw = crate::protocol::read_u16_le(data, 5)?;
     if raw > 1100 {
         return None;
@@ -322,7 +330,8 @@ fn parse_event48_battery_bridge(args: ParseEvent48BatteryArgs) -> GooseResult<se
     let payload = hex::decode(&args.payload_hex)
         .map_err(|e| GooseError::message(format!("invalid hex: {e}")))?;
     let pct = parse_event48_battery(&payload)?;
-    Ok(json!({ "battery_pct": pct }))
+    // Key matches what NotificationFrameParsing.swift reads at raw["event48_battery_pct"]
+    Ok(json!({ "event48_battery_pct": pct }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -619,7 +628,10 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
         ));
     }
 
-    // The caller owns the input C string and must provide a valid null-terminated UTF-8 buffer.
+    // SAFETY: request_json is non-null (checked above) and points to a valid
+    //   null-terminated C string owned by the caller for the duration of this call.
+    //   No mutable alias exists — caller contract in the # Safety doc comment above.
+    //   Called from Swift via GooseSwift-Bridging-Header.h (iOS) and from the JNI shim (Android).
     let request = match unsafe { CStr::from_ptr(request_json) }.to_str() {
         Ok(request) => request,
         Err(error) => {
@@ -700,6 +712,68 @@ pub(crate) fn open_bridge_store_hot(database_path: &str) -> GooseResult<GooseSto
     validate_no_traversal("database_path", database_path)?;
     let path = Path::new(database_path);
     GooseStore::open_existing_current(path).or_else(|_| GooseStore::open(path))
+}
+
+/// Type aliases for the r2d2 SQLite connection pool used by bridge handlers.
+#[allow(dead_code)]
+type BridgePool = r2d2::Pool<SqliteConnectionManager>;
+/// A checked-out pooled connection. Derefs to `rusqlite::Connection`.
+pub(crate) type BridgePoolConn = r2d2::PooledConnection<SqliteConnectionManager>;
+
+/// Process-lifetime r2d2 connection pool for bridge handlers.
+/// Initialised on first call to `checkout_bridge_conn`; subsequent calls
+/// return a connection from the pool without re-opening the database.
+/// Uses Mutex<Option<BridgePool>> because OnceLock::get_or_try_init is
+/// not yet stable on Rust 1.96.
+#[allow(dead_code)]
+static BRIDGE_CONN_POOL: OnceLock<Mutex<Option<BridgePool>>> = OnceLock::new();
+
+/// Initialise the r2d2 pool for `database_path`.
+/// Runs schema migration once via `GooseStore::open`, then builds the pool.
+#[allow(dead_code)]
+fn init_bridge_pool(database_path: &str) -> GooseResult<BridgePool> {
+    validate_no_traversal("database_path", database_path)?;
+    // Run migration exactly once before handing the path to the pool manager.
+    GooseStore::open(Path::new(database_path))?;
+    let manager = SqliteConnectionManager::file(database_path)
+        .with_flags(
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE | rusqlite::OpenFlags::SQLITE_OPEN_CREATE,
+        )
+        .with_init(|conn| {
+            conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+            Ok(())
+        });
+    r2d2::Pool::builder()
+        .max_size(4)
+        .build(manager)
+        .map_err(|e| GooseError::message(format!("r2d2 pool init: {e}")))
+}
+
+/// Acquire a pooled SQLite connection for `database_path`.
+///
+/// On first call for a given process lifetime, initialises the pool and runs
+/// schema migration. Subsequent calls return a checked-out connection from the
+/// pool without re-opening the database.
+///
+/// This replaces `acquire_bridge_conn` and `open_bridge_store_hot` at bridge
+/// handler call sites that use raw rusqlite operations.
+#[allow(dead_code)]
+pub(crate) fn checkout_bridge_conn(database_path: &str) -> GooseResult<BridgePoolConn> {
+    if database_path.trim().is_empty() {
+        return Err(GooseError::message("database_path is required"));
+    }
+    let cell = BRIDGE_CONN_POOL.get_or_init(|| Mutex::new(None));
+    let mut guard = cell
+        .lock()
+        .map_err(|_| GooseError::message("bridge pool mutex poisoned"))?;
+    if guard.is_none() {
+        *guard = Some(init_bridge_pool(database_path)?);
+    }
+    guard
+        .as_ref()
+        .expect("invariant: pool was just initialised above")
+        .get()
+        .map_err(|e| GooseError::message(format!("pool checkout: {e}")))
 }
 
 /// Set of database paths that have been opened and migrated at least once in this
@@ -1226,16 +1300,16 @@ mod tests {
     }
 
     // Bridge round-trip: hex-encode a valid Event-48 payload and call the bridge wrapper,
-    // asserting the returned JSON contains the expected battery_pct.
+    // asserting the returned JSON contains the expected event48_battery_pct.
     #[test]
     fn event48_bridge_round_trip() {
         let raw_payload = event48_payload(30, 850);
         let payload_hex = hex::encode(&raw_payload);
         let args = ParseEvent48BatteryArgs { payload_hex };
         let result = parse_event48_battery_bridge(args).expect("bridge should succeed");
-        let battery_pct = result["battery_pct"]
+        let battery_pct = result["event48_battery_pct"]
             .as_u64()
-            .expect("battery_pct must be present");
+            .expect("event48_battery_pct must be present");
         assert_eq!(battery_pct, 85);
     }
 

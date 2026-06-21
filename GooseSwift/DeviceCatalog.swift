@@ -20,11 +20,13 @@ struct DeviceCatalog {
     capabilities?.wireProtocol == .gen4
   }
 
-  // Human-readable generation label for logging ("gen4" / "gen5" / "unknown").
+  // Human-readable generation label for logging ("gen4" / "mg" / "gen5" / "unknown").
   // Replaces: connectedCapabilities.map { $0.wireProtocol == .gen4 ? "gen4" : "gen5" } ?? "unknown"
   var generationLabel: String {
     guard let caps = capabilities else { return "unknown" }
-    return caps.wireProtocol == .gen4 ? "gen4" : "gen5"
+    if caps.wireProtocol == .gen4 { return "gen4" }
+    if caps.deviceKind == "WHOOP_MG" { return "mg" }
+    return "gen5"
   }
 
   // Returns the retry label used in DebugAndSync for log messages.
@@ -36,7 +38,9 @@ struct DeviceCatalog {
   // Returns the device type string used in HistoricalHandlers for log messages.
   // Replaces: switch connectedCapabilities?.historicalSync { case .pageSequence: "GEN4" }
   var historicalDeviceType: String {
-    usesPageSequenceSync ? "GEN4" : (capabilities?.wireProtocol.bridgeString ?? "GOOSE")
+    if usesPageSequenceSync { return "GEN4" }
+    if capabilities?.deviceKind == "WHOOP_MG" { return "WHOOP_MG" }
+    return capabilities?.wireProtocol.bridgeString ?? "GOOSE"
   }
 
   // Human-readable generation for display in device views (e.g. DeviceConnectionHeader).

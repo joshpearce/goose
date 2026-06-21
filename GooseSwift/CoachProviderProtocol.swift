@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol CoachProvider: AnyObject {
   var id: String { get }
   var displayName: String { get }

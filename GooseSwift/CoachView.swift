@@ -872,7 +872,7 @@ struct DailyJournalSheet: View {
     }
     .presentationDetents([.medium, .large])
     .presentationDragIndicator(.visible)
-    .alert("Não foi possível guardar", isPresented: Binding(
+    .alert("Could not save", isPresented: Binding(
       get: { saveError != nil },
       set: { if !$0 { saveError = nil } }
     )) {
