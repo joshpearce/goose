@@ -31,12 +31,19 @@ object GooseBridge {
         return try {
             handle(request)
         } catch (e: Throwable) {
-            buildErrorJson(e.message ?: "Unknown native error")
+            buildBridgeErrorJson(e.message ?: "Unknown native error")
         }
     }
+}
 
-    private fun buildErrorJson(message: String): String {
-        val escaped = message.replace("\\", "\\\\").replace("\"", "\\\"")
-        return """{"ok":false,"result":null,"error":{"message":"$escaped"},"timing":null}"""
-    }
+/**
+ * Package-internal helper: formats a native error as a bridge error JSON response.
+ * Kept as a top-level function so unit tests can exercise it without triggering
+ * GooseBridge object initialization (which calls System.loadLibrary).
+ *
+ * Response schema: {"ok":false,"result":null,"error":{"message":"..."},"timing":null}
+ */
+internal fun buildBridgeErrorJson(message: String): String {
+    val escaped = message.replace("\\", "\\\\").replace("\"", "\\\"")
+    return """{"ok":false,"result":null,"error":{"message":"$escaped"},"timing":null}"""
 }

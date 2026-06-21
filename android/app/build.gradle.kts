@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.goose.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.goose.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "14.0"
 
