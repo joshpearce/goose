@@ -949,7 +949,7 @@ Plans:
 
 **Plans**:
 
-- [ ] 109-01-PLAN.md — WHOOP MG sync root cause fix + detection hardening (MG-03)
+1/1 plans complete
 
 ---
 
@@ -1026,7 +1026,7 @@ Plans:
 | 106 | 1/1 | Complete   | 2026-06-21 |
 | 107 | 1/1 | Complete    | 2026-06-21 |
 | 108 | v14.0 | Pending | — |
-| 109 | v14.0 | Pending | — |
+| 109 | 1/1 | Complete   | 2026-06-21 |
 | 110 | v14.0 | Pending | — |
 | 111 | v14.0 | Pending | — |
 
@@ -1079,6 +1079,8 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 1/1 plans complete
 Plans:
+
+- [x] 109-01-PLAN.md
 
 - [x] 107-01-PLAN.md
 
