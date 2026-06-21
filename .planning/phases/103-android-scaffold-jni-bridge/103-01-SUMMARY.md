@@ -34,6 +34,7 @@ key-files:
   modified:
     - Rust/core/src/lib.rs
     - Rust/core/Cargo.toml
+    - android/gradle.properties (added — JDK 21 pin)
 decisions:
   - "compileSdk=36 required by Compose BOM 2026.05.00 (navigationevent-android dependency)"
   - "Kotlin 2.1.21 + AGP 8.10.1 + Gradle 8.11.1 required for Java 26 compatibility"
@@ -160,6 +161,13 @@ Kotlin/Compose 4-tab skeleton with GooseBridge.kt JNI calling libgoose_core.so v
 - **Issue:** Rust formatter (triggered by linter hook) removed the `mod android_jni` declaration placed at the top of `lib.rs`
 - **Fix:** Placed the declaration adjacent to the existing `#[cfg(not(target_os = "android"))] pub mod debug_ws_server;` at a stable location in `lib.rs`
 
+**8. [Rule 3 - Blocking] JDK 21 pin needed for local builds on Java 26 host**
+- **Found during:** Continuation session (post-commit 3799114) — user informed .so was available and requested build verification
+- **Issue:** `gradle.properties` not committed; local machine runs Java 26 (Homebrew default); Kotlin 2.1.21 still fails `JavaVersion.parse("26.0.1")` without explicit JDK pin
+- **Fix:** Created `android/gradle.properties` with `org.gradle.java.home=/opt/homebrew/opt/openjdk@21`; also installed Android SDK platform-35, platform-36, build-tools via sdkmanager into `/opt/homebrew/Caskroom/android-commandlinetools/14742923/`; set `local.properties` sdk.dir pointing at that path
+- **Files modified:** `android/gradle.properties` (committed), `android/local.properties` (gitignored — local only)
+- **Commit:** 3e29fbb
+
 ## Known Stubs
 
 All stub screens (`HomeScreen`, `HealthScreen`, `CoachScreen`, `MoreScreen`) display `Text("X — coming soon")`. This is intentional per D-05 and Phase 103 scope. Phase 104 wires BLE, Phase 105 wires historical sync.
@@ -173,6 +181,6 @@ All stub screens (`HomeScreen`, `HealthScreen`, `CoachScreen`, `MoreScreen`) dis
 ## Self-Check
 
 All files listed under `key-files.created` verified present on disk.
-Commits verified: b315240, 3799114, 4ecec5e, 7242ec5
+Commits verified: b315240, 3799114, 4ecec5e, 7242ec5, dcbf25a, 3e29fbb
 
 ## Self-Check: PASSED
