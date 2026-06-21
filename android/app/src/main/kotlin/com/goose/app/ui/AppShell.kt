@@ -18,9 +18,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.goose.app.ble.BleConnectionState
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
-fun AppShell(connectionState: BleConnectionState = BleConnectionState.Idle) {
+fun AppShell(
+    connectionState: BleConnectionState = BleConnectionState.Idle,
+    liveHeartRateBPM: StateFlow<Int?>,
+    recoveryScore: StateFlow<Float?>,
+    strainScore: StateFlow<Float?>,
+    sleepScore: StateFlow<Float?>,
+    serverUrl: StateFlow<String>,
+    onServerUrlChange: (String) -> Unit,
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
@@ -54,10 +63,23 @@ fun AppShell(connectionState: BleConnectionState = BleConnectionState.Idle) {
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> HomeScreen(Modifier.padding(padding), connectionState = connectionState)
-            1 -> HealthScreen(Modifier.padding(padding))
+            0 -> HomeScreen(
+                modifier = Modifier.padding(padding),
+                connectionState = connectionState,
+                liveHeartRateBPM = liveHeartRateBPM,
+            )
+            1 -> HealthScreen(
+                modifier = Modifier.padding(padding),
+                recoveryScore = recoveryScore,
+                strainScore = strainScore,
+                sleepScore = sleepScore,
+            )
             2 -> CoachScreen(Modifier.padding(padding))
-            else -> MoreScreen(Modifier.padding(padding))
+            else -> MoreScreen(
+                modifier = Modifier.padding(padding),
+                serverUrl = serverUrl,
+                onServerUrlChange = onServerUrlChange,
+            )
         }
     }
 }
