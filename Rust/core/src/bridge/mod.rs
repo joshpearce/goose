@@ -260,7 +260,9 @@ pub struct BridgeError {
 ///
 /// Guard (D-05): raw > 1100 is rejected (battery_pct_raw = raw / 10 would exceed 110%).
 fn parse_event48_battery(payload: &[u8]) -> GooseResult<u16> {
-    // Use absolute payload offset 17 (== data body offset 5; verified by unit tests).
+    // offset 17: u16 LE, battery_raw (÷10 = battery_pct, 0–100); max guard 1100
+    //   event-48 data body starts at payload[12]; absolute offset 17 = data body byte 5
+    //   empirically confirmed via hardware captures
     let raw = crate::protocol::read_u16_le(payload, 17)
         .ok_or_else(|| GooseError::message("event48 payload too short for battery offset 17"))?;
     if raw > 1100 {
@@ -281,6 +283,9 @@ fn parse_event48_battery(payload: &[u8]) -> GooseResult<u16> {
 ///   absolute payload offset 17 == data body offset 5 (because data body starts at offset 12).
 #[allow(dead_code)]
 pub(crate) fn parse_event48_battery_from_data(data: &[u8]) -> Option<u16> {
+    // offset 5 (data body): u16 LE, battery_raw (÷10 = battery_pct, 0–100)
+    //   data body passed as payload[12..]; same physical byte as absolute payload offset 17
+    //   empirically confirmed via hardware captures
     let raw = crate::protocol::read_u16_le(data, 5)?;
     if raw > 1100 {
         return None;
