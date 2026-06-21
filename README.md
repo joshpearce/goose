@@ -20,7 +20,7 @@
   <img alt="No account" src="https://img.shields.io/badge/account-free-34C759?style=flat-square">
   <img alt="WHOOP compatibility" src="https://img.shields.io/badge/works%20with-WHOOP%204.0%20%C2%B7%205.0%20%C2%B7%20MG-6B737B?style=flat-square">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-6B737B?style=flat-square"></a>
-  <a href="https://discord.gg/EyZE6gzAF2"><img alt="Discord" src="https://img.shields.io/discord/EyZE6gzAF2?label=Discord&logo=discord&logoColor=white&style=flat-square"></a>
+  <a href="https://discord.gg/EyZE6gzAF2"><img alt="Discord" src="https://img.shields.io/discord/1515682352628498442?label=Discord&logo=discord&logoColor=white&style=flat-square"></a>
 </p>
 
 <p align="center">
