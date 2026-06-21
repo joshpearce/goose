@@ -319,6 +319,14 @@ pub enum DataPacketBodySummary {
         step_motion_counter: Option<u16>,
         warnings: Vec<String>,
     },
+    /// PPG waveform burst from WHOOP 5.0 type-47 v26 packets.
+    /// 24 LE-i16 samples at 24 Hz (one second of optical data per packet).
+    V26PpgWaveform {
+        ppg_channel: u8,   // optical channel id 1–26
+        unix_ts: u32,      // seconds since epoch (timestamp of first sample)
+        samples: Vec<i16>, // 24 samples at 24 Hz
+        warnings: Vec<String>,
+    },
     /// Catch-all for packet_k values with no dedicated parse arm.
     /// Serialises as { "kind": "unknown", "packet_k": N }.
     Unknown { packet_k: u8 },
@@ -741,6 +749,7 @@ fn parse_data_packet_body_summary(
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),
         24 => parse_v24_body_summary(payload),
+        26 => parse_v26_ppg_body(payload),
         _ => (
             Some(DataPacketBodySummary::Unknown { packet_k }),
             vec![format!("unhandled_packet_k_{packet_k}")],
@@ -1141,6 +1150,63 @@ fn parse_v18_body(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>
     )
 }
 
+/// Exposed for integration tests only. Do not call from production code.
+pub fn parse_v26_ppg_body_for_test(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    parse_v26_ppg_body(payload)
+}
+
+fn parse_v26_ppg_body(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    // Skip the 3-byte data-packet header (packet_type + packet_k + status).
+    // All field offsets below are relative to `data` (i.e. body-relative).
+    // Full frame layout: payload[0..3] = header; data = payload[3..].
+    let data = payload.get(3..).unwrap_or(&[]);
+    let mut warnings = Vec::new();
+
+    // Minimum length guard: the last waveform sample ends at body offset 71
+    // (data[24..72] = 24 × LE-i16), so we need at least 72 bytes in `data`.
+    // data[24..72] = payload[27..75] — guard on 75 to cover the full sample window.
+    if data.len() < 75 {
+        warnings.push("v26_payload_too_short".to_string());
+        return (
+            Some(DataPacketBodySummary::Unknown { packet_k: 26 }),
+            warnings,
+        );
+    }
+
+    // offset 9 (payload[12]): ppg_channel u8 — identifies the photodiode channel (1–26);
+    // hardware-verified on WHOOP 5.0 type-47 v26; values outside 1–26 indicate a firmware
+    // variant or parse misalignment and must not propagate as valid optical channel data.
+    let ppg_channel = data[9];
+    if ppg_channel < 1 || ppg_channel > 26 {
+        warnings.push(format!("ppg_channel_out_of_range_{ppg_channel}"));
+        return (
+            Some(DataPacketBodySummary::Unknown { packet_k: 26 }),
+            warnings,
+        );
+    }
+
+    // offsets 12–15 (payload[15–18]): unix_ts u32 LE — epoch timestamp of the first sample;
+    // hardware-verified on WHOOP 5.0; matches the per-second BLE notification cadence.
+    let unix_ts = read_u32_le(data, 12).unwrap_or(0);
+
+    // offsets 24–71 (payload[27–74]): 24× LE-i16 PPG waveform samples — 24 Hz burst;
+    // hardware-verified on WHOOP 5.0; represents a 1-second optical waveform window.
+    // Extra bytes beyond offset 71 (e.g. CRC at payload[84–87]) are intentionally ignored.
+    let samples: Vec<i16> = (0..24)
+        .filter_map(|i| read_i16_le(data, 24 + 2 * i))
+        .collect();
+
+    (
+        Some(DataPacketBodySummary::V26PpgWaveform {
+            ppg_channel,
+            unix_ts,
+            samples,
+            warnings: warnings.clone(),
+        }),
+        warnings,
+    )
+}
+
 fn summarize_i16_series(
     payload: &[u8],
     offset: usize,
@@ -1271,7 +1337,8 @@ fn data_packet_domain(packet_k: u8) -> Option<&'static str> {
         17 => "r17_optical_or_labrador_filtered",
         19 | 22 => "research_packet",
         20 => "raw_or_research_counted",
-        25 | 26 => "pulse_information_packet",
+        25 => "pulse_information_packet",
+        26 => "v26_ppg_waveform",
         _ => return None,
     })
 }
