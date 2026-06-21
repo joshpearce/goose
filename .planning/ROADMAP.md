@@ -785,7 +785,10 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
   3. WHY comments at all new byte offsets; `cargo test --locked` passes clean with no regression in existing protocol tests
   4. No silent wildcard fallthrough for packet_k 20, 21, or 26 — all three route to named variants in `parse_data_packet_body_summary`
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 112-01-PLAN.md — V26PpgWaveform variant + parse_v26_ppg_body + synthetic 88B fixture tests (OPT-02)
+- [ ] 112-02-PLAN.md — V20V21OpticalMultiChannel variant + OpticalChannel struct + parse_v20v21_optical_body + synthetic v20/v21 fixture tests (OPT-01)
 **Dependencies**: Pure Rust — no Swift or Android changes in this phase
 
 ---
