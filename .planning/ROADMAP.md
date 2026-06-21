@@ -772,7 +772,7 @@ Plans:
 
 **Plans**:
 
-- [ ] 99-01-PLAN.md — Gen4 characteristic `61080005` reassembly fix in Rust frame parser (SYNC-09)
+- [ ] 99-01-PLAN.md — Gen4 multi-notification frame buffer in Swift `handleHistoricalSyncValue` (SYNC-09)
 - [ ] 99-02-PLAN.md — Device identity validation in `HISTORICAL_DATA_RESULT` ACK handler (SYNC-11)
 
 ---
