@@ -314,6 +314,7 @@ extension CoreBluetoothBLETransport: CBCentralManagerDelegate {
     clientHelloSentForCurrentConnection = false
     connectedPeripheralUUID = nil
     connectedAt = nil
+    isOnWrist = nil  // D-04: reset on disconnect
     if shouldReconnect {
       let reconnectReason = prioritizeLiveCaptureOnReady ? "auto_live_capture_disconnect" : "auto.disconnect"
       if autoHistoricalSyncOnReady && !prioritizeLiveCaptureOnReady {

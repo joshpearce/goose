@@ -38,6 +38,7 @@ import OSLog
   var batteryIsCharging: Bool?
   var batteryPowerStatus = "Unknown"
   var batteryLowNotificationFired = false
+  var isOnWrist: Bool?
   var firmwareVersion: String?
   var modelNumber: String?
   var hardwareRevision: String?
@@ -336,6 +337,7 @@ import OSLog
   var nextDebugCommandSequence: UInt8 = 120
   var nextHapticCommandSequence: UInt8 = 144
   var nextCmd26BatteryCommandSequence: UInt8 = 48
+  var nextCmd54LocationCommandSequence: UInt8 = 168
   var highFrequencyHistorySyncRequestedExpiry: Date?
   var debugSkinTemperatureCommandSent = false
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?

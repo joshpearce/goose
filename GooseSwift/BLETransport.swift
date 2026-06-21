@@ -32,6 +32,7 @@ protocol BLETransport: AnyObject {
   var batteryUpdatedAt: Date? { get }
   var batteryIsCharging: Bool? { get }
   var batteryPowerStatus: String { get }
+  var isOnWrist: Bool? { get }
   var firmwareVersion: String? { get }
   var modelNumber: String? { get }
   var hardwareRevision: String? { get }

@@ -950,4 +950,42 @@ extension CoreBluetoothBLETransport {
     DispatchQueue.main.asyncAfter(deadline: .now() + clearAfter, execute: workItem)
   }
 
+  // BLE-02: Parse cmd 0x54 (GET_BODY_LOCATION_AND_STATUS) response and update isOnWrist.
+  // V5 commandResponse layout: payload[0]=packetType payload[1]=flags payload[2]=commandByte
+  //   payload[3]=sequence payload[4]=resultCode payload[5]=revision payload[6]=location
+  //   payload[7]=confidence payload[8]=status
+  // GarmentDeviceLocation: 1=WRIST (on-wrist), 2/3/4/5/7/160=known off-wrist, 0/128/other=nil.
+  func handleBodyLocationValue(_ value: Data, characteristic: CBCharacteristic) {
+    guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
+      return
+    }
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
+            payload.count >= 9,
+            let packetType = payload.first,
+            packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
+            payload[2] == 84 else {
+        continue
+      }
+      let location = Int(payload[6])
+      let newValue: Bool?
+      switch location {
+      case 1:
+        newValue = true
+      case 2, 3, 4, 5, 7, 160:
+        newValue = false
+      default:
+        newValue = nil
+      }
+      record(
+        source: "ble.location",
+        title: "body_location.response",
+        body: "location=\(location) confidence=\(payload[7]) status=\(payload[8]) isOnWrist=\(String(describing: newValue))"
+      )
+      DispatchQueue.main.async { [weak self] in
+        self?.isOnWrist = newValue
+      }
+    }
+  }
+
 }

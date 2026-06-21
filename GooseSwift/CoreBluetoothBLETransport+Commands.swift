@@ -1113,6 +1113,7 @@ extension CoreBluetoothBLETransport {
         bondingManager.transition(to: .completed(deviceID: peripheralID))
       }
       sendClientHelloIfNeeded(reason: cached ? "cached_gatt" : "gatt_discovery")
+      sendGetBodyLocationAndStatus()  // BLE-02: query body location on connect
       scheduleDebugSkinTemperatureCommandIfNeeded(reason: cached ? "cached_ready" : "ready")
       scheduleAutomaticHistoricalSyncIfNeeded()
       scheduleAutomaticPhysiologyCaptureIfNeeded()
@@ -1167,6 +1168,38 @@ extension CoreBluetoothBLETransport {
     readySyncWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: workItem)
     record(source: "ble.sync", title: "historical_sync.scheduled", body: reason)
+  }
+
+  // BLE-02: Query the WHOOP strap for its current body location and on-wrist status.
+  // Sent as a fire-and-forget command immediately after sendClientHelloIfNeeded on connect.
+  // Response is parsed by handleBodyLocationValue(_:characteristic:) in HistoricalHandlers.
+  func sendGetBodyLocationAndStatus() {
+    guard let activePeripheral, let commandCharacteristic else {
+      record(level: .debug, source: "ble.location", title: "cmd54.skipped", body: "no active peripheral or command characteristic")
+      return
+    }
+    guard let writeType = writeType(for: commandCharacteristic) else {
+      record(level: .debug, source: "ble.location", title: "cmd54.skipped", body: "command characteristic is not writable")
+      return
+    }
+    let sequence = consumeNextCmd54LocationSequence()
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
+      sequence: sequence,
+      command: 84,
+      data: []
+    )
+    activePeripheral.writeValue(frame, for: commandCharacteristic, type: writeType)
+    record(
+      source: "ble.location",
+      title: "cmd54.sent",
+      body: "seq=\(sequence) frame=\(frame.hexString)"
+    )
+  }
+
+  func consumeNextCmd54LocationSequence() -> UInt8 {
+    let sequence = nextCmd54LocationCommandSequence
+    nextCmd54LocationCommandSequence = nextCmd54LocationCommandSequence == UInt8.max ? 0 : nextCmd54LocationCommandSequence + 1
+    return sequence
   }
 
 }
