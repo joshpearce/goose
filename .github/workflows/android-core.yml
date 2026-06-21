@@ -84,7 +84,7 @@ jobs:
           echo "size=$(du -sh "$ARCHIVE" | cut -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Build release APK
-        working-directory: android
+        working-directory: Android
         run: ./gradlew assembleRelease
 
       - name: Attach APK to release
@@ -93,7 +93,7 @@ jobs:
           TAG: ${{ steps.resolve-tag.outputs.tag }}
         run: |
           gh release upload "$TAG" \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            Android/app/build/outputs/apk/release/app-release-unsigned.apk \
             --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Attach to GitHub Release
@@ -112,9 +112,8 @@ jobs:
           ARCHIVE: ${{ steps.package.outputs.archive }}
           SIZE: ${{ steps.package.outputs.size }}
         run: |
-          echo "## Android Rust Core Built" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Android Build" >> "$GITHUB_STEP_SUMMARY"
           echo "**Tag:** $TAG" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Archive:** $ARCHIVE ($SIZE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Rust archive:** $ARCHIVE ($SIZE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**APK:** Android/app/build/outputs/apk/release/app-release-unsigned.apk" >> "$GITHUB_STEP_SUMMARY"
           echo "**Targets:** arm64-v8a, armeabi-v7a, x86_64" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Attach a Kotlin/Compose Android app using the JNI shim in \`Rust/core/src/\` to build a full Android port." >> "$GITHUB_STEP_SUMMARY"
