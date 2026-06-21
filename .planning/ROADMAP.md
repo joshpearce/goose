@@ -790,8 +790,8 @@ Plans:
 
 **Plans**:
 
-- [ ] 100-01-PLAN.md — MTU 247 request + LE 2M PHY in `CoreBluetoothBLETransport` (BLE-01)
-- [ ] 100-02-PLAN.md — Off-wrist detection via cmd 0x54 + `BLEState.isOnWrist` + UI indicator (BLE-02)
+- [ ] 100-01-PLAN.md — LE 2M PHY preference + MTU logging in centralManager(_:didConnect:) (BLE-01)
+- [ ] 100-02-PLAN.md — cmd 0x54 response parser + isOnWrist: Bool? on transport + UI chip in HomeDeviceStatusCard (BLE-02)
 
 ---
 
