@@ -191,6 +191,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "store.insert_gravity_rows",
     "sync.backfill_streams",
     "sync.mark_synced",
+    "sync.record_hps_telemetry",
     "sync.rows_pending_upload",
     "timeline.from_decoded_frames",
     "ui_coverage.audit",

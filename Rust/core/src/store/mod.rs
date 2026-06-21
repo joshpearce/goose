@@ -20,7 +20,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 22;
+pub const CURRENT_SCHEMA_VERSION: i64 = 23;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -1861,6 +1861,24 @@ impl GooseStore {
 
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (22);
             PRAGMA user_version = 22;
+
+            CREATE TABLE IF NOT EXISTS sync_telemetry (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id       TEXT NOT NULL,
+                burst_index      INTEGER NOT NULL,
+                bytes_received   INTEGER NOT NULL,
+                duration_ms      INTEGER NOT NULL,
+                missing_packets  INTEGER NOT NULL DEFAULT 0,
+                sequence_gaps    INTEGER NOT NULL DEFAULT 0,
+                result           TEXT NOT NULL DEFAULT 'ok',
+                created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_sync_telemetry_session
+                ON sync_telemetry(session_id);
+
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (23);
+            PRAGMA user_version = 23;
             "#,
         )?;
         } // conn lock released here — ensure_* each re-acquire independently
@@ -1880,6 +1898,30 @@ impl GooseStore {
             .lock()
             .map_err(|_| GooseError::message("store mutex poisoned"))?;
         Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
+    }
+
+    /// SYNC-12: Insert one row into sync_telemetry for a completed HPS burst.
+    pub fn insert_sync_telemetry(
+        &self,
+        session_id: &str,
+        burst_index: i64,
+        bytes_received: i64,
+        duration_ms: i64,
+        missing_packets: i64,
+        sequence_gaps: i64,
+        result: &str,
+    ) -> GooseResult<()> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        conn.execute(
+            "INSERT INTO sync_telemetry \
+             (session_id, burst_index, bytes_received, duration_ms, missing_packets, sequence_gaps, result) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![session_id, burst_index, bytes_received, duration_ms, missing_packets, sequence_gaps, result],
+        )?;
+        Ok(())
     }
 
     pub(super) fn ensure_overnight_mirror_tables(&self) -> GooseResult<()> {
