@@ -14,9 +14,10 @@
     clippy::manual_clamp,
     clippy::if_same_then_else
 )]
-// Production code must not call .unwrap() — use .expect("reason") or ? propagation.
-// Test code is exempt (cfg_attr scoping); modules with unconverted test unwraps carry
-// a file-level #![allow(clippy::unwrap_used)] shield that Plans 2–5 remove progressively.
+// Production code must not call .expect("…") without a reason or use .unwrap() — use
+// .expect("invariant: …") for logically infallible calls or ? for error propagation.
+// This deny fires only on non-test code (cfg_attr scoping). Test code is exempt; the 37
+// .unwrap() calls in store/mod.rs tests are intentional and covered by the test exemption.
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 pub mod activity_candidates;
