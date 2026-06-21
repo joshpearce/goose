@@ -19,9 +19,6 @@
 // a file-level #![allow(clippy::unwrap_used)] shield that Plans 2–5 remove progressively.
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
-#[cfg(target_os = "android")]
-mod android_jni;
-
 pub mod activity_candidates;
 pub mod activity_identity;
 pub mod activity_sessions;
@@ -35,6 +32,8 @@ pub mod capture_import;
 pub mod capture_sanitize;
 pub mod commands;
 pub mod debug_ws;
+#[cfg(target_os = "android")]
+mod android_jni;
 #[cfg(not(target_os = "android"))]
 pub mod debug_ws_server;
 pub mod energy_rollup;

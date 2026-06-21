@@ -1,33 +1,32 @@
 //! Android JNI bridge shim.
 //!
-//! Exports `Java_com_goose_app_bridge_GooseBridge_handle`, which is called
-//! by `GooseBridge.kt` via JNI when `external fun handle(request: String)` is
-//! invoked. Delegates immediately to `goose_bridge_handle_json` so all dispatch
-//! logic lives in `bridge/mod.rs`, not here.
+//! Exports `Java_com_goose_app_bridge_GooseBridge_handle`, called by
+//! `GooseBridge.kt` via JNI `external fun handle(request: String): String`.
+//! Delegates immediately to `bridge::goose_bridge_handle_json` so all
+//! dispatch logic lives in `bridge/mod.rs`, not here.
 //!
-//! Gated on `cfg(target_os = "android")` — this file is not compiled for iOS
-//! or macOS builds. The `jni` crate dependency is similarly target-gated in
-//! `Cargo.toml` under `[target.'cfg(target_os = "android")'.dependencies]`.
+//! Gated on `cfg(target_os = "android")` — not compiled for iOS or macOS.
+//! The `jni` crate is similarly target-gated in Cargo.toml under
+//! `[target.'cfg(target_os = "android")'.dependencies]`.
+
+use std::ffi::CString;
 
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
-use std::ffi::CString;
 
 // Re-use the existing C-exported bridge functions from bridge/mod.rs.
-// These are already #[no_mangle] pub extern "C" so they are accessible here.
-use crate::goose_bridge_handle_json;
-use crate::goose_bridge_free_string;
+use crate::bridge::goose_bridge_handle_json;
+use crate::bridge::goose_bridge_free_string;
 
-/// JNI entry point called by `GooseBridge.kt` `external fun handle(request: String): String`.
+/// JNI entry point called by GooseBridge.kt `external fun handle(request: String): String`.
 ///
 /// Converts the Java String to a C string, delegates to `goose_bridge_handle_json`,
 /// converts the result back to a Java String, and frees the Rust-allocated buffer.
 ///
 /// # Safety
 /// JNI contract: `env` and `_class` are valid for the duration of the call.
-/// The raw pointer returned by `goose_bridge_handle_json` is freed before return.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn Java_com_goose_app_bridge_GooseBridge_handle(
     mut env: JNIEnv,
     _class: JClass,
@@ -65,8 +64,7 @@ pub unsafe extern "C" fn Java_com_goose_app_bridge_GooseBridge_handle(
     let response_ptr = goose_bridge_handle_json(c_request.as_ptr());
 
     if response_ptr.is_null() {
-        let error_json =
-            r#"{"ok":false,"result":null,"error":{"message":"goose_bridge_handle_json returned null"},"timing":null}"#;
+        let error_json = r#"{"ok":false,"result":null,"error":{"message":"goose_bridge_handle_json returned null"},"timing":null}"#;
         return match env.new_string(error_json) {
             Ok(s) => s.into_raw(),
             Err(_) => std::ptr::null_mut(),
