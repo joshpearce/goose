@@ -1043,6 +1043,8 @@ Plans:
 | #166 | Body composition history table (weight, BMI, body fat over time) | P2 | New data domain, own schema migration needed |
 | #167 | UI stealth mode — hide individual metrics from dashboard | P3 | UI polish; no data or protocol dependency |
 | #168 | PIP upload — separate data pipeline for Pulse Information Packets | P3 | Infrastructure work; upload path functional today |
+| #172 | Protocol: decode WHOOP 5.0 type-47 v20/v21 bulk multi-channel sensor stream | P2 | Byte maps hardware-verified; needs Rust parser + bridge + export wiring |
+| #173 | Protocol: decode WHOOP 5.0 type-47 v26 high-rate 24 Hz PPG waveform | P2 | Byte map hardware-verified (88 B, 24× LE-i16 @[27:74]); needs Rust parser + bridge |
 
 ---
 
