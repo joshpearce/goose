@@ -68,6 +68,13 @@ final class GooseBLEHistoricalManager {
   /// Cleared on sync begin, complete, and fail.
   var connectedStrapIdentity: [UInt8]? = nil
 
+  // MARK: - Burst telemetry (SYNC-12)
+
+  /// Timestamp when the most recent historyStart metadata arrived; used to compute duration_ms in historyEnd.
+  var burstStartedAt: Date? = nil
+  /// Cumulative raw BLE notification bytes received since the last historyStart.
+  var burstBytesReceived: Int = 0
+
   // MARK: - Configuration constants
 
   let requestHistoricalRangeBeforeTransfer = true

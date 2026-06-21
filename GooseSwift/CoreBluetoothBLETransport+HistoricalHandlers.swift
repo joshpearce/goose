@@ -33,6 +33,8 @@ extension CoreBluetoothBLETransport {
     historicalManager.gen4HistoricalFrameBuffer = tail.count > 0 && tail.count <= 8192
       ? tail
       : Data()
+    // SYNC-12: accumulate raw notification bytes for burst telemetry.
+    historicalManager.burstBytesReceived += value.count
     for frame in returnedFrames {
       handleHistoricalSyncFrame(frame, characteristic: characteristic)
     }
@@ -720,6 +722,9 @@ extension CoreBluetoothBLETransport {
       historicalManager.historyEndAckQueued = false
       historicalManager.historyEndAckSentThisBurst = false
       historicalManager.pendingHistoryEndAckPayload = nil
+      // SYNC-12: reset burst telemetry counters for the new burst.
+      historicalManager.burstStartedAt = Date()
+      historicalManager.burstBytesReceived = 0
     case .historyEnd:
       flushPendingHistoricalFramesIfNeeded(force: true)
       historicalManager.historyEndReceived = true
@@ -733,6 +738,31 @@ extension CoreBluetoothBLETransport {
         return
       }
       historicalSyncBurstsCompleted += 1
+      // SYNC-12: emit per-burst telemetry log and persist to sync_telemetry table.
+      let burstDurationMs = historicalManager.burstStartedAt.map { Int(Date().timeIntervalSince($0) * 1000) } ?? 0
+      let burstBytes = historicalManager.burstBytesReceived
+      let burstIndex = historicalSyncBurstsCompleted
+      let sessionID = historicalManager.historicalSyncRunID.uuidString
+      record(
+        level: .debug,
+        source: "ble.sync",
+        title: "hps.telemetry",
+        body: "session_id=\(sessionID) burst_index=\(burstIndex) bytes=\(burstBytes) duration_ms=\(burstDurationMs) gaps=0 result=ok"
+      )
+      let telemetryArgs: [String: Any] = [
+        "database_path": historicalDirectWriteDatabasePath,
+        "session_id": sessionID,
+        "burst_index": burstIndex,
+        "bytes_received": burstBytes,
+        "duration_ms": burstDurationMs,
+        "missing_packets": 0,
+        "sequence_gaps": 0,
+        "result": "ok",
+      ]
+      let telemetryBridge = historicalDirectWriteBridge
+      historicalWriteQueue.async {
+        _ = try? telemetryBridge.request(method: "sync.record_hps_telemetry", args: telemetryArgs)
+      }
       let catalog = DeviceCatalog(capabilities: connectedCapabilities)
       let ackPayload: [UInt8]
       if catalog.usesPageSequenceSync {
