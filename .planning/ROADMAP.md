@@ -756,7 +756,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 ### Phase Summary
 
 - [x] **Phase 112: Optical Protocol Decode (v20/v21/v26)** — Rust parse variants for WHOOP 5.0 bulk sensor streams and 24 Hz PPG waveform (completed 2026-06-22)
-- [ ] **Phase 113: Optical Schema & Bridge** — schema v24 for optical_channel_samples + device_feature_flags + body_composition_history + realtime_frames (single migration batch) plus bridge methods and cargo test gate
+- [x] **Phase 113: Optical Schema & Bridge** — schema v24 for optical_channel_samples + device_feature_flags + body_composition_history + realtime_frames (single migration batch) plus bridge methods and cargo test gate (completed 2026-06-22)
 - [ ] **Phase 114: Harvard Sleep Need Model** — sleep_need.rs algorithm + replace hardcoded 480 constant
 - [ ] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table
 - [ ] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods
@@ -1054,7 +1054,7 @@ Plans:
 | 110 | 3/3 | Complete   | 2026-06-21 |
 | 111 | 2/2 | Complete    | 2026-06-21 |
 | 112 | 2/2 | Complete    | 2026-06-22 |
-| 113 | 0/1 | Planned    |  |
+| 113 | 0/1 | Complete    | 2026-06-22 |
 | 114 | 0/0 | Not started | — |
 | 115 | 0/0 | Not started | — |
 | 116 | 0/0 | Not started | — |
@@ -1118,7 +1118,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 2/2 plans complete
+**Plans:** 0/1 plans complete
 Plans:
 
 - [x] 111-01-PLAN.md

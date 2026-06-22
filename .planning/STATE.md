@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 113
-current_phase_name: Schema v24 + Optical Bridge Methods
+current_phase: 114
+current_phase_name: Harvard Sleep Need Model
 status: planning
-stopped_at: context exhaustion at 82% (2026-06-21)
-last_updated: "2026-06-22T12:20:31.434Z"
+stopped_at: context exhaustion at 82% (2026-06-22)
+last_updated: "2026-06-22T22:20:04.662Z"
 last_activity: 2026-06-22
-last_activity_desc: Phase 112 complete, transitioned to Phase 113
+last_activity_desc: Phase 113 complete, transitioned to Phase 114
 progress:
   total_phases: 15
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 7
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
+  percent: 13
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 113 — Schema v24 + Optical Bridge Methods
+Phase: 114 — Harvard Sleep Need Model
 Plan: Not started
 Status: Roadmap approved — ready to plan Phase 112
-Last activity: 2026-06-22 — Phase 112 complete, transitioned to Phase 113
+Last activity: 2026-06-22 — Phase 113 complete, transitioned to Phase 114
 
 ## Performance Metrics
 
@@ -124,8 +124,8 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-22T12:20:03.684Z
-Stopped at: context exhaustion at 82% (2026-06-21)
+Last session: 2026-06-22T22:20:04.655Z
+Stopped at: context exhaustion at 82% (2026-06-22)
 Resume file: .planning/phases/98-gen5-historical-sync-routing-hps-ring-buffer/98-CONTEXT.md
 Next action: /gsd-discuss-phase 112
 

@@ -12,7 +12,7 @@
 
 - [x] **OPT-01**: `DataPacketBodySummary::V20V21OpticalMultiChannel` variant + parse arms for packet_k 20 and 21 in `protocol.rs`; presence-byte logic (0x19=active, 0x00=empty) for v20 5-channel blocks; 3×100-sample i16 arrays for v21; WHY comments at all byte offsets (closes #172)
 - [x] **OPT-02**: `DataPacketBodySummary::V26PpgWaveform` variant + parse arm for packet_k 26; 24×LE-i16 at offsets [27:74]; `ppg_channel: u8` gated 1–26; WHY comments; integration test with synthetic 88B payload (closes #173)
-- [ ] **OPT-03**: `optical_channel_samples` SQLite table (schema v24); bridge methods `biometrics.insert_v20v21_batch` + `biometrics.insert_v26_batch` + range query methods; `BRIDGE_METHODS` constant updated; `cargo test --locked` passes clean
+- [x] **OPT-03**: `optical_channel_samples` SQLite table (schema v24); bridge methods `biometrics.insert_v20v21_batch` + `biometrics.insert_v26_batch` + range query methods; `BRIDGE_METHODS` constant updated; `cargo test --locked` passes clean
 - [ ] **OPT-04**: Android `WhoopBleClient` routing for packet_k 20/21/26 — frames forwarded to `GooseBridge.safeHandle()` (parity with iOS) (#172/#173)
 
 ### Sleep Need Algorithm (#164)
@@ -30,11 +30,11 @@
 
 - [ ] **FF-01**: `GET_FF_VALUE` (cmd 0x80) sent by Swift after `GET_HELLO` handshake; 3-second timeout with fallback to `DeviceKind`-derived `DeviceCapabilities` if no response (closes #165)
 - [ ] **FF-02**: Response parsed → `DeviceCapabilities.feature_flags: [UInt8: UInt8]`; raw index→value stored without semantic name claims; exposed in Debug tab
-- [ ] **FF-03**: `device_feature_flags` SQLite table (schema v24); bridge method `capabilities.get_feature_flags`; `BRIDGE_METHODS` updated
+- [x] **FF-03**: `device_feature_flags` SQLite table (schema v24); bridge method `capabilities.get_feature_flags`; `BRIDGE_METHODS` updated
 
 ### Body Composition History (#166)
 
-- [ ] **BODY-01**: `body_composition_history` SQLite table (schema v24): weight_kg, bmi, body_fat_pct, muscle_mass_kg, water_pct, source CHECK('manual','healthkit','scale'); UNIQUE(source, date); bridge methods `body_composition.upsert` + `body_composition.history_between`; `BRIDGE_METHODS` updated (closes #166)
+- [x] **BODY-01**: `body_composition_history` SQLite table (schema v24): weight_kg, bmi, body_fat_pct, muscle_mass_kg, water_pct, source CHECK('manual','healthkit','scale'); UNIQUE(source, date); bridge methods `body_composition.upsert` + `body_composition.history_between`; `BRIDGE_METHODS` updated (closes #166)
 - [ ] **BODY-02**: `BodyCompositionEntrySheet` SwiftUI form in Health tab — manual entry of weight, body fat %, muscle mass; saves via bridge on confirm
 - [ ] **BODY-03**: HealthKit import reads `HKQuantityTypeIdentifierBodyMass` + `HKQuantityTypeIdentifierBodyFatPercentage`; `INSERT OR REPLACE` for healthkit-sourced rows; trend chart in Health tab (optional weight sparkline)
 
@@ -48,7 +48,7 @@
 ### PIP Realtime Pipeline (#168)
 
 - [ ] **PIP-01**: `RealtimePIPQueue` Swift class (parallel to `CaptureFrameWriteQueue`; own `NSLock`; separate `writeQueue`); tags frames `FRAME_SOURCE_REALTIME`; inserts into `realtime_frames` table via bridge (closes #168)
-- [ ] **PIP-02**: `realtime_frames` SQLite table (schema v24): device_uuid, frame_hex, captured_at NOT NULL DEFAULT 'realtime_pip', synced INTEGER NOT NULL DEFAULT 0; covering index on (device_uuid, captured_at)
+- [x] **PIP-02**: `realtime_frames` SQLite table (schema v24): device_uuid, frame_hex, captured_at NOT NULL DEFAULT 'realtime_pip', synced INTEGER NOT NULL DEFAULT 0; covering index on (device_uuid, captured_at)
 - [ ] **PIP-03**: `POST /v1/ingest-realtime` FastAPI endpoint (Bearer token auth, same pattern as `/v1/ingest-frames`); `realtime_frames` TimescaleDB hypertable on server
 
 ### Hardware Gates (WHOOP 5 device available)
