@@ -807,7 +807,9 @@ Plans:
   3. `BRIDGE_METHODS` constant is updated; `bridge_methods_constant_matches_dispatcher` test passes
   4. `cargo test --locked` passes clean — this is the green gate before any Swift consumer work begins
 
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 113-01-PLAN.md — Schema v24 migration (4 tables) + optical bridge methods + capabilities bridge + integration tests
 
 ---
 
