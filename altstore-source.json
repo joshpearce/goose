@@ -12,10 +12,10 @@
       "versions": [
         {
           "version": "14.0",
-          "date": "2026-06-21",
-          "localizedDescription": "- fix(rust): wrap unsafe FFI calls in explicit unsafe{} blocks in android_jni.rs\n- fix(ci): android-core.yml — lowercase 'android' directory (case-sensitive Linux)\n- fix(ci): resolve 3 Zizmor security alerts",
+          "date": "2026-06-22",
+          "localizedDescription": "- feat(ci): rename APK to goose-{tag}-unsigned.apk on release upload\n- feat(protocol): add V26PpgWaveform variant and parse_v26_ppg_body (OPT-02, Task 1)\n- fix(rust): wrap unsafe FFI calls in explicit unsafe{} blocks in android_jni.rs",
           "downloadURL": "https://github.com/tigercraft4/goose/releases/download/v14.0/GooseSwift-v14.0-unsigned.ipa",
-          "size": 12512172
+          "size": 12517820
         },
         {
           "version": "12.0",
