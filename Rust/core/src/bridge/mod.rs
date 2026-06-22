@@ -16,8 +16,10 @@ use crate::{
     GooseError, GooseResult,
     metrics::built_in_algorithm_definitions,
     openwhoop_reference::{
-        OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_REPOSITORY,
-        openwhoop_history_field_references, whoop_generation_references,
+        OPENWHOOP_REFERENCE_ATTRIBUTION, OPENWHOOP_REFERENCE_COMMIT,
+        OPENWHOOP_REFERENCE_LICENSE_CAVEAT, OPENWHOOP_REFERENCE_REPOSITORY,
+        OPENWHOOP_REFERENCE_SNAPSHOT_URL, openwhoop_history_field_references,
+        whoop_generation_references,
     },
     perf_budget::DEFAULT_PERF_SCALE,
     property_tests::{DEFAULT_CASES_PER_GROUP, DEFAULT_PROPERTY_SEED},
@@ -430,7 +432,10 @@ pub fn openwhoop_reference_report_payload() -> serde_json::Value {
         "generated_by": "goose-bridge",
         "snapshot": {
             "repository": OPENWHOOP_REFERENCE_REPOSITORY,
+            "commit": OPENWHOOP_REFERENCE_COMMIT,
+            "snapshot_url": OPENWHOOP_REFERENCE_SNAPSHOT_URL,
             "attribution": OPENWHOOP_REFERENCE_ATTRIBUTION,
+            "license_caveat": OPENWHOOP_REFERENCE_LICENSE_CAVEAT,
         },
         "service_roles": service_roles,
         "service_role_count": service_roles.len(),

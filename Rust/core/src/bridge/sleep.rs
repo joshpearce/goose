@@ -468,6 +468,15 @@ fn external_sleep_history_import_bridge(
             for session in &args.sessions {
                 let stage_summary_json =
                     json_object_string("stage_summary", &session.stage_summary)?;
+                if !session
+                    .stage_summary
+                    .get("minutes_by_stage")
+                    .is_some_and(serde_json::Value::is_object)
+                {
+                    return Err(GooseError::message(
+                        "stage_summary_json must contain minutes_by_stage object".to_string(),
+                    ));
+                }
                 let provenance_json = json_object_string("provenance", &session.provenance)?;
                 if insert_external_sleep_session_conn(
                     conn,
@@ -845,21 +854,28 @@ fn insert_external_sleep_stage_conn(
     conn: &Connection,
     input: ExternalSleepStageInput<'_>,
 ) -> GooseResult<bool> {
-    // Validate that the parent session exists.
-    let session_exists: bool = conn
+    // Validate that the parent session exists and capture its time range.
+    let parent_range: Option<(i64, i64)> = conn
         .query_row(
-            "SELECT 1 FROM external_sleep_sessions WHERE sleep_id = ?1",
+            "SELECT start_time_unix_ms, end_time_unix_ms FROM external_sleep_sessions WHERE sleep_id = ?1",
             params![input.sleep_id],
-            |_| Ok(true),
+            |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
         )
         .optional()
-        .map_err(GooseError::from)?
-        .unwrap_or(false);
+        .map_err(GooseError::from)?;
 
-    if !session_exists {
+    let Some((parent_start, parent_end)) = parent_range else {
         return Err(GooseError::message(format!(
             "external sleep session {} not found",
             input.sleep_id
+        )));
+    };
+
+    // Stages must fall entirely within the parent session's time range.
+    if input.start_time_unix_ms < parent_start || input.end_time_unix_ms > parent_end {
+        return Err(GooseError::message(format!(
+            "external sleep stage {} must be within parent sleep session {}",
+            input.stage_id, input.sleep_id
         )));
     }
 

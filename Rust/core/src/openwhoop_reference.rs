@@ -6,7 +6,11 @@ use std::fmt::{Display, Formatter};
 use crate::protocol::DeviceType;
 
 pub const OPENWHOOP_REFERENCE_REPOSITORY: &str = "https://github.com/bWanShiTong/openwhoop";
-pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str = "BLE protocol constants cross-referenced with community documentation and hardware observation.";
+pub const OPENWHOOP_REFERENCE_COMMIT: &str = "55c5c1e2e02d3822c33e258838a57bb7d9e2ca53";
+pub const OPENWHOOP_REFERENCE_SNAPSHOT_URL: &str =
+    "https://github.com/bWanShiTong/openwhoop/tree/55c5c1e2e02d3822c33e258838a57bb7d9e2ca53";
+pub const OPENWHOOP_REFERENCE_ATTRIBUTION: &str = "OpenWhoop snapshot: BLE protocol constants cross-referenced with community documentation and hardware observation.";
+pub const OPENWHOOP_REFERENCE_LICENSE_CAVEAT: &str = "The referenced snapshot does not include a license file, so these constants are used only as a comparison reference and are not redistributed from that repository.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhoopGeneration {
