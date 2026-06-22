@@ -26,6 +26,7 @@ use crate::{
 };
 
 mod activity;
+mod capabilities;
 mod capture;
 mod debug;
 mod metrics;
@@ -62,7 +63,10 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "apple_daily.upsert",
     "battery.parse_cmd26_response",
     "battery.parse_event48_payload",
+    "biometrics.insert_v20v21_batch",
     "biometrics.insert_v24_batch",
+    "biometrics.insert_v26_batch",
+    "biometrics.optical_between",
     "biometrics.spo2_from_raw",
     "biometrics.v24_between",
     "calibration.apply",
@@ -70,6 +74,8 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "calibration.evaluate_stored_labels",
     "calibration.import_labels",
     "calibration.list_labels",
+    "capabilities.get_feature_flags",
+    "capabilities.upsert_feature_flags",
     "capture.arrival_plan",
     "capture.correlation_report",
     "capture.finish_session",
@@ -518,6 +524,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
     //   metrics domain: metrics.*, metric_series.*, exercise.*, biometrics.*,
     //                   battery.* (handled above), calibration.*, openwhoop.*,
     //                   diagnostics.*
+    if method.starts_with("capabilities.") {
+        return capabilities::dispatch_capabilities(&request);
+    }
+
     if method.starts_with("metrics.")
         || method.starts_with("metric_series.")
         || method.starts_with("exercise.")
@@ -1073,7 +1083,7 @@ mod tests {
     /// Guard against drift between [`BRIDGE_METHODS`] and the actual dispatch arms
     /// across all 5 domain files.
     ///
-    /// Reads all 5 domain files via `include_str!` (compile-time, zero runtime I/O)
+    /// Reads all 6 domain files via `include_str!` (compile-time, zero runtime I/O)
     /// and scans for Rust match arm lines of the form `"namespace.method" =>` or the
     /// multi-line variant where the method name is alone on its line followed by `|`
     /// or `=>` on the next. mod.rs is excluded from the scan because the test block
@@ -1089,6 +1099,7 @@ mod tests {
         // mod.rs is intentionally excluded — scanning it would pick up quoted
         // strings from comments and docstrings in the test block itself.
         let domain_source = concat!(
+            include_str!("capabilities.rs"),
             include_str!("metrics.rs"),
             include_str!("sleep.rs"),
             include_str!("capture.rs"),

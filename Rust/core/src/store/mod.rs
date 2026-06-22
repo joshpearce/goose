@@ -20,7 +20,7 @@ use crate::{
     validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 23;
+pub const CURRENT_SCHEMA_VERSION: i64 = 24;
 pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
@@ -1039,6 +1039,24 @@ pub struct DebugEventRow {
     pub data_json: String,
 }
 
+#[derive(Debug)]
+pub struct OpticalSampleRow {
+    pub device_id: String,
+    pub ts: f64,
+    pub packet_k: i64,
+    pub version: i64,
+    pub channel_index: i64,
+    pub samples_json: String,
+}
+
+#[derive(Debug)]
+pub struct FeatureFlagRow {
+    pub device_id: String,
+    pub flag_index: i64,
+    pub flag_value: i64,
+    pub discovered_at: String,
+}
+
 fn configure_read_write_connection(conn: &Connection) -> GooseResult<()> {
     conn.execute_batch(
         r#"
@@ -1879,6 +1897,53 @@ impl GooseStore {
 
             INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (23);
             PRAGMA user_version = 23;
+
+            CREATE TABLE IF NOT EXISTS optical_channel_samples (
+                device_id TEXT NOT NULL,
+                ts REAL NOT NULL,
+                packet_k INTEGER NOT NULL,
+                version INTEGER NOT NULL,
+                channel_index INTEGER NOT NULL,
+                samples_json TEXT NOT NULL,
+                captured_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(device_id, ts, packet_k, channel_index)
+            );
+            CREATE INDEX IF NOT EXISTS idx_optical_channel_samples_device_ts
+                ON optical_channel_samples(device_id, ts);
+
+            CREATE TABLE IF NOT EXISTS device_feature_flags (
+                device_id TEXT NOT NULL,
+                flag_index INTEGER NOT NULL,
+                flag_value INTEGER NOT NULL,
+                discovered_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                PRIMARY KEY(device_id, flag_index)
+            ) WITHOUT ROWID;
+
+            CREATE TABLE IF NOT EXISTS body_composition_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                weight_kg REAL,
+                bmi REAL,
+                body_fat_pct REAL,
+                muscle_mass_kg REAL,
+                water_pct REAL,
+                source TEXT NOT NULL CHECK(source IN ('manual','healthkit','scale')),
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(source, date)
+            );
+
+            CREATE TABLE IF NOT EXISTS realtime_frames (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                device_uuid TEXT NOT NULL,
+                frame_hex TEXT NOT NULL,
+                captured_at TEXT NOT NULL DEFAULT 'realtime_pip',
+                synced INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_realtime_frames_device_captured
+                ON realtime_frames(device_uuid, captured_at);
+
+            INSERT OR IGNORE INTO goose_schema_migrations(version) VALUES (24);
+            PRAGMA user_version = 24;
             "#,
         )?;
         } // conn lock released here — ensure_* each re-acquire independently
@@ -2283,6 +2348,110 @@ impl GooseStore {
             ],
         )?;
         Ok(changed > 0)
+    }
+
+    /// OPT-03: Insert optical channel sample rows (v20/v21 packet format).
+    /// Uses INSERT OR IGNORE — idempotent on (device_id, ts, packet_k, channel_index).
+    pub fn insert_optical_samples(&self, rows: &[OpticalSampleRow]) -> GooseResult<usize> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        for row in rows {
+            conn.execute(
+                "INSERT OR IGNORE INTO optical_channel_samples \
+                 (device_id, ts, packet_k, version, channel_index, samples_json) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    row.device_id,
+                    row.ts,
+                    row.packet_k,
+                    row.version,
+                    row.channel_index,
+                    row.samples_json,
+                ],
+            )?;
+        }
+        Ok(rows.len())
+    }
+
+    /// OPT-03: Query optical channel samples within a time range.
+    pub fn query_optical_between(
+        &self,
+        device_id: &str,
+        packet_k: i64,
+        start_ts: f64,
+        end_ts: f64,
+    ) -> GooseResult<Vec<OpticalSampleRow>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT device_id, ts, packet_k, version, channel_index, samples_json \
+             FROM optical_channel_samples \
+             WHERE device_id = ?1 AND packet_k = ?2 AND ts >= ?3 AND ts <= ?4 \
+             ORDER BY ts ASC",
+        )?;
+        let rows = stmt
+            .query_map(params![device_id, packet_k, start_ts, end_ts], |row| {
+                Ok(OpticalSampleRow {
+                    device_id: row.get(0)?,
+                    ts: row.get(1)?,
+                    packet_k: row.get(2)?,
+                    version: row.get(3)?,
+                    channel_index: row.get(4)?,
+                    samples_json: row.get(5)?,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
+    }
+
+    /// FF-03: Upsert device feature flags. Latest value wins (INSERT OR REPLACE).
+    pub fn upsert_feature_flags(
+        &self,
+        device_id: &str,
+        flags: &[(i64, i64)],
+    ) -> GooseResult<usize> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        for (flag_index, flag_value) in flags {
+            conn.execute(
+                "INSERT OR REPLACE INTO device_feature_flags \
+                 (device_id, flag_index, flag_value) \
+                 VALUES (?1, ?2, ?3)",
+                params![device_id, flag_index, flag_value],
+            )?;
+        }
+        Ok(flags.len())
+    }
+
+    /// FF-03: Get all feature flags for a device, ordered by flag_index.
+    pub fn get_feature_flags(&self, device_id: &str) -> GooseResult<Vec<FeatureFlagRow>> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| GooseError::message("store mutex poisoned"))?;
+        let mut stmt = conn.prepare(
+            "SELECT device_id, flag_index, flag_value, discovered_at \
+             FROM device_feature_flags \
+             WHERE device_id = ?1 \
+             ORDER BY flag_index ASC",
+        )?;
+        let rows = stmt
+            .query_map(params![device_id], |row| {
+                Ok(FeatureFlagRow {
+                    device_id: row.get(0)?,
+                    flag_index: row.get(1)?,
+                    flag_value: row.get(2)?,
+                    discovered_at: row.get(3)?,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
     }
 }
 
@@ -3816,6 +3985,11 @@ pub fn known_tables() -> &'static [&'static str] {
         "workout",
         "apple_daily",
         "metric_series",
+        "optical_channel_samples",
+        "device_feature_flags",
+        "body_composition_history",
+        "realtime_frames",
+        "sync_telemetry",
     ]
 }
 

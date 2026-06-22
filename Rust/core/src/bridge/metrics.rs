@@ -378,8 +378,20 @@ pub(crate) fn dispatch_metrics(request: &BridgeRequest) -> BridgeResponse {
             .and_then(metric_series_upsert_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.insert_v20v21_batch" => request_args::<InsertV20V21BatchArgs>(request)
+            .and_then(insert_v20v21_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "biometrics.insert_v24_batch" => request_args::<InsertV24BatchArgs>(request)
             .and_then(insert_v24_biometric_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.insert_v26_batch" => request_args::<InsertV26BatchArgs>(request)
+            .and_then(insert_v26_batch_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "biometrics.optical_between" => request_args::<OpticalBetweenArgs>(request)
+            .and_then(optical_between_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "biometrics.v24_between" => request_args::<V24BetweenArgs>(request)
@@ -4253,4 +4265,118 @@ fn unix_from_iso8601(s: &str) -> Option<f64> {
         + sec as f64
         + millis / 1000.0;
     Some(secs)
+}
+
+// ---------------------------------------------------------------------------
+// OPT-03: optical_channel_samples bridge methods
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+struct OpticalChannelArg {
+    index: u8,
+    samples: Vec<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpticalPacketArg {
+    ts: f64,
+    packet_k: u8,
+    version: u8,
+    channels: Vec<OpticalChannelArg>,
+}
+
+#[derive(Debug, Deserialize)]
+struct InsertV20V21BatchArgs {
+    database_path: String,
+    device_id: String,
+    packets: Vec<OpticalPacketArg>,
+}
+
+#[derive(Debug, Deserialize)]
+struct V26PacketArg {
+    ts: f64,
+    packet_k: u8,
+    version: u8,
+    ppg: Vec<i64>,
+    #[allow(dead_code)]
+    num_channels: u8,
+}
+
+#[derive(Debug, Deserialize)]
+struct InsertV26BatchArgs {
+    database_path: String,
+    device_id: String,
+    packets: Vec<V26PacketArg>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpticalBetweenArgs {
+    database_path: String,
+    device_id: String,
+    packet_k: i64,
+    start_ts: f64,
+    end_ts: f64,
+}
+
+fn insert_v20v21_batch_bridge(args: InsertV20V21BatchArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let mut rows = Vec::new();
+    for packet in &args.packets {
+        for ch in &packet.channels {
+            let samples_json = serde_json::to_string(&ch.samples)
+                .map_err(|e| GooseError::message(format!("samples serialization error: {e}")))?;
+            rows.push(crate::store::OpticalSampleRow {
+                device_id: args.device_id.clone(),
+                ts: packet.ts,
+                packet_k: packet.packet_k as i64,
+                version: packet.version as i64,
+                channel_index: ch.index as i64,
+                samples_json,
+            });
+        }
+    }
+    let inserted = store.insert_optical_samples(&rows)?;
+    Ok(serde_json::json!({"inserted": inserted}))
+}
+
+fn insert_v26_batch_bridge(args: InsertV26BatchArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let mut rows = Vec::new();
+    for packet in &args.packets {
+        let samples_json = serde_json::to_string(&packet.ppg)
+            .map_err(|e| GooseError::message(format!("ppg serialization error: {e}")))?;
+        rows.push(crate::store::OpticalSampleRow {
+            device_id: args.device_id.clone(),
+            ts: packet.ts,
+            packet_k: packet.packet_k as i64,
+            version: packet.version as i64,
+            channel_index: 0,
+            samples_json,
+        });
+    }
+    let inserted = store.insert_optical_samples(&rows)?;
+    Ok(serde_json::json!({"inserted": inserted}))
+}
+
+fn optical_between_bridge(args: OpticalBetweenArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let rows = store.query_optical_between(
+        &args.device_id,
+        args.packet_k,
+        args.start_ts,
+        args.end_ts,
+    )?;
+    let result = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "ts": r.ts,
+                "packet_k": r.packet_k,
+                "version": r.version,
+                "channel_index": r.channel_index,
+                "samples_json": r.samples_json,
+            })
+        })
+        .collect::<Vec<_>>();
+    Ok(serde_json::json!(result))
 }
