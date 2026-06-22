@@ -524,6 +524,9 @@ fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
         Some(DataPacketBodySummary::R22Whoop5Hr { .. }) => "r22_whoop5_hr",
         Some(DataPacketBodySummary::V18History { .. }) => "v18_history",
         Some(DataPacketBodySummary::V26PpgWaveform { .. }) => "v26_ppg_waveform",
+        Some(DataPacketBodySummary::V20V21OpticalMultiChannel { .. }) => {
+            "v20v21_optical_multi_channel"
+        }
         Some(DataPacketBodySummary::Unknown { .. }) => "unknown",
         None => "none",
     }

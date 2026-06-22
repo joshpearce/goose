@@ -675,6 +675,7 @@ fn body_summary_kind(summary: &DataPacketBodySummary) -> &'static str {
         DataPacketBodySummary::R22Whoop5Hr { .. } => "r22_whoop5_hr",
         DataPacketBodySummary::V18History { .. } => "v18_history",
         DataPacketBodySummary::V26PpgWaveform { .. } => "v26_ppg_waveform",
+        DataPacketBodySummary::V20V21OpticalMultiChannel { .. } => "v20v21_optical_multi_channel",
         DataPacketBodySummary::Unknown { .. } => "unknown",
     }
 }

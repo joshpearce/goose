@@ -327,9 +327,29 @@ pub enum DataPacketBodySummary {
         samples: Vec<i16>, // 24 samples at 24 Hz
         warnings: Vec<String>,
     },
+    /// Multi-channel optical waveform from packet_k=20 (v20) payloads.
+    /// v20: 5 blocks × 428B each (2140B total); each active block yields 2 OpticalChannel
+    /// entries with 50 i32 LE samples each (presence byte 0x19 = active).
+    /// packet_k=21 is NOT routed here — it remains RawMotionK21 for motion metric continuity.
+    V20V21OpticalMultiChannel {
+        version: u8,
+        channels: Vec<OpticalChannel>,
+        warnings: Vec<String>,
+    },
     /// Catch-all for packet_k values with no dedicated parse arm.
     /// Serialises as { "kind": "unknown", "packet_k": N }.
     Unknown { packet_k: u8 },
+}
+
+/// One optical photodiode channel decoded from a v20 or v21 payload.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OpticalChannel {
+    /// Zero-based channel index within the packet (block_num*2 or block_num*2+1 for v20).
+    pub index: u8,
+    /// 50 i32 LE samples per sub-channel (v20 only).
+    pub samples_i32: Option<Vec<i32>>,
+    /// 100 i16 LE samples per channel (v21 only).
+    pub samples_i16: Option<Vec<i16>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -747,6 +767,7 @@ fn parse_data_packet_body_summary(
         18 => parse_v18_body(payload),
         17 => parse_r17_body_summary(payload),
         10 => parse_k10_raw_motion_summary(payload),
+        20 => parse_v20v21_optical_body(20, payload),
         21 => parse_k21_raw_motion_summary(payload),
         24 => parse_v24_body_summary(payload),
         26 => parse_v26_ppg_body(payload),
@@ -1207,6 +1228,134 @@ fn parse_v26_ppg_body(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<Str
     )
 }
 
+/// Exposed for integration tests only. Do not call from production code.
+pub fn parse_v20v21_optical_body_for_test(
+    packet_k: u8,
+    payload: &[u8],
+) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    parse_v20v21_optical_body(packet_k, payload)
+}
+
+/// v20 layout (2140B total):
+///   5 blocks × 428B each; block starts at offsets: 0x1a(26), 0x1c0(448), 0x366(870), 0x50c(1292), 0x6b2(1714)
+///   (relative to body start, i.e. payload[3..])
+///   Block layout: 1B presence byte (0x19 = active, anything else = inactive/skip)
+///                 then 2 sub-channels × 50 i32 LE samples (400B of i32 data per block)
+///   Each active block → 2 OpticalChannel entries:
+///     index = block_num*2  → samples_i32 = payload[block_start+1 .. block_start+201] as i32s (50 samples)
+///     index = block_num*2+1 → samples_i32 = payload[block_start+201 .. block_start+401] as i32s (50 samples)
+///   Presence byte offset within payload (absolute): [29, 451, 873, 1295, 1717]
+///   Source: CONTEXT.md v20 layout — presence bytes at @0x1a/0x1c0/0x366/0x50c/0x6b2 relative to body
+///
+/// packet_k=21 is NOT routed here (k=21 remains RawMotionK21 for motion metric continuity).
+/// This function accepts packet_k for version tagging and future v21 routing.
+fn parse_v20v21_optical_body(
+    packet_k: u8,
+    payload: &[u8],
+) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    // Skip the 3-byte data-packet header (packet_type + packet_k + status).
+    let data = payload.get(3..).unwrap_or(&[]);
+    let mut warnings = Vec::new();
+    let mut channels: Vec<OpticalChannel> = Vec::new();
+
+    if data.is_empty() {
+        warnings.push("v20_empty_payload".to_string());
+        return (None, warnings);
+    }
+
+    if packet_k == 20 {
+        // v20: 5 blocks × 428B; presence byte at body offsets 26, 448, 870, 1292, 1714.
+        // Each active block has 2 sub-channels of 50 i32 LE samples (200B each, 400B total).
+        // offset 0 (body-relative): first block presence byte — @0x1a in CONTEXT.md description
+        //   (CONTEXT.md body offsets are relative to body start after the 3-byte header)
+        const BLOCK_PRESENCE_OFFSETS: [usize; 5] = [26, 448, 870, 1292, 1714];
+        const BLOCK_SIZE: usize = 428;
+        const SAMPLES_PER_SUBCHANNEL: usize = 50;
+        const BYTES_PER_I32: usize = 4;
+        const SUBCHANNEL_BYTES: usize = SAMPLES_PER_SUBCHANNEL * BYTES_PER_I32; // 200B
+
+        for (block_num, &presence_offset) in BLOCK_PRESENCE_OFFSETS.iter().enumerate() {
+            let Some(&presence) = data.get(presence_offset) else {
+                warnings.push(format!(
+                    "v20_block_{block_num}_presence_missing_at_offset_{presence_offset}"
+                ));
+                continue;
+            };
+
+            if presence != 0x19 {
+                // Block not active — skip silently.
+                continue;
+            }
+
+            // Sub-channel 0: bytes [presence_offset+1 .. presence_offset+1+200]
+            let sub0_start = presence_offset + 1;
+            let sub0_end = sub0_start + SUBCHANNEL_BYTES;
+            // Sub-channel 1: bytes [sub0_end .. sub0_end+200]
+            let sub1_start = sub0_end;
+            let sub1_end = sub1_start + SUBCHANNEL_BYTES;
+
+            // Verify the block fits within the data slice.
+            if data.len() < sub1_end {
+                warnings.push(format!(
+                    "v20_block_{block_num}_truncated_need_{sub1_end}_have_{}",
+                    data.len()
+                ));
+                // Add what samples we can from sub-channel 0 if enough data.
+                if data.len() >= sub0_end {
+                    let samples_i32: Vec<i32> = (0..SAMPLES_PER_SUBCHANNEL)
+                        .filter_map(|i| read_i32_le(data, sub0_start + i * BYTES_PER_I32))
+                        .collect();
+                    channels.push(OpticalChannel {
+                        index: (block_num * 2) as u8,
+                        samples_i32: Some(samples_i32),
+                        samples_i16: None,
+                    });
+                }
+                continue;
+            }
+
+            // Sub-channel 0
+            let samples0: Vec<i32> = (0..SAMPLES_PER_SUBCHANNEL)
+                .filter_map(|i| read_i32_le(data, sub0_start + i * BYTES_PER_I32))
+                .collect();
+            channels.push(OpticalChannel {
+                index: (block_num * 2) as u8,
+                samples_i32: Some(samples0),
+                samples_i16: None,
+            });
+
+            // Sub-channel 1
+            let samples1: Vec<i32> = (0..SAMPLES_PER_SUBCHANNEL)
+                .filter_map(|i| read_i32_le(data, sub1_start + i * BYTES_PER_I32))
+                .collect();
+            channels.push(OpticalChannel {
+                index: (block_num * 2 + 1) as u8,
+                samples_i32: Some(samples1),
+                samples_i16: None,
+            });
+
+            let _ = BLOCK_SIZE; // suppress unused-const warning
+        }
+    }
+    // packet_k == 21 is intentionally not handled here — k=21 routes to parse_k21_raw_motion_summary.
+    // If future hardware confirms k=21 is optical, add an else-if branch here.
+
+    (
+        Some(DataPacketBodySummary::V20V21OpticalMultiChannel {
+            version: packet_k,
+            channels,
+            warnings: warnings.clone(),
+        }),
+        warnings,
+    )
+}
+
+/// Read a little-endian i32 from `data` at `offset`, returning None if out of bounds.
+fn read_i32_le(data: &[u8], offset: usize) -> Option<i32> {
+    let bytes = data.get(offset..offset + 4)?;
+    Some(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+}
+
 fn summarize_i16_series(
     payload: &[u8],
     offset: usize,
@@ -1336,7 +1485,7 @@ fn data_packet_domain(packet_k: u8) -> Option<&'static str> {
         16 => "raw_ecg_labrador",
         17 => "r17_optical_or_labrador_filtered",
         19 | 22 => "research_packet",
-        20 => "raw_or_research_counted",
+        20 => "v20v21_optical_multi_channel",
         25 => "pulse_information_packet",
         26 => "v26_ppg_waveform",
         _ => return None,

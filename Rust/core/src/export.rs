@@ -2403,6 +2403,9 @@ fn export_sensor_samples(
             DataPacketBodySummary::V26PpgWaveform { .. } => {
                 // PPG waveform burst — optical persistence handled in Phase 113; skip here.
             }
+            DataPacketBodySummary::V20V21OpticalMultiChannel { .. } => {
+                // v20 optical multi-channel — persistence deferred to Phase 113; skip here.
+            }
             DataPacketBodySummary::Unknown { .. } => {
                 // Unknown packet_k — no sensor sample export path; skip gracefully.
             }
