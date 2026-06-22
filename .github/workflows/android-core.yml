@@ -90,8 +90,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.resolve-tag.outputs.tag }}
         run: |
-          gh release upload "$TAG" \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+          APK_NAME="goose-${TAG}-unsigned.apk"
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk "$APK_NAME"
+          gh release upload "$TAG" "$APK_NAME" \
             --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Attach to GitHub Release
@@ -113,5 +114,5 @@ jobs:
           echo "## Android Build" >> "$GITHUB_STEP_SUMMARY"
           echo "**Tag:** $TAG" >> "$GITHUB_STEP_SUMMARY"
           echo "**Rust archive:** $ARCHIVE ($SIZE)" >> "$GITHUB_STEP_SUMMARY"
-          echo "**APK:** android/app/build/outputs/apk/release/app-release-unsigned.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "**APK:** goose-${TAG}-unsigned.apk" >> "$GITHUB_STEP_SUMMARY"
           echo "**Targets:** arm64-v8a, armeabi-v7a, x86_64" >> "$GITHUB_STEP_SUMMARY"
