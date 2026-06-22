@@ -1,7 +1,7 @@
 use goose_core::protocol::{
     COMMAND_GET_HELLO, DataPacketBodySummary, DeviceType, FrameAccumulator, I16SeriesSummary,
     PacketType, ParsedPayload, build_v5_command_frame, build_v5_payload_frame, parse_frame,
-    parse_frame_hex,
+    parse_frame_hex, parse_v26_ppg_body_for_test,
 };
 
 const GET_HELLO_FRAME: &str = "aa0108000001e67123019101363e5c8d";
@@ -969,5 +969,104 @@ fn data_packet_domain_24() {
             Some("normal_history_with_hr_marker"),
             "packet_k={k} must still have domain 'normal_history_with_hr_marker'"
         );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// v26 PPG waveform synthetic fixture tests (OPT-02)
+// ---------------------------------------------------------------------------
+
+/// Build a correctly-shaped 88B payload for parse_v26_ppg_body_for_test.
+///
+/// The parse function skips bytes [0..3] as the data-packet header, so:
+///   payload[12] = data[9]  → ppg_channel
+///   payload[15..19]        → unix_ts u32 LE
+///   payload[27..75]        → 24 × LE-i16 PPG samples
+fn build_v26_payload(ppg_channel: u8, unix_ts: u32, samples: &[i16]) -> Vec<u8> {
+    let mut buf = vec![0u8; 88];
+    // bytes 8/9: type 47 (HistoricalData) / version 26
+    buf[8] = 47;
+    buf[9] = 26;
+    // byte 12: ppg_channel — body-relative offset 9 (payload[3..] = data; data[9] = buf[12])
+    buf[12] = ppg_channel;
+    // bytes 15–18: unix_ts u32 LE — body-relative offset 12 (data[12..16] = buf[15..19])
+    let ts_bytes = unix_ts.to_le_bytes();
+    buf[15..19].copy_from_slice(&ts_bytes);
+    // bytes 27–74: 24 × LE-i16 — body-relative offsets 24–71 (data[24 + 2*i] = buf[27 + 2*i])
+    for (i, &sample) in samples.iter().enumerate().take(24) {
+        let sample_bytes = sample.to_le_bytes();
+        buf[27 + 2 * i] = sample_bytes[0];
+        buf[28 + 2 * i] = sample_bytes[1];
+    }
+    buf
+}
+
+#[test]
+fn test_v26_ppg_valid_payload_parses_to_variant() {
+    let samples = [100i16; 24];
+    let payload = build_v26_payload(1, 1_700_000_000u32, &samples);
+
+    let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
+    assert!(warnings.is_empty(), "expected no warnings, got: {warnings:?}");
+
+    match result {
+        Some(DataPacketBodySummary::V26PpgWaveform {
+            ppg_channel,
+            unix_ts,
+            samples: parsed_samples,
+            ..
+        }) => {
+            assert_eq!(ppg_channel, 1, "ppg_channel mismatch");
+            assert_eq!(unix_ts, 1_700_000_000u32, "unix_ts mismatch");
+            assert_eq!(parsed_samples.len(), 24, "expected 24 samples");
+            assert_eq!(parsed_samples[0], 100i16, "first sample mismatch");
+        }
+        other => panic!("expected V26PpgWaveform, got {other:?}"),
+    }
+}
+
+#[test]
+fn test_v26_ppg_channel_zero_returns_unknown() {
+    let payload = build_v26_payload(0, 0, &[0i16; 24]);
+
+    let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
+    assert!(
+        warnings.iter().any(|w| w.contains("ppg_channel_out_of_range")),
+        "expected ppg_channel_out_of_range warning, got: {warnings:?}"
+    );
+    match result {
+        Some(DataPacketBodySummary::Unknown { packet_k: 26 }) => {}
+        other => panic!("expected Unknown {{ packet_k: 26 }}, got {other:?}"),
+    }
+}
+
+#[test]
+fn test_v26_ppg_channel_27_returns_unknown() {
+    let payload = build_v26_payload(27, 0, &[0i16; 24]);
+
+    let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
+    assert!(
+        warnings.iter().any(|w| w.contains("ppg_channel_out_of_range")),
+        "expected ppg_channel_out_of_range warning, got: {warnings:?}"
+    );
+    match result {
+        Some(DataPacketBodySummary::Unknown { packet_k: 26 }) => {}
+        other => panic!("expected Unknown {{ packet_k: 26 }}, got {other:?}"),
+    }
+}
+
+#[test]
+fn test_v26_ppg_short_payload_returns_unknown() {
+    // 60B payload — data = payload[3..] = 57 bytes; < 75 required → too short
+    let short_payload = vec![0u8; 60];
+
+    let (result, warnings) = parse_v26_ppg_body_for_test(&short_payload);
+    assert!(
+        warnings.iter().any(|w| w.contains("v26_payload_too_short")),
+        "expected v26_payload_too_short warning, got: {warnings:?}"
+    );
+    match result {
+        Some(DataPacketBodySummary::Unknown { packet_k: 26 }) => {}
+        other => panic!("expected Unknown {{ packet_k: 26 }}, got {other:?}"),
     }
 }
