@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 114
-current_phase_name: Harvard Sleep Need Model
+current_phase: 115
+current_phase_name: GET_FF_VALUE
 status: planning
 stopped_at: Phase 114 context gathered
-last_updated: "2026-06-22T22:29:33.930Z"
-last_activity: 2026-06-22
-last_activity_desc: Phase 113 complete, transitioned to Phase 114
+last_updated: "2026-06-23T00:35:50.445Z"
+last_activity: 2026-06-23
+last_activity_desc: Phase 114 complete, transitioned to Phase 115
 progress:
   total_phases: 15
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 13
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 20
 ---
 
 # Project State
@@ -28,16 +28,16 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 114 — Harvard Sleep Need Model
+Phase: 115 — Feature Flag Discovery (GET_FF_VALUE)
 Plan: Not started
 Status: Roadmap approved — ready to plan Phase 112
-Last activity: 2026-06-22 — Phase 113 complete, transitioned to Phase 114
+Last activity: 2026-06-23 — Phase 114 complete, transitioned to Phase 115
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 21 (v13.0 complete)
+- Total plans completed: 23 (v13.0 complete)
 - Average duration: —
 - Total execution time: —
 

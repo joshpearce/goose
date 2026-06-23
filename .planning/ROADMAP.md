@@ -1058,7 +1058,7 @@ Plans:
 | 111 | 2/2 | Complete    | 2026-06-21 |
 | 112 | 2/2 | Complete    | 2026-06-22 |
 | 113 | 0/1 | Complete    | 2026-06-22 |
-| 114 | 2/2 | Complete   | 2026-06-23 |
+| 114 | 2/2 | Complete    | 2026-06-23 |
 | 115 | 0/0 | Not started | — |
 | 116 | 0/0 | Not started | — |
 | 117 | 0/0 | Not started | — |
@@ -1121,7 +1121,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 0/1 plans complete
+**Plans:** 2/2 plans complete
 Plans:
 
 - [x] 111-01-PLAN.md
