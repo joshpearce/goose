@@ -154,6 +154,22 @@ Goose is independent of WHOOP. This repository does not include or reference cod
 
 Built on [b-nnett/goose](https://github.com/b-nnett/goose) for the iOS shell and BLE/Rust architecture. BLE pairing patterns draw from [Noop](https://github.com/NoopApp/noop). The self-hosted server adapts [tigercraft4/my-whoop](https://github.com/tigercraft4/my-whoop). Health metric UI design references [Bevel](https://www.bevel.health/).
 
+## Donate
+
+Goose is free and self-hosted. If it saves you money on a WHOOP subscription or you find it useful, chipping in keeps development going. One-off, no account, no strings.
+
+Donations are crypto-only — no PayPal or Patreon. If you don't hold any crypto, Coinbase, Kraken, or Cash App (for BTC) take under 5 minutes to set up.
+
+| Coin | Network | Address |
+|---|---|---|
+| **BTC** | Bitcoin | `bc1qk5gw9st7zg767d0p8y3apkr4hk77em0a8dazxc` |
+| **ETH** | Ethereum | `0xd237f99E11b476aefF2345ab55b4949EDF946528` |
+| **SOL** | Solana | `DEQbatEjCH2uXzE53RQ59TAD43nhq7jaiTr4kULwwSCr` |
+
+Always double-check the first and last characters before sending — crypto transactions are irreversible. Only send a coin to its own network.
+
+Can't donate? **⭐ star the repo**, file a bug report, or share a strap log. That moves Goose forward too. Full details and copyable addresses in [`docs/DONATIONS.md`](docs/DONATIONS.md).
+
 ## Contributing
 
 Small, focused changes are easiest to review. See [CONTRIBUTING.md](CONTRIBUTING.md) for code style, Rust bridge conventions, and the PR checklist. Join [Discord](https://discord.gg/EyZE6gzAF2) or [GitHub Discussions](https://github.com/tigercraft4/goose/discussions) for questions.
