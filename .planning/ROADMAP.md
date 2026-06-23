@@ -843,7 +843,9 @@ Plans:
   2. The response is parsed into `DeviceCapabilities.feature_flags: [UInt8: UInt8]`; raw index→value is stored without semantic name claims; the flag map is visible in the Debug tab
   3. `device_feature_flags` table exists (schema v24 already landed in Phase 113); `capabilities.get_feature_flags` bridge method inserts and retrieves rows; `BRIDGE_METHODS` updated
 
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 115-01-PLAN.md — Swift: add DeviceCapabilities.featureFlags + send GET_FF_VALUE in handshake with 3s timeout + parse response + bridge upsert (FF-01, FF-02)
+- [ ] 115-02-PLAN.md — Swift: display feature flags in Debug tab Runtime section as hex pairs / "None discovered" (FF-02, FF-03)
 **UI hint**: yes
 
 ---
