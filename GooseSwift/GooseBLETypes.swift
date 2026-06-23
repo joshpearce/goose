@@ -322,6 +322,8 @@ struct DeviceCapabilities: Decodable {
   // Plain String (not enum) to avoid decode failures on unknown future variants.
   // Valid values: "WHOOP4", "WHOOP5", "WHOOP_MG", "HR_MONITOR".
   let deviceKind: String
+  // Discovered via GET_FF_VALUE (cmd 0x80) on reconnect; empty when not yet known or timed out.
+  let featureFlags: [UInt8: UInt8]
 
   enum CodingKeys: String, CodingKey {
     case wireProtocol = "wire_protocol"
@@ -331,6 +333,50 @@ struct DeviceCapabilities: Decodable {
     case batteryViaCMD26 = "battery_via_cmd26"
     case r22Realtime = "r22_realtime"
     case deviceKind = "device_kind"
+    case featureFlags = "feature_flags"
+  }
+
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    wireProtocol = try c.decode(WireProtocol.self, forKey: .wireProtocol)
+    historicalSync = try c.decode(HistoricalSyncKind.self, forKey: .historicalSync)
+    batteryViaR22 = try c.decode(Bool.self, forKey: .batteryViaR22)
+    batteryViaEvent48 = try c.decode(Bool.self, forKey: .batteryViaEvent48)
+    batteryViaCMD26 = try c.decode(Bool.self, forKey: .batteryViaCMD26)
+    r22Realtime = try c.decode(Bool.self, forKey: .r22Realtime)
+    deviceKind = try c.decode(String.self, forKey: .deviceKind)
+    // feature_flags may be absent from bridge responses that predate Phase 115; default to empty.
+    if let raw = try c.decodeIfPresent([String: UInt8].self, forKey: .featureFlags) {
+      var parsed: [UInt8: UInt8] = [:]
+      for (k, v) in raw {
+        if let index = UInt8(k) {
+          parsed[index] = v
+        }
+      }
+      featureFlags = parsed
+    } else {
+      featureFlags = [:]
+    }
+  }
+
+  init(
+    wireProtocol: WireProtocol,
+    historicalSync: HistoricalSyncKind,
+    batteryViaR22: Bool,
+    batteryViaEvent48: Bool,
+    batteryViaCMD26: Bool,
+    r22Realtime: Bool,
+    deviceKind: String,
+    featureFlags: [UInt8: UInt8] = [:]
+  ) {
+    self.wireProtocol = wireProtocol
+    self.historicalSync = historicalSync
+    self.batteryViaR22 = batteryViaR22
+    self.batteryViaEvent48 = batteryViaEvent48
+    self.batteryViaCMD26 = batteryViaCMD26
+    self.r22Realtime = r22Realtime
+    self.deviceKind = deviceKind
+    self.featureFlags = featureFlags
   }
 }
 

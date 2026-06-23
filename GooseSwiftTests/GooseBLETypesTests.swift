@@ -157,4 +157,63 @@ final class GooseBLETypesTests: XCTestCase {
     XCTAssertEqual(event.rustDeviceType, "GOOSE",
       "Gen5 fd4b-prefixed characteristic must still produce rustDeviceType GOOSE")
   }
+
+  // MARK: - DeviceCapabilities.featureFlags tests (Phase 115 — FF-01 / FF-02)
+
+  func test_deviceCapabilities_omittedFeatureFlags_defaultsToEmpty() throws {
+    // Test 1: Decoding a capabilities JSON that omits feature_flags yields featureFlags == [:]
+    let json = """
+    {
+      "wire_protocol": "gen5",
+      "historical_sync": "stream",
+      "battery_via_r22": true,
+      "battery_via_event48": true,
+      "battery_via_cmd26": true,
+      "r22_realtime": true,
+      "device_kind": "WHOOP5"
+    }
+    """.data(using: .utf8)!
+    let caps = try JSONDecoder().decode(DeviceCapabilities.self, from: json)
+    XCTAssertEqual(caps.featureFlags, [:],
+      "Omitting feature_flags key in JSON must yield an empty featureFlags dictionary")
+  }
+
+  func test_deviceCapabilities_populatedFeatureFlags_roundTrips() throws {
+    // Test 2: Decoding JSON with feature_flags present yields the expected [UInt8: UInt8] dict
+    let json = """
+    {
+      "wire_protocol": "gen5",
+      "historical_sync": "stream",
+      "battery_via_r22": true,
+      "battery_via_event48": true,
+      "battery_via_cmd26": true,
+      "r22_realtime": true,
+      "device_kind": "WHOOP5",
+      "feature_flags": {"0": 1, "2": 255}
+    }
+    """.data(using: .utf8)!
+    let caps = try JSONDecoder().decode(DeviceCapabilities.self, from: json)
+    XCTAssertEqual(caps.featureFlags[0], 1,
+      "feature_flags key '0' with value 1 must decode to featureFlags[0] == 1")
+    XCTAssertEqual(caps.featureFlags[2], 255,
+      "feature_flags key '2' with value 255 must decode to featureFlags[2] == 255")
+    XCTAssertEqual(caps.featureFlags.count, 2,
+      "Exactly two flag pairs must be decoded")
+  }
+
+  func test_deviceCapabilities_fallbackInitialiser_hasEmptyFeatureFlags() {
+    // Test 3: Fallback DeviceCapabilities initialiser (no flags) has featureFlags == [:]
+    let caps = DeviceCapabilities(
+      wireProtocol: .gen5,
+      historicalSync: .stream,
+      batteryViaR22: true,
+      batteryViaEvent48: true,
+      batteryViaCMD26: true,
+      r22Realtime: true,
+      deviceKind: "WHOOP5",
+      featureFlags: [:]
+    )
+    XCTAssertEqual(caps.featureFlags, [:],
+      "Fallback initialiser with featureFlags: [:] must have empty featureFlags")
+  }
 }
