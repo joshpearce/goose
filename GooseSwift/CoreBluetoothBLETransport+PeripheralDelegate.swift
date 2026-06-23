@@ -292,6 +292,7 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
     handleClockValue(value, characteristic: characteristic)
     handleBatteryValue(value, characteristic: characteristic)
     handleBodyLocationValue(value, characteristic: characteristic)
+    handleFeatureFlagValue(value, characteristic: characteristic)  // FF-01/FF-02
 
     bleUIStateAggregator.publishLastSyncAt(event.capturedAt)
     record(

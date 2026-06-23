@@ -980,6 +980,74 @@ extension CoreBluetoothBLETransport {
     DispatchQueue.main.asyncAfter(deadline: .now() + clearAfter, execute: workItem)
   }
 
+  // FF-02: Parse cmd 0x80 (GET_FF_VALUE) response and persist discovered feature flags.
+  // Response layout (V5 commandResponse, inner payload after 5-byte header):
+  //   payload[5] = single UInt8 flag value (from protocol observation).
+  // Stored as [UInt8(0): value] pending real-device confirmation of multi-flag enumeration.
+  func handleFeatureFlagValue(_ value: Data, characteristic: CBCharacteristic) {
+    guard notificationCharacteristicIDs.contains(characteristic.uuid) else { return }
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
+            payload.count >= 6,
+            let packetType = payload.first,
+            packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
+            payload[2] == 0x80 else {
+        continue
+      }
+      // Bounds-checked read of the single flag value byte (V5 input validation — T-115-01).
+      let flagValue = payload[5]
+      let flags: [UInt8: UInt8] = [0: flagValue]
+      // Cancel timeout before applying result (Pitfall 4 in RESEARCH.md).
+      featureFlagTimeoutWorkItem?.cancel()
+      featureFlagTimeoutWorkItem = nil
+      // Capture device ID stored at send time for the bridge write.
+      let capturedDeviceID = pendingFeatureFlagDeviceID ?? ""
+      pendingFeatureFlagDeviceID = nil
+      record(
+        source: "ble.feature_flags",
+        title: "cmd128.response",
+        body: "flagValue=0x\(String(format: "%02X", flagValue)) deviceID=\(capturedDeviceID.prefix(8))"
+      )
+      // Update connectedCapabilities on main thread preserving all other fields.
+      DispatchQueue.main.async { [weak self] in
+        guard let self, let existing = self.connectedCapabilities else { return }
+        self.connectedCapabilities = DeviceCapabilities(
+          wireProtocol: existing.wireProtocol,
+          historicalSync: existing.historicalSync,
+          batteryViaR22: existing.batteryViaR22,
+          batteryViaEvent48: existing.batteryViaEvent48,
+          batteryViaCMD26: existing.batteryViaCMD26,
+          r22Realtime: existing.r22Realtime,
+          deviceKind: existing.deviceKind,
+          featureFlags: flags
+        )
+        self.onCapabilitiesUpdated?()
+      }
+      // Persist to device_feature_flags SQLite table on background queue (Pitfall 1).
+      let flagsArray: [[String: Any]] = [["index": 0, "value": Int(flagValue)]]
+      let dbPath = HealthDataStore.defaultDatabasePath()
+      historicalWriteQueue.async { [weak self] in
+        guard let self, !capturedDeviceID.isEmpty else { return }
+        let result = try? self.historicalDirectWriteBridge.request(
+          method: "capabilities.upsert_feature_flags",
+          args: [
+            "database_path": dbPath,
+            "device_id": capturedDeviceID,
+            "flags": flagsArray
+          ]
+        )
+        let upserted = result?["upserted"] as? Int ?? 0
+        self.record(
+          source: "ble.feature_flags",
+          title: "cmd128.persisted",
+          body: "upserted=\(upserted) deviceID=\(capturedDeviceID.prefix(8))"
+        )
+      }
+      // Only process the first matching frame.
+      return
+    }
+  }
+
   // BLE-02: Parse cmd 0x54 (GET_BODY_LOCATION_AND_STATUS) response and update isOnWrist.
   // V5 commandResponse layout: payload[0]=packetType payload[1]=flags payload[2]=commandByte
   //   payload[3]=sequence payload[4]=resultCode payload[5]=revision payload[6]=location

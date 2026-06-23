@@ -1120,6 +1120,7 @@ extension CoreBluetoothBLETransport {
       }
       sendClientHelloIfNeeded(reason: cached ? "cached_gatt" : "gatt_discovery")
       sendGetBodyLocationAndStatus()  // BLE-02: query body location on connect
+      sendGetFeatureFlagValue()       // FF-01: discover feature flags on every reconnect
       scheduleDebugSkinTemperatureCommandIfNeeded(reason: cached ? "cached_ready" : "ready")
       scheduleAutomaticHistoricalSyncIfNeeded()
       scheduleAutomaticPhysiologyCaptureIfNeeded()
@@ -1205,6 +1206,56 @@ extension CoreBluetoothBLETransport {
   func consumeNextCmd54LocationSequence() -> UInt8 {
     let sequence = nextCmd54LocationCommandSequence
     nextCmd54LocationCommandSequence = nextCmd54LocationCommandSequence == UInt8.max ? 0 : nextCmd54LocationCommandSequence + 1
+    return sequence
+  }
+
+  // FF-01: Send GET_FF_VALUE (cmd 0x80) immediately after handshake on every reconnect.
+  // Zero-byte payload — probes current flag state. Response parsed by handleFeatureFlagValue.
+  // A 3-second DispatchWorkItem timeout leaves featureFlags empty on no response (D-02).
+  func sendGetFeatureFlagValue() {
+    guard let activePeripheral, let commandCharacteristic else {
+      record(level: .debug, source: "ble.feature_flags", title: "cmd128.skipped", body: "no active peripheral or command characteristic")
+      return
+    }
+    guard let writeType = writeType(for: commandCharacteristic) else {
+      record(level: .debug, source: "ble.feature_flags", title: "cmd128.skipped", body: "command characteristic is not writable")
+      return
+    }
+    let sequence = consumeNextFeatureFlagSequence()
+    // Capture device ID at send time to guard against disconnect race (Pitfall 2 in RESEARCH.md).
+    let capturedDeviceID = connectedPeripheralUUID ?? ""
+    pendingFeatureFlagDeviceID = capturedDeviceID
+    let frame = whoopGenerationFromCapabilities().buildCommandFrame(
+      sequence: sequence,
+      command: 0x80,
+      data: []
+    )
+    activePeripheral.writeValue(frame, for: commandCharacteristic, type: writeType)
+    record(
+      source: "ble.feature_flags",
+      title: "cmd128.sent",
+      body: "seq=\(sequence) deviceID=\(capturedDeviceID.prefix(8)) frame=\(frame.hexString)"
+    )
+    // Schedule 3-second timeout — on fire leave featureFlags empty (already the default, D-02).
+    featureFlagTimeoutWorkItem?.cancel()
+    let workItem = DispatchWorkItem { [weak self] in
+      guard let self else { return }
+      self.record(
+        level: .warn,
+        source: "ble.feature_flags",
+        title: "cmd128.timeout",
+        body: "no GET_FF_VALUE response within 3s; featureFlags remain empty"
+      )
+      self.pendingFeatureFlagDeviceID = nil
+      self.featureFlagTimeoutWorkItem = nil
+    }
+    featureFlagTimeoutWorkItem = workItem
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
+  }
+
+  func consumeNextFeatureFlagSequence() -> UInt8 {
+    let sequence = nextFeatureFlagCommandSequence
+    nextFeatureFlagCommandSequence = nextFeatureFlagCommandSequence == UInt8.max ? 0 : nextFeatureFlagCommandSequence + 1
     return sequence
   }
 

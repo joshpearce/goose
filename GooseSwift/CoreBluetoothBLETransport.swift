@@ -338,6 +338,11 @@ import OSLog
   var nextHapticCommandSequence: UInt8 = 144
   var nextCmd26BatteryCommandSequence: UInt8 = 48
   var nextCmd54LocationCommandSequence: UInt8 = 168
+  // FF-01: GET_FF_VALUE (cmd 0x80) sent after handshake; 3-second timeout then empty fallback.
+  var featureFlagTimeoutWorkItem: DispatchWorkItem?
+  var nextFeatureFlagCommandSequence: UInt8 = 200
+  // Device ID captured at send time to guard against disconnect race (Pitfall 2 in RESEARCH.md).
+  var pendingFeatureFlagDeviceID: String?
   var highFrequencyHistorySyncRequestedExpiry: Date?
   var debugSkinTemperatureCommandSent = false
   var debugSkinTemperatureCommandWorkItem: DispatchWorkItem?
