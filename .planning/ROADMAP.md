@@ -758,7 +758,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 112: Optical Protocol Decode (v20/v21/v26)** — Rust parse variants for WHOOP 5.0 bulk sensor streams and 24 Hz PPG waveform (completed 2026-06-22)
 - [x] **Phase 113: Optical Schema & Bridge** — schema v24 for optical_channel_samples + device_feature_flags + body_composition_history + realtime_frames (single migration batch) plus bridge methods and cargo test gate (completed 2026-06-22)
 - [x] **Phase 114: Harvard Sleep Need Model** — sleep_need.rs algorithm + replace hardcoded 480 constant (completed 2026-06-23)
-- [ ] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table
+- [x] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table (completed 2026-06-23)
 - [ ] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods
 - [ ] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity
 - [ ] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer
@@ -843,10 +843,10 @@ Plans:
   2. The response is parsed into `DeviceCapabilities.feature_flags: [UInt8: UInt8]`; raw index→value is stored without semantic name claims; the flag map is visible in the Debug tab
   3. `device_feature_flags` table exists (schema v24 already landed in Phase 113); `capabilities.get_feature_flags` bridge method inserts and retrieves rows; `BRIDGE_METHODS` updated
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 - [x] 115-01-PLAN.md — Swift: add DeviceCapabilities.featureFlags + send GET_FF_VALUE in handshake with 3s timeout + parse response + bridge upsert (FF-01, FF-02)
-- [ ] 115-02-PLAN.md — Swift: display feature flags in Debug tab Runtime section as hex pairs / "None discovered" (FF-02, FF-03)
+- [x] 115-02-PLAN.md — Swift: display feature flags in Debug tab Runtime section as hex pairs / "None discovered" (FF-02, FF-03)
 
 **UI hint**: yes
 
@@ -1063,7 +1063,7 @@ Plans:
 | 112 | 2/2 | Complete    | 2026-06-22 |
 | 113 | 0/1 | Complete    | 2026-06-22 |
 | 114 | 2/2 | Complete    | 2026-06-23 |
-| 115 | 1/2 | In Progress|  |
+| 115 | 2/2 | Complete   | 2026-06-23 |
 | 116 | 0/0 | Not started | — |
 | 117 | 0/0 | Not started | — |
 | 118 | 0/0 | Not started | — |
