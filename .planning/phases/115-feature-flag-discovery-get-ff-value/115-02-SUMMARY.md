@@ -27,9 +27,9 @@ decisions:
   - "status .pending for None discovered (covers timeout + Gen4), .ready when flags present"
 
 metrics:
-  duration: "~10 minutes"
-  completed: "2026-06-23T20:37:00Z"
-  tasks_completed: 1
+  duration: "~15 minutes"
+  completed: "2026-06-23T20:45:00Z"
+  tasks_completed: 2
   tasks_total: 2
   files_changed: 1
 ---
@@ -52,7 +52,7 @@ Added a `MoreInfoRow(title: "Feature Flags", ...)` to the existing Runtime secti
 | Task | Name | Commit | Files |
 |------|------|--------|-------|
 | 1 | Add Feature Flags row to Runtime section | ecaa958 | GooseSwift/MoreInfoViews.swift |
-| 2 | Checkpoint: Visual verify | — | (awaiting human) |
+| 2 | Checkpoint: Visual verify | approved | Simulator confirmed |
 
 ## Deviations from Plan
 
@@ -71,4 +71,4 @@ None. The row reads live data from `connectedCapabilities` — no placeholder va
 - [x] `GooseSwift/MoreInfoViews.swift` modified — Feature Flags row and `featureFlagsSummary` property present
 - [x] Commit ecaa958 exists: `feat(115-02): add Feature Flags row to Runtime section in About view`
 - [x] Build: `** BUILD SUCCEEDED **` (iPhone 17 Pro simulator, UDID 95142C9B)
-- [ ] Human checkpoint: visual verification pending
+- [x] Human checkpoint: visual verified — "Feature Flags" row renders in Runtime section ("Tempo de Execução") with "None discovered" and Pending badge (simulator, 2026-06-23)
