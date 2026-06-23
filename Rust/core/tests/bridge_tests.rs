@@ -8803,6 +8803,52 @@ fn bridge_compact_raw_evidence_reduces_storage_and_is_noop_when_already_below_li
     );
 }
 
+#[test]
+fn sleep_compute_need_returns_default_age_bracket() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("goose.sqlite").to_string_lossy().to_string();
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "sleep-compute-need-cold-start",
+        "method": "sleep.compute_need",
+        "args": {
+            "database_path": db_path
+        }
+    }));
+    assert!(response.ok, "expected ok=true, error={:?}", response.error);
+    let result = response.result.unwrap();
+    assert_eq!(result["base_need_minutes"].as_f64().unwrap(), 450.0);
+    assert_eq!(result["debt_adjustment_minutes"].as_f64().unwrap(), 0.0);
+    assert_eq!(result["strain_adjustment_minutes"].as_f64().unwrap(), 0.0);
+    assert_eq!(result["total_need_minutes"].as_f64().unwrap(), 450.0);
+}
+
+#[test]
+fn sleep_compute_need_applies_strain_and_age() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("goose.sqlite").to_string_lossy().to_string();
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "sleep-compute-need-age-strain",
+        "method": "sleep.compute_need",
+        "args": {
+            "database_path": db_path,
+            "age_years": 22,
+            "prior_strain": 16.0
+        }
+    }));
+    assert!(response.ok, "expected ok=true, error={:?}", response.error);
+    let result = response.result.unwrap();
+    // age_years=22 → 18-25 bracket → base 480.0
+    assert_eq!(result["base_need_minutes"].as_f64().unwrap(), 480.0);
+    // no sleep history → debt 0.0
+    assert_eq!(result["debt_adjustment_minutes"].as_f64().unwrap(), 0.0);
+    // prior_strain=16.0 ≥ 15 → +15 min
+    assert_eq!(result["strain_adjustment_minutes"].as_f64().unwrap(), 15.0);
+    // total = 480 + 0 + 15 = 495
+    assert_eq!(result["total_need_minutes"].as_f64().unwrap(), 495.0);
+}
+
 fn request(value: serde_json::Value) -> BridgeResponse {
     serde_json::from_str(&handle_bridge_request_json(&value.to_string())).unwrap()
 }

@@ -181,6 +181,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "settings.list_algorithm_preferences",
     "settings.set_algorithm_preference",
     "sleep.add_correction_label",
+    "sleep.compute_need",
     "sleep.import_external_history",
     "sleep.list_correction_labels",
     "sleep.validate_stage_labels",

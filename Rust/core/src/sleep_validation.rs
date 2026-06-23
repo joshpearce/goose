@@ -5696,6 +5696,7 @@ pub fn run_sleep_window_label_validation_for_store(
             min_owned_captures_per_summary: options.min_owned_captures_per_summary,
             require_trusted_evidence: options.require_trusted_evidence,
             sleep_need_minutes: options.sleep_need_minutes,
+            age_years: None,
             low_motion_threshold_0_to_1: options.low_motion_threshold_0_to_1,
             disturbance_motion_threshold_0_to_1: options.disturbance_motion_threshold_0_to_1,
             target_midpoint_minutes_since_midnight: options.target_midpoint_minutes_since_midnight,

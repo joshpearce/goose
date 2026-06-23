@@ -10,6 +10,7 @@ use super::{
 };
 use crate::{
     GooseError, GooseResult,
+    sleep_need::compute_sleep_need_with_store,
     algorithm_compare::{
         compare_hrv_goose_to_reference, compare_sleep_goose_to_external_reference_report,
         compare_sleep_goose_to_reference, compare_sleep_v1_goose_to_external_reference_report,
@@ -1093,6 +1094,8 @@ struct SleepFeatureScoreArgs {
     #[serde(default)]
     sleep_need_minutes: Option<f64>,
     #[serde(default)]
+    age_years: Option<u8>,
+    #[serde(default)]
     low_motion_threshold_0_to_1: Option<f64>,
     #[serde(default)]
     disturbance_motion_threshold_0_to_1: Option<f64>,
@@ -1149,6 +1152,8 @@ struct RecoveryFeatureScoreArgs {
     hrv_baseline_min_days: Option<usize>,
     #[serde(default)]
     sleep_need_minutes: Option<f64>,
+    #[serde(default)]
+    age_years: Option<u8>,
     #[serde(default)]
     low_motion_threshold_0_to_1: Option<f64>,
     #[serde(default)]
@@ -3240,7 +3245,12 @@ fn sleep_feature_score_bridge(args: SleepFeatureScoreArgs) -> GooseResult<serde_
                 .min_owned_captures
                 .unwrap_or(DEFAULT_MIN_OWNED_CAPTURES_PER_SUMMARY),
             require_trusted_evidence: args.require_trusted_evidence,
-            sleep_need_minutes: args.sleep_need_minutes.unwrap_or(480.0),
+            sleep_need_minutes: args.sleep_need_minutes.unwrap_or_else(|| {
+                compute_sleep_need_with_store(&store, args.age_years, None)
+                    .map(|r| r.total_need_minutes)
+                    .unwrap_or(450.0)
+            }),
+            age_years: args.age_years,
             low_motion_threshold_0_to_1: args.low_motion_threshold_0_to_1.unwrap_or(0.05),
             disturbance_motion_threshold_0_to_1: args
                 .disturbance_motion_threshold_0_to_1
@@ -3338,7 +3348,12 @@ fn recovery_feature_score_bridge(args: RecoveryFeatureScoreArgs) -> GooseResult<
             resting_baseline_min_days: args.resting_baseline_min_days.unwrap_or(3),
             hrv_min_rr_intervals_to_compute: args.hrv_min_rr_intervals_to_compute.unwrap_or(2),
             hrv_baseline_min_days: args.hrv_baseline_min_days.unwrap_or(3),
-            sleep_need_minutes: args.sleep_need_minutes.unwrap_or(480.0),
+            sleep_need_minutes: args.sleep_need_minutes.unwrap_or_else(|| {
+                compute_sleep_need_with_store(&store, args.age_years, None)
+                    .map(|r| r.total_need_minutes)
+                    .unwrap_or(450.0)
+            }),
+            age_years: args.age_years,
             low_motion_threshold_0_to_1: args.low_motion_threshold_0_to_1.unwrap_or(0.05),
             disturbance_motion_threshold_0_to_1: args
                 .disturbance_motion_threshold_0_to_1

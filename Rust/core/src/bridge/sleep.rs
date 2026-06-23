@@ -9,6 +9,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::{
     GooseError, GooseResult,
+    sleep_need::compute_sleep_need_with_store,
     health_sync::{
         ActivityHealthSyncDryRunInput, HealthSyncDryRunInput, run_activity_health_sync_dry_run,
         run_health_sync_dry_run,
@@ -38,6 +39,10 @@ pub(crate) fn dispatch_sleep(request: &BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "sleep.add_correction_label" => request_args::<SleepCorrectionLabelArgs>(request)
             .and_then(sleep_correction_label_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "sleep.compute_need" => request_args::<SleepComputeNeedArgs>(request)
+            .and_then(sleep_compute_need_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "sleep.list_correction_labels" => request_args::<SleepCorrectionLabelListArgs>(request)
@@ -152,6 +157,27 @@ struct SleepCorrectionLabelListArgs {
     database_path: String,
     start_time_unix_ms: i64,
     end_time_unix_ms: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct SleepComputeNeedArgs {
+    database_path: String,
+    #[serde(default)]
+    age_years: Option<u8>,
+    #[serde(default)]
+    prior_strain: Option<f64>,
+}
+
+fn sleep_compute_need_bridge(args: SleepComputeNeedArgs) -> GooseResult<serde_json::Value> {
+    let store = acquire_bridge_conn(&args.database_path)?;
+    let result = compute_sleep_need_with_store(&store, args.age_years, args.prior_strain)?;
+    Ok(serde_json::json!({
+        "schema": "goose.sleep-need-result.v1",
+        "base_need_minutes": result.base_need_minutes,
+        "debt_adjustment_minutes": result.debt_adjustment_minutes,
+        "strain_adjustment_minutes": result.strain_adjustment_minutes,
+        "total_need_minutes": result.total_need_minutes,
+    }))
 }
 
 #[derive(Debug, Clone, Deserialize)]
