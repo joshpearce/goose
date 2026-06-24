@@ -78,6 +78,14 @@ class WhoopBleClient(private val context: Context) {
 
     // Idle timeout after SEND_HISTORICAL_DATA write — completes sync if no more frames arrive
     private const val SYNC_IDLE_TIMEOUT_MS = 30_000L
+
+    // Optical enable command bytes (mirrors iOS startPhysiologyCapture sequence for Gen5/MG)
+    // ENABLE_OPTICAL_DATA = cmd 107 (0x6B), TOGGLE_OPTICAL_MODE = cmd 108 (0x6C)
+    private const val CMD_ENABLE_OPTICAL_DATA: Byte = 107        // 0x6B
+    private const val CMD_TOGGLE_OPTICAL_MODE: Byte = 108        // 0x6C
+
+    // iOS revisionBoolean(true) encoding — two bytes [0x01, 0x01]
+    private val REVISION_BOOLEAN_TRUE: ByteArray = byteArrayOf(0x01, 0x01)
   }
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -129,6 +137,15 @@ class WhoopBleClient(private val context: Context) {
 
   // Tracks which command we are waiting for an ack on (0 = none pending)
   @Volatile private var pendingSyncCommand: Byte = 0
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Optical enable state (Phase 117)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Dedicated sensor sequence counter — starts at signed -76 (unsigned 180 per D-02)
+  // Must NOT share syncSequence; optical commands run on a separate counter to avoid
+  // collision with historical sync command sequencing (research Pitfall 2).
+  @Volatile private var sensorSequence: Byte = (-76).toByte()
 
   // ──────────────────────────────────────────────────────────────────────────
   // Public API
@@ -390,6 +407,14 @@ class WhoopBleClient(private val context: Context) {
       _connectionState.value = BleConnectionState.Connected(address, generation)
       // Launch sync on scope (not on BLE callback thread) — syncInProgress guard prevents duplicates
       scope.launch { startHistoricalSync() }
+      // Gen5/MG only: send optical enable commands after a 500ms delay so historical sync
+      // commands queue first (research A2, D-02). Gen4 never receives optical commands (Pitfall 3).
+      if (generation == WhoopGeneration.GEN5 || generation == WhoopGeneration.MG) {
+        val currentGatt = gatt
+        if (currentGatt != null) {
+          scope.launch { delay(500); sendOpticalEnableCommands(currentGatt) }
+        }
+      }
     }
 
     val frameSource = if (isSync) "historical_sync" else "android_ble"
@@ -485,6 +510,54 @@ class WhoopBleClient(private val context: Context) {
     @Suppress("DEPRECATION")
     val success = currentGatt.writeCharacteristic(commandChar)
     Log.d(TAG, "hist cmd=0x${command.toString(16)} seq=$syncSequence len=${frame.size} success=$success")
+  }
+
+  /**
+   * Send ENABLE_OPTICAL_DATA (cmd 107) and TOGGLE_OPTICAL_MODE (cmd 108) to the device.
+   *
+   * Mirrors iOS startPhysiologyCapture optical command sequence for Gen5/MG.
+   * Uses a dedicated sensorSequence counter — must NOT share syncSequence.
+   * Commands are staggered by 250ms to match iOS 0.25s spacing.
+   *
+   * Only called for Gen5 and MG devices; Gen4 must never invoke this (Pitfall 3).
+   */
+  private suspend fun sendOpticalEnableCommands(gatt: BluetoothGatt) {
+    val serviceUuid = activeServiceUuid ?: run {
+      Log.w(TAG, "sendOpticalEnableCommands: no active service — skipping")
+      return
+    }
+    val service = gatt.getService(serviceUuid) ?: run {
+      Log.w(TAG, "sendOpticalEnableCommands: service not found for $serviceUuid")
+      return
+    }
+    val commandChar = service.getCharacteristic(WhoopUuids.commandCharFor(serviceUuid)) ?: run {
+      Log.w(TAG, "sendOpticalEnableCommands: command characteristic not found")
+      return
+    }
+
+    val writeType = when {
+      commandChar.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0 ->
+        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+      commandChar.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE != 0 ->
+        BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+      else -> {
+        Log.w(TAG, "sendOpticalEnableCommands: characteristic not writable")
+        return
+      }
+    }
+
+    val commands = listOf(CMD_ENABLE_OPTICAL_DATA, CMD_TOGGLE_OPTICAL_MODE)
+    commands.forEachIndexed { index, cmd ->
+      delay(250L * index)
+      sensorSequence = (sensorSequence + 1).toByte()
+      val frame = buildCommandFrame(sensorSequence, cmd, REVISION_BOOLEAN_TRUE)
+      @Suppress("DEPRECATION")
+      commandChar.value = frame
+      commandChar.writeType = writeType
+      @Suppress("DEPRECATION")
+      val success = gatt.writeCharacteristic(commandChar)
+      Log.d(TAG, "optical cmd=0x${cmd.toString(16)} seq=$sensorSequence len=${frame.size} success=$success")
+    }
   }
 
   /**
