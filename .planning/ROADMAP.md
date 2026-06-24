@@ -759,7 +759,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 113: Optical Schema & Bridge** — schema v24 for optical_channel_samples + device_feature_flags + body_composition_history + realtime_frames (single migration batch) plus bridge methods and cargo test gate (completed 2026-06-22)
 - [x] **Phase 114: Harvard Sleep Need Model** — sleep_need.rs algorithm + replace hardcoded 480 constant (completed 2026-06-23)
 - [x] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table (completed 2026-06-23)
-- [ ] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods
+- [x] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods (completed 2026-06-24)
 - [ ] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity
 - [ ] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer
 - [ ] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter
@@ -863,8 +863,9 @@ Plans:
   2. `body_composition.upsert` and `body_composition.history_between` bridge methods are registered in `BRIDGE_METHODS` and the dispatcher; `cargo test --locked` passes with at least one test per method
   3. `source` column accepts only 'manual', 'healthkit', or 'scale' (CHECK constraint); inserting an invalid source returns an error, not a panic
 
-**Plans**: 1 plan
-- [ ] 116-01-PLAN.md — Store methods + bridge module (body_composition.upsert / history_between) + BRIDGE_METHODS wiring + round-trip tests
+**Plans**: 1/1 plans complete
+
+- [x] 116-01-PLAN.md — Store methods + bridge module (body_composition.upsert / history_between) + BRIDGE_METHODS wiring + round-trip tests
 
 ---
 
@@ -1065,7 +1066,7 @@ Plans:
 | 113 | 0/1 | Complete    | 2026-06-22 |
 | 114 | 2/2 | Complete    | 2026-06-23 |
 | 115 | 2/2 | Complete    | 2026-06-23 |
-| 116 | 0/0 | Not started | — |
+| 116 | 1/1 | Complete    | 2026-06-24 |
 | 117 | 0/0 | Not started | — |
 | 118 | 0/0 | Not started | — |
 | 119 | 0/0 | Not started | — |
@@ -1126,7 +1127,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 2/2 plans complete
+**Plans:** 1/1 plans complete
 Plans:
 
 - [x] 111-01-PLAN.md
