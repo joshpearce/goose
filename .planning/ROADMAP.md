@@ -890,14 +890,19 @@ Plans:
 
 **Goal**: A dedicated Swift queue tags BLE frames as FRAME_SOURCE_REALTIME and inserts them into the realtime_frames SQLite table via bridge, keeping realtime capture isolated from historical capture
 **Depends on**: Phase 113
-**Requirements**: PIP-01, PIP-02
+**Requirements**: PIP-01, PIP-02, PIP-03
 **Success Criteria** (what must be TRUE):
 
   1. `RealtimePIPQueue` Swift class exists as a parallel to `CaptureFrameWriteQueue` with its own `NSLock` and `writeQueue`; frames are tagged `FRAME_SOURCE_REALTIME` before insertion
   2. Realtime frames land in `realtime_frames` (schema v24, already present from Phase 113); `synced = 0` on insert; a covering index on (device_uuid, captured_at) exists
   3. `CaptureFrameWriteQueue` and `RealtimePIPQueue` are distinct — no shared queue or table; backpressure accounting is independent
+  4. `realtime.insert_frame` bridge method persists frames into a corrected `realtime_frames` table (schema bug fixed, `source` column added)
+  5. `POST /v1/ingest-realtime` endpoint (Bearer auth) ingests realtime frames into a `realtime_frames` TimescaleDB hypertable (PIP-03)
 
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 118-01-PLAN.md — Rust schema fix + `realtime.insert_frame` bridge method (Wave 1)
+- [ ] 118-02-PLAN.md — Swift `RealtimePIPQueue` + always-on notification wiring (Wave 2, depends on 118-01)
+- [ ] 118-03-PLAN.md — `POST /v1/ingest-realtime` endpoint + TimescaleDB hypertable (Wave 2, depends on 118-01)
 
 ---
 
