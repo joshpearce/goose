@@ -75,7 +75,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- None
+- Build Android UI 1-to-1 parity with iOS app (2026-06-26)
 
 ### Blockers/Concerns
 
