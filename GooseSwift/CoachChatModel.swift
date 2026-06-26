@@ -113,7 +113,15 @@ final class CoachChatModel {
     if let chatGPT = provider as? ChatGPTCoachProvider {
       chatGPT.toolContextProvider = { [weak healthStore, weak appModel, weak healthState] in
         guard let healthStore, let appModel, let healthState else { return [:] }
-        return CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState)
+        var hidden = Set<String>()
+        if GooseStealthMode.isHidden(metric: "recovery_score")    { hidden.insert("recovery") }
+        if GooseStealthMode.isHidden(metric: "strain_score")      { hidden.insert("strain") }
+        if GooseStealthMode.isHidden(metric: "sleep_performance") { hidden.insert("sleep") }
+        if GooseStealthMode.isHidden(metric: "stress_score")      { hidden.insert("stress") }
+        if GooseStealthMode.isHidden(metric: "hrv_rmssd")         { hidden.insert("hrv_rmssd") }
+        if GooseStealthMode.isHidden(metric: "resting_hr")        { hidden.insert("resting_hr") }
+        let mask = StealthMask(hidden: hidden)
+        return CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState, mask: mask)
       }
     }
 
@@ -160,7 +168,15 @@ final class CoachChatModel {
   }
 
   private func buildSystemPrompt(healthStore: HealthDataStore, appModel: GooseAppModel, healthState: HealthState) -> String {
-    let context = CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState)
+    var hidden = Set<String>()
+    if GooseStealthMode.isHidden(metric: "recovery_score")    { hidden.insert("recovery") }
+    if GooseStealthMode.isHidden(metric: "strain_score")      { hidden.insert("strain") }
+    if GooseStealthMode.isHidden(metric: "sleep_performance") { hidden.insert("sleep") }
+    if GooseStealthMode.isHidden(metric: "stress_score")      { hidden.insert("stress") }
+    if GooseStealthMode.isHidden(metric: "hrv_rmssd")         { hidden.insert("hrv_rmssd") }
+    if GooseStealthMode.isHidden(metric: "resting_hr")        { hidden.insert("resting_hr") }
+    let mask = StealthMask(hidden: hidden)
+    let context = CoachLocalToolContext.build(healthStore: healthStore, appModel: appModel, healthState: healthState, mask: mask)
     guard JSONSerialization.isValidJSONObject(context),
           let data = try? JSONSerialization.data(withJSONObject: context, options: [.sortedKeys]),
           let json = String(data: data, encoding: .utf8) else {
