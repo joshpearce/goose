@@ -918,7 +918,10 @@ Plans:
   2. `StealthMask` value type is passed into `CoachLocalToolContext.build()`; hidden metric values are replaced with `"hidden_by_user"` sentinel string (key preserved); Coach still receives full unmasked data for recommendations
   3. Neither class reads UserDefaults with ad-hoc string literals — all key references go through `StealthStorage` constants
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 119-01-PLAN.md — StealthStorage + GooseStealthMode + StealthMask + CoachLocalToolContext masking + CoachChatModel call sites
 
 ---
 
