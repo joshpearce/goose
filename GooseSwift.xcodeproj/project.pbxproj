@@ -44,6 +44,7 @@
 		A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000041 /* HealthKitFullImporter.swift */; };
 		A10000000000000000000042 /* CoachRouteViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000042 /* CoachRouteViews.swift */; };
 		A10000000000000000000043 /* GooseHealthKitExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000043 /* GooseHealthKitExporter.swift */; };
+		A10000000000000000000044 /* GooseStealthMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000044 /* GooseStealthMode.swift */; };
 		B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
 		B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* WorkoutLiveActivityController.swift */; };
 		B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */; };
@@ -205,6 +206,7 @@
 		E10000000000000000000014 /* HealthDataStoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000014 /* HealthDataStoring.swift */; };
 		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
 		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
+		T10000000000000000000010 /* GooseStealthModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000010 /* GooseStealthModeTests.swift */; };
 		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
 		T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000006 /* GooseUploadServiceTests.swift */; };
 		T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000007 /* HRMonitorStateTests.swift */; };
@@ -290,6 +292,7 @@
 		A20000000000000000000041 /* HealthKitFullImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitFullImporter.swift; sourceTree = "<group>"; };
 		A20000000000000000000042 /* CoachRouteViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachRouteViews.swift; sourceTree = "<group>"; };
 		A20000000000000000000043 /* GooseHealthKitExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseHealthKitExporter.swift; sourceTree = "<group>"; };
+		A20000000000000000000044 /* GooseStealthMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseStealthMode.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityAttributes.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* WorkoutLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityController.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseWorkoutLiveActivityWidget.swift; sourceTree = "<group>"; };
@@ -455,6 +458,7 @@
 		T20000000000000000000001 /* GooseSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GooseSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		T20000000000000000000002 /* WearableDescriptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableDescriptorTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000003 /* GooseBLETypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypesTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000010 /* GooseStealthModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseStealthModeTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		T20000000000000000000005 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Xcode/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		T20000000000000000000006 /* GooseUploadServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadServiceTests.swift; sourceTree = "<group>"; };
@@ -654,6 +658,7 @@
 				A2000000000000000000001B /* HealthKitSleepImporter.swift */,
 				A20000000000000000000041 /* HealthKitFullImporter.swift */,
 				A20000000000000000000043 /* GooseHealthKitExporter.swift */,
+				A20000000000000000000044 /* GooseStealthMode.swift */,
 				A20000000000000000000042 /* CoachRouteViews.swift */,
 				A20000000000000000000025 /* CodexCoachSupport.swift */,
 				A20000000000000000000021 /* CodexEmbeddedAuth.swift */,
@@ -778,6 +783,7 @@
 			children = (
 				T20000000000000000000002 /* WearableDescriptorTests.swift */,
 				T20000000000000000000003 /* GooseBLETypesTests.swift */,
+				T20000000000000000000010 /* GooseStealthModeTests.swift */,
 				T20000000000000000000006 /* GooseUploadServiceTests.swift */,
 				T20000000000000000000007 /* HRMonitorStateTests.swift */,
 				T20000000000000000000008 /* CoachProviderTests.swift */,
@@ -1053,6 +1059,7 @@
 				A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */,
 				A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */,
 				A10000000000000000000043 /* GooseHealthKitExporter.swift in Sources */,
+				A10000000000000000000044 /* GooseStealthMode.swift in Sources */,
 				A10000000000000000000042 /* CoachRouteViews.swift in Sources */,
 				A10000000000000000000019 /* OnboardingPersistence.swift in Sources */,
 				A1000000000000000000001A /* MoreView.swift in Sources */,
@@ -1151,6 +1158,7 @@
 			files = (
 				T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */,
 				T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */,
+				T10000000000000000000010 /* GooseStealthModeTests.swift in Sources */,
 				T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */,
 				T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */,
 				T10000000000000000000006 /* CoachProviderTests.swift in Sources */,
