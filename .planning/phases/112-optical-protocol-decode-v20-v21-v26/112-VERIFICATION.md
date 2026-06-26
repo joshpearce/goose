@@ -1,6 +1,6 @@
 ---
 phase: "112"
-status: verified
+status: passed
 verified_at: 2026-06-22
 ---
 
