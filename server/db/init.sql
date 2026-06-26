@@ -248,3 +248,23 @@ ALTER TABLE daily_metrics ADD COLUMN IF NOT EXISTS training_state      TEXT;
 ALTER TABLE daily_metrics ADD COLUMN IF NOT EXISTS sleep_needed_min    REAL;
 -- Phase 13 ALG-13: Total daily calories (RMR Mifflin–St Jeor + exercise kcal)
 ALTER TABLE daily_metrics ADD COLUMN IF NOT EXISTS total_calories_kcal REAL;
+
+-- ── Realtime PIP frames (Phase 118, PIP-03) ───────────────────────────────────
+-- Frames uploaded from iOS during real-time BLE capture via POST /v1/ingest-realtime.
+-- captured_at is TIMESTAMPTZ so TimescaleDB can partition by time (Pitfall 5 — must
+-- not be TEXT). No FK to devices: the realtime path does not pre-register devices.
+-- Every statement is idempotent (IF NOT EXISTS / if_not_exists) so bootstrap_schema
+-- re-applies this file on startup without error.
+CREATE TABLE IF NOT EXISTS realtime_frames (
+    device_uuid  TEXT        NOT NULL,
+    frame_hex    TEXT        NOT NULL,
+    captured_at  TIMESTAMPTZ NOT NULL,
+    source       TEXT        NOT NULL DEFAULT 'realtime_pip',
+    synced       INTEGER     NOT NULL DEFAULT 0
+);
+SELECT create_hypertable('realtime_frames', 'captured_at', if_not_exists => TRUE);
+-- Unique index enables ON CONFLICT (device_uuid, captured_at, frame_hex) DO NOTHING.
+CREATE UNIQUE INDEX IF NOT EXISTS realtime_frames_dedup
+    ON realtime_frames (device_uuid, captured_at, frame_hex);
+CREATE INDEX IF NOT EXISTS realtime_frames_device_time
+    ON realtime_frames (device_uuid, captured_at);
