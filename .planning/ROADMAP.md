@@ -761,7 +761,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 115: Feature Flag Discovery** — GET_FF_VALUE BLE command + DeviceCapabilities.feature_flags + device_feature_flags table (completed 2026-06-23)
 - [x] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods (completed 2026-06-24)
 - [x] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity (completed 2026-06-24)
-- [ ] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer
+- [x] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer (completed 2026-06-26)
 - [ ] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter
 - [ ] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended")
 - [ ] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart
@@ -899,11 +899,11 @@ Plans:
   4. `realtime.insert_frame` bridge method persists frames into a corrected `realtime_frames` table (schema bug fixed, `source` column added)
   5. `POST /v1/ingest-realtime` endpoint (Bearer auth) ingests realtime frames into a `realtime_frames` TimescaleDB hypertable (PIP-03)
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 
 - [x] 118-01-PLAN.md — Rust schema fix + `realtime.insert_frame` bridge method (Wave 1)
 - [x] 118-02-PLAN.md — Swift `RealtimePIPQueue` + always-on notification wiring (Wave 2, depends on 118-01)
-- [ ] 118-03-PLAN.md — `POST /v1/ingest-realtime` endpoint + TimescaleDB hypertable (Wave 2, depends on 118-01)
+- [x] 118-03-PLAN.md — `POST /v1/ingest-realtime` endpoint + TimescaleDB hypertable (Wave 2, depends on 118-01)
 
 ---
 
@@ -1076,7 +1076,7 @@ Plans:
 | 115 | 2/2 | Complete    | 2026-06-23 |
 | 116 | 1/1 | Complete    | 2026-06-24 |
 | 117 | 1/1 | Complete    | 2026-06-24 |
-| 118 | 2/3 | In Progress|  |
+| 118 | 3/3 | Complete   | 2026-06-26 |
 | 119 | 0/0 | Not started | — |
 | 120 | 0/0 | Not started | — |
 | 121 | 0/0 | Not started | — |

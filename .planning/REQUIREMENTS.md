@@ -47,9 +47,9 @@
 
 ### PIP Realtime Pipeline (#168)
 
-- [ ] **PIP-01**: `RealtimePIPQueue` Swift class (parallel to `CaptureFrameWriteQueue`; own `NSLock`; separate `writeQueue`); tags frames `FRAME_SOURCE_REALTIME`; inserts into `realtime_frames` table via bridge (closes #168)
+- [x] **PIP-01**: `RealtimePIPQueue` Swift class (parallel to `CaptureFrameWriteQueue`; own `NSLock`; separate `writeQueue`); tags frames `FRAME_SOURCE_REALTIME`; inserts into `realtime_frames` table via bridge (closes #168)
 - [x] **PIP-02**: `realtime_frames` SQLite table (schema v24): device_uuid, frame_hex, captured_at NOT NULL DEFAULT 'realtime_pip', synced INTEGER NOT NULL DEFAULT 0; covering index on (device_uuid, captured_at)
-- [ ] **PIP-03**: `POST /v1/ingest-realtime` FastAPI endpoint (Bearer token auth, same pattern as `/v1/ingest-frames`); `realtime_frames` TimescaleDB hypertable on server
+- [x] **PIP-03**: `POST /v1/ingest-realtime` FastAPI endpoint (Bearer token auth, same pattern as `/v1/ingest-frames`); `realtime_frames` TimescaleDB hypertable on server
 
 ### Hardware Gates (WHOOP 5 device available)
 

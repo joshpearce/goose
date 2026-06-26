@@ -6,15 +6,15 @@ current_phase: 118
 current_phase_name: PIP Realtime Queue
 status: planning
 stopped_at: Phase 118 context gathered
-last_updated: "2026-06-26T18:51:07.401Z"
+last_updated: "2026-06-26T18:58:30.004Z"
 last_activity: 2026-06-24
 last_activity_desc: Phase 117 complete, transitioned to Phase 118
 progress:
   total_phases: 15
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 12
-  completed_plans: 11
-  percent: 40
+  completed_plans: 12
+  percent: 47
 ---
 
 # Project State
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [Phase ?]: GET_FF_VALUE (cmd 0x80) wired into BLE handshake after sendGetBodyLocationAndStatus on every reconnect with 3s timeout fallback (FF-01, D-01, D-02)
 - [Phase ?]: DeviceCapabilities uses custom Decodable init(from:) with decodeIfPresent so feature_flags absence defaults to empty dict (D-02)
 - [Phase ?]: pendingFeatureFlagDeviceID captured at send time to guard disconnect race in GET_FF_VALUE response handler (T-115-03)
+- [Phase ?]: realtime_frames has no FK to devices — realtime PIP path does not pre-register devices
+- [Phase ?]: captured_at TIMESTAMPTZ (not TEXT) enables TimescaleDB partitioning; psycopg casts ISO8601 automatically
 
 ### Roadmap Evolution
 
@@ -122,6 +124,7 @@ Items deferred from previous milestones:
 | Phase 115 P02 | 15 min | 2 tasks | 1 files |
 | Phase 117 P01 | 20 min | 2 tasks | 2 files |
 | Phase 118 P02 | 4 min | 2 tasks | 4 files |
+| Phase 118 P03 | 3 min | 3 tasks | 5 files |
 
 ## Quick Tasks Completed
 
@@ -132,7 +135,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-26T18:50:54.609Z
+Last session: 2026-06-26T18:58:17.856Z
 Stopped at: Phase 118 context gathered
 Resume file: .planning/phases/118-pip-realtime-queue/118-CONTEXT.md
 Next action: /gsd-discuss-phase 112
