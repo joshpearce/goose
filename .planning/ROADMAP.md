@@ -762,7 +762,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 116: Body Composition Rust Layer** — body_composition_history table + bridge methods (completed 2026-06-24)
 - [x] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity (completed 2026-06-24)
 - [x] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer (completed 2026-06-26)
-- [ ] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter
+- [x] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter (completed 2026-06-26)
 - [ ] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended")
 - [ ] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart
 - [ ] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering
@@ -918,10 +918,11 @@ Plans:
   2. `StealthMask` value type is passed into `CoachLocalToolContext.build()`; hidden metric values are replaced with `"hidden_by_user"` sentinel string (key preserved); Coach still receives full unmasked data for recommendations
   3. Neither class reads UserDefaults with ad-hoc string literals — all key references go through `StealthStorage` constants
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 
 Plans:
-- [ ] 119-01-PLAN.md — StealthStorage + GooseStealthMode + StealthMask + CoachLocalToolContext masking + CoachChatModel call sites
+
+- [x] 119-01-PLAN.md — StealthStorage + GooseStealthMode + StealthMask + CoachLocalToolContext masking + CoachChatModel call sites
 
 ---
 
@@ -1080,7 +1081,7 @@ Plans:
 | 116 | 1/1 | Complete    | 2026-06-24 |
 | 117 | 1/1 | Complete    | 2026-06-24 |
 | 118 | 3/3 | Complete    | 2026-06-26 |
-| 119 | 0/0 | Not started | — |
+| 119 | 1/1 | Complete   | 2026-06-26 |
 | 120 | 0/0 | Not started | — |
 | 121 | 0/0 | Not started | — |
 | 122 | 0/0 | Not started | — |

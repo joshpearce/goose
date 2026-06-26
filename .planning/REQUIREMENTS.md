@@ -40,8 +40,8 @@
 
 ### Stealth Mode (#167)
 
-- [ ] **STEALTH-01**: `GooseStealthMode.isHidden(metric:)` + `StealthStorage` enum with `static let` UserDefaults keys for 6 metrics: `recovery_score`, `strain_score`, `hrv_rmssd`, `resting_hr`, `sleep_performance`, `stress_score` (closes #167)
-- [ ] **STEALTH-02**: `StealthMask` value type passed into `CoachLocalToolContext.build()`; hidden metric values replaced with `"hidden_by_user"` sentinel string (key preserved, value masked); Coach still receives full unmasked data for recommendations
+- [x] **STEALTH-01**: `GooseStealthMode.isHidden(metric:)` + `StealthStorage` enum with `static let` UserDefaults keys for 6 metrics: `recovery_score`, `strain_score`, `hrv_rmssd`, `resting_hr`, `sleep_performance`, `stress_score` (closes #167)
+- [x] **STEALTH-02**: `StealthMask` value type passed into `CoachLocalToolContext.build()`; hidden metric values replaced with `"hidden_by_user"` sentinel string (key preserved, value masked); Coach still receives full unmasked data for recommendations
 - [ ] **STEALTH-03**: Settings → Metrics → toggle list (6 metrics); `#if DEBUG` previews use `StealthMask` environment value — not direct `UserDefaults` reads; `StealthStorage` keys are `static let` constants, not ad-hoc string literals
 - [ ] **STEALTH-04**: All dashboard views show `"—"` for hidden metrics via `isHidden(metric:)` check at render site
 
