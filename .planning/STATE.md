@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 113
-current_phase_name: Schema v24 + Optical Bridge Methods
+current_phase: 120
+current_phase_name: Sleep Need UI
 status: planning
 stopped_at: Phase 118 context gathered
-last_updated: "2026-06-26T21:47:08.389Z"
+last_updated: "2026-06-26T21:53:06.612Z"
 last_activity: 2026-06-26
-last_activity_desc: Phase 112 complete, transitioned to Phase 113
+last_activity_desc: Phase 119 complete, transitioned to Phase 120
 progress:
   total_phases: 15
   completed_phases: 8
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 113 — Schema v24 + Optical Bridge Methods
+Phase: 120 — Sleep Need UI
 Plan: Not started
 Status: Roadmap approved — ready to plan Phase 112
-Last activity: 2026-06-26 — Phase 112 complete, transitioned to Phase 113
+Last activity: 2026-06-26 — Phase 119 complete, transitioned to Phase 120
 
 ## Performance Metrics
 
