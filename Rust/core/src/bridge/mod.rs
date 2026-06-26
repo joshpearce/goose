@@ -33,6 +33,7 @@ mod capabilities;
 mod capture;
 mod debug;
 mod metrics;
+mod realtime;
 mod sleep;
 
 pub const BRIDGE_REQUEST_SCHEMA: &str = "goose.bridge.request.v1";
@@ -177,6 +178,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "overnight.mirror_batch",
     "overnight.mirror_counts",
     "privacy.lint",
+    "realtime.insert_frame",
     "protocol.parse_frame_hex",
     "protocol.parse_frame_hex_batch",
     "settings.apply_default_algorithm_preferences",
@@ -539,6 +541,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
 
     if method.starts_with("capabilities.") {
         return capabilities::dispatch_capabilities(&request);
+    }
+
+    if method.starts_with("realtime.") {
+        return realtime::dispatch_realtime(&request);
     }
 
     if method.starts_with("metrics.")
@@ -1094,9 +1100,9 @@ mod tests {
     use super::*;
 
     /// Guard against drift between [`BRIDGE_METHODS`] and the actual dispatch arms
-    /// across all 6 domain files.
+    /// across all 8 domain files.
     ///
-    /// Reads all 7 domain files via `include_str!` (compile-time, zero runtime I/O)
+    /// Reads all 8 domain files via `include_str!` (compile-time, zero runtime I/O)
     /// and scans for Rust match arm lines of the form `"namespace.method" =>` or the
     /// multi-line variant where the method name is alone on its line followed by `|`
     /// or `=>` on the next. mod.rs is excluded from the scan because the test block
@@ -1115,6 +1121,7 @@ mod tests {
             include_str!("body_composition.rs"),
             include_str!("capabilities.rs"),
             include_str!("metrics.rs"),
+            include_str!("realtime.rs"),
             include_str!("sleep.rs"),
             include_str!("capture.rs"),
             include_str!("activity.rs"),
