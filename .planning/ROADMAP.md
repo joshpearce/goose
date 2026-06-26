@@ -899,9 +899,10 @@ Plans:
   4. `realtime.insert_frame` bridge method persists frames into a corrected `realtime_frames` table (schema bug fixed, `source` column added)
   5. `POST /v1/ingest-realtime` endpoint (Bearer auth) ingests realtime frames into a `realtime_frames` TimescaleDB hypertable (PIP-03)
 
-**Plans**: 3 plans
-- [ ] 118-01-PLAN.md — Rust schema fix + `realtime.insert_frame` bridge method (Wave 1)
-- [ ] 118-02-PLAN.md — Swift `RealtimePIPQueue` + always-on notification wiring (Wave 2, depends on 118-01)
+**Plans**: 2/3 plans executed
+
+- [x] 118-01-PLAN.md — Rust schema fix + `realtime.insert_frame` bridge method (Wave 1)
+- [x] 118-02-PLAN.md — Swift `RealtimePIPQueue` + always-on notification wiring (Wave 2, depends on 118-01)
 - [ ] 118-03-PLAN.md — `POST /v1/ingest-realtime` endpoint + TimescaleDB hypertable (Wave 2, depends on 118-01)
 
 ---
@@ -1075,7 +1076,7 @@ Plans:
 | 115 | 2/2 | Complete    | 2026-06-23 |
 | 116 | 1/1 | Complete    | 2026-06-24 |
 | 117 | 1/1 | Complete    | 2026-06-24 |
-| 118 | 0/0 | Not started | — |
+| 118 | 2/3 | In Progress|  |
 | 119 | 0/0 | Not started | — |
 | 120 | 0/0 | Not started | — |
 | 121 | 0/0 | Not started | — |
