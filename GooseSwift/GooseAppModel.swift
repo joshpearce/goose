@@ -55,6 +55,12 @@ final class GooseAppModel {
     maxBatchRows: GooseAppModel.captureFrameWriteBatchMaxRows,
     coalesceDelay: GooseAppModel.captureFrameWriteCoalesceDelay
   )
+  let realtimePIPQueue = RealtimePIPQueue(
+    databasePath: HealthDataStore.defaultDatabasePath(),
+    maxQueuedRows: GooseAppModel.realtimePIPQueueMaxRows,
+    maxBatchRows: GooseAppModel.realtimePIPBatchMaxRows,
+    coalesceDelay: GooseAppModel.realtimePIPCoalesceDelay
+  )
   let uploadService = GooseUploadService(databasePath: HealthDataStore.defaultDatabasePath())
   let networkMonitor = GooseNetworkMonitor()
   let captureFrameEnqueueAggregator = CaptureFrameEnqueueAggregator(
@@ -208,6 +214,9 @@ final class GooseAppModel {
   static let captureFrameWriteQueueMaxRows = 2048
   static let captureFrameWriteBatchMaxRows = 128
   static let captureFrameWriteCoalesceDelay: TimeInterval = 0.05
+  static let realtimePIPQueueMaxRows = 2048
+  static let realtimePIPBatchMaxRows = 128
+  static let realtimePIPCoalesceDelay: TimeInterval = 0.05
   static let passiveActivityCaptureDuration: TimeInterval = 12 * 60 * 60
   static let movementPacketStatusInterval: TimeInterval = 1
   static let movementPacketLogInterval: TimeInterval = 5

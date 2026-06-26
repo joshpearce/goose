@@ -85,6 +85,16 @@ extension GooseAppModel {
       return
     }
 
+    // D-01: always-on realtime enqueue — runs unconditionally, BEFORE the capture-session guard
+    // inside importCapturedFrames. Every BLE notification frame is written to realtime_frames
+    // regardless of whether activeHealthPacketCapture or activeActivityPersistence is active.
+    let realtimeFrames = Self.realtimePIPFrames(
+      for: frames,
+      event: event,
+      deviceUUID: captureFrameWriteQueue.currentDeviceUUID ?? ""
+    )
+    realtimePIPQueue.enqueue(frames: realtimeFrames)
+
     importCapturedFrames(frames, event: event)
 
     parseNotificationFrames(frames, event: event)
@@ -691,6 +701,21 @@ extension GooseAppModel {
     let captureSessionID: String?
     let deviceModel: String
     let deviceUUID: String?
+  }
+
+  nonisolated static func realtimePIPFrames(
+    for frames: [NotificationFrame],
+    event: GooseNotificationEvent,
+    deviceUUID: String
+  ) -> [RealtimePIPFrame] {
+    let capturedAt = Self.captureTimestampFormatter.string(from: event.capturedAt)
+    return frames.map { frame in
+      RealtimePIPFrame(
+        deviceUUID: deviceUUID,
+        frameHex: frame.hex,
+        capturedAt: capturedAt
+      )
+    }
   }
 
   nonisolated static func captureFrameRows(for request: CaptureFrameRowBuildRequest) -> [CapturedFrameWriteRow] {
