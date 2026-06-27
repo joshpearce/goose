@@ -765,7 +765,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter (completed 2026-06-26)
 - [x] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended") (completed 2026-06-27)
 - [x] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart (completed 2026-06-27)
-- [ ] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering
+- [x] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering (completed 2026-06-27)
 - [ ] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging
 - [ ] **Phase 124: PIP Server Endpoint** — POST /v1/ingest-realtime + TimescaleDB hypertable
 - [ ] **Phase 125: Cap Sense UUID Discovery** — BLE scan to identify capacitive sense GATT UUID + subscribe
@@ -976,7 +976,7 @@ Plans:
   2. All dashboard views that render stealth-eligible metric values call `GooseStealthMode.isHidden(metric:)` at the render site and display "—" when the metric is hidden
   3. `#if DEBUG` previews use `StealthMask` environment value rather than direct UserDefaults reads; SwiftUI preview compiles clean
 
-**Plans**: TBD
+**Plans**: 1/1 plans complete
 **UI hint**: yes
 
 ---
@@ -1091,7 +1091,7 @@ Plans:
 | 119 | 1/1 | Complete    | 2026-06-26 |
 | 120 | 1/1 | Complete    | 2026-06-27 |
 | 121 | 1/1 | Complete    | 2026-06-27 |
-| 122 | 0/0 | Not started | — |
+| 122 | 1/1 | Complete   | 2026-06-27 |
 | 123 | 0/0 | Not started | — |
 | 124 | 0/0 | Not started | — |
 | 125 | 0/0 | Not started | — |
@@ -1148,6 +1148,8 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Depends on:** Phase 59
 **Plans:** 1/1 plans complete
 Plans:
+
+- [x] 122-01-PLAN.md
 
 - [x] 111-01-PLAN.md
 
