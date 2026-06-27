@@ -17,7 +17,7 @@ Out of scope: Rust changes (Phase 114 complete), body composition UI (Phase 121)
 ## Implementation Decisions
 
 ### Bridge call placement
-- **D-01:** New `@Published var dynamicSleepNeed: DynamicSleepNeed?` property on `HealthDataStore`. Bridge call lives in `HealthDataStore+Sleep.swift` (or existing sleep extension if one exists). Views observe via `@EnvironmentObject`. Consistent with all other metric `@Published` properties.
+- **D-01:** New `var dynamicSleepNeed: DynamicSleepNeed?` plain stored property on `HealthDataStore` (which is `@MainActor @Observable` — NOT `@ObservableObject`; do NOT use `@Published`). Bridge call lives in `HealthDataStore+Sleep.swift` (or existing sleep extension if one exists). Views access via `@Environment(HealthDataStore.self)`, not `@EnvironmentObject`.
 
 ### Swift result type
 - **D-02:** Local Swift struct (not a Rust-generated type) mirroring the bridge JSON:
@@ -42,7 +42,11 @@ Out of scope: Rust changes (Phase 114 complete), body composition UI (Phase 121)
 - **D-05:** Flat always-visible row below the main label, shown only when `dynamicSleepNeed != nil`. Shows base / debt / strain components as a single compact Text: e.g. `"Base 7.5h · Debt +15m · Strain +0m"`. No expansion/disclosure group.
 
 ### Hardcoded fallback replacement
-- **D-06:** `HealthDataStore+Snapshots.swift` lines 28 and 68 have `"sleep_need_minutes": 480.0`. These are fallback values used when bridge fails. Replace the `480.0` with `dynamicSleepNeed?.totalNeedMinutes ?? 450.0` (aligns with Phase 114 D-03: age=nil defaults to 7.5h = 450 min).
+- **D-06:** Four sites across two files have `"sleep_need_minutes": 480.0` — replace ALL with `dynamicSleepNeed?.totalNeedMinutes ?? 450.0` (aligns with Phase 114 D-03: age=nil defaults to 7.5h = 450 min):
+  - `HealthDataStore+Snapshots.swift` line 28 — inside `runPacketScores`
+  - `HealthDataStore+Snapshots.swift` line 68 — inside `runSleepScore`
+  - `HealthDataStore+Utilities.swift` line 128 — inside `sleepScoreReport(baseArgs:)`
+  - `HealthDataStore+Utilities.swift` line 153 — inside `recoveryScoreBridgeArgs()`
 
 ### Where the UI change lands
 - **D-07:** The static label `sleepNeededText` in `HealthSleepSheetsViews.swift` (line 149) should consume `dynamicSleepNeed`. Check `HealthSleepOverviewViews.swift` as well — if it has its own sleep need display, update it too.
@@ -61,7 +65,7 @@ Out of scope: Rust changes (Phase 114 complete), body composition UI (Phase 121)
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Primary files to modify
-- `GooseSwift/HealthDataStore+Snapshots.swift` (or existing Sleep extension) — add `@Published var dynamicSleepNeed: DynamicSleepNeed?` + `refreshDynamicSleepNeed()` bridge call
+- `GooseSwift/HealthDataStore.swift` (base class body) — add `var dynamicSleepNeed: DynamicSleepNeed?` plain stored property (no @Published); `GooseSwift/HealthDataStore+Sleep.swift` — add `DynamicSleepNeed` struct + `runDynamicSleepNeed()` async method
 - `GooseSwift/HealthSleepSheetsViews.swift` — replace static `sleepNeededText` with `dynamicSleepNeed`-driven display + breakdown row
 - Check: `GooseSwift/HealthSleepOverviewViews.swift` — update any sleep need display if present
 
