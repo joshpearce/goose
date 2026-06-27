@@ -25,7 +25,7 @@ extension HealthDataStore {
       "hrv_baseline_min_days": 3,
     ]) { _, new in new }
     let sleepArgs = baseArgs.merging([
-      "sleep_need_minutes": 480.0,
+      "sleep_need_minutes": dynamicSleepNeed?.totalNeedMinutes ?? 450.0,
       "low_motion_threshold_0_to_1": 0.05,
       "disturbance_motion_threshold_0_to_1": 0.20,
       "target_midpoint_minutes_since_midnight": 180.0,
@@ -65,7 +65,7 @@ extension HealthDataStore {
   func runSleepScore() async {
     packetScoreStatus = "Extracting bridge sleep score..."
     let sleepArgs = bridgeBaseArgs(requireTrustedEvidence: false).merging([
-      "sleep_need_minutes": 480.0,
+      "sleep_need_minutes": dynamicSleepNeed?.totalNeedMinutes ?? 450.0,
       "low_motion_threshold_0_to_1": 0.05,
       "disturbance_motion_threshold_0_to_1": 0.20,
       "target_midpoint_minutes_since_midnight": 180.0,

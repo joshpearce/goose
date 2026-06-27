@@ -125,7 +125,7 @@ extension HealthDataStore {
     try await bridge.requestAsync(
       method: "metrics.sleep_score_from_features",
       args: baseArgs.merging([
-        "sleep_need_minutes": 480.0,
+        "sleep_need_minutes": dynamicSleepNeed?.totalNeedMinutes ?? 450.0,
         "low_motion_threshold_0_to_1": 0.05,
         "disturbance_motion_threshold_0_to_1": 0.20,
         "target_midpoint_minutes_since_midnight": 180.0,
@@ -150,7 +150,7 @@ extension HealthDataStore {
       "resting_baseline_min_days": 3,
       "hrv_min_rr_intervals_to_compute": 2,
       "hrv_baseline_min_days": 3,
-      "sleep_need_minutes": 480.0,
+      "sleep_need_minutes": dynamicSleepNeed?.totalNeedMinutes ?? 450.0,
       "low_motion_threshold_0_to_1": 0.05,
       "disturbance_motion_threshold_0_to_1": 0.20,
       "target_midpoint_minutes_since_midnight": 180.0,
