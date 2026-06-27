@@ -19,6 +19,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case breathe
   case intervalTimer
   case metricExplorer
+  case stealthMetrics
 
   var id: String { rawValue }
 
@@ -42,6 +43,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .breathe: String(localized: "Breathe")
     case .intervalTimer: String(localized: "Interval Timer")
     case .metricExplorer: String(localized: "Metric Explorer")
+    case .stealthMetrics: String(localized: "Metrics Privacy")
     }
   }
 
@@ -65,6 +67,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .breathe: String(localized: "Paced breathing with haptics")
     case .intervalTimer: String(localized: "Work/rest intervals with haptic transitions")
     case .metricExplorer: String(localized: "Current metric values from your WHOOP data")
+    case .stealthMetrics: String(localized: "Hide individual metrics from the Health dashboard")
     }
   }
 
@@ -88,6 +91,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .breathe: "wind"
     case .intervalTimer: "timer"
     case .metricExplorer: "chart.bar.doc.horizontal"
+    case .stealthMetrics: "eye.slash"
     }
   }
 
@@ -111,12 +115,13 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .breathe: \.breathe
     case .intervalTimer: \.intervalTimer
     case .metricExplorer: \.metricExplorer
+    case .stealthMetrics: \.stealthMetrics
     }
   }
 
   static let deviceRoutes: [MoreRoute] = [.device, .hrMonitor]
   static let appRoutes: [MoreRoute] = [.healthSync]
-  static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer]
+  static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer, .stealthMetrics]
   static let supportRoutes: [MoreRoute] = [.about]
   static let developerRoutes: [MoreRoute] = [.support, .developer]
   static let developerToolRoutes: [MoreRoute] = [.connectionLab, .capture, .localStore, .rawExport, .algorithms, .debug]
@@ -143,6 +148,7 @@ struct MoreRouteStatus: Equatable {
   var breathe: MoreStatusKind
   var intervalTimer: MoreStatusKind
   var metricExplorer: MoreStatusKind
+  var stealthMetrics: MoreStatusKind
 }
 
 enum MoreStatusKind: String, CaseIterable {

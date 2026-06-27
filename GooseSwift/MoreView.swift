@@ -186,6 +186,8 @@ struct MoreView: View {
       IntervalTimerView()
     case .metricExplorer:
       MetricExplorerView()
+    case .stealthMetrics:
+      StealthMetricsView()
     }
   }
 

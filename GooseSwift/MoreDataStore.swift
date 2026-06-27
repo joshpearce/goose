@@ -27,7 +27,8 @@ final class MoreDataStore: ObservableObject {
     developer: .pending,
     breathe: .ready,
     intervalTimer: .ready,
-    metricExplorer: .ready
+    metricExplorer: .ready,
+    stealthMetrics: .ready
   )
 
   @Published var databasePath: String
@@ -166,7 +167,8 @@ final class MoreDataStore: ObservableObject {
       developer: .pending,
       breathe: .ready,
       intervalTimer: .ready,
-      metricExplorer: .ready
+      metricExplorer: .ready,
+      stealthMetrics: .ready
     )
     routeStatus = newStatus
   }
