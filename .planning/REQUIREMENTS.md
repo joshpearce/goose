@@ -19,7 +19,7 @@
 
 - [x] **SLP-NEED-01**: `Rust/core/src/sleep_need.rs` — `compute_sleep_need(age_years, 5-night history, prior_strain) -> SleepNeedResult`; age-bracket baseline (18–25: 8h, 26–64: 7.5h, 65+: 7h); EWMA alpha 0.0483; strain adjustment (+0.25h if ≥15, +0.1h if ≥10); `cargo test --locked` with cold-start + age-bracket + strain tests (closes #164)
 - [x] **SLP-NEED-02**: Replace hardcoded `480.0` constant in `SleepFeatureScoreOptions` + `RecoveryFeatureScoreOptions` with bridge call `sleep.compute_need`; `age_years: Option<u8>` added to options struct; bridge method registered in `BRIDGE_METHODS`
-- [ ] **SLP-NEED-03**: Sleep dashboard replaces static "8h recommended" with dynamic `SleepNeedResult.total_need_minutes` + optional breakdown (base / debt / strain components)
+- [x] **SLP-NEED-03**: Sleep dashboard replaces static "8h recommended" with dynamic `SleepNeedResult.total_need_minutes` + optional breakdown (base / debt / strain components)
 
 ### Real-Device Algorithm Validation (ALG-HRV-04, ALG-SLP-04)
 

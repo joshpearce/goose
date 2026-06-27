@@ -763,7 +763,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 117: Android Optical Routing** — WhoopBleClient packet_k 20/21/26 forwarding for Android parity (completed 2026-06-24)
 - [x] **Phase 118: PIP Realtime Queue** — RealtimePIPQueue Swift class + realtime_frames table bridge consumer (completed 2026-06-26)
 - [x] **Phase 119: Stealth Mode** — GooseStealthMode + StealthMask + CoachLocalToolContext filter (completed 2026-06-26)
-- [ ] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended")
+- [x] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended") (completed 2026-06-27)
 - [ ] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart
 - [ ] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering
 - [ ] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging
@@ -938,7 +938,9 @@ Plans:
   3. The iOS build compiles without new warnings; SwiftUI `#Preview` macro compiles in DEBUG
 
 **Plans**: 1 plan
+
 - [x] 120-01-PLAN.md — DynamicSleepNeed model, bridge call, hkUserAge fix, fallback replacement, all three display sites
+
 **UI hint**: yes
 
 ---

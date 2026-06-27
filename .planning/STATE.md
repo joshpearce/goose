@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 120
-current_phase_name: Sleep Need UI
-status: executing
-stopped_at: Phase 120 Plan 01 complete
-last_updated: "2026-06-27T19:24:10Z"
+current_phase: 121
+current_phase_name: Body Composition UI + HealthKit Import
+status: completed
+stopped_at: Phase 118 context gathered
+last_updated: "2026-06-27T19:30:21.686Z"
 last_activity: 2026-06-27
-last_activity_desc: Phase 120 Plan 01 complete — dynamic sleep need UI wired from sleep.compute_need bridge
+last_activity_desc: Phase 120 complete, transitioned to Phase 121
 progress:
   total_phases: 15
-  completed_phases: 8
-  total_plans: 13
-  completed_plans: 13
-  percent: 53
+  completed_phases: 9
+  total_plans: 14
+  completed_plans: 14
+  percent: 60
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 120 — Sleep Need UI
-Plan: 01 complete (1/1)
+Phase: 121 — Body Composition UI + HealthKit Import
+Plan: Not started
 Status: Phase 120 complete — all plans done
-Last activity: 2026-06-27 — Phase 120 Plan 01 complete — dynamic sleep need UI wired from sleep.compute_need bridge
+Last activity: 2026-06-27 — Phase 120 complete, transitioned to Phase 121
 
 ## Performance Metrics
 
