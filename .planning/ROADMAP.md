@@ -937,7 +937,8 @@ Plans:
   2. An optional breakdown row shows base / debt / strain components when available; the label is absent when the bridge call returns an error or no history exists
   3. The iOS build compiles without new warnings; SwiftUI `#Preview` macro compiles in DEBUG
 
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 120-01-PLAN.md — DynamicSleepNeed model, bridge call, hkUserAge fix, fallback replacement, all three display sites
 **UI hint**: yes
 
 ---
