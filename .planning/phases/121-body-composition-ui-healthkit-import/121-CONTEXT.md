@@ -26,10 +26,10 @@ Out of scope: BODY-01 (Phase 116, done), stealth UI (Phase 122)
 - **D-03:** User-triggered via "Import from Health" button in `HealthBodyCompositionSection`. No automatic polling. Reads `HKQuantityTypeIdentifierBodyMass` + `HKQuantityTypeIdentifierBodyFatPercentage`. Writes with `source='healthkit'` and `INSERT OR REPLACE` semantics (handled by the Rust `upsert` method's UNIQUE constraint).
 
 ### Weight display units
-- **D-04:** Follow `Locale.current.measurementSystem`. Metric → kg. Imperial (US) → lbs (1 kg = 2.20462 lbs). Convert for display only; all bridge calls use kg. Format: `"%.1f kg"` or `"%.1f lbs"`. If locale is indeterminate, default to kg.
+- **D-04:** Follow existing `UnitSystem` user preference stored in MoreProfileViews (check for existing `unitSystem` UserDefaults key). Metric → kg. Imperial → lbs (factor: × 2.20462). Convert for display only; bridge always receives kg. Format: `"%.1f kg"` or `"%.1f lbs"`. Do NOT use `Locale.current.measurementSystem` — `.us` vs `.usSystem` Swift API is unreliable; use stored preference instead.
 
 ### Trend chart / sparkline
-- **D-05:** Inline weight sparkline within the `HealthBodyCompositionSection` card. Uses Swift Charts (`Chart` + `.lineMark`). Renders last 7 days of history from `body_composition.history_between`. Chart absent (view hidden) when history is empty. Follows Swift Charts pattern from `SleepV2BevelTrendViews.swift`.
+- **D-05:** Inline weight sparkline within the `HealthBodyCompositionSection` card. Uses CoreGraphics `GeometryReader + Path + ZStack` — NOT Swift Charts (Charts framework is not linked; `import Charts` will cause a linker error). Follows the existing custom chart pattern in `SleepV2BevelTrendViews.swift`. Renders last 7 days from `body_composition.history_between`. Chart absent (hidden) when history is empty. Y-axis inversion required: `y = plot.maxY - CGFloat(normalized) * plot.height`.
 
 ### Bridge call pattern
 - **D-06:** Bridge calls dispatched off-main-thread via `Task { await ... }` or the existing bridge async pattern. `@Observable` HealthDataStore (not @ObservableObject). Published via a new `var bodyCompositionHistory: [BodyCompositionRow]` plain stored property (same @Observable pattern as `dynamicSleepNeed`).
