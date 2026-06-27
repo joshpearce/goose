@@ -33,6 +33,8 @@ struct HealthView: View {
 
         HealthVitalsPreviewSection(snapshots: cachedVitalSnapshots)
 
+        HealthBodyCompositionSection()
+
         HealthRouteShortcutSection(
           title: "Explore Health",
           snapshots: snapshots(for: [.trends, .stress, .cardioLoad, .energyBank])
@@ -74,6 +76,7 @@ struct HealthView: View {
       Task {
         await healthStore.loadBridgeCatalogsIfNeeded()
         await healthStore.refreshHeartRateTimeline()
+        await healthStore.loadBodyCompositionHistory()
       }
       refreshSnapshots()
     }

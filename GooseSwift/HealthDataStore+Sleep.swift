@@ -337,7 +337,7 @@ extension HealthDataStore {
     }
   }
 
-  private nonisolated static let hkDateFormatter: DateFormatter = {
+  nonisolated static let hkDateFormatter: DateFormatter = {
     let df = DateFormatter()
     df.dateFormat = "yyyy-MM-dd"
     df.locale = Locale(identifier: "en_US_POSIX")

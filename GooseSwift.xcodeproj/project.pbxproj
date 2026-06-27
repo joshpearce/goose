@@ -106,6 +106,9 @@
 		D10000000000000000000017 /* NotificationFrameParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000017 /* NotificationFrameParsing.swift */; };
 		D10000000000000000000018 /* CaptureFrameWriteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000018 /* CaptureFrameWriteQueue.swift */; };
 		E1000000000000000000018 /* RealtimePIPQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000018 /* RealtimePIPQueue.swift */; };
+		E1000000000000000000019 /* HealthBodyCompositionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000019 /* HealthBodyCompositionSection.swift */; };
+		E100000000000000000001A /* BodyCompositionEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000001A /* BodyCompositionEntrySheet.swift */; };
+		E100000000000000000001B /* HealthDataStore+BodyComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000001B /* HealthDataStore+BodyComposition.swift */; };
 		D10000000000000000000019 /* OvernightSQLiteMirrorQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */; };
 		D1000000000000000000001A /* OvernightRawNotificationSpool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001A /* OvernightRawNotificationSpool.swift */; };
 		D1000000000000000000001B /* HeartRateSeriesStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001B /* HeartRateSeriesStores.swift */; };
@@ -354,6 +357,9 @@
 		D20000000000000000000017 /* NotificationFrameParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFrameParsing.swift; sourceTree = "<group>"; };
 		D20000000000000000000018 /* CaptureFrameWriteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFrameWriteQueue.swift; sourceTree = "<group>"; };
 		E2000000000000000000018 /* RealtimePIPQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimePIPQueue.swift; sourceTree = "<group>"; };
+		E2000000000000000000019 /* HealthBodyCompositionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthBodyCompositionSection.swift; sourceTree = "<group>"; };
+		E200000000000000000001A /* BodyCompositionEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompositionEntrySheet.swift; sourceTree = "<group>"; };
+		E200000000000000000001B /* HealthDataStore+BodyComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+BodyComposition.swift"; sourceTree = "<group>"; };
 		D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightSQLiteMirrorQueue.swift; sourceTree = "<group>"; };
 		D2000000000000000000001A /* OvernightRawNotificationSpool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightRawNotificationSpool.swift; sourceTree = "<group>"; };
 		D2000000000000000000001B /* HeartRateSeriesStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSeriesStores.swift; sourceTree = "<group>"; };
@@ -547,6 +553,9 @@
 				D20000000000000000000017 /* NotificationFrameParsing.swift */,
 				D20000000000000000000018 /* CaptureFrameWriteQueue.swift */,
 				E2000000000000000000018 /* RealtimePIPQueue.swift */,
+				E2000000000000000000019 /* HealthBodyCompositionSection.swift */,
+				E200000000000000000001A /* BodyCompositionEntrySheet.swift */,
+				E200000000000000000001B /* HealthDataStore+BodyComposition.swift */,
 				D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */,
 				D2000000000000000000001A /* OvernightRawNotificationSpool.swift */,
 				D2000000000000000000001B /* HeartRateSeriesStores.swift */,
@@ -964,6 +973,9 @@
 				D10000000000000000000017 /* NotificationFrameParsing.swift in Sources */,
 				D10000000000000000000018 /* CaptureFrameWriteQueue.swift in Sources */,
 				E1000000000000000000018 /* RealtimePIPQueue.swift in Sources */,
+				E1000000000000000000019 /* HealthBodyCompositionSection.swift in Sources */,
+				E100000000000000000001A /* BodyCompositionEntrySheet.swift in Sources */,
+				E100000000000000000001B /* HealthDataStore+BodyComposition.swift in Sources */,
 				D10000000000000000000019 /* OvernightSQLiteMirrorQueue.swift in Sources */,
 				D1000000000000000000001A /* OvernightRawNotificationSpool.swift in Sources */,
 				D1000000000000000000001B /* HeartRateSeriesStores.swift in Sources */,

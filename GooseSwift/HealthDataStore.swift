@@ -112,6 +112,14 @@ final class HealthDataStore {
   // Stored here because Swift extensions cannot add stored properties to @Observable classes.
   var dynamicSleepNeed: DynamicSleepNeed?
 
+  // Body composition history from body_composition.history_between bridge (BODY-02, BODY-03).
+  // Stored here because Swift extensions cannot add stored properties to @Observable classes.
+  var bodyCompositionHistory: [BodyCompositionRow] = []
+
+  // Tracks the HealthKit import lifecycle so the section UI can show inline error state (N-03).
+  // Non-throwing async import sets this instead of propagating errors.
+  var importState: ImportState = .idle
+
   // Trends 7-day series cache (DATA-03)
   // Stored here because Swift extensions cannot add stored properties to @Observable classes.
   var recoveryTrendPoints: [(date: String, value: Double)] = []
@@ -333,5 +341,12 @@ final class HealthDataStore {
     await runSleepScore()
     await runSleepStaging()
     bandSleepImportStatus = "Band sync captured \(packetCount) packets | \(packetScoreStatus)"
+  }
+
+  // HealthKit import lifecycle state (N-03 — non-throwing import sets this instead of propagating).
+  enum ImportState {
+    case idle
+    case importing
+    case failed(String)
   }
 }
