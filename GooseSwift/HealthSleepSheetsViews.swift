@@ -6,6 +6,7 @@ import UIKit
 struct SleepV2SleepNeededSheet: View {
   let palette: SleepV2Palette
   @Environment(\.dismiss) private var dismiss
+  @Environment(HealthDataStore.self) private var healthStore
   @State private var targetSleepMinutes = 7 * 60 + 30
 
 	  var body: some View {
@@ -22,11 +23,18 @@ struct SleepV2SleepNeededSheet: View {
 	              Text("Tonight's sleep needed")
 	                .font(.headline.weight(.semibold))
 	                .foregroundStyle(palette.secondaryText)
-	              Text(sleepNeededText)
-	                .font(.system(size: 52, weight: .semibold, design: .rounded))
-	                .foregroundStyle(palette.text)
-	                .lineLimit(1)
-	                .minimumScaleFactor(0.70)
+	              if !sleepNeededText.isEmpty {
+	                Text(sleepNeededText)
+	                  .font(.system(size: 52, weight: .semibold, design: .rounded))
+	                  .foregroundStyle(palette.text)
+	                  .lineLimit(1)
+	                  .minimumScaleFactor(0.70)
+	                if let need = healthStore.dynamicSleepNeed {
+	                  Text(breakdownText(need))
+	                    .font(.caption.weight(.medium))
+	                    .foregroundStyle(palette.secondaryText)
+	                }
+	              }
 	              Text("Target time in bed for the next sleep window.")
 	                .font(.subheadline)
 	                .multilineTextAlignment(.center)
@@ -144,10 +152,23 @@ struct SleepV2SleepNeededSheet: View {
       .toolbarBackground(.hidden, for: .navigationBar)
     }
 	    .presentationDetents([.large])
+	    .task { await healthStore.runDynamicSleepNeed() }
 	  }
 
   private var sleepNeededText: String {
-    Self.durationText(targetSleepMinutes + 9)
+    guard let need = healthStore.dynamicSleepNeed else { return "" }
+    let h = Int(need.totalNeedMinutes / 60)
+    let m = Int(need.totalNeedMinutes.truncatingRemainder(dividingBy: 60))
+    return m != 0 ? "\(h)h \(m)m recommended tonight" : "\(h)h recommended tonight"
+  }
+
+  private func breakdownText(_ need: DynamicSleepNeed) -> String {
+    let baseH = String(format: "%.1f", need.baseNeedMinutes / 60)
+    let debtM = Int(need.debtAdjustmentMinutes)
+    let strainM = Int(need.strainAdjustmentMinutes)
+    let debtStr = debtM >= 0 ? "+\(debtM)m" : "\(debtM)m"
+    let strainStr = strainM >= 0 ? "+\(strainM)m" : "\(strainM)m"
+    return "Base \(baseH)h · Debt \(debtStr) · Strain \(strainStr)"
   }
 
   private var targetSleepText: String {

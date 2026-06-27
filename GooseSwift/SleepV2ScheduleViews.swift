@@ -7,6 +7,14 @@ struct SleepV2SleepWindowCard: View {
   let palette: SleepV2Palette
   let onWakeTap: () -> Void
   let onSleepNeeded: () -> Void
+  @Environment(HealthDataStore.self) private var healthStore
+
+  private var sleepNeedDisplayText: String {
+    guard let need = healthStore.dynamicSleepNeed else { return "--" }
+    let h = Int(need.totalNeedMinutes / 60)
+    let m = Int(need.totalNeedMinutes.truncatingRemainder(dividingBy: 60))
+    return m != 0 ? "\(h)h \(m)m" : "\(h)h"
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
@@ -49,7 +57,7 @@ struct SleepV2SleepWindowCard: View {
           palette: palette,
           systemImage: "moon.stars.fill",
           title: "Tonight's sleep needed",
-          value: "7h 39m",
+          value: sleepNeedDisplayText,
           action: onSleepNeeded
         )
 
@@ -331,6 +339,14 @@ struct SleepV2ScheduleActionRow: View {
 
 struct SleepV2ClockDial: View {
   let palette: SleepV2Palette
+  @Environment(HealthDataStore.self) private var healthStore
+
+  private var sleepNeedDisplayText: String {
+    guard let need = healthStore.dynamicSleepNeed else { return "--" }
+    let h = Int(need.totalNeedMinutes / 60)
+    let m = Int(need.totalNeedMinutes.truncatingRemainder(dividingBy: 60))
+    return m != 0 ? "\(h)h \(m)m" : "\(h)h"
+  }
 
   var body: some View {
     GeometryReader { proxy in
@@ -363,7 +379,7 @@ struct SleepV2ClockDial: View {
           Image(systemName: "moon.stars.fill")
             .font(.title3.weight(.semibold))
             .foregroundStyle(palette.accent)
-          Text("7h 39m")
+          Text(sleepNeedDisplayText)
             .font(.title2.weight(.semibold))
             .fontDesign(.rounded)
             .foregroundStyle(palette.text)

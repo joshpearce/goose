@@ -145,6 +145,7 @@ struct SleepV2OverviewPage: View {
       Task { await healthStore.loadBridgeCatalogsIfNeeded() }
       startBandSleepSyncIfReady()
       Task { await healthStore.runSleepStaging() }
+      Task { await healthStore.runDynamicSleepNeed() }
     }
     .onChange(of: ble.canSyncHistorical) { _, _ in
       startBandSleepSyncIfReady()
