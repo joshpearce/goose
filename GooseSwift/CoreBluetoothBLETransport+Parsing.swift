@@ -169,14 +169,19 @@ extension CoreBluetoothBLETransport {
       return true
     case modelNumberCharacteristicID:
       modelNumber = decodedMetadataString(value)
+      if modelNumber == nil { scheduleMetadataReadRetryIfNeeded(for: characteristic) }
     case firmwareRevisionCharacteristicID:
       firmwareVersion = decodedMetadataString(value)
+      if firmwareVersion == nil { scheduleMetadataReadRetryIfNeeded(for: characteristic) }
     case hardwareRevisionCharacteristicID:
       hardwareRevision = decodedMetadataString(value)
+      if hardwareRevision == nil { scheduleMetadataReadRetryIfNeeded(for: characteristic) }
     case softwareRevisionCharacteristicID:
       softwareRevision = decodedMetadataString(value)
+      if softwareRevision == nil { scheduleMetadataReadRetryIfNeeded(for: characteristic) }
     case manufacturerNameCharacteristicID:
       manufacturerName = decodedMetadataString(value)
+      if manufacturerName == nil { scheduleMetadataReadRetryIfNeeded(for: characteristic) }
     default:
       return false
     }
@@ -211,7 +216,8 @@ extension CoreBluetoothBLETransport {
   // Re-discovering the service refreshes the handles, so retry through the
   // full refresh path a bounded number of times per connection.
   func scheduleMetadataReadRetryIfNeeded(for characteristic: CBCharacteristic) {
-    guard metadataReadRetriesRemaining > 0 else {
+    // Coalesce: multiple characteristic failures in the same read round share one retry slot.
+    guard metadataReadRetryWorkItem == nil, metadataReadRetriesRemaining > 0 else {
       return
     }
     metadataReadRetriesRemaining -= 1
@@ -220,9 +226,12 @@ extension CoreBluetoothBLETransport {
       title: "device_info.read.retry",
       body: "\(characteristic.uuid.uuidString) retries_left=\(metadataReadRetriesRemaining)"
     )
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+    let item = DispatchWorkItem { [weak self] in
+      self?.metadataReadRetryWorkItem = nil
       self?.refreshDeviceInformation()
     }
+    metadataReadRetryWorkItem = item
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: item)
   }
 
   static func parseBatteryLevelStatus(_ data: Data) -> BatteryLevelStatus? {

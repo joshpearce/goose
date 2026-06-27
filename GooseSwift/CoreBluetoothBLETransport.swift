@@ -48,6 +48,7 @@ import OSLog
   // each connection. Failed reads are common right after a strap firmware
   // update, when iOS still serves the pre-update GATT attribute cache.
   var metadataReadRetriesRemaining = 2
+  var metadataReadRetryWorkItem: DispatchWorkItem?
   var historicalPacketCount = 0
   // Determinate sync progress: total pages comes from the GET_DATA_RANGE
   // response (V5 page words), bursts advance one per history_end metadata.

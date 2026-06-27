@@ -186,6 +186,8 @@ extension CoreBluetoothBLETransport: CBCentralManagerDelegate {
     activePeripheral = peripheral
     peripheral.delegate = self
     clientHelloSentForCurrentConnection = false
+    metadataReadRetryWorkItem?.cancel()
+    metadataReadRetryWorkItem = nil
     metadataReadRetriesRemaining = 2
     // Cancel any pending scheduled retry and reset backoff before updating state.
     cancelReconnectCycle()

@@ -264,6 +264,9 @@ extension CoreBluetoothBLETransport: CBPeripheralDelegate {
         title: readValue ? "metadata.read.empty" : "notification.empty",
         body: characteristic.uuid.uuidString
       )
+      if readValue {
+        scheduleMetadataReadRetryIfNeeded(for: characteristic)
+      }
       return
     }
 
