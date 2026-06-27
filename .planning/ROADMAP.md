@@ -938,7 +938,7 @@ Plans:
   3. The iOS build compiles without new warnings; SwiftUI `#Preview` macro compiles in DEBUG
 
 **Plans**: 1 plan
-- [ ] 120-01-PLAN.md — DynamicSleepNeed model, bridge call, hkUserAge fix, fallback replacement, all three display sites
+- [x] 120-01-PLAN.md — DynamicSleepNeed model, bridge call, hkUserAge fix, fallback replacement, all three display sites
 **UI hint**: yes
 
 ---
@@ -1083,7 +1083,7 @@ Plans:
 | 117 | 1/1 | Complete    | 2026-06-24 |
 | 118 | 3/3 | Complete    | 2026-06-26 |
 | 119 | 1/1 | Complete    | 2026-06-26 |
-| 120 | 0/0 | Not started | — |
+| 120 | 1/1 | Complete    | 2026-06-27 |
 | 121 | 0/0 | Not started | — |
 | 122 | 0/0 | Not started | — |
 | 123 | 0/0 | Not started | — |

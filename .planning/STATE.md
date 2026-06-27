@@ -4,11 +4,11 @@ milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
 current_phase: 120
 current_phase_name: Sleep Need UI
-status: planning
-stopped_at: Phase 118 context gathered
-last_updated: "2026-06-26T21:53:06.612Z"
-last_activity: 2026-06-26
-last_activity_desc: Phase 119 complete, transitioned to Phase 120
+status: executing
+stopped_at: Phase 120 Plan 01 complete
+last_updated: "2026-06-27T19:24:10Z"
+last_activity: 2026-06-27
+last_activity_desc: Phase 120 Plan 01 complete — dynamic sleep need UI wired from sleep.compute_need bridge
 progress:
   total_phases: 15
   completed_phases: 8
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 ## Current Position
 
 Phase: 120 — Sleep Need UI
-Plan: Not started
-Status: Roadmap approved — ready to plan Phase 112
-Last activity: 2026-06-26 — Phase 119 complete, transitioned to Phase 120
+Plan: 01 complete (1/1)
+Status: Phase 120 complete — all plans done
+Last activity: 2026-06-27 — Phase 120 Plan 01 complete — dynamic sleep need UI wired from sleep.compute_need bridge
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Recent decisions affecting current work:
 - [Phase ?]: pendingFeatureFlagDeviceID captured at send time to guard disconnect race in GET_FF_VALUE response handler (T-115-03)
 - [Phase ?]: realtime_frames has no FK to devices — realtime PIP path does not pre-register devices
 - [Phase ?]: captured_at TIMESTAMPTZ (not TEXT) enables TimescaleDB partitioning; psycopg casts ISO8601 automatically
+- [Phase 120]: dynamicSleepNeed stored as plain var on HealthDataStore base body (@Observable — no @Published); runDynamicSleepNeed() called FIRST in refreshSleepAfterBandSync; sleep_need_minutes fallback is 450.0 (not 480.0) at all four sites; SleepV2ClockDial required its own @Environment injection (separate struct from SleepV2SleepWindowCard)
 
 ### Roadmap Evolution
 
@@ -125,6 +126,7 @@ Items deferred from previous milestones:
 | Phase 117 P01 | 20 min | 2 tasks | 2 files |
 | Phase 118 P02 | 4 min | 2 tasks | 4 files |
 | Phase 118 P03 | 3 min | 3 tasks | 5 files |
+| Phase 120 P01 | 16 min | 3 tasks | 7 files |
 
 ## Quick Tasks Completed
 
