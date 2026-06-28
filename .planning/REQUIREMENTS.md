@@ -45,13 +45,13 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| AND-UI-01 | — | Pending roadmap |
-| AND-UI-02 | — | Pending roadmap |
-| AND-UI-03 | — | Pending roadmap |
-| AND-UI-04 | — | Pending roadmap |
-| RUST-AUD-01 | — | Pending roadmap |
-| RUST-AUD-02 | — | Pending roadmap |
-| BP-AND-01 | — | Pending roadmap |
-| BP-AND-02 | — | Pending roadmap |
-| COMM-AND-01 | — | Pending roadmap |
-| COMM-AND-02 | — | Pending roadmap |
+| AND-UI-01 | Phase 129 | Pending |
+| AND-UI-02 | Phase 129 | Pending |
+| AND-UI-03 | Phase 130 | Pending |
+| AND-UI-04 | Phase 131 | Pending |
+| RUST-AUD-01 | Phase 127 | Pending |
+| RUST-AUD-02 | Phase 128 | Pending |
+| BP-AND-01 | Phase 128 | Pending |
+| BP-AND-02 | Phase 128 | Pending |
+| COMM-AND-01 | Phase 131 | Pending |
+| COMM-AND-02 | Phase 131 | Pending |

@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-06-28T12:15:03.186Z"
 last_activity: 2026-06-28
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-21)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** v15.0 — Protocol Depth, Algorithms & UX
+**Current focus:** v16.0 — Android UI Parity, Rust Architecture & Code Health
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-28 — Milestone v16.0 started
+Status: Roadmap complete — ready to plan Phase 127
+Last activity: 2026-06-28 — Roadmap v16.0 created (Phases 127–131)
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
+- v16.0 Phases 127–131 defined 2026-06-28: Multi-Model Code Audit (127, keystone — Opus/Gemini/Codex), Android Architecture & Best-Practices Fixes (128 — RUST-AUD-02/BP-AND-01/BP-AND-02), Android Sleep & Health UI (129 — AND-UI-01/02), Android Coach + Auth (130 — AND-UI-03), Android Settings + WHY Comments (131 — AND-UI-04/COMM-AND-01/02); 10/10 requirements mapped; Phases 132–139 reserved for insert/growth; audit-then-fix-then-UI ordering; all Android-side, no iOS changes
 - v17.0 Phases 140–150 defined 2026-06-28: Baselines EWMA (140, keystone), HRVAnalyzer (141), StrainScorer (142), RecoveryScorer+DaytimeStress (143), Visual Components (144), Sleep UI (145), Workout UI (146), Data Exploration (147), BLE Protocol Expansion (148), R22 Deep Stream Unlock (149, gated/high-risk), Strap Notification Mirroring (150); 30/30 requirements mapped; start at 140 leaves 127–139 for v16.0 Android milestone
 - v14.0 Phases 98–111 defined 2026-06-20: historical sync (98-99), BLE reliability (100), telemetry+crash+protocol (101), Gen4 metrics (102), Android port (103-107), battery (108), MG (109), code health (110), comments (111)
 - v15.0 Phases 112–126 defined 2026-06-22: optical protocol (112-113), Harvard sleep need (114), feature flags (115), body composition (116), Android parity (117), PIP queue (118), stealth mode (119), sleep need UI (120), body composition UI (121), stealth UI (122), real-device validation (123), PIP server (124), cap sense (125), wake-window RE-gated (126)

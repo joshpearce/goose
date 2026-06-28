@@ -17,6 +17,8 @@
 - ✅ **v13.0 Bug Fixes, Protocol Reliability, Device Coverage & HealthKit Export** — Phases 92-97 (shipped 2026-06-20)
 - ✅ **v14.0 Android Port, BLE Reliability & Protocol Depth** — Phases 98-111 (shipped 2026-06-21)
 - **v15.0 Protocol Depth, Algorithms & UX** — Phases 112-126 (in progress)
+- **v16.0 Android UI Parity, Rust Architecture & Code Health** — Phases 127-139 (planning)
+- **v17.0 Algorithm Depth & Noop Feature Parity** — Phases 140-150 (defined)
 
 ## Phases
 
@@ -1047,6 +1049,117 @@ Plans:
 
 **Plans**: 1/1 plans complete
 
+## v16.0 — Android UI Parity, Rust Architecture & Code Health (Phases 127–139)
+
+**Goal:** Achieve 1:1 Android UI parity with iOS (Sleep/HRV/strain dashboards, Coach+Auth, Settings in Jetpack Compose), perform a deep multi-model Rust+Android code analysis (Opus/Gemini/Codex), and harden Android-side architecture and code quality (JNI error propagation, structured concurrency, WHY comments).
+
+**Phase numbering:** v15.0 ended at Phase 126. v17.0 is already defined starting at Phase 140. v16.0 therefore uses Phases 127–139; this milestone fills 127–131 and leaves 132–139 free for urgent decimal/insert work or scope growth.
+
+**Strategic ordering note:** Phase 127 (Multi-Model Code Audit) is the keystone — its findings feed Phase 128 (Android architecture + best-practices fixes). Audit-then-fix runs first so UI parity work (129–131) lands on a hardened Android foundation rather than re-touching the same files twice. All v16.0 work is Android-side (Kotlin/Compose + JNI glue); no iOS changes ship this milestone (iOS resumes in v17.0).
+
+### Phase Summary
+
+- [ ] **Phase 127: Multi-Model Code Audit** — Opus + Gemini + Codex analyse Rust core + Android Kotlin in parallel → structured findings report
+- [ ] **Phase 128: Android Architecture & Best-Practices Fixes** — apply audit findings: JNI error propagation, coroutine scope hygiene, Compose state management
+- [ ] **Phase 129: Android Sleep & Health UI** — SleepV2 bevel + 14-day trends, HRV timeline + strain/recovery cards (Compose)
+- [ ] **Phase 130: Android Coach + Auth** — OAuth flow, AI chat UI, multi-provider selector (parity iOS CoachChatModel)
+- [ ] **Phase 131: Android Settings + WHY Comments** — Settings screen (server URL, device identity, export, BLE status) + JNI SAFETY and protocol offset WHY comments
+
+### Phase Details
+
+#### Phase 127: Multi-Model Code Audit
+
+**Goal**: A structured, prioritised findings report exists that captures the real architecture, code-health, and best-practice gaps across the Rust core and the Android Kotlin layer — produced by three independent models so blind spots in any single model are caught.
+**Depends on**: Phase 126 (last v15.0 phase)
+**Requirements**: RUST-AUD-01
+**Success Criteria** (what must be TRUE):
+
+  1. Opus, Gemini, and Codex each independently analyse the Rust core (`Rust/core/src/`) and Android Kotlin (`android/`) and their raw outputs are captured as audit artifacts under `.planning/phases/127-*/`
+  2. A consolidated, de-duplicated findings report ranks issues by severity (HIGH/MEDIUM/LOW) across the required axes: module organisation, god-files, JNI patterns, threading/coroutine scope, and null-safety gaps
+  3. Each HIGH and MEDIUM finding names the specific file (and where possible the symbol/function) so Phase 128 can act on it without re-investigation
+  4. The report explicitly tags which findings are Android-actionable in v16.0 versus deferred (Rust-core or iOS scope) so Phase 128 has a clear, bounded fix list
+
+**Plans**: TBD
+
+**Dependencies**: Analysis-only — no source changes in this phase. Reviewer models configured in `.planning/config.json` (`claude`/`gemini`/`codex`).
+
+---
+
+#### Phase 128: Android Architecture & Best-Practices Fixes
+
+**Goal**: The Android-actionable HIGH/MEDIUM findings from Phase 127 are fixed — JNI calls propagate errors instead of silently discarding them, BLE/ViewModel coroutines run on lifecycle-bound scopes (no GlobalScope), and Compose state management follows the audit's recommendations.
+**Depends on**: Phase 127
+**Requirements**: RUST-AUD-02, BP-AND-01, BP-AND-02
+**Success Criteria** (what must be TRUE):
+
+  1. Every JNI call site in `GooseBridge.kt` propagates errors to the caller (returns a typed failure or throws) — no silent `Result` discards or swallowed exceptions remain; a grep/lint check confirms zero silent-discard patterns
+  2. `WhoopBleClient` and `BleViewModel` use a lifecycle-bound `CoroutineScope` (e.g. `viewModelScope` / a scope cancelled on disconnect) and contain zero `GlobalScope` usages
+  3. The Android-actionable architecture findings tagged in the Phase 127 report are resolved or explicitly deferred with a recorded reason; Compose state-management fixes from the report are applied
+  4. The Android CI APK build (`android-core.yml`) compiles without new warnings or errors after the fixes
+
+**Plans**: TBD
+
+**Dependencies**: Consumes the Phase 127 findings report. Android-only (Kotlin + JNI glue).
+
+---
+
+#### Phase 129: Android Sleep & Health UI
+
+**Goal**: Android users see the same Sleep and Health dashboards as iOS — a SleepV2 bevel with 14-day trends, plus an HRV timeline and strain/recovery metric cards — rendered in Jetpack Compose from the shared Rust bridge data.
+**Depends on**: Phase 128 (UI lands on the hardened Android foundation)
+**Requirements**: AND-UI-01, AND-UI-02
+**Success Criteria** (what must be TRUE):
+
+  1. The Android Sleep screen renders a SleepV2-style bevel summary plus a 14-day trend view, sourced from the same bridge sleep data the iOS `SleepV2BevelTrendViews` uses — at parity with iOS layout and metrics
+  2. The Android Health screen renders an HRV timeline card and strain + recovery metric cards from live bridge data
+  3. Both screens handle empty/insufficient-history states gracefully (no crash, a clear placeholder) when no data is present
+  4. The Android CI APK build compiles and the screens render correctly on an Android emulator (verified via screenshot)
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: Android-only (Jetpack Compose). Reads existing bridge metric/sleep methods via `GooseBridge.kt`.
+
+---
+
+#### Phase 130: Android Coach + Auth
+
+**Goal**: Android gains a Coach tab at parity with iOS — OAuth sign-in, an AI chat interface, and a multi-provider selector (ChatGPT/Claude/Custom/Gemini) — so users get coaching on Android with the same provider flexibility as iOS.
+**Depends on**: Phase 128
+**Requirements**: AND-UI-03
+**Success Criteria** (what must be TRUE):
+
+  1. The Android Coach tab presents a multi-provider selector mirroring the iOS `CoachProviderRegistry` (ChatGPT, Claude, Custom endpoint, Gemini); the selected provider persists across app launches
+  2. OAuth sign-in completes for at least one provider (PKCE flow, no external SDK) and the token is stored securely on Android (e.g. EncryptedSharedPreferences / Keystore)
+  3. The chat UI sends a user message and renders the streamed/returned assistant response; errors (auth failure, network) surface a clear message rather than a silent failure or crash
+  4. The Android CI APK build compiles and the Coach tab renders on an Android emulator (verified via screenshot), including the signed-out state
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: Android-only (Compose + Android networking/Keystore). Parity target is iOS `CoachChatModel` / `CoachProviderRegistry`. No external Coach SDKs (parity with the iOS no-dependency constraint).
+
+---
+
+#### Phase 131: Android Settings + WHY Comments
+
+**Goal**: Android gains a Settings screen at parity with the iOS More tab (server URL, device identity, data export, BLE status), and the Android JNI/protocol code carries the same WHY comments the Rust/iOS side received in v14.0 — closing the Android documentation parity gap.
+**Depends on**: Phase 128
+**Requirements**: AND-UI-04, COMM-AND-01, COMM-AND-02
+**Success Criteria** (what must be TRUE):
+
+  1. The Android Settings screen lets the user enter/persist the server URL, view device identity (device UUID / generation), trigger a data export, and see live BLE status indicators (connected/scanning/battery) — at parity with the iOS More tab
+  2. `GooseBridge.kt` JNI entry points carry WHY comments documenting the JNI SAFETY pattern, parameter trust, and cleanup — at parity with the Rust `COMM-05` FFI SAFETY blocks from v14.0
+  3. `FrameReassembler` / `WhoopBleClient` protocol-offset decode sites carry WHY comments explaining the byte layout — at parity with the Rust `COMM-04` offset comments from v14.0
+  4. The Android CI APK build compiles without new warnings; the Settings screen renders on an Android emulator (verified via screenshot)
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: Android-only (Compose + Kotlin comments). Comment parity targets Rust COMM-04/COMM-05 from v14.0.
+
+---
+
 ## v17.0 — Algorithm Depth & Noop Feature Parity (Phases 140–150)
 
 **Goal:** Port validated health scoring algorithms into the Rust core (Baselines EWMA, HRVAnalyzer, StrainScorer, RecoveryScorer, DaytimeStress) and reach UI/UX feature parity with noopApp — Recovery Ring, Strain Gauge, sparklines, sleep hypnogram, workout detail, metric explorer — plus BLE protocol expansion, the R22 deep-stream unlock, and strap notification mirroring.
@@ -1327,6 +1440,11 @@ Plans:
 | 124 | 0/0 | Complete    | 2026-06-28 |
 | 125 | 1/1 | Complete    | 2026-06-28 |
 | 126 | 1/1 | Complete    | 2026-06-28 |
+| 127 | v16.0 | Not started | - |
+| 128 | v16.0 | Not started | - |
+| 129 | v16.0 | Not started | - |
+| 130 | v16.0 | Not started | - |
+| 131 | v16.0 | Not started | - |
 | 140 | v17.0 | Not started | - |
 | 141 | v17.0 | Not started | - |
 | 142 | v17.0 | Not started | - |
