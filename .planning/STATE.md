@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v16.0
 milestone_name: — Android UI Parity, Rust Architecture & Code Health
-current_phase: 128
-current_phase_name: Android Architecture & Best-Practices Fixes
-status: executing
+current_phase: 129
+current_phase_name: Android Sleep & Health UI
+status: planning
 stopped_at: Completed 128-02-PLAN.md
-last_updated: "2026-06-28T18:11:26.906Z"
+last_updated: "2026-06-28T18:15:57.028Z"
 last_activity: 2026-06-28
-last_activity_desc: Phase 127 complete, transitioned to Phase 128
+last_activity_desc: Phase 128 complete, transitioned to Phase 129
 progress:
   total_phases: 5
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 128 — Android Architecture & Best-Practices Fixes
+Phase: 129 — Android Sleep & Health UI
 Plan: Not started
 Status: Roadmap complete — ready to plan Phase 127
-Last activity: 2026-06-28 — Phase 127 complete, transitioned to Phase 128
+Last activity: 2026-06-28 — Phase 128 complete, transitioned to Phase 129
 
 ## Performance Metrics
 
