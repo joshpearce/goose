@@ -92,6 +92,25 @@ enum CustomEndpointProviderError: Error {
   case missingAPIKey
 }
 
+// MARK: - ConnectionTestOutcome
+
+enum ConnectionTestOutcome {
+  case success(String)
+  case failure(String)
+
+  var isSuccess: Bool {
+    if case .success = self { return true }
+    return false
+  }
+
+  var message: String {
+    switch self {
+    case .success(let msg): return msg
+    case .failure(let msg): return msg
+    }
+  }
+}
+
 // MARK: - CustomEndpointCoachProvider
 
 @MainActor @Observable
@@ -150,6 +169,57 @@ final class CustomEndpointCoachProvider: CoachProvider {
     UserDefaults.standard.removeObject(forKey: Self.baseURLKey)
     UserDefaults.standard.removeObject(forKey: Self.modelIDKey)
     isAuthenticated = false
+  }
+
+  func testConnection() async -> ConnectionTestOutcome {
+    guard Self.validateBaseURL(baseURL) else {
+      return .failure(String(localized: "Invalid URL — must start with https://"))
+    }
+    guard let key = (try? CustomEndpointKeychain.load()).flatMap({ $0 }), !key.isEmpty else {
+      return .failure(String(localized: "No API key saved — save the endpoint first"))
+    }
+
+    let trimmedBase = baseURL.hasSuffix("/")
+      ? String(baseURL.dropLast())
+      : baseURL
+    guard let url = URL(string: "\(trimmedBase)/v1/chat/completions") else {
+      return .failure(String(localized: "Could not construct request URL"))
+    }
+
+    var request = URLRequest(url: url, timeoutInterval: 15)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    let probeBody: [String: Any] = [
+      "model": modelID,
+      "stream": false,
+      "max_tokens": 1,
+      "messages": [["role": "user", "content": "hi"]],
+    ]
+    guard let bodyData = try? JSONSerialization.data(withJSONObject: probeBody) else {
+      return .failure(String(localized: "Could not encode request body"))
+    }
+    request.httpBody = bodyData
+
+    do {
+      let (data, response) = try await URLSession.shared.data(for: request)
+      if let httpResponse = response as? HTTPURLResponse {
+        if (200..<300).contains(httpResponse.statusCode) {
+          return .success(String(localized: "Connection successful"))
+        } else {
+          var detail = "HTTP \(httpResponse.statusCode)"
+          if data.count < 512, let body = String(data: data, encoding: .utf8), !body.isEmpty {
+            detail += " — \(body)"
+          }
+          return .failure(detail)
+        }
+      }
+      return .failure(String(localized: "Unexpected response from server"))
+    } catch {
+      return .failure(error.localizedDescription)
+    }
   }
 
   func send(
