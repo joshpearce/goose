@@ -1,7 +1,7 @@
 ---
 phase: 128
 reviewers: [claude, codex]
-reviewed_at: 2026-06-28T18:00:00Z
+reviewed_at: 2026-06-28T20:00:00Z
 plans_reviewed:
   - 128-01-PLAN.md
   - 128-02-PLAN.md
@@ -11,9 +11,253 @@ notes: >
   both times (2026-06-28T16:00Z and 2026-06-28T18:00Z) — no output produced even
   with --approval-mode plan and gemini-2.0-flash. Excluded from consensus.
   Claude CLI and Codex both completed with full codebase access and file:line evidence.
-  This is a cycle-2 review; cycle-1 HIGH concerns (AtomicBoolean, val→var, HomeScreen/
-  HealthScreen in files-modified, wave ordering, kotlin-android, KSP, HiltViewModel
-  pattern) have all been incorporated into the current plan versions.
+  Cycle-3 review; all cycle-2 HIGH concerns are incorporated into current plan versions
+  (@Volatile var scope, compareAndSet per-site, onSyncComplete stub pattern,
+  MoreScreen serverUrl, @Preview N/A, D-09a confirm-only, upload emit paths,
+  AppShell uploadState chain, native libs pre-flight, dispatcher safety).
+  Claude CLI completed with 3 new concerns (2 MEDIUM on 128-02, 1 cross-plan MEDIUM).
+  Codex found no new concerns (all cycle-2 issues resolved). Cycle 3 is the final
+  convergence cycle; phase risk is MEDIUM solely from the UploadState placement
+  ambiguity and the collectAsStateWithLifecycle threshold undercount in 128-02.
+---
+
+# Cross-AI Plan Review — Phase 128 (Cycle 3)
+
+## Claude Review
+
+### Phase 128 Plan Review
+
+#### Evidence Base
+
+| File | Lines reviewed |
+|------|----------------|
+| `android/app/src/main/kotlin/com/goose/app/ble/WhoopBleClient.kt` | 91, 103, 126, 133, 158–171, 188, 305, 396, 401, 471–472, 567–573, 622–624, 638, 714 |
+| `android/app/src/main/kotlin/com/goose/app/viewmodel/AppViewModel.kt` | 26, 28–29, 44–50, 55–59, 61–64 |
+| `android/app/src/main/kotlin/com/goose/app/viewmodel/MetricsViewModel.kt` | 51–63 |
+| `android/app/src/main/kotlin/com/goose/app/ui/AppShell.kt` | 24–32, 66, 71–76, 78–82 |
+| `android/app/src/main/kotlin/com/goose/app/ui/HomeScreen.kt` | 19–24 |
+| `android/app/src/main/kotlin/com/goose/app/ui/HealthScreen.kt` | 19–27 |
+| `android/app/src/main/kotlin/com/goose/app/ui/MoreScreen.kt` | 17–29 |
+| `android/app/src/main/kotlin/com/goose/app/upload/GooseUploadClient.kt` | 33–65 |
+
+---
+
+### 128-01-PLAN.md — WhoopBleClient BLE/Coroutine Fixes
+
+#### Summary
+
+Solid, narrowly-scoped plan. All cycle-2 HIGH/MEDIUM concerns are incorporated with precise change descriptions. The concurrency model (AtomicBoolean/AtomicReference, @Volatile scope, compareAndSet per call site) is correctly specified for the BLE callback threading model.
+
+#### Strengths
+- compareAndSet semantics locked in per call site (false→true for start, true→false for complete, set(false) for disconnect reset).
+- DROP_OLDEST buffer policy on SharedFlow is correct for the fire-and-forget BLE completion signal — no coroutine can block the BLE callback thread.
+- `onSyncComplete` stub explicitly never invoked; wave-1 isolation rationale is clear and correct.
+- Automated grep verification covers all structural changes.
+
+#### Concerns
+
+- **LOW** — `reconnectJob` reference not reset after `scope.cancel()`. `reconnectJob: Job?` (WhoopBleClient.kt line 126) is stored independently of the scope. When `scope.cancel()` fires in `disconnect()`, the job is cancelled as a scope child, but the field remains non-null. If `connect()` checks `reconnectJob?.isActive` before launching a new reconnect coroutine, the check returns false (correct, job is cancelled), so the behaviour is benign. But the plan's silence means the executor may leave a stale reference that future readers must reason through. Worth a one-liner note in the SUMMARY.
+
+- **LOW** — Verification does not check new SharedFlow imports. The automated grep for Task 1 checks `syncCompleteEvent` presence and `scope.cancel` but does not verify the four new imports (BufferOverflow, MutableSharedFlow, SharedFlow, asSharedFlow). A partial import (e.g. missing BufferOverflow) would fail compilation but not fail the verification command — the assembleDebug gate in 128-03 would catch it, but the gap means Task 1 can report PASS before wave-3.
+
+#### Suggestions
+- Add `reconnectJob = null` after `scope.cancel()` in disconnect() (or explicitly state that the stale-reference-is-benign invariant is intentional) so the SUMMARY records this.
+- Extend Task 1 automated grep: add `grep -q 'BufferOverflow.DROP_OLDEST' WhoopBleClient.kt` alongside the existing checks.
+
+#### Risk Assessment: **LOW**
+
+---
+
+### 128-02-PLAN.md — Compose/ViewModel Fixes
+
+#### Summary
+
+Comprehensive plan that correctly migrates all StateFlow collection into MainActivity. Two genuine new concerns: a package-layering inversion risk in UploadState placement, and a verification threshold that undercounts the expected `collectAsStateWithLifecycle` calls.
+
+#### Strengths
+- All 5 UploadState emit paths explicitly enumerated (Uploading at start, Error on get-streams ok:false, Success(0) on no-pending, Success(count)/Error on HTTP result, Error in outer catch).
+- `grep -rq 'onSyncComplete'` across the full kotlin tree is a strong completeness check.
+- AppShell signature change explicitly cascaded into all 3 child screens; serverUrl and uploadStatus forwarding chains are both stated.
+- No-@Preview verification eliminates the false-preview-breakage risk.
+
+#### Concerns
+
+- **MEDIUM** — UploadState placement "Claude's discretion" risks package-layer inversion. The plan allows placing `sealed class UploadState` in `AppViewModel.kt` or a sibling `UploadState.kt` in `com.goose.app.viewmodel`. But `GooseUploadClient.kt` lives in `com.goose.app.upload`. If the executor places UploadState in the viewmodel package, GooseUploadClient must import from `com.goose.app.viewmodel` — an upward upload→viewmodel dependency that inverts the natural layering (upload client should not depend on ViewModel types). The correct placement is `com.goose.app.upload.UploadState` so AppViewModel imports downward from the upload layer.
+
+- **MEDIUM** — `collectAsStateWithLifecycle` verification threshold `>= 6` undercounts. After all 128-02 changes, MainActivity will have 7 `collectAsStateWithLifecycle` calls: existing `connectionState` (1) + migrated `liveHeartRateBPM`, `recoveryScore`, `strainScore`, `sleepScore`, `serverUrl` (5) + new `uploadStatus` (1) = 7. The automated check `test "$(grep -c ...)" -ge 6` passes with 6, meaning an executor that collects all 6 original flows but forgets `uploadStatus` in MainActivity — and instead threads it as a raw `StateFlow<UploadState>` through AppShell — would pass the grep gate. This is exactly the anti-pattern 128-02 exists to eliminate. Threshold must be `>= 7`.
+
+- **LOW** — Task 2 is `tdd="true"` with no test plan. Task 2 is flagged `tdd="true"` but acceptance criteria are entirely grep-based structural checks. There is no specification of which test file to create, which classes to test (GooseUploadClient.upload() emit sequence? MetricsViewModel.queryScore() on ok:false?), or what test doubles to use for the Rust bridge and HTTP layer. Either the `tdd` flag is a copy error (Task 1 is `tdd="false"`) or the test scope needs to be specified. As-is, an executor taking `tdd="true"` literally will produce unguided tests.
+
+#### Suggestions
+- Pin UploadState to `com.goose.app.upload.UploadState` explicitly: "place `sealed class UploadState` in `android/app/src/main/kotlin/com/goose/app/upload/UploadState.kt`; AppViewModel imports from `com.goose.app.upload`."
+- Change verification threshold to `>= 7` to require the uploadStatus collection.
+- Change Task 2 to `tdd="false"` (matching Task 1), or add an explicit `<test>` block specifying behaviours to test and test doubles to use.
+
+#### Risk Assessment: **MEDIUM**
+
+---
+
+### 128-03-PLAN.md — Hilt DI + CI Gate
+
+#### Summary
+
+Conservative and correctly gated. D-09a is the primary path with clear rationale; Hilt is optional with explicit precondition checks. No new concerns beyond what is already incorporated.
+
+#### Strengths
+- KSP/Kotlin 2.4.0 compatibility check is explicitly gated at runtime (check github.com/google/ksp/releases) rather than assumed.
+- Correct Hilt pattern documented: `@ApplicationContext context: Context`, `ViewModel()` not `AndroidViewModel(app)`.
+- `kotlin-android` before `ksp` ordering constraint is called out.
+- jniLibs pre-flight acknowledged as an environment prerequisite, not a phase defect.
+- Sub-ViewModels already private — confirm-only path is low-risk.
+
+#### Concerns
+
+No new concerns identified beyond those already incorporated.
+
+#### Suggestions
+- Optionally add a checklist line to VERIFICATION.md: "Hilt deferred — revisit when KSP 2.4.0-x.y.z tag appears on github.com/google/ksp/releases" so the deferral has an actionable follow-up anchor.
+
+#### Risk Assessment: **LOW**
+
+---
+
+### Cross-Plan Issues
+
+**MEDIUM: `GooseUploadClient` singleton `uploadState` persists across ViewModel recreation**
+
+`GooseUploadClient` is a Kotlin `object`. The `_uploadState: MutableStateFlow<UploadState>` placed on it will survive Activity configuration changes (which destroy and recreate `AppViewModel`). The new `AppViewModel` instance delegates `uploadStatus` to the singleton's stale flow — which may be `Error(msg)` or `Success(n)` from the previous lifecycle visible on first render. None of the three plans address reset-on-recreation semantics. This is not a data-loss bug but a UX defect (MoreScreen shows a stale upload badge after rotation). Fix: either (a) reset `_uploadState.value = UploadState.Idle` in `AppViewModel.init {}`, or (b) explicitly accept stale-state display for v1. The plan must choose one.
+
+**LOW: No intermediate compile gate between waves**
+
+128-02-PLAN explicitly states it "runs AFTER plan 128-01 has landed" and warns about compile failure if run in parallel. The `depends_on: [128-01]` field encodes this. However, the only compile gate is the assembleDebug in wave-3. If an executor runs 128-01 and 128-02 concurrently despite the dependency, there is no intermediate compilation check. This is an execution risk, not a plan defect.
+
+### Overall Phase Risk: **MEDIUM**
+
+The 128-02 UploadState placement ambiguity is the most actionable open item — likely to be resolved incorrectly (viewmodel package) without explicit guidance, introducing a package-layer inversion requiring a follow-up cleanup commit. The collectAsStateWithLifecycle threshold undercounting compounds this: an incorrect executor could pass all grep checks while threading a StateFlow through AppShell. Both are fixable with one-line additions to the plan before execution. The singleton stale-state issue is a UX concern easily addressed by one `AppViewModel.init` line, but requires an explicit decision.
+
+---
+
+## Codex Review
+
+### Phase 128 Plan Review
+
+#### Evidence Base
+
+Codex explored the repository with full filesystem access and read:
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-01-PLAN.md`
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-02-PLAN.md`
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-03-PLAN.md`
+- `android/app/src/main/kotlin/com/goose/app/ble/WhoopBleClient.kt`
+- `android/app/src/main/kotlin/com/goose/app/viewmodel/AppViewModel.kt`
+- `android/app/src/main/kotlin/com/goose/app/ui/AppShell.kt`, HomeScreen.kt, HealthScreen.kt, MoreScreen.kt
+- `android/app/src/main/kotlin/com/goose/app/upload/GooseUploadClient.kt`
+
+---
+
+### 128-01-PLAN.md — WhoopBleClient BLE/Coroutine Fixes
+
+#### Summary
+
+Wave 1 hardens `WhoopBleClient` threading and error logging without changing behaviour.
+
+#### Strengths
+- Explicit volatile scope lifecycle and atomic sync/gatt state remove race windows.
+- SharedFlow-based completion signal avoids callback cycle and is non-blocking.
+- `importFrame` now surfaces bridge failures via structured Log.e.
+
+#### Concerns
+
+No new concerns identified beyond those already incorporated.
+
+#### Suggestions
+- None; proceed with implementation as specified.
+
+#### Risk Assessment: **LOW**
+
+---
+
+### 128-02-PLAN.md — Compose/ViewModel Fixes
+
+#### Summary
+
+Wave 2 moves lifecycle-aware StateFlow collection to `MainActivity`, privatizes BLE access, adds upload/status observability, and logs metric failures.
+
+#### Strengths
+- Single-point lifecycle collection eliminates UI-layer StateFlow leakage.
+- UploadState pipeline is fully specified with five emit paths.
+- `bleClient` encapsulation and `queryScore` logging address audit findings directly.
+
+#### Concerns
+
+No new concerns identified beyond those already incorporated.
+
+#### Suggestions
+- Keep `UploadState` in a package accessible to both `GooseUploadClient` and `AppViewModel` to avoid accidental duplication.
+
+#### Risk Assessment: **LOW**
+
+---
+
+### 128-03-PLAN.md — Hilt DI + CI Gate
+
+#### Summary
+
+Wave 3 confirms pre-existing sub-ViewModel encapsulation, documents Hilt deferral, and gates the integrated changes with `assembleDebug`.
+
+#### Strengths
+- Clear primary path (D-09a) avoids Kotlin 2.4.0/KSP fragility while meeting A-09 intent.
+- Build gate explicitly classifies native-libs absence as environment, preventing false regressions.
+- VERIFICATION.md ensures audit traceability for deferred Hilt work.
+
+#### Concerns
+
+No new concerns identified beyond those already incorporated.
+
+#### Suggestions
+- If native libs are missing, record the exact path and absence in VERIFICATION.md alongside the classification already described.
+
+#### Risk Assessment: **LOW**
+
+---
+
+### Cross-Plan Issues
+
+No new cross-plan issues discovered; wave sequencing and interfaces are already aligned.
+
+### Overall Phase Risk: **LOW**
+
+---
+
+## Consensus Summary
+
+Both reviewers (Claude CLI and Codex) had full repository access. Gemini CLI (0.49.0) invoked but timed out in both Cycle 1 and Cycle 2 — excluded from consensus. This is Cycle 3.
+
+### Agreed Strengths
+
+- All six Cycle-2 HIGH concerns are correctly resolved in the current plan versions: @Volatile var scope, compareAndSet per-site specificity, onSyncComplete stub isolation, MoreScreen serverUrl fix, @Preview N/A confirmation, D-09a confirm-only for already-private sub-ViewModels.
+- SharedFlow contract remains well-specified (replay=0, extraBufferCapacity=1, DROP_OLDEST, tryEmit).
+- UploadState 5-path enumeration is complete and explicit.
+- Wave sequencing is correct and the dependency field is properly encoded.
+- Hilt deferral rationale (Kotlin 2.4.0 / KSP / kotlin-android) remains sound and documented.
+
+### Agreed Concerns (Highest Priority)
+
+**Claude only — not independently confirmed by Codex but grounded in codebase evidence:**
+
+1. **Plan 128-02: UploadState package placement ambiguity** — The plan says "AppViewModel.kt or a sibling UploadState.kt" (i.e. `com.goose.app.viewmodel`). But GooseUploadClient lives in `com.goose.app.upload`. If UploadState is in the viewmodel package, GooseUploadClient must import it upward — an upload→viewmodel dependency inversion. Correct placement: `com.goose.app.upload.UploadState`. Codex independently noted the same layering risk in its suggestion ("keep UploadState in a package accessible to both GooseUploadClient and AppViewModel"). Fix: state the package explicitly in the plan.
+
+2. **Plan 128-02: `collectAsStateWithLifecycle` verification threshold undercounts** — Current automated check is `>= 6`; post-128-02 MainActivity will have 7 calls (connectionState + 5 migrated + uploadStatus). With threshold 6 an executor could omit uploadStatus collection and still pass. Fix: change to `>= 7`.
+
+3. **Cross-plan: GooseUploadClient singleton stale UploadState on ViewModel recreation** — The `object`-level `_uploadState` MutableStateFlow survives Activity rotation. A new AppViewModel instance will show the previous session's terminal state (Error/Success) on first render. No plan addresses reset-on-recreation semantics. Fix: add `GooseUploadClient._uploadState.value = UploadState.Idle` (or equivalent reset) to `AppViewModel.init {}`, or explicitly document the stale-display as acceptable.
+
+### Divergent Views
+
+- **128-01 reconnectJob null-reset**: Claude flags the stale non-null `reconnectJob` field after `scope.cancel()` as LOW; Codex does not independently raise it. Behaviour is benign (isActive check returns false), but documenting the invariant in the SUMMARY is good practice.
+
+- **128-02 tdd="true" flag**: Claude flags that Task 2 `tdd="true"` has no test plan; Codex does not raise it. Either correct the flag to `tdd="false"` or add a test specification block.
+
+- **Overall risk**: Claude rates MEDIUM (two actionable 128-02 concerns + cross-plan stale state); Codex rates LOW (no new concerns). The divergence is explained by the UploadState placement and threshold issues, which Claude confirmed against the source files.
+
 ---
 
 # Cross-AI Plan Review — Phase 128 (Cycle 2)
