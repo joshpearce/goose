@@ -767,7 +767,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart (completed 2026-06-27)
 - [x] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering (completed 2026-06-27)
 - [x] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging (completed 2026-06-28)
-- [ ] **Phase 124: PIP Server Endpoint** — POST /v1/ingest-realtime + TimescaleDB hypertable
+- [x] **Phase 124: PIP Server Endpoint** — POST /v1/ingest-realtime + TimescaleDB hypertable (completed 2026-06-28)
 - [ ] **Phase 125: Cap Sense UUID Discovery** — BLE scan to identify capacitive sense GATT UUID + subscribe
 - [ ] **Phase 126: Wake-Window Engine (HAP-04)** — fill GooseWakeWindowManager stub (hardware+RE gated)
 
@@ -1015,16 +1015,17 @@ Plans:
 
 #### Phase 125: Cap Sense UUID Discovery
 
-**Goal**: With a real WHOOP 5 device available, the capacitive sense GATT characteristic UUID is identified and on-wrist detection is subscribed separately from the cmd 0x54 optical fallback
+**Goal**: Parse EVENTS_FROM_STRAP (fd4b0004) notifications to detect cap sense on-wrist state. Document the UUID + event codes. Add Debug tab display.
 **Depends on**: Phase 111
 **Requirements**: CAPSENSE-01
 **Success Criteria** (what must be TRUE):
 
-  1. The GATT characteristic UUID for the WHOOP 5 capacitive sense sensor is identified (via BLE scan log or Ghidra) and documented in `.planning/research/whoop-re/CAPSENSE-UUID.md`
-  2. Swift subscribes to the characteristic; `isOnWrist` is updated from the cap sense notification stream — distinct from the cmd 0x54 BLE-02 path already in production
-  3. The Debug tab shows the cap sense UUID and its current value; no regression in the existing cmd 0x54 off-wrist detection
+  1. The GATT characteristic UUID for the WHOOP 5 capacitive sense sensor is identified and documented in `.planning/research/whoop-5/CAPSENSE-UUID.md` (resolved: fd4b0004-cce1-4033-93ce-002d5875f58a, event types 10/11)
+  2. Swift handles event types 10 (STRAP_DETECTED) and 11 (STRAP_REMOVED) from fd4b0004 notifications; `isOnWrist` is updated in real time — distinct from the cmd 0x54 BLE-02 path already in production
+  3. The Debug tab (More → Developer → WHOOP Event Signals) shows the cap sense state and UUID label; no regression in existing cmd 0x54 detection
 
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 125-01-PLAN.md — Add handleCapSenseEventValue, fan-in to handlePeripheralValueUpdate, Debug tab row, and CAPSENSE-UUID.md documentation
 **UI hint**: yes
 
 ---
@@ -1095,7 +1096,7 @@ Plans:
 | 121 | 1/1 | Complete    | 2026-06-27 |
 | 122 | 1/1 | Complete    | 2026-06-27 |
 | 123 | 1/1 | Complete    | 2026-06-28 |
-| 124 | 0/0 | Not started | — |
+| 124 | 0/0 | Complete    | 2026-06-28 |
 | 125 | 0/0 | Not started | — |
 | 126 | 0/0 | Not started | — |
 
@@ -1148,7 +1149,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 1/1 plans complete
+**Plans:** 0/0 plans complete
 Plans:
 
 - [x] 122-01-PLAN.md
