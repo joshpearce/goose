@@ -11,6 +11,13 @@
       "iconURL": "https://raw.githubusercontent.com/tigercraft4/goose/main/GooseSwift/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
       "versions": [
         {
+          "version": "15.2",
+          "date": "2026-06-28",
+          "localizedDescription": "- fix(ble): subscribe Gen4 command characteristic for notify — Fixes #189\n- feat(128-02): log queryScore failures; observable uploadStatus pipeline; syncCompleteEvent wiring (A-06, A-07, A-08)\n- feat(128-02): lifecycle-collect all StateFlows in MainActivity; push resolved values to child screens; private bleClient (A-04, A-05)",
+          "downloadURL": "https://github.com/tigercraft4/goose/releases/download/v15.2/GooseSwift-v15.2-unsigned.ipa",
+          "size": 12656802
+        },
+        {
           "version": "15.1",
           "date": "2026-06-28",
           "localizedDescription": "- fix(tests): update Swift tests for GooseBLEClient→CoreBluetoothBLETransport rename\n- fix(rust): sort BRIDGE_METHODS — protocol.* before realtime.*\n- fix(rust): cargo fmt --all",
