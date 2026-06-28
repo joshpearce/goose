@@ -110,7 +110,7 @@ enum GeminiProviderError: Error {
 
 // MARK: - GeminiCoachProvider
 
-@Observable
+@MainActor @Observable
 final class GeminiCoachProvider: CoachProvider {
   static let oauthClientIdKey = "goose.coach.gemini.oauthClientId"
 
@@ -122,6 +122,11 @@ final class GeminiCoachProvider: CoachProvider {
   private(set) var isAuthenticated: Bool
 
   init() {
+    // Keychain read deferred to resolveAuth() — never block init/CoachView.init().
+    isAuthenticated = false
+  }
+
+  func resolveAuth() async {
     isAuthenticated = (try? GeminiKeychain.load()) != nil
   }
 

@@ -6,8 +6,6 @@ struct CoachComposer: View {
   let isStreaming: Bool
   let send: () -> Void
   let cancel: () -> Void
-  @State private var inputHeight: CGFloat = 38
-
   private var trimmedDraft: String {
     draft.trimmingCharacters(in: .whitespacesAndNewlines)
   }
@@ -17,7 +15,7 @@ struct CoachComposer: View {
   }
 
   private var isMultilineInput: Bool {
-    inputHeight > 42 || draft.contains("\n")
+    draft.contains("\n")
   }
 
   private var inputCornerRadius: CGFloat {
@@ -36,21 +34,12 @@ struct CoachComposer: View {
           .padding(.horizontal, 15)
           .padding(.vertical, 8)
           .frame(minHeight: 38)
-          .background {
-            GeometryReader { proxy in
-              Color.clear
-                .preference(key: CoachComposerInputHeightKey.self, value: proxy.size.height)
-            }
-          }
           .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: inputCornerRadius, style: .continuous))
           .overlay {
             RoundedRectangle(cornerRadius: inputCornerRadius, style: .continuous)
               .stroke(focused.wrappedValue ? Color.blue.opacity(0.40) : Color(.separator).opacity(0.18), lineWidth: 1)
           }
           .animation(.easeOut(duration: 0.16), value: isMultilineInput)
-          .onPreferenceChange(CoachComposerInputHeightKey.self) { height in
-            inputHeight = height
-          }
           .onSubmit {
             if canSend {
               send()
@@ -72,14 +61,6 @@ struct CoachComposer: View {
       Divider()
         .opacity(0.6)
     }
-  }
-}
-
-private struct CoachComposerInputHeightKey: PreferenceKey {
-  static var defaultValue: CGFloat = 38
-
-  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-    value = nextValue()
   }
 }
 

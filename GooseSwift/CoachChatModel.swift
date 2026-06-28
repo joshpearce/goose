@@ -132,13 +132,14 @@ final class CoachChatModel {
     errorMessage = nil
     persistConversation()
 
-    let systemPrompt = buildSystemPrompt(healthStore: healthStore, appModel: appModel, healthState: healthState)
     let currentMessages = messages.filter { !($0.id == assistantID) }
     let preset = activePreset
 
     sendTask?.cancel()
     sendTask = Task { [weak self] in
       guard let self else { return }
+      // buildSystemPrompt runs async (Task scheduled, not blocking send() caller).
+      let systemPrompt = buildSystemPrompt(healthStore: healthStore, appModel: appModel, healthState: healthState)
       do {
         let stream = try await provider.send(
           messages: currentMessages,

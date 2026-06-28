@@ -96,6 +96,7 @@ struct CoachView: View {
       Task { await healthStore.loadBridgeCatalogsIfNeeded() }
       healthStore.refreshPacketInputsIfNeeded()
       chat.refreshAuth()
+      Task { await registry.resolveInitialAuthStates() }
       applyRequestedCoachPromptIfNeeded()
       refreshCoachSnapshot()
     }
@@ -437,7 +438,7 @@ private struct CoachOverviewScreen: View {
   let openChatPrompt: (String) -> Void
   @Environment(HealthDataStore.self) private var healthStore
   @State private var showingJournal = false
-  @State private var todayEntry: DailyJournalEntry? = DailyJournalStore.today()
+  @State private var todayEntry: DailyJournalEntry?
   @State private var vowDismissed = false
 
   var body: some View {
@@ -493,6 +494,7 @@ private struct CoachOverviewScreen: View {
       .padding(.vertical, 18)
     }
     .scrollClipDisabled()
+    .task { todayEntry = DailyJournalStore.today() }
     .sheet(isPresented: $showingJournal, onDismiss: {
       todayEntry = DailyJournalStore.today()
     }) {

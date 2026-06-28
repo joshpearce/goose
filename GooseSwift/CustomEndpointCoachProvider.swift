@@ -94,7 +94,7 @@ enum CustomEndpointProviderError: Error {
 
 // MARK: - CustomEndpointCoachProvider
 
-@Observable
+@MainActor @Observable
 final class CustomEndpointCoachProvider: CoachProvider {
   let id = "custom"
   let displayName = "Custom"
@@ -129,6 +129,11 @@ final class CustomEndpointCoachProvider: CoachProvider {
   private(set) var isAuthenticated: Bool
 
   init() {
+    // Keychain read deferred to resolveAuth() — never block init/CoachView.init().
+    isAuthenticated = false
+  }
+
+  func resolveAuth() async {
     let hasKey = (try? CustomEndpointKeychain.load()) != nil
     let savedURL = UserDefaults.standard.string(forKey: Self.baseURLKey) ?? ""
     isAuthenticated = hasKey && RemoteServerURLValidator.validate(savedURL)

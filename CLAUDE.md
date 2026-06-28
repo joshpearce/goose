@@ -77,7 +77,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 
 ## Naming Patterns
 - Swift source files use PascalCase matching the primary type they contain: `GooseBLEClient.swift`, `ActivityModels.swift`, `HealthDataStore.swift`
-- Extensions that add a functional area to a class use `+` suffix notation: `GooseBLEClient+Commands.swift`, `GooseAppModel+OvernightRun.swift`, `HealthDataStore+Utilities.swift`
+- Extensions that add a functional area to a class use `+` suffix notation: `GooseBLEClient+Commands.swift`, `GooseAppModel+Lifecycle.swift`, `HealthDataStore+Utilities.swift`
 - Views use a `Views` suffix for files containing multiple related views: `HealthDashboardViews.swift`, `SleepV2BevelTrendViews.swift`
 - Type definition files use a `Types` suffix: `GooseBLETypes.swift`, `CoachChatTypes.swift`, `HealthPacketCaptureTypes.swift`
 - Models use a `Models` suffix: `ActivityModels.swift`, `HealthModels.swift`, `OnboardingModels.swift`
@@ -85,7 +85,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 - Prefix with the subsystem or domain name for disambiguation: `GooseMessage`, `GooseSyncToast`, `GooseHistoricalSyncProgress`
 - Enum cases use camelCase: `case debug`, `case poweredOn`, `case healthMonitor`
 - Error types use PascalCase with an `Error` suffix: `GooseRustBridgeError`, `OpenAIResponsesError`
-- camelCase: `handleNotification`, `startOvernightGuard`, `refreshActivityTimeline`
+- camelCase: `handleNotification`, `triggerForegroundBLESync`, `refreshActivityTimeline`
 - Verbs for actions: `begin`, `start`, `stop`, `handle`, `refresh`, `resume`, `persist`, `publish`
 - Booleans prefixed with `is`, `can`, `has`, `should`: `isScanning`, `canSend`, `isStreaming`
 - Factory static methods prefixed with `make` or descriptive verbs: `makeRequest`, `build`
@@ -133,7 +133,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 | Component | Responsibility | File |
 |-----------|----------------|------|
 | `GooseSwiftApp` | App entry point; scene config; lifecycle events | `GooseSwift/GooseSwiftApp.swift` |
-| `GooseAppModel` | Central coordinator; owns BLE client, Rust bridge, packet pipelines, overnight guard | `GooseSwift/GooseAppModel.swift` + `GooseAppModel+*.swift` |
+| `GooseAppModel` | Central coordinator; owns BLE client, Rust bridge, packet pipelines, BG sync scheduling | `GooseSwift/GooseAppModel.swift` + `GooseAppModel+*.swift` |
 | `GooseBLEClient` | CoreBluetooth central; WHOOP GATT connection; packet framing; command writes | `GooseSwift/GooseBLEClient.swift` + `GooseBLEClient+*.swift` |
 | `GooseRustBridge` | JSON-over-FFI bridge to Rust; serialises requests, deserialises responses, tracks timing | `GooseSwift/GooseRustBridge.swift` |
 | `HealthDataStore` | Rust bridge consumer for metric scores; @MainActor; owns packet input reports | `GooseSwift/HealthDataStore.swift` + `HealthDataStore+*.swift` |
@@ -142,7 +142,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 | `AppShellView` | Tab bar with Home/Health/Coach/More | `GooseSwift/AppShellView.swift` |
 | `NotificationFrameParser` | Delegates raw BLE bytes to Rust for frame parsing; compact summary extraction | `GooseSwift/NotificationFrameParsing.swift` |
 | `CaptureFrameWriteQueue` | Batched SQLite inserts of captured BLE frames via Rust bridge | `GooseSwift/CaptureFrameWriteQueue.swift` |
-| `OvernightSQLiteMirrorQueue` | During overnight guard, queues raw notification rows → Rust bridge insert | `GooseSwift/OvernightSQLiteMirrorQueue.swift` |
+| `OvernightSQLiteMirrorQueue` | Queues raw BLE notification rows for async Rust bridge insert during extended BLE sessions | `GooseSwift/OvernightSQLiteMirrorQueue.swift` |
 | `WhoopDataSignalPipeline` | Ingests `WhoopDataSignalSample` on a dedicated queue; forwards to aggregators | `GooseSwift/WhoopDataSignalPipeline.swift` |
 | `PassiveActivityDetectionPipeline` | Heuristic motion/HR analysis to auto-detect workout sessions | `GooseSwift/PassiveActivityDetector.swift` |
 | `WorkoutLiveActivityController` | Manages `ActivityKit` Live Activity lifecycle for workouts | `GooseSwift/WorkoutLiveActivityController.swift` |
@@ -191,7 +191,11 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 ## Data Flow
 ### Primary Real-Time BLE → SQLite Path
 ### Metric Score Path (on-demand)
-### Overnight Guard Path
+### Background Sync Path (BGAppRefreshTask)
+- iOS wakes app via `BGAppRefreshTask` (identifier `com.goose.swift.bg-sync`) on a best-effort schedule
+- Handler in `GooseAppModel+BandFirstSync.swift`: reschedules next wakeup, then calls `ble.syncHistoricalPackets` if already connected; otherwise starts scan with 20s timeout
+- WHOOP stores data on-device; historical sync downloads it when BLE is connected — data is never lost if sync is interrupted by app suspension
+- `handleAppLifecycleChange("background")` does nothing; sync only triggers on phase `"active"` via `triggerForegroundBLESync()` (30-min cooldown, `goose.swift.lastHistorySyncAt`)
 ### Live Activity Path
 - All observable state lives in `GooseAppModel` and `HealthDataStore` as `@Published` properties on `@MainActor`
 - Navigation state lives in `AppRouter`
@@ -204,7 +208,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 - Examples: `GooseBLEClient+Commands.swift`, `GooseBLEClient+HistoricalCommands.swift`, `GooseBLEClient+Parsing.swift`, `GooseBLEClient+PeripheralDelegate.swift`
 - Pattern: Each extension file owns a coherent slice of BLE behaviour; all share state on the parent class
 - Purpose: Coordinator split across extension files by domain
-- Examples: `GooseAppModel+NotificationPipeline.swift`, `GooseAppModel+ActivityRecording.swift`, `GooseAppModel+OvernightRun.swift`
+- Examples: `GooseAppModel+NotificationPipeline.swift`, `GooseAppModel+ActivityRecording.swift`, `GooseAppModel+Lifecycle.swift`, `GooseAppModel+BandFirstSync.swift`
 - Pattern: Concern-scoped extensions on `@MainActor` class; background queue work dispatches back to main via `Task { @MainActor in ... }`
 - Purpose: Query layer split by metric family
 - Examples: `HealthDataStore+PacketInputs.swift`, `HealthDataStore+Snapshots.swift`, `HealthDataStore+Sleep.swift`, `HealthDataStore+Cardio.swift`
@@ -220,7 +224,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 - Triggers: WidgetKit extension process launch
 - Responsibilities: Declares `GooseWorkoutLiveActivityWidget` for ActivityKit
 ## Architectural Constraints
-- **Threading:** Main thread (`@MainActor`) for all UI and `@Published` state mutations. Background `DispatchQueue` instances for BLE events, notification parsing, frame row building, packet input computation, and overnight mirror writes. `NSLock` used for counters shared between queues.
+- **Threading:** Main thread (`@MainActor`) for all UI and `@Published` state mutations. Background `DispatchQueue` instances for BLE events, notification parsing, frame row building, packet input computation, and async SQLite mirror writes. `NSLock` used for counters shared between queues.
 - **Global state:** `HeartRateSeriesStore.shared` is a module-level singleton (`GooseSwift/HeartRateSeriesStores.swift`). All other state is instance-owned.
 - **Rust bridge is synchronous:** `goose_bridge_handle_json` blocks the calling thread. Never call from `@MainActor` with expensive methods; always dispatch to a background queue first.
 - **Database path convention:** The SQLite file is always at `ApplicationSupport/GooseSwift/goose.sqlite`, resolved via `HealthDataStore.defaultDatabasePath()`. Pass this path explicitly in every bridge call that needs storage.
@@ -233,7 +237,7 @@ iOS app (SwiftUI + Rust core) that reads biometric data from WHOOP devices via B
 ## Error Handling
 - Bridge failures set human-readable status strings (e.g., `catalogStatus = "Metric catalog unavailable: \(error)"`)
 - BLE errors are logged via `ble.record(level: .error, ...)` and update `connectionState`
-- Overnight guard errors accumulate as warning strings in `overnightGuardWarning` and `overnightGuardStatus`
+- BG sync errors are logged via `ble.record` and reported through `BGAppRefreshTask.setTaskCompleted(success: false)`
 ## Cross-Cutting Concerns
 <!-- GSD:architecture-end -->
 
