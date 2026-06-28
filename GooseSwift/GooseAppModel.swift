@@ -198,7 +198,7 @@ final class GooseAppModel {
     try? FileManager.default.createDirectory(at: gooseDirectory, withIntermediateDirectories: true)
     return gooseDirectory.appendingPathComponent("capture-status.txt")
   }()
-  static let captureTimestampFormatter: ISO8601DateFormatter = {
+  nonisolated(unsafe) static let captureTimestampFormatter: ISO8601DateFormatter = {
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter

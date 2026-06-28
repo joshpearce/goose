@@ -210,7 +210,7 @@
 		E10000000000000000000014 /* HealthDataStoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000014 /* HealthDataStoring.swift */; };
 		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
 		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
-		T10000000000000000000010 /* GooseStealthModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000010 /* GooseStealthModeTests.swift */; };
+		T10000000000000000000013 /* GooseStealthModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000010 /* GooseStealthModeTests.swift */; };
 		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
 		T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000006 /* GooseUploadServiceTests.swift */; };
 		T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000007 /* HRMonitorStateTests.swift */; };
@@ -1174,7 +1174,7 @@
 			files = (
 				T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */,
 				T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */,
-				T10000000000000000000010 /* GooseStealthModeTests.swift in Sources */,
+				T10000000000000000000013 /* GooseStealthModeTests.swift in Sources */,
 				T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */,
 				T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */,
 				T10000000000000000000006 /* CoachProviderTests.swift in Sources */,

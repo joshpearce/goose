@@ -66,7 +66,7 @@ extension HealthDataStore {
     if let mm = muscleMassKg, mm.isFinite && mm > 0 {
       args["muscle_mass_kg"] = mm
     }
-    try await bridge.requestAsync(method: "body_composition.upsert", args: args)
+    _ = try await bridge.requestAsync(method: "body_composition.upsert", args: args)
     await loadBodyCompositionHistory()
   }
 
