@@ -114,12 +114,6 @@ class WhoopBleClient(private val context: Context) {
   )
   val syncCompleteEvent: SharedFlow<Unit> = _syncCompleteEvent.asSharedFlow()
 
-  // Retained ONLY so AppViewModel.kt:46 (`bleClient.onSyncComplete = {...}`) still compiles
-  // after the wave-1 commit. Never invoked — completeSyncIfActive() uses syncCompleteEvent.
-  // Removed together with the AppViewModel assignment in plan 128-02.
-  @Deprecated("Use syncCompleteEvent; removed in plan 128-02")
-  var onSyncComplete: (() -> Unit)? = null
-
   private val gatt = AtomicReference<BluetoothGatt?>(null)
   private var activeServiceUuid: UUID? = null
   private var activeGeneration: WhoopGeneration? = null

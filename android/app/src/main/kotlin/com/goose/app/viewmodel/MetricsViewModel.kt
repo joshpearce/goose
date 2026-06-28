@@ -1,6 +1,7 @@
 package com.goose.app.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.goose.app.bridge.GooseBridge
@@ -23,6 +24,10 @@ import org.json.JSONObject
  * StateFlows are null until first successful bridge response.
  */
 class MetricsViewModel(app: Application) : AndroidViewModel(app) {
+
+  companion object {
+    private const val TAG = "MetricsViewModel"
+  }
 
   private val dbPath: String = app.filesDir.absolutePath + "/goose.sqlite"
 
@@ -53,11 +58,16 @@ class MetricsViewModel(app: Application) : AndroidViewModel(app) {
       val request = buildBridgeRequest(method)
       val response = GooseBridge.safeHandle(request)
       val json = JSONObject(response)
-      if (!json.optBoolean("ok", false)) return null
+      if (!json.optBoolean("ok", false)) {
+        val errMsg = json.optJSONObject("error")?.optString("message") ?: "unknown error"
+        Log.e(TAG, "queryScore failed method=$method: $errMsg")
+        return null
+      }
       val result = json.optJSONObject("result") ?: return null
       val score = result.optDouble("score", -1.0)
       if (score < 0) null else score.toFloat()
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+      Log.e(TAG, "queryScore failed method=$method", e)
       null
     }
   }

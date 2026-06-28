@@ -3,6 +3,10 @@ package com.goose.app.upload
 import android.content.Context
 import android.util.Log
 import com.goose.app.bridge.GooseBridge
+import com.goose.app.viewmodel.UploadState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -12,8 +16,8 @@ import java.net.URL
  * GooseUploadClient — uploads captured frames to the configured server (D-03).
  *
  * Uses HttpURLConnection (no external HTTP library).
- * Upload is fire-and-forget — all exceptions are caught and logged.
  * Skips silently when serverUrl is empty (upload disabled).
+ * Emits upload progress via [uploadState] StateFlow.
  *
  * Endpoint: POST {serverUrl}/v1/ingest-frames
  * Mirrors iOS GooseUploadService.swift ingest-frames endpoint.
@@ -21,6 +25,9 @@ import java.net.URL
 object GooseUploadClient {
 
   private const val TAG = "GooseUpload"
+
+  private val _uploadState = MutableStateFlow<UploadState>(UploadState.Idle)
+  val uploadState: StateFlow<UploadState> = _uploadState.asStateFlow()
 
   /**
    * Upload recent decoded streams to the configured server.
@@ -36,6 +43,8 @@ object GooseUploadClient {
       return
     }
 
+    _uploadState.value = UploadState.Uploading
+
     try {
       val dbPath = context.filesDir.absolutePath + "/goose.sqlite"
 
@@ -45,23 +54,33 @@ object GooseUploadClient {
       val responseJson = JSONObject(bridgeResponse)
 
       if (!responseJson.optBoolean("ok", false)) {
-        Log.d(TAG, "upload.get_recent_decoded_streams failed: ${responseJson.optJSONObject("error")?.optString("message")}")
+        val errMsg = responseJson.optJSONObject("error")?.optString("message") ?: "bridge error"
+        Log.d(TAG, "upload.get_recent_decoded_streams failed: $errMsg")
+        _uploadState.value = UploadState.Error(errMsg)
         return
       }
 
       val result = responseJson.optJSONObject("result")
       if (result == null || result.length() == 0) {
         Log.d(TAG, "No pending frames to upload")
+        _uploadState.value = UploadState.Success(0)
         return
       }
 
       // POST payload to server
+      val count = result.length()
       val payload = result.toString().toByteArray(Charsets.UTF_8)
       val endpoint = "${serverUrl.trimEnd('/')}/v1/ingest-frames"
-      postToServer(endpoint, payload)
+      val code = postToServer(endpoint, payload)
+      _uploadState.value = if (code in 200..299) {
+        UploadState.Success(count)
+      } else {
+        UploadState.Error("HTTP $code")
+      }
 
     } catch (e: Exception) {
       Log.w(TAG, "Upload failed: ${e.message}")
+      _uploadState.value = UploadState.Error(e.message ?: "upload failed")
     }
   }
 
@@ -74,9 +93,13 @@ object GooseUploadClient {
     }.toString()
   }
 
-  private fun postToServer(endpoint: String, payload: ByteArray) {
+  /**
+   * POST [payload] to [endpoint] and return the HTTP response code,
+   * or -1 on IOException.
+   */
+  private fun postToServer(endpoint: String, payload: ByteArray): Int {
     var conn: HttpURLConnection? = null
-    try {
+    return try {
       conn = URL(endpoint).openConnection() as HttpURLConnection
       conn.requestMethod = "POST"
       conn.setRequestProperty("Content-Type", "application/json")
@@ -93,8 +116,10 @@ object GooseUploadClient {
       } else {
         Log.w(TAG, "Upload HTTP error: $responseCode endpoint=$endpoint")
       }
+      responseCode
     } catch (e: IOException) {
       Log.w(TAG, "Upload network error: ${e.message}")
+      -1
     } finally {
       conn?.disconnect()
     }
