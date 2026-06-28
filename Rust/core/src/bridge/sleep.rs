@@ -9,12 +9,12 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::{
     GooseError, GooseResult,
-    sleep_need::compute_sleep_need_with_store,
     health_sync::{
         ActivityHealthSyncDryRunInput, HealthSyncDryRunInput, run_activity_health_sync_dry_run,
         run_health_sync_dry_run,
     },
     metrics::SleepV1Input,
+    sleep_need::compute_sleep_need_with_store,
     sleep_validation::{
         SleepStageLabelValidationOptions, SleepV1EvidenceFolderOptions,
         SleepV1ExplanationStabilityOptions, SleepV1ReleaseGateInput,

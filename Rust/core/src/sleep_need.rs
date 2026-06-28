@@ -1,3 +1,4 @@
+use crate::GooseResult;
 /// Harvard Sleep Need Model — age-bracket baseline + EWMA-debt + strain adjustment.
 ///
 /// # Algorithm
@@ -12,7 +13,6 @@
 /// heavily, so incorrect ordering would bias the mean toward stale nights.
 use crate::baselines::EwmaState;
 use crate::store::GooseStore;
-use crate::GooseResult;
 
 // ---------------------------------------------------------------------------
 // Result type

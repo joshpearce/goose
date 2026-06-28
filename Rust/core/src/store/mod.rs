@@ -2024,7 +2024,15 @@ impl GooseStore {
             "INSERT OR REPLACE INTO body_composition_history \
              (date, source, weight_kg, bmi, body_fat_pct, muscle_mass_kg, water_pct) \
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![date, source, weight_kg, bmi, body_fat_pct, muscle_mass_kg, water_pct],
+            params![
+                date,
+                source,
+                weight_kg,
+                bmi,
+                body_fat_pct,
+                muscle_mass_kg,
+                water_pct
+            ],
         )?;
         Ok(())
     }

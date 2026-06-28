@@ -1,6 +1,8 @@
 use serde::Deserialize;
 
-use super::{BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok, request_args};
+use super::{
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok, request_args,
+};
 use crate::GooseResult;
 
 pub(crate) fn dispatch_body_composition(request: &BridgeRequest) -> BridgeResponse {
@@ -41,7 +43,9 @@ struct BodyCompositionHistoryBetweenArgs {
     end_date: String,
 }
 
-fn upsert_body_composition_bridge(args: BodyCompositionUpsertArgs) -> GooseResult<serde_json::Value> {
+fn upsert_body_composition_bridge(
+    args: BodyCompositionUpsertArgs,
+) -> GooseResult<serde_json::Value> {
     let store = acquire_bridge_conn(&args.database_path)?;
     store.upsert_body_composition(
         &args.date,

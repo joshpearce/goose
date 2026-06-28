@@ -55,7 +55,10 @@ fn test_insert_v20v21_batch_round_trip() {
 
     assert!(insert_resp.ok, "insert failed: {:?}", insert_resp.error);
     let result = insert_resp.result.unwrap();
-    assert_eq!(result["inserted"], 3, "expected 3 rows (2 channels + 1 channel)");
+    assert_eq!(
+        result["inserted"], 3,
+        "expected 3 rows (2 channels + 1 channel)"
+    );
 
     // Query back via biometrics.optical_between
     let query_resp = request(serde_json::json!({
@@ -81,12 +84,14 @@ fn test_insert_v20v21_batch_round_trip() {
     assert_eq!(rows[0]["packet_k"], 20);
     assert_eq!(rows[0]["version"], 20);
     assert_eq!(rows[0]["channel_index"], 0);
-    let samples: Vec<i64> = serde_json::from_str(rows[0]["samples_json"].as_str().unwrap()).unwrap();
+    let samples: Vec<i64> =
+        serde_json::from_str(rows[0]["samples_json"].as_str().unwrap()).unwrap();
     assert_eq!(samples, vec![100, 200, 300]);
 
     // Second row: ts=1000, channel_index=1
     assert_eq!(rows[1]["channel_index"], 1);
-    let samples2: Vec<i64> = serde_json::from_str(rows[1]["samples_json"].as_str().unwrap()).unwrap();
+    let samples2: Vec<i64> =
+        serde_json::from_str(rows[1]["samples_json"].as_str().unwrap()).unwrap();
     assert_eq!(samples2, vec![400, 500, 600]);
 
     // Third row: ts=1001, channel_index=0
@@ -198,7 +203,11 @@ fn test_optical_between_empty_range() {
     assert!(query_resp.ok, "query failed: {:?}", query_resp.error);
     let rows = query_resp.result.unwrap();
     let rows = rows.as_array().unwrap();
-    assert_eq!(rows.len(), 0, "expected empty result for out-of-range query");
+    assert_eq!(
+        rows.len(),
+        0,
+        "expected empty result for out-of-range query"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -249,5 +258,9 @@ fn test_insert_v20v21_idempotent() {
     }));
     assert!(query_resp.ok);
     let rows = query_resp.result.unwrap();
-    assert_eq!(rows.as_array().unwrap().len(), 1, "duplicate insert should be ignored");
+    assert_eq!(
+        rows.as_array().unwrap().len(),
+        1,
+        "duplicate insert should be ignored"
+    );
 }

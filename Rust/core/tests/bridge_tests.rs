@@ -8806,7 +8806,11 @@ fn bridge_compact_raw_evidence_reduces_storage_and_is_noop_when_already_below_li
 #[test]
 fn sleep_compute_need_returns_default_age_bracket() {
     let dir = tempfile::tempdir().unwrap();
-    let db_path = dir.path().join("goose.sqlite").to_string_lossy().to_string();
+    let db_path = dir
+        .path()
+        .join("goose.sqlite")
+        .to_string_lossy()
+        .to_string();
     let response = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
         "request_id": "sleep-compute-need-cold-start",
@@ -8826,7 +8830,11 @@ fn sleep_compute_need_returns_default_age_bracket() {
 #[test]
 fn sleep_compute_need_applies_strain_and_age() {
     let dir = tempfile::tempdir().unwrap();
-    let db_path = dir.path().join("goose.sqlite").to_string_lossy().to_string();
+    let db_path = dir
+        .path()
+        .join("goose.sqlite")
+        .to_string_lossy()
+        .to_string();
     let response = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
         "request_id": "sleep-compute-need-age-strain",

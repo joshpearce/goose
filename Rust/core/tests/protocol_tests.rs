@@ -1006,7 +1006,10 @@ fn test_v26_ppg_valid_payload_parses_to_variant() {
     let payload = build_v26_payload(1, 1_700_000_000u32, &samples);
 
     let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
-    assert!(warnings.is_empty(), "expected no warnings, got: {warnings:?}");
+    assert!(
+        warnings.is_empty(),
+        "expected no warnings, got: {warnings:?}"
+    );
 
     match result {
         Some(DataPacketBodySummary::V26PpgWaveform {
@@ -1030,7 +1033,9 @@ fn test_v26_ppg_channel_zero_returns_unknown() {
 
     let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
     assert!(
-        warnings.iter().any(|w| w.contains("ppg_channel_out_of_range")),
+        warnings
+            .iter()
+            .any(|w| w.contains("ppg_channel_out_of_range")),
         "expected ppg_channel_out_of_range warning, got: {warnings:?}"
     );
     match result {
@@ -1045,7 +1050,9 @@ fn test_v26_ppg_channel_27_returns_unknown() {
 
     let (result, warnings) = parse_v26_ppg_body_for_test(&payload);
     assert!(
-        warnings.iter().any(|w| w.contains("ppg_channel_out_of_range")),
+        warnings
+            .iter()
+            .any(|w| w.contains("ppg_channel_out_of_range")),
         "expected ppg_channel_out_of_range warning, got: {warnings:?}"
     );
     match result {
@@ -1166,7 +1173,10 @@ fn test_v20_payload_too_short_warns_no_panic() {
     // Result must still be Some (variant with empty channels) — not None.
     match result {
         Some(DataPacketBodySummary::V20V21OpticalMultiChannel { channels, .. }) => {
-            assert!(channels.is_empty(), "no channels should be decoded from a 10B payload");
+            assert!(
+                channels.is_empty(),
+                "no channels should be decoded from a 10B payload"
+            );
         }
         other => panic!("expected V20V21OpticalMultiChannel, got {other:?}"),
     }

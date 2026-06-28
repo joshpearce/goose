@@ -10,7 +10,6 @@ use super::{
 };
 use crate::{
     GooseError, GooseResult,
-    sleep_need::compute_sleep_need_with_store,
     algorithm_compare::{
         compare_hrv_goose_to_reference, compare_sleep_goose_to_external_reference_report,
         compare_sleep_goose_to_reference, compare_sleep_v1_goose_to_external_reference_report,
@@ -72,6 +71,7 @@ use crate::{
         rollup_resting_heart_rate_day_for_store, validate_resting_heart_rate_capture_for_store,
     },
     reference::reference_algorithm_definitions,
+    sleep_need::compute_sleep_need_with_store,
     sleep_staging::{
         EpochHrFeature, SleepStagingInput, SleepStagingOutput, stage_sleep_four_class,
     },
@@ -4375,12 +4375,8 @@ fn insert_v26_batch_bridge(args: InsertV26BatchArgs) -> GooseResult<serde_json::
 
 fn optical_between_bridge(args: OpticalBetweenArgs) -> GooseResult<serde_json::Value> {
     let store = acquire_bridge_conn(&args.database_path)?;
-    let rows = store.query_optical_between(
-        &args.device_id,
-        args.packet_k,
-        args.start_ts,
-        args.end_ts,
-    )?;
+    let rows =
+        store.query_optical_between(&args.device_id, args.packet_k, args.start_ts, args.end_ts)?;
     let result = rows
         .iter()
         .map(|r| {

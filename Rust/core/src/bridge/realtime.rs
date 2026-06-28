@@ -1,6 +1,8 @@
 use serde::Deserialize;
 
-use super::{BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok, request_args};
+use super::{
+    BridgeRequest, BridgeResponse, acquire_bridge_conn, bridge_error, bridge_ok, request_args,
+};
 use crate::GooseResult;
 
 pub(crate) fn dispatch_realtime(request: &BridgeRequest) -> BridgeResponse {

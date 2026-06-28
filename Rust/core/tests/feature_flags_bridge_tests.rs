@@ -65,7 +65,10 @@ fn test_upsert_and_get_feature_flags() {
 
     // discovered_at should be a non-empty string
     assert!(
-        flags[0]["discovered_at"].as_str().map(|s| !s.is_empty()).unwrap_or(false),
+        flags[0]["discovered_at"]
+            .as_str()
+            .map(|s| !s.is_empty())
+            .unwrap_or(false),
         "discovered_at should be a non-empty string"
     );
 }
@@ -118,7 +121,11 @@ fn test_upsert_replaces_existing_flag() {
     assert!(get_resp.ok, "get failed: {:?}", get_resp.error);
     let flags = get_resp.result.unwrap();
     let flags = flags.as_array().unwrap();
-    assert_eq!(flags.len(), 1, "expected exactly 1 flag (INSERT OR REPLACE)");
+    assert_eq!(
+        flags.len(),
+        1,
+        "expected exactly 1 flag (INSERT OR REPLACE)"
+    );
     assert_eq!(flags[0]["flag_index"], 1);
     assert_eq!(flags[0]["flag_value"], 99, "value should be updated to 99");
 }

@@ -66,7 +66,11 @@ fn body_composition_upsert_replace() {
         .body_composition_history_between("2026-06-01", "2026-06-01")
         .expect("history_between failed");
 
-    assert_eq!(rows.len(), 1, "INSERT OR REPLACE must produce exactly 1 row");
+    assert_eq!(
+        rows.len(),
+        1,
+        "INSERT OR REPLACE must produce exactly 1 row"
+    );
     assert_eq!(
         rows[0].weight_kg,
         Some(81.0),
@@ -87,10 +91,26 @@ fn body_composition_history_between() {
         .upsert_body_composition("2026-06-01", "manual", Some(80.0), None, None, None, None)
         .expect("upsert row 1 failed");
     store
-        .upsert_body_composition("2026-06-03", "healthkit", None, Some(24.0), None, None, None)
+        .upsert_body_composition(
+            "2026-06-03",
+            "healthkit",
+            None,
+            Some(24.0),
+            None,
+            None,
+            None,
+        )
         .expect("upsert row 2 failed");
     store
-        .upsert_body_composition("2026-06-05", "scale", Some(79.5), None, Some(17.8), None, None)
+        .upsert_body_composition(
+            "2026-06-05",
+            "scale",
+            Some(79.5),
+            None,
+            Some(17.8),
+            None,
+            None,
+        )
         .expect("upsert row 3 failed");
 
     // Wide range: all 3 rows returned across all sources (D-01)
@@ -132,7 +152,15 @@ fn body_composition_history_sorted() {
         .upsert_body_composition("2026-06-05", "manual", Some(81.0), None, None, None, None)
         .expect("upsert row B failed");
     store
-        .upsert_body_composition("2026-06-08", "healthkit", None, None, None, Some(66.0), None)
+        .upsert_body_composition(
+            "2026-06-08",
+            "healthkit",
+            None,
+            None,
+            None,
+            Some(66.0),
+            None,
+        )
         .expect("upsert row C failed");
 
     let rows = store
