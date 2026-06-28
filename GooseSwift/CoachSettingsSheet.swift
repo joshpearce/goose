@@ -439,6 +439,8 @@ private struct CustomEndpointConfigView: View {
   @State private var modelID = ""
   @State private var showingValidationError = false
   @State private var savedLabel = false
+  @State private var isTesting = false
+  @State private var testResult: ConnectionTestOutcome?
 
   private var urlIsInvalid: Bool {
     !baseURL.isEmpty && !CustomEndpointCoachProvider.validateBaseURL(baseURL)
@@ -474,6 +476,34 @@ private struct CustomEndpointConfigView: View {
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)
+
+      Button {
+        runConnectionTest()
+      } label: {
+        HStack(spacing: 8) {
+          if isTesting {
+            ProgressView()
+              .controlSize(.small)
+          }
+          Text(isTesting ? String(localized: "Testing…") : String(localized: "Test Connection"))
+            .frame(maxWidth: .infinity)
+        }
+      }
+      .buttonStyle(.bordered)
+      .disabled(baseURL.isEmpty || urlIsInvalid || isTesting)
+
+      if let result = testResult {
+        switch result {
+        case .success(let msg):
+          Label(msg, systemImage: "checkmark.circle.fill")
+            .font(.caption)
+            .foregroundStyle(.green)
+        case .failure(let msg):
+          Label(msg, systemImage: "xmark.circle.fill")
+            .font(.caption)
+            .foregroundStyle(.red)
+        }
+      }
     }
     .onAppear {
       baseURL = provider.baseURL
@@ -498,6 +528,22 @@ private struct CustomEndpointConfigView: View {
     Task {
       try? await Task.sleep(for: .seconds(2))
       await MainActor.run { savedLabel = false }
+    }
+  }
+
+  private func runConnectionTest() {
+    testResult = nil
+    isTesting = true
+    // Persist current field values so testConnection() reads the typed credentials
+    provider.baseURL = baseURL
+    provider.modelID = modelID
+    if !apiKey.isEmpty {
+      try? provider.saveEndpoint(apiKey: apiKey)
+    }
+    Task {
+      let outcome = await provider.testConnection()
+      isTesting = false
+      testResult = outcome
     }
   }
 }
