@@ -15,7 +15,7 @@
 
 ### Code Audit — Multi-Model (RUST-AUD)
 
-- [ ] **RUST-AUD-01**: Opus + Gemini + Codex analyse Rust core + Android Kotlin in parallel → structured findings report (module organisation, god-files, JNI patterns, threading, null-safety, coroutine scope)
+- [x] **RUST-AUD-01**: Opus + Gemini + Codex analyse Rust core + Android Kotlin in parallel → structured findings report (module organisation, god-files, JNI patterns, threading, null-safety, coroutine scope)
 - [ ] **RUST-AUD-02**: Android architecture fixes applied from RUST-AUD-01 findings (JNI error propagation, coroutine scope hygiene, Compose state management)
 
 ### Android Best Practices (BP-AND)
@@ -49,7 +49,7 @@
 | AND-UI-02 | Phase 129 | Pending |
 | AND-UI-03 | Phase 130 | Pending |
 | AND-UI-04 | Phase 131 | Pending |
-| RUST-AUD-01 | Phase 127 | Pending |
+| RUST-AUD-01 | Phase 127 | Complete |
 | RUST-AUD-02 | Phase 128 | Pending |
 | BP-AND-01 | Phase 128 | Pending |
 | BP-AND-02 | Phase 128 | Pending |
