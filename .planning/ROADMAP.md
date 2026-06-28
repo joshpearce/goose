@@ -1060,7 +1060,7 @@ Plans:
 ### Phase Summary
 
 - [x] **Phase 127: Multi-Model Code Audit** — Opus + Gemini + Codex analyse Rust core + Android Kotlin in parallel → structured findings report (completed 2026-06-28)
-- [ ] **Phase 128: Android Architecture & Best-Practices Fixes** — apply audit findings: JNI error propagation, coroutine scope hygiene, Compose state management
+- [x] **Phase 128: Android Architecture & Best-Practices Fixes** — apply audit findings: JNI error propagation, coroutine scope hygiene, Compose state management (completed 2026-06-28)
 - [ ] **Phase 129: Android Sleep & Health UI** — SleepV2 bevel + 14-day trends, HRV timeline + strain/recovery cards (Compose)
 - [ ] **Phase 130: Android Coach + Auth** — OAuth flow, AI chat UI, multi-provider selector (parity iOS CoachChatModel)
 - [ ] **Phase 131: Android Settings + WHY Comments** — Settings screen (server URL, device identity, export, BLE status) + JNI SAFETY and protocol offset WHY comments
@@ -1101,11 +1101,11 @@ Plans:
   3. The Android-actionable architecture findings tagged in the Phase 127 report are resolved or explicitly deferred with a recorded reason; Compose state-management fixes from the report are applied
   4. The Android CI APK build (`android-core.yml`) compiles without new warnings or errors after the fixes
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 
 - [x] 128-01-PLAN.md — [wave 1] WhoopBleClient BLE/coroutine fixes (A-01 var-scope lifecycle, A-02 atomic sync/gatt state, A-03 importFrame error propagation, A-07 SharedFlow sync signal)
 - [x] 128-02-PLAN.md — [wave 2, depends 128-01] Compose/ViewModel fixes (A-04 lifecycle StateFlow collection in MainActivity incl. HomeScreen/HealthScreen/MoreScreen, A-05 private bleClient, A-06 queryScore logging, A-08 observable uploadStatus via GooseUploadClient.uploadState)
-- [ ] 128-03-PLAN.md — [wave 3, depends 128-01,128-02] A-09 via D-09a (private sub-ViewModels; Hilt deferred pending Kotlin 2.4.0/KSP) + assembleDebug CI verification
+- [x] 128-03-PLAN.md — [wave 3, depends 128-01,128-02] A-09 via D-09a (private sub-ViewModels; Hilt deferred pending Kotlin 2.4.0/KSP) + assembleDebug CI verification
 
 **Dependencies**: Consumes the Phase 127 findings report. Android-only (Kotlin + JNI glue). Wave ordering forced sequential by SharedFlow/Hilt cross-plan dependencies (cross-AI review HIGH-4).
 
@@ -1449,7 +1449,7 @@ Plans:
 | 125 | 1/1 | Complete    | 2026-06-28 |
 | 126 | 1/1 | Complete    | 2026-06-28 |
 | 127 | 1/1 | Complete   | 2026-06-28 |
-| 128 | 2/3 | In Progress|  |
+| 128 | 3/3 | Complete   | 2026-06-28 |
 | 129 | v16.0 | Not started | - |
 | 130 | v16.0 | Not started | - |
 | 131 | v16.0 | Not started | - |
