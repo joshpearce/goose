@@ -5,8 +5,8 @@ milestone_name: — Android UI Parity, Rust Architecture & Code Health
 current_phase: 129
 current_phase_name: Android Sleep & Health UI
 status: planning
-stopped_at: Completed 128-02-PLAN.md
-last_updated: "2026-06-28T18:15:57.028Z"
+stopped_at: Phase 129 context gathered
+last_updated: "2026-06-28T18:20:34.583Z"
 last_activity: 2026-06-28
 last_activity_desc: Phase 128 complete, transitioned to Phase 129
 progress:
@@ -147,9 +147,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-28T18:11:26.898Z
-Stopped at: Completed 128-02-PLAN.md
-Resume file: .planning/phases/128-android-architecture-best-practices-fixes/128-02-SUMMARY.md
+Last session: 2026-06-28T18:20:34.566Z
+Stopped at: Phase 129 context gathered
+Resume file: .planning/phases/129-android-sleep-health-ui/129-CONTEXT.md
 Next action: Execute 128-03-PLAN.md
 
 ## Operator Next Steps
