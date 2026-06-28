@@ -1047,6 +1047,232 @@ Plans:
 
 **Plans**: 1/1 plans complete
 
+## v17.0 — Algorithm Depth & Noop Feature Parity (Phases 140–150)
+
+**Goal:** Port validated health scoring algorithms into the Rust core (Baselines EWMA, HRVAnalyzer, StrainScorer, RecoveryScorer, DaytimeStress) and reach UI/UX feature parity with noopApp — Recovery Ring, Strain Gauge, sparklines, sleep hypnogram, workout detail, metric explorer — plus BLE protocol expansion, the R22 deep-stream unlock, and strap notification mirroring.
+
+**Phase numbering:** v15.0 ended at Phase 126. v16.0 (Android UI parity milestone) reserves Phases 127–139. v17.0 starts at Phase 140 to leave that block untouched.
+
+**Strategic ordering note:** Phase 140 (Baselines EWMA) is the keystone — RecoveryScorer (Phase 143) and DaytimeStress consume personal baselines, so the tracker must exist first. All algorithm phases (140–143) are pure Rust core and therefore ship to Android for free; no separate Android work is scheduled in v17.0. UI phases (144–147) are iOS-only this milestone — Android UI parity is v18.0 scope.
+
+### Phase Summary
+
+- [ ] **Phase 140: Baselines EWMA Tracker** — Rust core personal baseline engine (14-night half-life, Winsor ±3σ, tiered confidence) — keystone
+- [ ] **Phase 141: HRVAnalyzer Upgrade** — Malik ectopic filter + SDNN + pNN50 + sufficiency gate in the HRV pipeline
+- [ ] **Phase 142: StrainScorer** — Karvonen %HRR + Edwards 5-zone TRIMP + Tanaka HRmax 0-100 strain
+- [ ] **Phase 143: RecoveryScorer + DaytimeStress** — 2-factor recovery composite + per-hour stress timeline on personal baselines
+- [ ] **Phase 144: Visual Components** — Recovery Ring, Strain Gauge, 14-day sparklines on Health cards
+- [ ] **Phase 145: Sleep UI** — hypnogram timeline + 14-night sleep debt ledger + multi-night navigation
+- [ ] **Phase 146: Workout UI** — live in-app workout view + past-workout detail view
+- [ ] **Phase 147: Data Exploration** — Metric Explorer + Compare overlay (2-4 metrics)
+- [ ] **Phase 148: BLE Protocol Expansion** — cmds 0x62/0x07/0x7A + Gen5/MG 20-byte alarm payload
+- [ ] **Phase 149: R22 Deep Stream Unlock** — cmd 0x78 15-flag sequence, DeviceCatalog-gated (Gen5/MG only) — high risk
+- [ ] **Phase 150: Strap Notification Mirroring** — CTCallCenter + internal Goose events → strap buzz, with settings + test button
+
+### Phase Details
+
+#### Phase 140: Baselines EWMA Tracker
+
+**Goal**: The Rust core computes and persists each user's personal metric baselines via EWMA so downstream recovery and stress scores are personalised, and the UI can show how mature each baseline is.
+**Depends on**: Phase 111 (last shipped Rust milestone foundation)
+**Requirements**: ALG-BASE-01, ALG-BASE-02
+**Success Criteria** (what must be TRUE):
+
+  1. A `baselines` engine computes an EWMA with a 14-night half-life and Winsor ±3σ clamping on each input sample, persisting per-metric baseline state (mean, variance, night count) to SQLite via a bridge method
+  2. Given a synthetic 14-night fixture, the computed baseline matches the reference EWMA within tolerance and an injected outlier is clamped (not allowed to swing the baseline)
+  3. The bridge exposes a tiered confidence state for each baseline — Calibrating (<4 nights), Building (4-13 nights), Solid (≥14 nights) — and the Health UI surfaces that state for at least one consuming metric
+  4. `cargo test --locked` passes clean; baseline persistence survives an open/close cycle (state is read back identical)
+
+**Plans**: TBD
+
+**Dependencies**: Pure Rust core + minimal Swift surface to display confidence; ships to Android for free.
+
+---
+
+#### Phase 141: HRVAnalyzer Upgrade
+
+**Goal**: HRV readings are computed from cleaned RR intervals with a Malik ectopic filter, expose SDNN and pNN50 alongside RMSSD, and are suppressed when the underlying data is insufficient.
+**Depends on**: Phase 140
+**Requirements**: ALG-HRV-10, ALG-HRV-11, ALG-HRV-12
+**Success Criteria** (what must be TRUE):
+
+  1. The Malik ectopic filter drops any beat deviating >20% from the local 5-beat median before RMSSD is computed; a synthetic series with injected premature beats yields a corrected RMSSD that excludes those beats
+  2. The HRV pipeline also computes SDNN and pNN50 and exposes all three (RMSSD/SDNN/pNN50) via the bridge for display in detail views
+  3. A sufficiency gate rejects any spot reading where >35% of intervals were discarded; the bridge returns an explicit "insufficient" state rather than a number, and the UI does not render a misleading value
+  4. `cargo test --locked` passes clean with new fixtures covering filter, multi-metric output, and the sufficiency gate boundary
+
+**Plans**: TBD
+
+**Dependencies**: Pure Rust core; ships to Android for free.
+
+---
+
+#### Phase 142: StrainScorer
+
+**Goal**: Each workout produces a 0-100 strain score from a Karvonen %HRR intensity model with Edwards 5-zone TRIMP weighting, using Tanaka HRmax when an observed maximum is unavailable.
+**Depends on**: Phase 140
+**Requirements**: ALG-STR-01, ALG-STR-02
+**Success Criteria** (what must be TRUE):
+
+  1. Strain is computed with Karvonen %HRR and Edwards 5-zone TRIMP weighting (zone cut-offs at 50/60/70/80/90% HRR), producing a deterministic 0-100 score for a synthetic HR session fixture
+  2. When no observed HRmax is available, Tanaka HRmax (208 − 0.7 × age) is used; the score requires `age` from the user profile and the bridge returns a clear error/neutral state when age is missing
+  3. Per-zone time and the final 0-100 strain are exposed via the bridge so the Strain Gauge UI (Phase 144) and workout detail (Phase 146) can consume them
+  4. `cargo test --locked` passes clean; zone-boundary and missing-age cases are covered by tests
+
+**Plans**: TBD
+
+**Dependencies**: Pure Rust core; ships to Android for free. Requires `age` in user profile (Swift-side profile field if absent).
+
+---
+
+#### Phase 143: RecoveryScorer + DaytimeStress
+
+**Goal**: Recovery is a personalised 2-factor composite against EWMA baselines, and daytime stress is a per-hour timeline derived from same-day data — both honest about calibration state.
+**Depends on**: Phase 140, Phase 141
+**Requirements**: ALG-REC-01, ALG-REC-02, ALG-DST-01, ALG-DST-02
+**Success Criteria** (what must be TRUE):
+
+  1. Recovery is computed as a 2-factor z-score composite (HRV weight 0.55, RHR weight 0.45) against personal EWMA baselines, squashed via a logistic function to 0-100, matching a reference computation on a synthetic fixture
+  2. Recovery returns an explicit "calibrating" state (not an arbitrary number) when baseline history < 4 nights, and the UI honours that state
+  3. Daytime stress is computed per waking hour as HR + RMSSD z-scored against the same day's quietest hour, mapped to a 0-3 scale, requiring no personal history
+  4. A sustained-high-stress flag fires when the most recent 3 consecutive hours all score ≥2.0; a fixture crossing and then leaving that threshold toggles the flag correctly
+  5. `cargo test --locked` passes clean across recovery, calibrating-gate, hourly-stress, and sustained-flag fixtures
+
+**Plans**: TBD
+
+**Dependencies**: Pure Rust core; ships to Android for free. Consumes Phase 140 baselines.
+
+---
+
+#### Phase 144: Visual Components
+
+**Goal**: The Health tab shows the Recovery score as a colour-coded ring, the Strain score as a zone-banded gauge, and every metric card gains an inline 14-day trend sparkline.
+**Depends on**: Phase 142, Phase 143
+**Requirements**: UI-VIZ-01, UI-VIZ-02, UI-VIZ-03
+**Success Criteria** (what must be TRUE):
+
+  1. The Recovery card renders a circular gauge (Recovery Ring) colour-coded green/orange/red/teal, replacing the plain text number, and reflects the calibrating state from Phase 143
+  2. The Strain card renders a horizontal gauge with zone colour bands (Low/Moderate/High/Extreme) mapped to the 0-100 strain score from Phase 142
+  3. Every Health metric card shows a 14-day sparkline inline below the current value, sourced from real historical data without opening a separate screen
+  4. The new components build and render correctly in the iOS simulator (verified via screenshot) with no layout regression on the existing Health tab
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: iOS-only (SwiftUI/CoreGraphics). No new external dependencies.
+
+---
+
+#### Phase 145: Sleep UI
+
+**Goal**: The Sleep view gains a per-night hypnogram, a 14-night sleep debt ledger, and the ability to browse previous nights.
+**Depends on**: Phase 144
+**Requirements**: UI-SLP-01, UI-SLP-02, UI-SLP-03
+**Success Criteria** (what must be TRUE):
+
+  1. The sleep detail view shows a hypnogram — a horizontal timeline with colour-coded phase bands (Deep/Light/REM/Awake) for the selected night
+  2. The sleep view shows a 14-night sleep debt ledger with daily bars (slept vs sleep need) and a running balance summary
+  3. The user can navigate to previous nights via forward/back controls, browsing up to 30 nights of history, with correct data per night
+  4. The view builds and renders in the iOS simulator (verified via screenshot) including an empty/insufficient-history state
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: iOS-only. Consumes existing sleep staging + Harvard sleep-need (v15.0).
+
+---
+
+#### Phase 146: Workout UI
+
+**Goal**: An active workout has a rich in-app live view, and past workouts open a detailed breakdown.
+**Depends on**: Phase 142, Phase 144
+**Requirements**: UI-WRK-01, UI-WRK-02
+**Success Criteria** (what must be TRUE):
+
+  1. During an active workout the in-app view shows a large current HR, current zone number (1-5), a live effort gauge, and elapsed time — independent of the lock-screen Live Activity
+  2. Tapping a past workout opens a detail view with an HR curve chart, zone time breakdown (%), peak HR, average HR, duration, and effort score from Phase 142
+  3. Both views build and render in the iOS simulator (verified via screenshot), including a graceful state when no HR samples exist for a session
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: iOS-only. Consumes StrainScorer zone/effort output from Phase 142.
+
+---
+
+#### Phase 147: Data Exploration
+
+**Goal**: Users can explore any metric over a chosen date range and overlay multiple metrics to spot correlations.
+**Depends on**: Phase 144
+**Requirements**: UI-EXP-01, UI-EXP-02
+**Success Criteria** (what must be TRUE):
+
+  1. A Metric Explorer opens from the Health tab; the user selects any available metric (HRV, HR, Recovery, Strain, Stress, etc.), picks a date range, and sees a full-screen chart with min/max/mean stats
+  2. A Compare mode overlays 2-4 metrics on a shared timeline with distinguishable series and a legend
+  3. The explorer builds and renders in the iOS simulator (verified via screenshot), handling metrics with sparse or missing data without crashing
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: iOS-only. Reads from existing metric history bridge methods.
+
+---
+
+#### Phase 148: BLE Protocol Expansion
+
+**Goal**: The app gains three new BLE commands (extended battery, version info, stop haptics) and switches the Gen5/MG alarm to the confirmed 20-byte waveform format.
+**Depends on**: Phase 111 (BLE protocol foundation)
+**Requirements**: BLE-EXT-01, BLE-EXT-02, BLE-EXT-03, BLE-EXT-04
+**Success Criteria** (what must be TRUE):
+
+  1. The app sends and parses cmd `0x62` (getExtendedBatteryInfo), surfacing detailed battery state beyond the basic GATT battery level
+  2. The app sends cmd `0x07` (reportVersionInfo) during the BLE handshake and stores the result so firmware info is more reliable than GATT Device Information alone
+  3. The app sends cmd `0x7A` (stopHaptics) to cancel a haptic pattern mid-sequence (e.g., when a workout ends while a buzz is active), confirmed to halt an in-progress buzz
+  4. Gen5/MG alarm payloads use the confirmed 20-byte format (waveform + loop control fields), replacing the opaque format; round-trip parsing of a synthetic payload matches the spec
+
+**Plans**: TBD
+
+**Dependencies**: iOS BLE (Swift) + Rust frame parsing for any new response bodies. Android parity for the new commands is v18.0 scope per milestone constraints, but Rust parsing ships to Android for free.
+
+---
+
+#### Phase 149: R22 Deep Stream Unlock
+
+**Goal**: Gen5/MG devices receive the R22 deep-stream unlock sequence to enable deep biometric streaming, with a hard DeviceCatalog gate that never sends it to Gen4.
+**Depends on**: Phase 148
+**Requirements**: BLE-R22-01, BLE-R22-02
+**Success Criteria** (what must be TRUE):
+
+  1. For Gen5/MG devices only, the app sends the R22 Deep Stream Unlock sequence (15 flags via cmd `0x78`), gated by `DeviceCatalog.isGen5orMG`, and deep biometric frames (PPG/IMU) begin to arrive after unlock
+  2. The `0x78` write is never issued to a Gen4 device — the DeviceCatalog gate is enforced before any write, and a unit/integration test proves a Gen4 device path never emits `0x78`
+  3. The unlock failure path is handled gracefully (no crash, no stuck state) when the device does not acknowledge
+
+**Plans**: TBD
+**Note**: High risk — deep stream unlock affects a connected physical device. Gate enforcement (BLE-R22-02) is a release blocker; do not ship if any code path can send `0x78` to Gen4.
+
+**Dependencies**: iOS BLE (Swift) + DeviceCatalog gate (v12.0). Hardware verification requires a real Gen5/MG device.
+
+---
+
+#### Phase 150: Strap Notification Mirroring
+
+**Goal**: The connected strap can buzz for incoming phone calls and configurable internal Goose events, with user-controlled toggles and a test button.
+**Depends on**: Phase 148
+**Requirements**: HAP-NOTIF-01, HAP-NOTIF-02, HAP-NOTIF-03
+**Success Criteria** (what must be TRUE):
+
+  1. When an incoming phone call is detected via CTCallCenter, the connected strap buzzes (3 loops) as a wrist notification
+  2. More → Settings exposes per-event toggles and threshold settings for internal Goose events (HR spike, HRV dip, sustained daytime stress); enabling an event causes a buzz when that event fires
+  3. A test buzz button in the strap notification settings triggers a buzz immediately so the user can verify haptic output without waiting for an event
+  4. The settings screen and call-detection path build and run in the iOS simulator (verified via screenshot for the settings UI; call mirroring verified against the CTCallCenter callback)
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Dependencies**: iOS-only (CoreTelephony CTCallCenter + existing buzz primitive). Consumes DaytimeStress (Phase 143) and HR/HRV signals for internal-event triggers.
+
+---
+
 ## Progress
 
 | Phase | Milestone | Status | Completed |
@@ -1101,6 +1327,17 @@ Plans:
 | 124 | 0/0 | Complete    | 2026-06-28 |
 | 125 | 1/1 | Complete    | 2026-06-28 |
 | 126 | 1/1 | Complete    | 2026-06-28 |
+| 140 | v17.0 | Not started | - |
+| 141 | v17.0 | Not started | - |
+| 142 | v17.0 | Not started | - |
+| 143 | v17.0 | Not started | - |
+| 144 | v17.0 | Not started | - |
+| 145 | v17.0 | Not started | - |
+| 146 | v17.0 | Not started | - |
+| 147 | v17.0 | Not started | - |
+| 148 | v17.0 | Not started | - |
+| 149 | v17.0 | Not started | - |
+| 150 | v17.0 | Not started | - |
 
 ## Backlog
 

@@ -254,23 +254,32 @@ Known deferred: Ph74/75 BLE device-gate tests; CAPSENSE-01, HAP-04, BLE5-01/02 h
 | Google OAuth via WKWebView (no SDK) | Zero external dependency; user-supplied client_id; PKCE mandatory | ✓ Good — v4.0 |
 | Inline L10N gap closure (9 strings, no new phase) | Faster than planning a new phase for 9-string fix | ✓ Good — v4.0 |
 
-## Current Milestone: v15.0 — Protocol Depth, Algorithms & UX
+## Current Milestone: v17.0 — Algorithm Depth & Noop Feature Parity
 
-**Goal:** Decode WHOOP 5.0 bulk optical sensor streams (v20/v21/v26), implement Harvard sleep need model, feature flag discovery via GET_FF_VALUE, body composition history, stealth mode, PIP realtime pipeline, and validate all hardware-gated items with real WHOOP 5.
+**Goal:** Port validated health scoring algorithms into Rust core (Baselines EWMA, HRVAnalyzer, StrainScorer, RecoveryScorer, DaytimeStress) and achieve UI/UX feature parity with noopApp — Recovery Ring, sleep hypnogram, workout detail, metric explorer — plus BLE protocol expansion and strap notification mirroring.
 
 **Target features:**
-- #172 — WHOOP 5.0 type-47 v20/v21 multi-channel decode (Rust protocol.rs)
-- #173 — WHOOP 5.0 type-47 v26 24 Hz PPG waveform decode (Rust protocol.rs)
-- #164 — Harvard sleep need model (age + EWMA debt + strain → SleepNeedResult)
-- #165 — GET_FF_VALUE (0x80) feature flag discovery → DeviceCapabilities
-- #166 — Body composition history SQLite table + SwiftUI entry + HealthKit weight
-- #167 — Stealth mode: per-metric UserDefaults toggle, "—" in dashboards
-- #168 — PIP realtime pipeline: FRAME_SOURCE_REALTIME + realtime_frames + POST /v1/ingest-realtime
-- ALG-HRV-04 / ALG-SLP-04 — real overnight validation with WHOOP 5 device
-- BLE5-01/02, CAPSENSE-01, HAP-04 — hardware-gated, now unblocked (WHOOP 5 available)
+- ALG-BASE-01 — Baselines EWMA tracker (Rust core, 14-night half-life, Winsor clamping)
+- ALG-HRV-10 — HRVAnalyzer: Malik ectopic filter + SDNN + pNN50 + sufficiency gate
+- ALG-STR-01 — StrainScorer: Karvonen %HRR + Edwards 5-zone TRIMP + Tanaka HRmax
+- ALG-REC-01 — RecoveryScorer 2-factor: HRV+RHR with EWMA personal baselines
+- ALG-STR-02 — DaytimeStress: hourly HR+RMSSD z-score timeline (0-3 scale)
+- UI-VIZ-01 — Recovery Ring gauge (0-100, colour-coded) + Strain Gauge (zone colours)
+- UI-VIZ-02 — Sparklines 14-day on every Health metric card
+- UI-SLP-01 — Hypnogram timeline + sleep debt ledger + multi-night navigation
+- UI-WRK-01 — Live workout in-app view (HR, zone, gauge, elapsed)
+- UI-WRK-02 — Workout detail view (HR curve, zone breakdown, peak/avg)
+- UI-EXP-01 — Metric Explorer (any metric over time, date range picker)
+- UI-EXP-02 — Compare view (overlay 2-4 metrics on shared timeline)
+- BLE-EXT-01 — BLE cmds 0x62 (extended battery) + 0x07 (version info) + 0x7A (stop haptics)
+- BLE-EXT-02 — Gen5 alarm payload fix: 20-byte waveform format (currently opaque)
+- BLE-R22-01 — R22 Deep Stream Unlock: 15 flags via cmd 0x78 (Gen5/MG only, DeviceCatalog gated)
+- HAP-NOTIF-01 — Strap notification mirroring: CTCallCenter + internal Goose alerts → buzz
+
+**Depends on:** v16.0 Android milestone ships first.
 
 ---
-*Last updated: 2026-06-21 — v15.0 started*
+*Last updated: 2026-06-28 — v17.0 started*
 
 ## Evolution
 

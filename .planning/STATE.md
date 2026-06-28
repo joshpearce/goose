@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v15.0
-milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 0
-status: Awaiting next milestone
-stopped_at: Phase 118 context gathered
-last_updated: "2026-06-28T11:04:43.480Z"
+milestone: v17.0
+milestone_name: Algorithm Depth & Noop Feature Parity
+status: planning
+last_updated: "2026-06-28T12:00:00.000Z"
 last_activity: 2026-06-28
-last_activity_desc: Milestone v15.0 completed and archived
 progress:
-  total_phases: 15
-  completed_phases: 14
-  total_plans: 19
-  completed_plans: 19
-  percent: 93
-current_phase_name: HAP-04
+  total_phases: 11
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: Milestone v15.0 complete
+Phase: 140 (next) — roadmap defined, not yet planned
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-28 — Milestone v15.0 completed and archived
+Status: Roadmap created (11 phases, 140–150)
+Last activity: 2026-06-28 — v17.0 roadmap created
 
 ## Performance Metrics
 
@@ -72,6 +68,7 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
+- v17.0 Phases 140–150 defined 2026-06-28: Baselines EWMA (140, keystone), HRVAnalyzer (141), StrainScorer (142), RecoveryScorer+DaytimeStress (143), Visual Components (144), Sleep UI (145), Workout UI (146), Data Exploration (147), BLE Protocol Expansion (148), R22 Deep Stream Unlock (149, gated/high-risk), Strap Notification Mirroring (150); 30/30 requirements mapped; start at 140 leaves 127–139 for v16.0 Android milestone
 - v14.0 Phases 98–111 defined 2026-06-20: historical sync (98-99), BLE reliability (100), telemetry+crash+protocol (101), Gen4 metrics (102), Android port (103-107), battery (108), MG (109), code health (110), comments (111)
 - v15.0 Phases 112–126 defined 2026-06-22: optical protocol (112-113), Harvard sleep need (114), feature flags (115), body composition (116), Android parity (117), PIP queue (118), stealth mode (119), sleep need UI (120), body composition UI (121), stealth UI (122), real-device validation (123), PIP server (124), cap sense (125), wake-window RE-gated (126)
 - v13.0 Phases 92–97 shipped 2026-06-20 (all complete)
