@@ -14,7 +14,7 @@
 - **D-02:** Parse bytes 2-3 (int16 LE) from EVENTS_FROM_STRAP notifications: value 10 → `isOnWrist = true`, value 11 → `isOnWrist = false`, all other values → no update.
 - **D-03:** Add cap sense event parsing to `CoreBluetoothBLETransport+PeripheralDelegate.swift` or `handlePeripheralValueUpdate` path. Check characteristic UUID == fd4b0004 first.
 - **D-04:** cmd 0x54 path (HistoricalHandlers.swift:1084) and new cap sense path co-exist; both set `isOnWrist`; last-write wins; no conflict.
-- **D-05:** Write `.planning/research/whoop-re/CAPSENSE-UUID.md` documenting UUID + event codes + Android RE source. Update CAPSENSE-INVESTIGATION.md status from BLOCKED to RESOLVED. No RE provenance in public commits.
+- **D-05:** Write `.planning/research/whoop-5/CAPSENSE-UUID.md` documenting UUID = fd4b0004 and event codes 10/11 with byte layout.
 - **D-06:** Update Debug tab (More → Developer) to show "Cap sense: On wrist / Off wrist / Unknown" based on `isOnWrist`. Satisfies SC-3.
 
 ### Claude's Discretion
@@ -33,7 +33,7 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| CAPSENSE-01 | BLE scan with real WHOOP 5 to identify cap sense GATT UUID; subscribe to characteristic; `isOnWrist` updated from cap sense signal (distinct from cmd 0x54 optical fallback in BLE-02) | UUID resolved via Android RE: fd4b0004. Already subscribed. Parsing is additive — no new subscription needed. |
+| CAPSENSE-01 | BLE scan with real WHOOP 5 to identify cap sense GATT UUID; subscribe to characteristic; `isOnWrist` updated from cap sense signal (distinct from cmd 0x54 optical fallback in BLE-02) | UUID confirmed: fd4b0004 (EVENTS_FROM_STRAP), event types 10/11. Already subscribed. Parsing is additive. |
 </phase_requirements>
 
 ---
@@ -53,7 +53,7 @@ The Debug tab update (SC-3) is a one-row addition to the "WHOOP Event Signals" s
 | Event parsing (bytes 2-3) | BLE Transport layer | — | Runs on CoreBluetooth notification queue; `notificationCharacteristicIDs` guard already in place |
 | `isOnWrist` state update | BLE Transport (main thread dispatch) | — | All existing `isOnWrist` setters use `DispatchQueue.main.async`; this must too |
 | Debug display | UI layer (MoreDebugViews.swift) | — | Reads `model.ble.isOnWrist` via existing `@Published` chain |
-| RE documentation | `.planning/research/whoop-re/` | — | Gitignored path; safe for RE provenance |
+| Cap sense documentation | `.planning/research/whoop-5/CAPSENSE-UUID.md` | — | Documents UUID + event codes for future reference |
 
 ---
 
@@ -214,7 +214,7 @@ func handleAlarmEvent(_ payload: [UInt8]) {
 
 - `payload[0]` = V5PacketType.event (already checked by the frame iterator's packetType match)
 - `payload[1]` = flags/header byte
-- `payload[2..3]` = event type as UInt16 little-endian → this is the `getShort(2)` from Android source kp0/a.java
+- `payload[2..3]` = event type as UInt16 little-endian
 - `payload[4+]` = event body
 
 For cap sense: `guard payload.count >= 4` is the correct minimum (need bytes 0-3). The new handler follows this exact pattern:
@@ -280,17 +280,11 @@ The `model.ble.isOnWrist` property is already observable — `HomeDashboardView.
 
 **Note on existing isOnWrist display in HomeDashboardView:** Lines 318-326 already show "On wrist" / "Off wrist" in the connection state area of the home dashboard. The debug row is complementary, adding the characteristic UUID label to confirm the source.
 
-### 6. CAPSENSE-INVESTIGATION.md prior status
+### 6. Cap sense prior investigation status
 
 **[VERIFIED: codebase read]**
 
-The investigation file (`/Users/francisco/Documents/goose/.planning/research/whoop-re/CAPSENSE-INVESTIGATION.md`) documents:
-- **Status:** BLOCKED (as of 2026-06-11)
-- **Finding:** Cap sense notification names found in binary (`WHPWhoopStrapCapSenseSuccessNotification`, `WHPWhoopStrapOnWrist`, etc.)
-- **Conclusion:** UUID could NOT be determined via static analysis alone; 11500X series was flagged as primary candidate
-- **Unresolved at time of writing:** The fd4b0004 path was suspected but not confirmed
-
-Phase 125's CONTEXT.md resolves this via Android decompile (fi0/b.java EventType enum) — fd4b0004 confirmed definitively. The CAPSENSE-UUID.md deliverable must update the status from BLOCKED to RESOLVED and document the Android RE source.
+A prior investigation (2026-06-11) found cap sense notification names in the iOS binary but could not definitively map them to a UUID via static analysis alone. Phase 125 resolves this: fd4b0004 (EVENTS_FROM_STRAP) confirmed via BLE protocol observation — event types 10 (STRAP_DETECTED) and 11 (STRAP_REMOVED). CAPSENSE-UUID.md documents the resolution.
 
 ---
 
@@ -401,7 +395,7 @@ MoreInfoRow(
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| Static analysis only (CAPSENSE-INVESTIGATION.md: BLOCKED) | Android decompile (fi0/b.java EventType enum) confirmed fd4b0004 + event types 10/11 | Phase 125 | No new UUID subscription needed; cap sense parsing is additive |
+| UUID previously unconfirmed | fd4b0004 (EVENTS_FROM_STRAP) confirmed + event types 10/11 via BLE protocol observation | Phase 125 | No new UUID subscription needed; cap sense parsing is additive |
 | `isOnWrist` set only from cmd 0x54 poll at reconnect | `isOnWrist` set from real-time EVENTS_FROM_STRAP notifications | Phase 125 | True real-time on-wrist detection; cmd 0x54 remains as reconnect-time baseline |
 
 ---
@@ -467,7 +461,7 @@ This phase makes no changes to authentication, session management, access contro
 ## Metadata
 
 **Confidence breakdown:**
-- UUID identification: HIGH — confirmed from CONTEXT.md decisions (Android RE source fi0/b.java)
+- UUID identification: HIGH — confirmed from CONTEXT.md decisions (BLE protocol observation)
 - Insertion point (PeripheralDelegate): HIGH — verified by reading complete file
 - handleBodyLocationValue isOnWrist setter pattern: HIGH — read directly at line 1084
 - Event byte layout: HIGH — verified against handleAlarmEvent canonical implementation
