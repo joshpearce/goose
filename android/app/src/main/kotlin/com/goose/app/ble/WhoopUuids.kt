@@ -15,6 +15,12 @@ object WhoopUuids {
   val GEN4_SERVICE: UUID = UUID.fromString("61080001-8d6d-82b8-614a-1c8cb0f8dcc6")
   val GEN4_COMMAND: UUID = UUID.fromString("61080002-8d6d-82b8-614a-1c8cb0f8dcc6")
   val GEN4_NOTIFY_CHARS: List<UUID> = listOf(
+    // 61080002 is the Gen4 command characteristic. On WHOOP 4.0 it is bidirectional:
+    // the app writes commands to it AND the strap delivers command responses
+    // (GET_CLOCK, GET_FF_VALUE, etc.) back as notifications on the same UUID. It must
+    // be subscribed (CCCD enabled) so command-response round-trips do not time out.
+    // Mirrors iOS notificationCharacteristicIDs which also includes 61080002.
+    UUID.fromString("61080002-8d6d-82b8-614a-1c8cb0f8dcc6"),
     UUID.fromString("61080003-8d6d-82b8-614a-1c8cb0f8dcc6"),
     UUID.fromString("61080004-8d6d-82b8-614a-1c8cb0f8dcc6"),
     UUID.fromString("61080005-8d6d-82b8-614a-1c8cb0f8dcc6"),

@@ -423,6 +423,13 @@ import OSLog
     CBUUID(string: "fd4b0004-cce1-4033-93ce-002d5875f58a"),
     CBUUID(string: "fd4b0005-cce1-4033-93ce-002d5875f58a"),
     CBUUID(string: "fd4b0007-cce1-4033-93ce-002d5875f58a"),
+    // 61080002 is the Gen4 command characteristic. On WHOOP 4.0 it is bidirectional:
+    // the app writes commands to it AND the strap delivers command responses
+    // (GET_CLOCK, GET_FF_VALUE, etc.) back as BLE notifications on the same UUID.
+    // It must be in this list so notificationCandidate()/subscribeIfPossible() calls
+    // setNotifyValue(true) on it and so the command-response handlers
+    // (handleClockValue, handleFeatureFlagValue, ...) accept its notifications.
+    CBUUID(string: "61080002-8d6d-82b8-614a-1c8cb0f8dcc6"),
     CBUUID(string: "61080003-8d6d-82b8-614a-1c8cb0f8dcc6"),
     CBUUID(string: "61080004-8d6d-82b8-614a-1c8cb0f8dcc6"),
     CBUUID(string: "61080005-8d6d-82b8-614a-1c8cb0f8dcc6"),

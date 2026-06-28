@@ -29,8 +29,19 @@ class WhoopUuidsTest {
   }
 
   @Test
-  fun `GEN4_NOTIFY_CHARS contains exactly 4 entries`() {
-    assertEquals(4, WhoopUuids.GEN4_NOTIFY_CHARS.size)
+  fun `GEN4_NOTIFY_CHARS contains exactly 5 entries`() {
+    // 5 = four notify-only characteristics plus the bidirectional command
+    // characteristic 61080002, which delivers command responses on Gen4.
+    assertEquals(5, WhoopUuids.GEN4_NOTIFY_CHARS.size)
+  }
+
+  @Test
+  fun `GEN4_NOTIFY_CHARS includes the bidirectional command characteristic 61080002`() {
+    // On WHOOP 4.0, 61080002 is written to AND notifies command responses
+    // (GET_CLOCK, GET_FF_VALUE). It must be subscribed or those round-trips time out.
+    assertTrue(
+      WhoopUuids.GEN4_NOTIFY_CHARS.contains(WhoopUuids.GEN4_COMMAND),
+    )
   }
 
   @Test

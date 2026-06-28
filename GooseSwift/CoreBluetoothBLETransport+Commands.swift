@@ -1067,6 +1067,14 @@ extension CoreBluetoothBLETransport {
         }
         activeDescriptor = characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
           ? .whoopGen4 : .whoopGen5
+        // Gen4 (61080002) is a bidirectional command+response characteristic: the strap
+        // delivers GET_CLOCK / GET_FF_VALUE responses back as notifications on the same
+        // UUID we write commands to. Subscribe explicitly here so command-response
+        // round-trips do not time out. subscribeIfPossible (called below) is idempotent
+        // via its isNotifying guard, so the duplicate call is a safe no-op.
+        if characteristic.uuid.uuidString.lowercased().hasPrefix("61080002") {
+          subscribeIfPossible(peripheral, characteristic)
+        }
         record(
           source: "ble",
           title: cached ? "command_characteristic.cached" : "command_characteristic.discovered",
