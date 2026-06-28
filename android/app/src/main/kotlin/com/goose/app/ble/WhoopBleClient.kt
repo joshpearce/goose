@@ -13,13 +13,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Android WHOOP BLE client — mirrors iOS CoreBluetoothBLETransport.
@@ -88,7 +95,7 @@ class WhoopBleClient(private val context: Context) {
     private val REVISION_BOOLEAN_TRUE: ByteArray = byteArrayOf(0x01, 0x01)
   }
 
-  private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+  @Volatile private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   private val _connectionState = MutableStateFlow<BleConnectionState>(BleConnectionState.Idle)
   val connectionState: StateFlow<BleConnectionState> = _connectionState.asStateFlow()
@@ -97,10 +104,23 @@ class WhoopBleClient(private val context: Context) {
   private val _liveHeartRateBPM = MutableStateFlow<Int?>(null)
   val liveHeartRateBPM: StateFlow<Int?> = _liveHeartRateBPM.asStateFlow()
 
-  // Called after each historical sync completes — used by AppViewModel to trigger upload + metrics refresh
+  // Emits Unit after each historical sync completes — consumed by AppViewModel in plan 128-02.
+  // Configured fire-and-forget: replay=0, extraBufferCapacity=1, DROP_OLDEST so a missed emission
+  // never blocks the BLE callback thread (tryEmit is non-suspending).
+  private val _syncCompleteEvent = MutableSharedFlow<Unit>(
+    replay = 0,
+    extraBufferCapacity = 1,
+    onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+  )
+  val syncCompleteEvent: SharedFlow<Unit> = _syncCompleteEvent.asSharedFlow()
+
+  // Retained ONLY so AppViewModel.kt:46 (`bleClient.onSyncComplete = {...}`) still compiles
+  // after the wave-1 commit. Never invoked — completeSyncIfActive() uses syncCompleteEvent.
+  // Removed together with the AppViewModel assignment in plan 128-02.
+  @Deprecated("Use syncCompleteEvent; removed in plan 128-02")
   var onSyncComplete: (() -> Unit)? = null
 
-  private var gatt: BluetoothGatt? = null
+  private val gatt = AtomicReference<BluetoothGatt?>(null)
   private var activeServiceUuid: UUID? = null
   private var activeGeneration: WhoopGeneration? = null
   private var lastDevice: BluetoothDevice? = null
@@ -129,8 +149,10 @@ class WhoopBleClient(private val context: Context) {
   // Historical sync state (Phase 105)
   // ──────────────────────────────────────────────────────────────────────────
 
-  // Prevents concurrent syncs — checked before writing any historical command
-  @Volatile private var syncInProgress: Boolean = false
+  // Prevents concurrent syncs — checked before writing any historical command.
+  // AtomicBoolean provides lock-free check-and-set safe from both the BLE callback thread
+  // and IO-dispatcher coroutines without suspending (Mutex.withLock is suspend-only).
+  private val syncInProgress = AtomicBoolean(false)
 
   // Sequence counter — starts at 57 to mirror iOS nextHistoricalCommandSequence initial value
   @Volatile private var syncSequence: Byte = 57
@@ -157,11 +179,18 @@ class WhoopBleClient(private val context: Context) {
    */
   fun connect(device: BluetoothDevice) {
     userDisconnected = false
+    // Cancel any pending reconnect job before potentially rebuilding scope
     reconnectJob?.cancel()
+    // Rebuild scope if it was cancelled by a prior disconnect() — a cancelled SupervisorJob
+    // scope is permanently unusable; reassign before launching any new coroutines.
+    // @Volatile ensures the BLE callback thread sees the fresh scope reference immediately.
+    if (!scope.isActive) {
+      scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    }
     lastDevice = device
     Log.d(TAG, "connect: ${device.address}")
     _connectionState.value = BleConnectionState.Connecting(device.address)
-    gatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+    gatt.set(device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE))
   }
 
   /**
@@ -172,7 +201,10 @@ class WhoopBleClient(private val context: Context) {
     userDisconnected = true
     reconnectJob?.cancel()
     Log.d(TAG, "disconnect: explicit")
-    gatt?.disconnect()
+    gatt.get()?.disconnect()
+    // Cancel the WhoopBleClient-owned scope so coroutines do not outlive the connection.
+    // AppViewModel.onCleared() calls bleClient.disconnect(), so scope lifetime is ViewModel-bound.
+    scope.cancel()
   }
 
   /** True when BLE connection is in the Connected state. */
@@ -186,11 +218,10 @@ class WhoopBleClient(private val context: Context) {
    * Guards against concurrent invocations via syncInProgress flag.
    */
   fun startHistoricalSync() {
-    if (syncInProgress) {
+    if (!syncInProgress.compareAndSet(false, true)) {
       Log.d(TAG, "Historical sync already in progress — skipping")
       return
     }
-    syncInProgress = true
     Log.d(TAG, "Historical sync: starting — sending GET_DATA_RANGE")
     // Gen5: empty payload (standard); Gen4: [0x00] (usesPageSequenceSync path)
     val payload = when (activeGeneration) {
@@ -320,7 +351,7 @@ class WhoopBleClient(private val context: Context) {
       }
 
       // Historical sync state machine: after GET_DATA_RANGE write confirmed, send SEND_HISTORICAL_DATA
-      if (syncInProgress && pendingSyncCommand == CMD_GET_DATA_RANGE) {
+      if (syncInProgress.get() && pendingSyncCommand == CMD_GET_DATA_RANGE) {
         Log.d(TAG, "GET_DATA_RANGE write confirmed — sending SEND_HISTORICAL_DATA")
         val payload = when (activeGeneration) {
           WhoopGeneration.GEN4 -> byteArrayOf(0x00)
@@ -331,7 +362,7 @@ class WhoopBleClient(private val context: Context) {
       }
 
       // After SEND_HISTORICAL_DATA write confirmed, start idle timeout
-      if (syncInProgress && pendingSyncCommand == CMD_SEND_HISTORICAL_DATA) {
+      if (syncInProgress.get() && pendingSyncCommand == CMD_SEND_HISTORICAL_DATA) {
         scope.launch {
           delay(SYNC_IDLE_TIMEOUT_MS)
           completeSyncIfActive("idle_timeout")
@@ -395,10 +426,10 @@ class WhoopBleClient(private val context: Context) {
 
   private fun handleNotification(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
     val generation = activeGeneration ?: return
-    val address = gatt?.device?.address ?: ""
+    val address = gatt.get()?.device?.address ?: ""
 
     // Capture sync flag before any async dispatch to avoid race with completeSyncIfActive()
-    val isSync = syncInProgress
+    val isSync = syncInProgress.get()
 
     // First notification after auth send = auth succeeded — transition to Connected
     // D-02: auto-trigger historical sync immediately after connecting
@@ -410,7 +441,7 @@ class WhoopBleClient(private val context: Context) {
       // Gen5/MG only: send optical enable commands after a 500ms delay so historical sync
       // commands queue first (research A2, D-02). Gen4 never receives optical commands (Pitfall 3).
       if (generation == WhoopGeneration.GEN5 || generation == WhoopGeneration.MG) {
-        val currentGatt = gatt
+        val currentGatt = gatt.get()
         if (currentGatt != null) {
           scope.launch { delay(500); sendOpticalEnableCommands(currentGatt) }
         }
@@ -469,11 +500,11 @@ class WhoopBleClient(private val context: Context) {
    * Must only be called when syncInProgress == true.
    */
   private fun writeHistoricalCommand(command: Byte, data: ByteArray) {
-    if (!syncInProgress) {
+    if (!syncInProgress.get()) {
       Log.d(TAG, "writeHistoricalCommand: sync not in progress — skipping cmd=0x${command.toString(16)}")
       return
     }
-    val currentGatt = gatt ?: run {
+    val currentGatt = gatt.get() ?: run {
       Log.w(TAG, "writeHistoricalCommand: gatt is null — cannot write cmd=0x${command.toString(16)}")
       return
     }
@@ -565,11 +596,13 @@ class WhoopBleClient(private val context: Context) {
    * Safe to call from any thread.
    */
   private fun completeSyncIfActive(reason: String) {
-    if (!syncInProgress) return
-    syncInProgress = false
+    // compareAndSet(true, false): atomic completion — idempotent if called concurrently
+    if (!syncInProgress.compareAndSet(true, false)) return
     pendingSyncCommand = 0
     Log.d(TAG, "Historical sync complete: reason=$reason")
-    onSyncComplete?.invoke()
+    // tryEmit is non-suspending — safe to call from BLE callback thread and IO coroutines.
+    // DROP_OLDEST buffer policy ensures this never blocks even if the collector is slow.
+    _syncCompleteEvent.tryEmit(Unit)
   }
 
   private fun importFrame(frameBytes: ByteArray, source: String = "android_ble") {
@@ -586,7 +619,17 @@ class WhoopBleClient(private val context: Context) {
         null -> "unknown"
       }
       val request = buildImportRequest(dbPath, evidenceId, capturedAt, deviceModel, frameHex, source)
-      GooseBridge.safeHandle(request)
+      val response = GooseBridge.safeHandle(request)
+      // safeHandle never throws — on failure it returns {"ok":false,...,"error":{"message":"..."}}
+      try {
+        val json = org.json.JSONObject(response)
+        if (!json.optBoolean("ok", false)) {
+          val message = json.optJSONObject("error")?.optString("message") ?: "unknown"
+          Log.e(TAG, "importFrame bridge failure: $message source=$source")
+        }
+      } catch (e: org.json.JSONException) {
+        Log.e(TAG, "importFrame bridge response parse failure: ${e.message} source=$source")
+      }
     }
   }
 
@@ -621,12 +664,12 @@ class WhoopBleClient(private val context: Context) {
 
   private fun onGattDisconnected(address: String, reason: String) {
     // Reset historical sync state on disconnect to prevent orphaned syncInProgress
-    syncInProgress = false
+    syncInProgress.set(false)
     pendingSyncCommand = 0
     gen4Reassembler.reset()
     clientHelloSentForCurrentConnection = false
-    gatt?.close()
-    gatt = null
+    gatt.get()?.close()
+    gatt.set(null)
 
     val willReconnect = !userDisconnected && !authExhausted
     _connectionState.value = BleConnectionState.Disconnected(
