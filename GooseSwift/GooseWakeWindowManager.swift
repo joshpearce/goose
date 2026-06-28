@@ -1,14 +1,18 @@
 import Foundation
 
-// HAP-04: Wake-Window Engine — RE-GATED
+// HAP-04: Wake-Window Engine
 //
-// Implementation requires:
-// 1. BTSnoop capture of STRAP_DRIVEN_ALARM_EXECUTED packets, documented in
-//    .planning/research/whoop-re/SetAlarmInfoCommandPacketRev4.md
-// 2. Ghidra decompilation of SetAlarmInfoCommandPacketRev4 field layout,
-//    documented in the same file.
-//
-// Do not add functional implementation until both prerequisites are complete.
+// Delegates alarm arming to BLETransport.setWhoopAlarm(at:), which assembles
+// the SET_ALARM_TIME (0x42) frame and writes to CMD_TO_STRAP.
+// Connected-state guard is enforced by writeAlarmCommand inside the transport layer.
 actor GooseWakeWindowManager {
-  // Stub — not yet functional. See comment above.
+  private weak var ble: (any BLETransport)?
+
+  init(ble: any BLETransport) {
+    self.ble = ble
+  }
+
+  func armAlarm(target: Date) {
+    ble?.setWhoopAlarm(at: target)
+  }
 }
