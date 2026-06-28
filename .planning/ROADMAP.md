@@ -1079,7 +1079,10 @@ Plans:
   3. Each HIGH and MEDIUM finding names the specific file (and where possible the symbol/function) so Phase 128 can act on it without re-investigation
   4. The report explicitly tags which findings are Android-actionable in v16.0 versus deferred (Rust-core or iOS scope) so Phase 128 has a clear, bounded fix list
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 127-01-PLAN.md — Run Opus/Gemini/Codex audits over Rust+Android+iOS and consolidate into a severity-ranked, tagged findings report
 
 **Dependencies**: Analysis-only — no source changes in this phase. Reviewer models configured in `.planning/config.json` (`claude`/`gemini`/`codex`).
 
