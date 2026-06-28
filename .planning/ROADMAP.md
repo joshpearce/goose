@@ -1045,7 +1045,7 @@ Plans:
 
 **Note**: **DEFERRED TO v16.0** if `.planning/research/whoop-re/SetAlarmInfoCommandPacketRev4.md` does not exist at execution time. Do not begin implementation tasks for this phase until that file is confirmed present.
 
-**Plans**: TBD
+**Plans**: 1/1 plans complete
 
 ## Progress
 
@@ -1100,7 +1100,7 @@ Plans:
 | 123 | 1/1 | Complete    | 2026-06-28 |
 | 124 | 0/0 | Complete    | 2026-06-28 |
 | 125 | 1/1 | Complete    | 2026-06-28 |
-| 126 | 0/0 | Complete    | 2026-06-28 |
+| 126 | 1/1 | Complete    | 2026-06-28 |
 
 ## Backlog
 
@@ -1151,8 +1151,10 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 0/0 plans complete
+**Plans:** 1/1 plans complete
 Plans:
+
+- [x] 126-01-PLAN.md
 
 - [x] 122-01-PLAN.md
 
