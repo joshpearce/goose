@@ -1,235 +1,280 @@
 ---
 phase: 128
 reviewers: [claude, codex]
-reviewed_at: 2026-06-28T16:00:00Z
+reviewed_at: 2026-06-28T18:00:00Z
 plans_reviewed:
   - 128-01-PLAN.md
   - 128-02-PLAN.md
   - 128-03-PLAN.md
 notes: >
-  Gemini CLI (0.49.0) invoked but timed out in agentic repo-exploration mode
-  after 4+ minutes — no output produced. Two reviewers (claude, codex) completed
-  successfully. Both had full repo access and cited file:line evidence.
+  Gemini CLI (0.49.0) invoked twice but timed out in agentic repo-exploration mode
+  both times (2026-06-28T16:00Z and 2026-06-28T18:00Z) — no output produced even
+  with --approval-mode plan and gemini-2.0-flash. Excluded from consensus.
+  Claude CLI and Codex both completed with full codebase access and file:line evidence.
+  This is a cycle-2 review; cycle-1 HIGH concerns (AtomicBoolean, val→var, HomeScreen/
+  HealthScreen in files-modified, wave ordering, kotlin-android, KSP, HiltViewModel
+  pattern) have all been incorporated into the current plan versions.
 ---
 
-# Cross-AI Plan Review — Phase 128
+# Cross-AI Plan Review — Phase 128 (Cycle 2)
 
 ## Claude Review
 
-Now I have the full picture. Writing the review grounded in `file:line` evidence.
+### Phase 128 Plan Review
+
+#### Evidence Base
+
+| File | Lines reviewed |
+|------|----------------|
+| `android/app/src/main/kotlin/com/goose/app/ble/WhoopBleClient.kt` | 91, 103–140, 126, 167–176, 188–201, 335, 409, 415, 567–573, 606–620, 638 |
+| `android/app/src/main/kotlin/com/goose/app/viewmodel/AppViewModel.kt` | 28–29, 46 |
+| `android/app/src/main/kotlin/com/goose/app/viewmodel/MetricsViewModel.kt` | 51–63 |
+| `android/app/src/main/kotlin/com/goose/app/ui/AppShell.kt` | 24–32, 29, 66, 71–76, 78–82 |
+| `android/app/src/main/kotlin/com/goose/app/ui/HomeScreen.kt` | 18–23, 22, 24 |
+| `android/app/src/main/kotlin/com/goose/app/ui/HealthScreen.kt` | 18–27 |
+| `android/app/src/main/kotlin/com/goose/app/ui/MoreScreen.kt` | 17–48, 18, 23, 29 |
+| `android/app/src/main/kotlin/com/goose/app/upload/GooseUploadClient.kt` | 43–65 |
 
 ---
 
-## Phase 128 Plan Review
+### 128-01-PLAN.md — WhoopBleClient BLE/Coroutine Fixes
 
-### Evidence Base
+#### Summary
 
-All findings below are traced to actual file+line numbers in the repo. No finding is based solely on the plan's own assertions.
+The cycle-1 blockers are all resolved: `val→var` is explicit in D-01, Mutex is replaced by AtomicBoolean/AtomicReference in D-02, and onSyncComplete is replaced by SharedFlow in D-07. Two new cycle-2 issues remain: a JVM memory model hazard on the `var scope` write/read across threads, and a compile break between wave-1 and wave-2 commits caused by wave-1 deleting `onSyncComplete` before wave-2 removes the AppViewModel consumer.
 
----
+#### Strengths
+- All four audit findings (A-01, A-02, A-03, A-07) are mapped to explicit decisions and tasks.
+- Atomic primitives rationale is correctly grounded in BLE callback threading constraints.
+- SharedFlow contract (replay, extraBufferCapacity, DROP_OLDEST, tryEmit) is precisely specified.
 
-## 128-01-PLAN.md — WhoopBleClient BLE/Coroutine Fixes
+#### Concerns
 
-### Summary
+- **HIGH** — `private var scope` needs `@Volatile`. D-01 changes `val` → `var scope`, but the BLE callback thread reads `scope.launch {...}` (lines 335, 409, 415, 638) while the main/caller thread writes `scope = CoroutineScope(...)` in `connect()` and `scope.cancel()` in `disconnect()`. Without `@Volatile`, the JVM memory model permits the BLE thread to cache the pre-cancel scope value in a register, causing coroutines to launch on a cancelled scope (silently no-ops). Plan mentions neither `@Volatile` nor `@GuardedBy`.
 
-The plan correctly identifies every real bug in `WhoopBleClient.kt`. `importFrame` at line 589 discards `safeHandle()`'s return value entirely; `onSyncComplete` at line 101 is a callback reference; `gatt` at line 103 lacks `@Volatile`; and `scope` at line 91 is never cancelled. The execution plan is mostly sound but has two concrete implementation blockers that will cause either a compile error or a logic gap if not addressed.
+- **HIGH** — Wave-1-to-wave-2 compile break on `onSyncComplete`. Wave 1 Task 3 deletes `var onSyncComplete` from `WhoopBleClient`. But `AppViewModel.kt:46` (`bleClient.onSyncComplete = { metricsViewModel.refresh(); triggerUpload() }`) is not modified until wave 2. If the GSD executor commits each wave independently — which it does — `assembleDebug` after the wave-1 commit fails with `Unresolved reference: onSyncComplete`. Either move AppViewModel.init cleanup into wave-1 Task 3, or keep `onSyncComplete` as a deprecated no-op stub until wave 2 completes.
 
-### Strengths
+- **MEDIUM** — `compareAndSet` assignment not specified. Plan says "update all read/write sites to use `.get()/.set()/.compareAndSet()`" but doesn't assign which operation applies where. `completeSyncIfActive()` (line 567–573) must use `.compareAndSet(true, false)` (not `.set(false)`) to prevent double-completion from the idle-timeout coroutine and the R22 notification path racing. `startHistoricalSync()` (line 188) must use `.compareAndSet(false, true)`. An executor reading "update all sites" may choose `.set()` everywhere, introducing a TOCTOU window.
 
-- **`importFrame` silent discard correctly identified**: `WhoopBleClient.kt:589` calls `GooseBridge.safeHandle(request)` and discards the `String` return value — a real bug. Fix is straightforward.
-- **`onSyncComplete` callback reference cycle**: `AppViewModel.kt:46` does `bleClient.onSyncComplete = { ... }`, holding a reference into AppViewModel from WhoopBleClient. SharedFlow approach eliminates this cleanly.
-- **`gatt @Volatile` gap real**: `WhoopBleClient.kt:103` — `private var gatt: BluetoothGatt?` has no `@Volatile`. BLE callback thread writes it; `importFrame` (dispatched to Dispatchers.IO, line 577) reads it at line 398 via `gatt?.device?.address`. Race is real.
-- **Scope cancel scope correctly conditional**: `disconnect()` sets `userDisconnected = true` first (line 173). `onGattDisconnected()` checks `willReconnect = !userDisconnected` (line 631) before launching reconnect on scope (line 638). So cancelling scope after `gatt?.disconnect()` in explicit disconnect is safe — the reconnect branch is never reached.
-- **D-01 "only cancel on explicit disconnect" traceable**: Reconnect path guarded by `userDisconnected` flag; idle-timeout coroutine dying on scope cancel during explicit disconnect is correct behaviour.
+- **LOW** — `reconnectJob: Job?` (line 126) is written on the BLE callback thread (`onGattDisconnected`) and read/cancelled on the main thread (`disconnect()`, `connect()`). Pre-existing issue; `@Volatile` on it would be consistent with the thread-safety sweep in this wave.
 
-### Concerns
+#### Suggestions
+- Add `@Volatile` to the `var scope` declaration: `@Volatile private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)`.
+- Move the AppViewModel `bleClient.onSyncComplete = {...}` removal into wave-1 Task 3 (alongside the onSyncComplete deletion) so wave 1 compiles in isolation.
+- Specify compareAndSet assignment per call site: `completeSyncIfActive` uses `.compareAndSet(true, false)`; `startHistoricalSync` uses `.compareAndSet(false, true)`.
 
-- **HIGH — `val scope` cannot be reassigned**: `WhoopBleClient.kt:91` declares `private val scope`. The plan says "Guard connect() to rebuild scope when prior scope is cancelled." Rebuilding requires `private var scope`. This is a compile-time blocker if the plan is executed as written. The change from `val` to `var` must be explicit in the plan.
-
-- **HIGH — Mutex.withLock requires suspend context**: `startHistoricalSync()` at line 188 is a plain (non-suspend) function called from `scope.launch { }` (line 409) AND the BLE `onCharacteristicWrite` callback (which is not a coroutine). `syncMutex.withLock` is a suspend function — it cannot be called from a non-suspend function without `runBlocking` (which would deadlock the BLE callback thread). The plan must either: (a) make `startHistoricalSync` suspend (and always call via `scope.launch`), or (b) use `Mutex.tryLock()`/`unlock()` with explicit try/finally, or (c) accept that `syncInProgress` as `@Volatile` is the correct level of protection here. As written, the plan will produce a compile error or a blocking call on the BLE thread.
-
-- **MEDIUM — `@Volatile syncInProgress` + Mutex is redundant**: Plan says "Keep @Volatile on syncInProgress … for visibility" AND "Guard transitions with syncMutex.withLock." Once you use a Mutex for write serialisation, @Volatile on the same field is cargo-cult. It won't cause a bug but signals unclear ownership of the invariant.
-
-- **MEDIUM — filesDir validation is unnecessary**: `WhoopBleClient.kt:579` — `context.filesDir` is guaranteed non-null and the directory always exists in a running Android app. D-03's "validate filesDir existence before bridge call" will compile fine but can never actually prevent a failure path. The plan faithfully implements D-03 but reviewers should note this is dead code.
-
-- **LOW — scope rebuild race with reconnect job**: `onGattDisconnected()` at line 638 sets `reconnectJob = scope.launch { ... }`. If `connect()` is called before the reconnect fires and rebuilds scope, `reconnectJob` still references a coroutine on the old scope. The `reconnectJob?.cancel()` at line 160 correctly cancels it, but the comment in the plan should acknowledge this.
-
-### Suggestions
-
-- Explicitly state: change `private val scope` → `private var scope` and declare it `lateinit` or initialise via a factory method called from constructor and from `connect()`.
-- For the Mutex problem: either make `startHistoricalSync()` internal and always call via `scope.launch { syncMutex.withLock { ... } }`, or accept `@Volatile` alone as sufficient given the `syncInProgress` check at line 189 is a best-effort guard (missing an update window is not catastrophic — the worst outcome is skipping a sync, not data corruption).
-- Verification grep should check both `GlobalScope` AND `runBlocking` — the latter would be a red flag for the Mutex fix.
-
-### Risk Assessment: **MEDIUM**
-
-Correct analysis of all bugs. Two implementation gaps — `val → var` and Mutex/suspend mismatch — need explicit resolution before execution, otherwise the implementor will encounter compile errors and may choose an unsafe workaround.
+#### Risk Assessment: **HIGH**
 
 ---
 
-## 128-02-PLAN.md — Compose/ViewModel Fixes
+### 128-02-PLAN.md — Compose/ViewModel Fixes
 
-### Summary
+#### Summary
 
-The plan correctly diagnoses all four Compose/ViewModel findings. The `StateFlow<T>` passthrough to `AppShell` (current `AppShell.kt:26-31`) and `MoreScreen` collecting its own StateFlow (current `MoreScreen.kt:23`) are real anti-patterns. `queryScore` at `MetricsViewModel.kt:60` silently swallows exceptions. However, the plan has a concrete scope gap (child screen files not listed), a wave-ordering dependency on 128-01, and an architectural gap in how `GooseUploadClient` can emit observable state given it is a singleton `object`.
+The wave-ordering dependency on 128-01 is correctly encoded. HomeScreen.kt and HealthScreen.kt are now listed in files-modified. Two new issues: MoreScreen.kt has an identical StateFlow anti-pattern on `serverUrl` (not just `uploadStatus`) that blocks the AppShell StateFlow removal goal, and GooseUploadClient's UploadState emit points are underspecified.
 
-### Strengths
+#### Strengths
+- `depends_on: [128-01]` is explicit and correct.
+- HomeScreen.kt and HealthScreen.kt are in files-modified.
+- `private val bleClient` change is a one-liner with clear verification.
 
-- **StateFlow passthrough gap is real**: `MainActivity.kt:22-26` — five flows (`liveHeartRateBPM`, `recoveryScore`, `strainScore`, `sleepScore`, `serverUrl`) passed as `StateFlow<T>` to `AppShell`, then to child composables. Only `connectionState` is lifecycle-collected (line 21). Pattern is inconsistent and leaks lifecycle management into child screens.
-- **queryScore silent catch identified correctly**: `MetricsViewModel.kt:60` — `catch (_: Exception) { null }` — no logging on any failure path. Fix (Log.e) is correct and minimal.
-- **bleClient public visibility real bug**: `AppViewModel.kt:26` — `val bleClient = WhoopBleClient(...)` — public, accessible from UI layer. `private val` is correct fix.
-- **MoreScreen double-collection identified**: `MoreScreen.kt:23` calls `collectAsStateWithLifecycle()` on a `StateFlow<String>` that was already available as a resolved value in MainActivity. Fix is correct.
-- **syncCompleteEvent collection in viewModelScope**: Collecting SharedFlow in `viewModelScope` is correct lifecycle scope for AppViewModel.
+#### Concerns
 
-### Concerns
+- **HIGH** — `MoreScreen.kt:18` takes `serverUrl: StateFlow<String>`; `MoreScreen.kt:23` calls `.collectAsStateWithLifecycle()` internally — identical anti-pattern to HomeScreen/HealthScreen. `AppShell.kt:29` passes it down as a StateFlow. Task 1 lists MoreScreen only for `uploadStatus`, not for `serverUrl`. The verification check explicitly omits MoreScreen. Consequence: AppShell still needs `serverUrl: StateFlow<String>` to satisfy MoreScreen's existing param type, making "No StateFlow params in AppShell.kt" unachievable without fixing MoreScreen's serverUrl param first.
 
-- **HIGH — HomeScreen.kt and HealthScreen.kt missing from "Files Modified"**: `AppShell.kt:69` passes `liveHeartRateBPM: StateFlow<Int?>` to `HomeScreen` and lines 71-76 pass `StateFlow<Float?>` flows to `HealthScreen`. If AppShell's signature changes to receive resolved values and passes them down, HomeScreen and HealthScreen signatures must change too. Neither file is in the plan's files-modified list. The plan will either leave AppShell passing `StateFlow<T>` to children (half-fix) or break compilation.
+- **MEDIUM** — GooseUploadClient UploadState emit points underspecified. Plan says "expose `val uploadState: StateFlow<UploadState>`; emit on `triggerUpload()`". But `triggerUpload()` lives in AppViewModel, not GooseUploadClient. The emit points inside `upload()` (before POST, on success, on HTTP error, on IO exception) are not specified. An executor must restructure the blocking `upload()` method without knowing which of the 4 exit paths sets which state.
 
-- **HIGH — Wave 1 parallel execution creates dependency**: 128-01 and 128-02 are both Wave 1. 128-02's AppViewModel change (`bleClient.syncCompleteEvent.collect { ... }` in viewModelScope) depends on `syncCompleteEvent: SharedFlow<Unit>` being added to `WhoopBleClient` by 128-01. If executors run these in parallel, 128-02's AppViewModel code will not compile until 128-01 lands. One plan must be Wave 1, the other Wave 2 (or 128-01 must be a strict dependency gate for 128-02).
+- **MEDIUM** — AppShell `uploadState` forwarding not stated. Plan mentions "MoreScreen receives resolved uploadState" but never says to add `uploadState: UploadState` to AppShell's parameter list. The executor must infer the full threading chain.
 
-- **MEDIUM — GooseUploadClient is a singleton `object`**: `GooseUploadClient.kt:21` — `object GooseUploadClient`. Adding `uploadStatus: StateFlow<UploadState>` to a singleton `object` means it's a process-global StateFlow with no lifecycle. Plan says "GooseUploadClient emits state via callback or Flow<UploadState>" but doesn't decide the mechanism. Options: (a) add `val uploadStatus = MutableStateFlow<UploadState>(Idle)` directly on the object — works but is a global; (b) refactor to a class owned by AppViewModel — breaking change to callers. D-08 specifies AppViewModel exposes `uploadStatus: StateFlow<UploadState>` but doesn't say how GooseUploadClient emits. The plan needs to choose.
+- **LOW** — `MetricsViewModel.queryScore` (line 52–62) already has `catch (_: Exception) { null }`. Plan says "wrap in try/catch". An executor reading this literally may add an outer try/catch around the existing catch, where the inner `safeHandle` never throws and the outer catch never fires. Should say "add `Log.e` inside the existing catch block".
 
-- **MEDIUM — queryScore ok:false already returns null**: `MetricsViewModel.kt:56-57` — `if (!json.optBoolean("ok", false)) return null` does return null on ok:false, but silently. The plan correctly adds Log.e here. Note that after fix, callers still see null — the fix improves diagnostics only, no behaviour change.
+#### Suggestions
+- Add MoreScreen `serverUrl` to Task 1: change `serverUrl: StateFlow<String>` → `String`, remove internal `collectAsStateWithLifecycle()`, add MoreScreen to verification check.
+- For A-08, enumerate emit points: "Before POST → InProgress; HTTP 2xx → Success; HTTP non-2xx → Error(responseCode); IOException → Error(message)."
+- Explicitly add `uploadState: UploadState` to AppShell's parameter list and threading chain in the task description.
 
-- **LOW — MoreScreen receives StateFlow<String> removal needs signature update on AppShell**: `AppShell.kt:81` passes `serverUrl = serverUrl` (StateFlow) to MoreScreen. After fix, MoreScreen should receive `String`. This cascades to AppShell's own signature; AppShell is in files-modified, so this is likely handled, but the review should confirm both the parameter and the AppShell → MoreScreen call site are changed together.
-
-### Suggestions
-
-- Add `HomeScreen.kt` and `HealthScreen.kt` to files-modified and detail their signature changes.
-- Move 128-02 to Wave 2 (after 128-01 completes) or mark WhoopBleClient's `syncCompleteEvent` addition as a prerequisite that must land first.
-- For GooseUploadClient: explicitly decide in CONTEXT.md — either add a `MutableStateFlow<UploadState>` companion to the object (accept global state) or convert to a class instantiated by AppViewModel.
-- Verification criterion "collectAsStateWithLifecycle count >= 6 in MainActivity" should add "AND zero StateFlow<T> parameters in AppShell/HomeScreen/HealthScreen/MoreScreen signatures" to be complete.
-
-### Risk Assessment: **MEDIUM**
-
-Two compilation risks (missing child screen files, wave ordering dependency). The GooseUploadClient architecture gap is medium priority. All individual bug identifications are correct against the code.
+#### Risk Assessment: **MEDIUM**
 
 ---
 
-## 128-03-PLAN.md — Hilt DI + CI Gate
+### 128-03-PLAN.md — Hilt DI + CI Gate
 
-### Summary
+#### Summary
 
-This plan has the highest risk surface. Hilt + KSP on a Kotlin 2.4.0 / AGP 9.2.0 stack is cutting-edge; the KSP version number is left as a placeholder `2.4.0-<kspPatch>`; the `kotlin-android` plugin is absent from the current build and missing from the plan; and the proposed `@HiltViewModel + @Inject constructor(app: Application)` pattern for `MetricsViewModel` and `SettingsViewModel` is incorrect for Hilt. The D-09a fallback is the correct safety net.
+The Hilt deferral rationale is solid and the kotlin-android/KSP blockers are correctly documented. One significant issue: Task 1 is a no-op because the sub-ViewModels are already private in the current codebase. The VERIFICATION.md would falsely record this as a change made in phase 128.
 
-### Strengths
+#### Strengths
+- D-09a is the unambiguous primary path with clear rationale.
+- Hilt optional path documents the correct `@ApplicationContext context: Context` + `ViewModel()` pattern.
+- assembleDebug as a single end-to-end gate is architecturally sound.
 
-- **D-09a fallback is correctly scoped**: "If Hilt fails CI, revert annotations, keep sub-ViewModels private, document A-09 as DEFERRED" — the fallback does not break prior fixes (128-01, 128-02 are already applied). The fallback outcome (private sub-ViewModels) is already the current state for `metricsViewModel` and `settingsViewModel` (`AppViewModel.kt:28-29`).
-- **assembleDebug as integration gate is correct**: This is the right verification signal — if Hilt/KSP wiring is broken it will surface at compile time, not at runtime.
-- **`@HiltAndroidApp` application class approach**: Correct entry point for Hilt. `GooseApplication.kt` + `AndroidManifest` update is the standard wiring.
-- **T-128-07 threat acknowledged**: The plan surfaces Hilt/KSP version mismatch as a named threat. This is accurate — it is the most likely failure mode.
+#### Concerns
 
-### Concerns
+- **HIGH** — `AppViewModel.kt:28–29`: `private val metricsViewModel = MetricsViewModel(app)` and `private val settingsViewModel = SettingsViewModel(app)` are **already `private val`** in the current codebase. Task 1 says "Change MetricsViewModel and SettingsViewModel from public to private" — this is a no-op. The VERIFICATION.md will falsely record this as a fix made during phase 128. The plan should acknowledge the current state and have the executor confirm (not change) and document this.
 
-- **HIGH — `kotlin-android` plugin missing from app/build.gradle.kts and the plan**: `android/app/build.gradle.kts:1-4` applies only `android-application` and `kotlin-compose`. Hilt requires annotation processing via KSP, which requires the `kotlin-android` (or `kotlin-jvm`) plugin to be applied before KSP. Without `kotlin-android`, `ksp` configuration target may not be recognised. The root `build.gradle.kts` would also need `alias(libs.plugins.kotlin.android) apply false`. Neither file nor the plan mentions this. This is likely to fail CI.
+- **LOW** — assembleDebug CWD not explicit. Plan says "Run `./gradlew :app:assembleDebug` from android/ directory." GSD executor's CWD is the repo root. The verification block needs `cd android && ./gradlew :app:assembleDebug` to be explicit.
 
-- **HIGH — KSP version placeholder not resolved**: The plan writes "KSP version (Kotlin 2.4.0 compatible format `2.4.0-<kspPatch>`)". Kotlin 2.4.0 is extremely new; a KSP stable release for it may or may not exist at execution time. The implementor must resolve this before executing, and the plan does not direct them to a specific source of truth. If no KSP release targets Kotlin 2.4.0, the entire plan stalls.
+#### Suggestions
+- Reframe Task 1: "Confirm MetricsViewModel and SettingsViewModel are already `private val` in AppViewModel (no code change required). Write VERIFICATION.md entry: A-09 is satisfied by pre-existing encapsulation; Hilt migration remains deferred with rationale."
+- Add explicit `cd android &&` prefix to the assembleDebug command in the verification block.
 
-- **HIGH — `@HiltViewModel + @Inject constructor(app: Application)` is incorrect**: Hilt does not support `@HiltViewModel` on classes that extend `AndroidViewModel` with `@Inject constructor(app: Application)` via default binding. The correct pattern is `@HiltViewModel class MetricsViewModel @Inject constructor(@ApplicationContext private val context: Context) : ViewModel()` — dropping `AndroidViewModel` and using `@ApplicationContext`. The plan's instruction will likely produce a Dagger/Hilt compile error.
-
-- **MEDIUM — Sub-ViewModel composition conflict with Hilt**: `AppViewModel.kt:28-29` — `private val metricsViewModel = MetricsViewModel(app)` and `private val settingsViewModel = SettingsViewModel(app)`. With Hilt, `@HiltViewModel` ViewModels cannot be directly instantiated — they must be obtained via `hiltViewModel()` in Compose or `by viewModels()` in an Activity/Fragment. The plan says "inject via Hilt or Activity-level viewModels()" but an AppViewModel cannot call `viewModels()` on the Activity — it has no Activity reference. The actual solution is to either: (a) inject MetricsViewModel and SettingsViewModel as Hilt entry-points from MainActivity and pass their state into AppViewModel, or (b) merge their logic into AppViewModel.
-
-- **LOW — Hilt 2.59.x + AGP 9.2.0 compatibility**: Hilt 2.56+ added KSP2 support. AGP 9.2.0 is ahead of the stable release track. The combination has not been widely validated.
-
-### Suggestions
-
-- Before executing: resolve the exact KSP version by checking `https://github.com/google/ksp/releases` for a release targeting Kotlin 2.4.0. If none exists, invoke D-09a immediately.
-- Add `kotlin-android` plugin to libs.versions.toml, root build.gradle.kts, and app build.gradle.kts.
-- Change `@Inject constructor(app: Application)` to `@Inject constructor(@ApplicationContext context: Context)` and change base class from `AndroidViewModel` to `ViewModel()` for Hilt-annotated ViewModels.
-- Decide upfront whether D-09a is the default path given the Kotlin 2.4.0 toolchain is very new.
-
-### Risk Assessment: **HIGH**
-
-Three concrete blockers before execution: `kotlin-android` plugin missing, KSP version unresolved, and incorrect `@HiltViewModel` + `AndroidViewModel` + `Application` injection pattern. D-09a fallback is sound, but the fallback must be explicitly planned as the probable outcome rather than a contingency.
+#### Risk Assessment: **LOW** (once Task 1 mischaracterization is corrected)
 
 ---
 
-## Cross-Plan Issues (Claude)
+### Cross-Plan Issues
 
-| Issue | Plans | Severity |
-|---|---|---|
-| 128-01 and 128-02 both Wave 1 but 128-02 depends on `syncCompleteEvent` from 128-01 | 01, 02 | HIGH |
-| HomeScreen.kt + HealthScreen.kt not in any plan's files-modified | 02 | HIGH |
-| `kotlin-android` plugin absent from plan and build files | 03 | HIGH |
-| KSP version unresolved placeholder | 03 | HIGH |
-| `@HiltViewModel + AndroidViewModel + Application` incorrect pattern | 03 | HIGH |
-| `val scope` must become `var` — not stated explicitly | 01 | HIGH |
-| Mutex.withLock in non-suspend function | 01 | HIGH |
-| GooseUploadClient `object` + StateFlow architecture undecided | 02 | MEDIUM |
+**`onSyncComplete` → `syncCompleteEvent` compilation gap** (128-01 → 128-02): The most operationally risky gap. Wave 1 deletes a field that wave 2's AppViewModel still references at init time. If GSD commits wave 1 independently, the repo is uncompilable between wave-1 and wave-2 completion. Fix: move the `bleClient.onSyncComplete = {...}` removal from AppViewModel.init into wave-1 Task 3.
 
-## Overall Phase Risk (Claude): **HIGH**
+**MoreScreen `serverUrl` threading gap** (128-02 → AppShell → MainActivity): The A-04 fix is structurally incomplete. MoreScreen has a StateFlow anti-pattern on `serverUrl` (not just uploadStatus). The fix chain requires all four files: MainActivity collects serverUrl → passes String to AppShell → AppShell passes String to MoreScreen → MoreScreen removes internal collectAsStateWithLifecycle. All four must be touched, but only MoreScreen's uploadStatus is mentioned in the plan.
 
-128-01 and 128-02 are well-grounded in the actual bugs but have implementation gaps that will surface as compile errors. 128-03 has three blockers that make CI failure the most likely first outcome; the D-09a fallback is the correct response but should be treated as the primary path given the toolchain risk. Recommend resolving the wave-ordering dependency, adding the missing screen files, and deciding on the KSP question before any code touches the repository.
+**A-09 already satisfied** (128-03 misdiagnosis): The sub-ViewModels are already `private val` in AppViewModel. The plan documents a fix for a finding that the current code already satisfies. The executor should confirm and document this, not attempt to change it.
+
+### Overall Phase Risk: **MEDIUM**
+
+The wave-1 compilation break (`onSyncComplete` deletion before AppViewModel cleanup) and the MoreScreen `serverUrl` gap are concrete defects that will surface during execution. Neither is a design flaw — both are mechanical oversights patchable with targeted plan edits before the executor starts. The `@Volatile var scope` concern is a correctness issue in a concurrent system that won't manifest in `assembleDebug` but will under device stress. Fix the three HIGH items before execution and the phase is sound.
 
 ---
 
 ## Codex Review
 
-**Summary**
-The three Phase 128 plans mostly describe changes that are not yet present in the repo. Current Android code still uses a single long-lived BLE scope with callback-based sync completion, public `bleClient`, naive Compose flow collection, fire-and-forget uploads, and no Hilt/KSP wiring. Each success criterion in the plans has open gaps, so risk is high unless these deltas are implemented and verified.
+### Phase 128 Plan Review
 
-**Strengths**
-- No `GlobalScope` usage in the current BLE client, so removing it is low-effort compliance with BP-AND-02. (`android/app/src/main/kotlin/com/goose/app/ble/WhoopBleClient.kt:91`)
-- StateFlows are already exposed for BLE connection and metrics, providing a solid basis for lifecycle-aware collection. (`android/app/src/main/kotlin/com/goose/app/viewmodel/AppViewModel.kt:23-35`, `android/app/src/main/kotlin/com/goose/app/viewmodel/MetricsViewModel.kt:29-36`)
+#### Evidence Base
 
-**Concerns**
-- **HIGH** – Scope lifecycle not fixed: BLE `scope` is a single `CoroutineScope(SupervisorJob()+Dispatchers.IO)` created once and never cancelled or recreated; `disconnect()` only calls `gatt?.disconnect()`, so coroutines may outlive the connection. (`ble/WhoopBleClient.kt:91,167-176,606-620`)
-- **HIGH** – Sync completion still callback-based; no `SharedFlow` event and no mutex around sync state. `onSyncComplete` remains a nullable function; `syncInProgress`/`pendingSyncCommand` mutate without locking. (`ble/WhoopBleClient.kt:100-140,563-573`)
-- **HIGH** – Import path still swallows bridge errors: `importFrame` fires `GooseBridge.safeHandle` without JSON parsing or logging on `ok:false`; invalid `filesDir` isn't validated. (`ble/WhoopBleClient.kt:575-590`)
-- **HIGH** – AppViewModel exposes `val bleClient` publicly, contradicting D-05 privacy intent and allowing UI-layer access. (`viewmodel/AppViewModel.kt:18-35`)
-- **HIGH** – Compose lifecycle collection not applied: MainActivity collects only `connectionState`; other flows are passed downstream, and child screens do their own collection, violating the "collect in MainActivity" plan. (`MainActivity.kt:21-35`, `ui/AppShell.kt:24-83`, `ui/MoreScreen.kt:17-48`, `ui/HealthScreen.kt:18-39`, `ui/HomeScreen.kt:18-39`)
-- **HIGH** – `MetricsViewModel.queryScore` swallows exceptions and `ok:false` without logging, contrary to A-06/D-06. (`viewmodel/MetricsViewModel.kt:51-63`)
-- **HIGH** – Upload path is still fire-and-forget with no observable `UploadState` or status rendering; no SharedFlow collection of sync completion; MoreScreen has no status UI. (`upload/GooseUploadClient.kt:33-102`, `viewmodel/AppViewModel.kt:37-49`, `ui/MoreScreen.kt:17-48`)
-- **HIGH** – Hilt/KSP not integrated: no hilt dependencies or plugins, no `@HiltAndroidApp` Application, no `@AndroidEntryPoint` Activity/ViewModels; build.gradle and version catalog lack hilt/ksp entries, so the assembleDebug gate is currently absent. (`android/app/build.gradle.kts:1-60`, `android/build.gradle.kts:1-4`, `android/gradle/libs.versions.toml:1-26`)
-- **MEDIUM** – GATT/thread safety gaps: `gatt` is not `@Volatile` and there's no mutex protecting `syncInProgress`/`activeGeneration`, leaving races unaddressed. (`ble/WhoopBleClient.kt:103-140`)
-- **MEDIUM** – Phase goals not yet verifiable: No grep/lint guard for silent JNI error discards; `GooseBridge` calls still ignore return values in several paths. (`ble/WhoopBleClient.kt:575-590`, `upload/GooseUploadClient.kt:43-65`)
+Codex explored the repository with full filesystem access and read:
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-01-PLAN.md`
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-02-PLAN.md`
+- `.planning/phases/128-android-architecture-best-practices-fixes/128-03-PLAN.md`
+- `android/app/src/main/kotlin/com/goose/app/ble/WhoopBleClient.kt`
+- `android/app/src/main/kotlin/com/goose/app/viewmodel/AppViewModel.kt`
+- `android/app/src/main/kotlin/com/goose/app/ui/AppShell.kt`, HomeScreen.kt, HealthScreen.kt, MoreScreen.kt
 
-**Suggestions**
-- Add lifecycle-bound scope management: recreate `scope` if inactive on `connect`, and `scope.cancel()` after `gatt?.disconnect()` completes when not reconnecting.
-- Replace `onSyncComplete` with `MutableSharedFlow<Unit>(replay=0, extraBufferCapacity=1, onBufferOverflow=DROP_OLDEST)` and emit from `completeSyncIfActive`; collect in `AppViewModel` within `viewModelScope`.
-- Introduce `syncMutex.withLock { ... }` around sync start/complete mutations; mark `gatt` `@Volatile`.
-- In `importFrame`, validate `filesDir`, parse `safeHandle` JSON, and `Log.e` on `ok:false` or parse failures; return early on errors.
-- Make `bleClient` `private` in `AppViewModel`; expose only needed flows and actions.
-- In `MainActivity`, use `collectAsStateWithLifecycle` for all flows (HR, recovery, strain, sleep, serverUrl) and pass resolved values to `AppShell`; drop downstream flow collection.
-- Add logging in `queryScore` for exceptions and `ok:false`, preserving null fallback.
-- Implement `UploadState` sealed class and `StateFlow` pipeline from `GooseUploadClient` → `AppViewModel` → `MoreScreen` status display.
-- Integrate Hilt/KSP per plan (catalog entries, plugins, `GooseApplication @HiltAndroidApp`, `@AndroidEntryPoint` MainActivity, `@HiltViewModel` constructors) and keep a documented fallback path if assembleDebug fails.
-- Add a CI or local `./gradlew :app:assembleDebug` gate once Hilt wiring lands to satisfy success criterion 4.
+---
 
-**Risk Assessment**: HIGH — Major plan items are absent in code: lifecycle scope handling, mutexed sync state, error propagation, lifecycle-aware Compose collection, upload observability, and Hilt integration. Without these, success criteria 1–4 of Phase 128 are unmet and regressions (leaked coroutines, swallowed errors) remain.
+### 128-01-PLAN.md — WhoopBleClient BLE/Coroutine Fixes
+
+#### Summary
+
+The plan correctly addresses the four audit findings with atomic primitives and a SharedFlow signal. Cycle-1 blockers are resolved. One new medium concern on scope lifecycle ownership.
+
+#### Strengths
+- Clear mapping of each audit finding to action and verification grep.
+- AtomicBoolean/AtomicReference rationale explicitly tied to BLE callback threading.
+- SharedFlow interface contract documented for downstream consumer (wave 2).
+
+#### Concerns
+
+- **MEDIUM** — Scope lifecycle depends on callers invoking `disconnect()`. If a ViewModel is cleared without an explicit disconnect call, the IO `scope` survives, violating the "lifecycle-bound scopes" intent. The plan doesn't add an `onCleared()`/owner hook or a cancellation path for abnormal teardown scenarios beyond explicit `disconnect()`.
+
+- **LOW** — Dispatcher review not addressed: reconnect logic, importFrame parsing, and logging all run on `Dispatchers.IO`; BLE callbacks re-enter IO via `scope.launch`. Potential unnecessary thread hop and log ordering issues are not assessed.
+
+#### Suggestions
+
+- Document that `AppViewModel.onCleared()` already calls `disconnect()` (per existing code), so the lifecycle-bound invariant is satisfied transitively — or explicitly add the onCleared guarantee if it is not already present.
+- Specify compareAndSet assignment per call site: `completeSyncIfActive` uses `.compareAndSet(true, false)`; `startHistoricalSync` uses `.compareAndSet(false, true)`.
+
+#### Risk Assessment: **MEDIUM**
+
+---
+
+### 128-02-PLAN.md — Compose/ViewModel Fixes
+
+#### Summary
+
+Wave ordering is correctly encoded. HomeScreen/HealthScreen are in files-modified. One new HIGH: Preview composables with StateFlow<T> params will break compilation when signatures change to value types.
+
+#### Strengths
+- `depends_on: [128-01]` is correct and explicit.
+- `private val bleClient` change is straightforward and verifiable.
+- collectAsStateWithLifecycle pattern is correctly targeted.
+
+#### Concerns
+
+- **HIGH** — Preview composables not accounted for. Signature changes (AppShell/HomeScreen/HealthScreen/MoreScreen) are not paired with updates to in-file `@Preview` composables or default parameters. Existing previews that pass `StateFlow<T>` will break compilation when signatures change to value types. These preview functions are in the same files listed under `files_modified` but are not mentioned in any task.
+
+- **MEDIUM** — `syncCompleteEvent.collect { metricsViewModel.refresh(); triggerUpload() }` in `viewModelScope` runs on the Main dispatcher by default. If `refresh()` or `triggerUpload()` performs blocking JNI/IO work, this risks UI jank. Plan does not offload to `Dispatchers.IO` via `withContext`.
+
+- **LOW** — Verification count-rule fragility: `grep -c collectAsStateWithLifecycle >= 6` may pass even if a new collection (e.g., `uploadStatus`) is omitted; a count-based check can miss individual missed flow collections.
+
+#### Suggestions
+
+- Add a task step: "Update `@Preview` composables in HomeScreen.kt, HealthScreen.kt, MoreScreen.kt, AppShell.kt to use hardcoded value literals (Int?, Float?, String) instead of `MutableStateFlow(...)` parameters."
+- Add `withContext(Dispatchers.IO)` or a note on dispatcher safety for the syncCompleteEvent handler in AppViewModel.
+
+#### Risk Assessment: **MEDIUM**
+
+---
+
+### 128-03-PLAN.md — Hilt DI + CI Gate
+
+#### Summary
+
+The Hilt deferral is well-reasoned. assembleDebug is the right integration gate. One new HIGH on jniLibs being gitignored — assembleDebug may fail for missing native artifacts unrelated to Phase 128 changes.
+
+#### Strengths
+- D-09a is the unambiguous primary path.
+- Revert-on-fail protocol is documented for the optional Hilt path.
+- assembleDebug as a single end-to-end gate covers all three waves.
+
+#### Concerns
+
+- **HIGH** — assembleDebug requires native `.a`/`.so` libraries in `jniLibs` srcDirs (`android/app/build.gradle.kts` line 41). These are gitignored and must be present locally. No mitigation is documented if CI/runner lacks the binaries, meaning the phase could fail solely from missing native artifacts unrelated to Phase 128 changes.
+
+- **LOW** — Task 1 may be a no-op (sub-ViewModels may already be private). If no code change occurs, VERIFICATION.md still changes; acceptance criteria should acknowledge "no-op code, doc-only" to avoid ambiguity.
+
+#### Suggestions
+
+- Add pre-flight check: "Confirm `android-libs/` or equivalent native library path is populated before running assembleDebug; if absent, document this as a pre-existing build environment gap, not a Phase 128 failure."
+- Explicitly state that if fields are already private, Task 1 records confirmation and rationale in VERIFICATION.md without code churn.
+
+#### Risk Assessment: **MEDIUM**
+
+---
+
+### Cross-Plan Issues
+
+**Native library build prerequisite** (128-03): The assembleDebug CI gate may fail not from Phase 128 code changes but from missing gitignored jniLibs. This is a cross-cutting environment concern that should be validated before starting any wave.
+
+**compareAndSet vs set disambiguation** (128-01 → all waves): The "update all sites" instruction for AtomicBoolean/AtomicReference leaves assignment of specific atomic operations to executor judgment. Both reviewers flagged this; explicit per-site assignment prevents a TOCTOU regression.
+
+### Overall Phase Risk: **MEDIUM**
+
+Primary functional fixes are well targeted, but unresolved build prerequisites (jniLibs) and unaccounted Compose Preview breakages could block or degrade the phase if not addressed pre-implementation.
 
 ---
 
 ## Consensus Summary
 
-Both reviewers (claude CLI and codex) had full repo access and cited file:line evidence. Gemini CLI timed out without producing output and is excluded from consensus.
+Both reviewers (Claude CLI and Codex) had full repository access and cited file:line evidence. Gemini CLI (0.49.0) invoked twice but timed out both times in agentic repo-exploration mode — no output produced; excluded from consensus.
 
 ### Agreed Strengths
 
-- The plan's bug analysis is accurate: `WhoopBleClient.kt:589` silent discard, `AppViewModel.kt:46` reference cycle via `onSyncComplete`, `WhoopBleClient.kt:103` missing `@Volatile`, and `AppViewModel.kt:26` public `bleClient` are all confirmed real issues by both reviewers.
-- The StateFlow passthrough pattern in `MainActivity.kt:22-26` is confirmed as a real anti-patterns with existing `collectAsState()` inconsistency.
-- The SharedFlow approach (D-07) and D-09a fallback are both confirmed as sound.
-- `queryScore` silent catch at `MetricsViewModel.kt:60` confirmed as a real bug.
+- The cycle-1 HIGH concerns (AtomicBoolean, val→var, HomeScreen/HealthScreen in files-modified, wave ordering, kotlin-android/KSP/HiltViewModel pattern) are all correctly resolved in the current plan versions.
+- SharedFlow contract is well-specified (replay=0, extraBufferCapacity=1, DROP_OLDEST, tryEmit).
+- Wave 2 dependency on wave 1 is explicit and correctly models the SharedFlow consumer relationship.
+- Hilt deferral rationale (Kotlin 2.4.0/KSP/kotlin-android) is sound and documented.
 
 ### Agreed Concerns (Highest Priority)
 
-**These were raised by both reviewers and should block execution until resolved:**
+**These were raised by both reviewers and represent the highest-priority pre-execution fixes:**
 
-1. **Plan 128-01: `val scope` vs `var scope`** — `WhoopBleClient.kt:91` declares `val scope`; rebuilding it on reconnect requires `var`. Compile-time blocker not stated in the plan.
+1. **Plan 128-01: `@Volatile` on `var scope`** — Both reviewers agree the JVM memory model requires `@Volatile` on `private var scope` when it is written from one thread (main/connect/disconnect) and read from another (BLE callback thread launching coroutines). Without it, the BLE thread may cache a stale scope reference after disconnect, causing coroutines to launch on a cancelled scope (silent no-ops). *(Claude: HIGH; Codex: not independently rated but confirms thread-safety gap.)*
 
-2. **Plan 128-01: Mutex.withLock in non-suspend context** — `startHistoricalSync()` is called from the BLE callback thread (non-coroutine). `withLock` is a suspend function; calling it here will deadlock or not compile. Plan must choose an alternative (make function suspend + scope.launch, or use tryLock/unlock, or stay with @Volatile only).
+2. **Plan 128-01: `compareAndSet` assignment per call site** — Both reviewers flag that "update all read/write sites" for AtomicBoolean/AtomicReference is underspecified. `completeSyncIfActive()` must use `.compareAndSet(true, false)` and `startHistoricalSync()` must use `.compareAndSet(false, true)` to avoid TOCTOU races. `.set()` everywhere is incorrect.
 
-3. **Plan 128-02: HomeScreen.kt + HealthScreen.kt missing from files-modified** — Both reviewers confirm `AppShell.kt:69-76` passes `StateFlow<T>` to HomeScreen and HealthScreen. These files must be modified when AppShell's signature changes, or compilation breaks.
+3. **Plan 128-01 → 128-02: `onSyncComplete` compilation break** — Claude raises this as HIGH; Codex confirms the dependency structure creates an intermediate uncompilable state. Wave 1 deletes `onSyncComplete` from WhoopBleClient; AppViewModel.kt:46 still references it until wave 2. Fix: move AppViewModel init cleanup to wave-1 Task 3.
 
-4. **Plan 128-02: Wave ordering dependency** — 128-01 and 128-02 are both Wave 1, but 128-02's `AppViewModel` change (collecting `syncCompleteEvent`) depends on the `SharedFlow` added by 128-01. Parallel execution will fail to compile 128-02.
+4. **Plan 128-02: MoreScreen `serverUrl` StateFlow anti-pattern** — Both reviewers confirm MoreScreen.kt:18 takes `serverUrl: StateFlow<String>` and collects it internally at line 23. This is the same anti-pattern as HomeScreen/HealthScreen and blocks the "no StateFlow params in AppShell" verification goal. MoreScreen's serverUrl must be treated identically to the other screens.
 
-5. **Plan 128-03: `kotlin-android` plugin missing** — Claude reviewer identified `android/app/build.gradle.kts:1-4` only applies `android-application` and `kotlin-compose`. KSP requires `kotlin-android`. The plan does not mention this, making the Hilt setup likely to fail without this plugin.
+5. **Plan 128-02: Compose `@Preview` compilation break** — Codex raises this as HIGH. When AppShell/HomeScreen/HealthScreen/MoreScreen signatures change from `StateFlow<T>` to value types, any in-file `@Preview` functions that pass `MutableStateFlow(...)` as parameters will fail to compile. These preview updates are not mentioned in any task.
 
-6. **Plan 128-03: KSP version placeholder unresolved** — "2.4.0-<kspPatch>" is not a real version. Kotlin 2.4.0 is new enough that a compatible KSP release may not exist; execution must resolve this first.
-
-7. **Plan 128-03: Incorrect `@HiltViewModel + AndroidViewModel + Application` injection** — Claude reviewer flags that injecting `Application` directly via `@Inject constructor(app: Application)` into a `@HiltViewModel` class does not work out of the box. Correct pattern uses `@ApplicationContext context: Context` with base class `ViewModel()`.
+6. **Plan 128-03: `AppViewModel.kt:28–29` sub-ViewModels already private** — Both reviewers confirm MetricsViewModel and SettingsViewModel are already `private val` in the current codebase. Task 1 is a no-op; the plan should acknowledge this and reframe the task as "confirm and document" rather than "change to private."
 
 ### Divergent Views
 
-- **Codex** classified all current gaps as HIGH (plans describe changes not yet in code), while **Claude** split them into MEDIUM (01, 02) vs HIGH (03), noting that 01/02 bugs are correctly identified but the implementation blockers are surgical. Both are correct — Codex is auditing current state, Claude is auditing plan quality.
-- **filesDir validation** (D-03): Claude notes it is dead code (filesDir always exists on Android); Codex does not comment on this. Agree to disagree — it is harmless but pointless.
-- **GooseUploadClient `object` architecture**: Claude flags this as an unresolved MEDIUM decision; Codex notes it as a gap but does not rate it separately. Both agree the mechanism needs to be chosen before execution.
+- **128-03 jniLibs gap**: Codex raises this as HIGH (assembleDebug CI gate fails from missing native artifacts); Claude does not independently flag it but acknowledges it in suggestions. Grounded in the `build.gradle.kts:41` jniLibs srcDirs config. Both agree a pre-flight check is needed.
+
+- **128-01 scope lifecycle ownership**: Codex flags that `disconnect()` is the only teardown path and asks whether `AppViewModel.onCleared()` already calls `disconnect()` (which would satisfy the lifecycle-bound requirement transitively). Claude does not raise this as a gap because the existing code already has this path. Codex's concern is effectively resolved by confirming the existing `AppViewModel.onCleared()` → `disconnect()` call chain.
+
+- **GooseUploadClient emit points**: Claude rates this MEDIUM (4 exit paths in `upload()` not specified); Codex does not independently raise this. Both agree the state machine needs explicit per-exit-path assignments.
