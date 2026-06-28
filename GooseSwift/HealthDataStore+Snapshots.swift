@@ -12,6 +12,11 @@ private let packetScoreLog = Logger(subsystem: "com.goose.app", category: "healt
 
 extension HealthDataStore {
   func runPacketScores() async {
+    // Re-entrancy guard (issue #188 hardening): a fresh run-ID is taken on entry and
+    // re-checked after the bridge await chain. If a newer run started meanwhile, this
+    // run bails without publishing, so the latest sync's scores always win.
+    let runID = UUID()
+    packetScoreRunID = runID
     packetScoreStatus = "Extracting bridge packet-derived scores..."
     let baseArgs = bridgeBaseArgs(requireTrustedEvidence: false)
     let recoveryArgs = baseArgs.merging(recoveryScoreBridgeArgs()) { _, new in new }
@@ -57,6 +62,11 @@ extension HealthDataStore {
         method: "metrics.stress_score_from_features",
         args: stressArgs
       )
+      guard packetScoreRunID == runID else {
+        // A newer runPacketScores() started while this one awaited the bridge. Discard
+        // this run's results so we don't publish stale scores over the newer run.
+        return
+      }
       self.packetScoreReports["sleep"] = sleepReport
       self.refreshPrimarySleepFromScoreReport()
       self.packetScoreReports["strain"] = strainReport
@@ -64,6 +74,9 @@ extension HealthDataStore {
       self.packetScoreReports["stress"] = stressReport
       self.packetScoreStatus = "Bridge packet-derived scores recomputed"
     } catch {
+      guard packetScoreRunID == runID else {
+        return
+      }
       // Log the full, untruncated error before falling back to the 96-char UI string
       // so secondary score-pipeline failures are not silently masked (issue #188).
       packetScoreLog.error("runPacketScores failed: \(String(describing: error), privacy: .public)")

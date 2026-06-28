@@ -76,6 +76,10 @@ final class HealthDataStore {
   var packetInputRefreshTask: Task<Void, Error>?
   var packetInputRunID: UUID?
   var packetInputIsRunning = false
+  // Re-entrancy guard for runPacketScores. Terminal historical-sync events can fire more
+  // than once; without this guard overlapping runs could publish scores out of order or on
+  // stale inputs (issue #188 hardening). Latest run wins; earlier runs bail on stale ID.
+  var packetScoreRunID: UUID?
   var heartRateTimelineRefreshID: UUID?
   @ObservationIgnored nonisolated(unsafe) var heartRateSeriesUpdateObserver: NSObjectProtocol?
   var databasePath: String

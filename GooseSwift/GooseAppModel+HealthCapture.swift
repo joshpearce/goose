@@ -307,8 +307,30 @@ extension GooseAppModel {
   }
 
   func handleHistoricalSyncProgress(_ progress: GooseHistoricalSyncProgress) {
-    if progress.isTerminal && !progress.failed {
-      Task { await healthStore.runPacketInputs() }
+    if progress.isTerminal {
+      if progress.failed {
+        // Failure path: the UI hero is gated on packetScoreStatus.hasPrefix("Extracting").
+        // If a historical sync fails we must clear that gate, otherwise the UI stays stuck
+        // on "analysing collected data..." forever — the same symptom as issue #188 but on
+        // the failure branch. Only override an in-progress "Extracting" state so we don't
+        // clobber a previously-good score status.
+        if healthStore.packetScoreStatus.hasPrefix("Extracting") {
+          healthStore.packetScoreStatus = "Bridge score run blocked: historical sync failed (\(progress.detail))"
+        }
+      } else {
+        // Run the full packet pipeline after a historical sync completes.
+        // Previously only runPacketInputs() ran here, which extracted inputs but
+        // never computed scores — leaving the UI stuck on "analysing collected
+        // data..." indefinitely (issue #188). Mirror the proven band-sleep order
+        // in HealthDataStore.refreshSleepAfterBandSync: dynamic sleep need FIRST
+        // (SLP-NEED-03), then inputs, then scores. runPacketScores guards its own
+        // re-entrancy so overlapping terminal events do not run on stale inputs.
+        Task {
+          await healthStore.runDynamicSleepNeed()
+          await healthStore.runPacketInputs()
+          await healthStore.runPacketScores()
+        }
+      }
     }
     guard healthState.respiratoryPacketWatchActive else {
       return
