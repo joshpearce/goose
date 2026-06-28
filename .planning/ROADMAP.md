@@ -1101,12 +1101,12 @@ Plans:
   3. The Android-actionable architecture findings tagged in the Phase 127 report are resolved or explicitly deferred with a recorded reason; Compose state-management fixes from the report are applied
   4. The Android CI APK build (`android-core.yml`) compiles without new warnings or errors after the fixes
 
-**Plans**: 3 plans
-- [ ] 128-01-PLAN.md — WhoopBleClient BLE/coroutine fixes (A-01 scope lifecycle, A-02 thread-safety, A-03 importFrame error propagation, A-07 SharedFlow sync signal)
-- [ ] 128-02-PLAN.md — Compose/ViewModel fixes (A-04 lifecycle StateFlow collection, A-05 private bleClient, A-06 queryScore logging, A-08 observable uploadStatus)
-- [ ] 128-03-PLAN.md — Hilt DI integration (A-09) + assembleDebug CI verification
+**Plans**: 3 plans (wave 1 → 2 → 3, strictly sequential after cross-AI review)
+- [ ] 128-01-PLAN.md — [wave 1] WhoopBleClient BLE/coroutine fixes (A-01 var-scope lifecycle, A-02 atomic sync/gatt state, A-03 importFrame error propagation, A-07 SharedFlow sync signal)
+- [ ] 128-02-PLAN.md — [wave 2, depends 128-01] Compose/ViewModel fixes (A-04 lifecycle StateFlow collection in MainActivity incl. HomeScreen/HealthScreen/MoreScreen, A-05 private bleClient, A-06 queryScore logging, A-08 observable uploadStatus via GooseUploadClient.uploadState)
+- [ ] 128-03-PLAN.md — [wave 3, depends 128-01,128-02] A-09 via D-09a (private sub-ViewModels; Hilt deferred pending Kotlin 2.4.0/KSP) + assembleDebug CI verification
 
-**Dependencies**: Consumes the Phase 127 findings report. Android-only (Kotlin + JNI glue).
+**Dependencies**: Consumes the Phase 127 findings report. Android-only (Kotlin + JNI glue). Wave ordering forced sequential by SharedFlow/Hilt cross-plan dependencies (cross-AI review HIGH-4).
 
 ---
 
