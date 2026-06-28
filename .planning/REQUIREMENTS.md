@@ -53,7 +53,7 @@
 
 ### Hardware Gates (WHOOP 5 device available)
 
-- [ ] **CAPSENSE-01**: BLE scan with real WHOOP 5 to identify capacitive sense GATT UUID; subscribe to characteristic; `isOnWrist` updated from cap sense signal (distinct from cmd 0x54 optical fallback in BLE-02)
+- [x] **CAPSENSE-01**: BLE scan with real WHOOP 5 to identify capacitive sense GATT UUID; subscribe to characteristic; `isOnWrist` updated from cap sense signal (distinct from cmd 0x54 optical fallback in BLE-02)
 - [ ] **HAP-04**: Wake-window engine — BTSnoop capture of `STRAP_DRIVEN_ALARM_EXECUTED` + Ghidra decompile of `SetAlarmInfoCommandPacketRev4`; fill `GooseWakeWindowManager` stub; HAP-03 UI (v10.0) is prerequisite; **defer if `SetAlarmInfoCommandPacketRev4.md` not yet in `.planning/research/whoop-re/`**
 
 ---

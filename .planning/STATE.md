@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 124
-current_phase_name: PIP Server Endpoint
+current_phase: 125
+current_phase_name: Cap Sense UUID Discovery
 status: completed
 stopped_at: Phase 118 context gathered
-last_updated: "2026-06-28T00:37:50.255Z"
+last_updated: "2026-06-28T01:30:03.624Z"
 last_activity: 2026-06-28
-last_activity_desc: Phase 123 complete, transitioned to Phase 124
+last_activity_desc: Phase 124 complete, transitioned to Phase 125
 progress:
   total_phases: 15
-  completed_phases: 12
-  total_plans: 17
-  completed_plans: 17
-  percent: 80
+  completed_phases: 13
+  total_plans: 18
+  completed_plans: 18
+  percent: 87
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 124 — PIP Server Endpoint
+Phase: 125 — Cap Sense UUID Discovery
 Plan: Not started
 Status: Phase 120 complete — all plans done
-Last activity: 2026-06-28 — Phase 123 complete, transitioned to Phase 124
+Last activity: 2026-06-28 — Phase 124 complete, transitioned to Phase 125
 
 ## Performance Metrics
 
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - [Phase ?]: realtime_frames has no FK to devices — realtime PIP path does not pre-register devices
 - [Phase ?]: captured_at TIMESTAMPTZ (not TEXT) enables TimescaleDB partitioning; psycopg casts ISO8601 automatically
 - [Phase 120]: dynamicSleepNeed stored as plain var on HealthDataStore base body (@Observable — no @Published); runDynamicSleepNeed() called FIRST in refreshSleepAfterBandSync; sleep_need_minutes fallback is 450.0 (not 480.0) at all four sites; SleepV2ClockDial required its own @Environment injection (separate struct from SleepV2SleepWindowCard)
+- [Phase ?]: D-01: UUID fd4b0004 (EVENTS_FROM_STRAP) is cap sense characteristic — already subscribed, no new subscription
+- [Phase ?]: D-03: handleCapSenseEventValue wraps isOnWrist in DispatchQueue.main.async matBodyLocationValue pattern
 
 ### Roadmap Evolution
 
@@ -128,6 +130,7 @@ Items deferred from previous milestones:
 | Phase 118 P03 | 3 min | 3 tasks | 5 files |
 | Phase 120 P01 | 16 min | 3 tasks | 7 files |
 | Phase 121 P01 | 7 min | 4 tasks | 7 files |
+| Phase 125 P125-01 | 15 | 2 tasks | 3 files |
 
 ## Quick Tasks Completed
 
@@ -138,7 +141,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-27T23:11:01.330Z
+Last session: 2026-06-28T01:29:54.167Z
 Stopped at: Phase 118 context gathered
 Resume file: .planning/phases/118-pip-realtime-queue/118-CONTEXT.md
 Next action: /gsd-discuss-phase 112
