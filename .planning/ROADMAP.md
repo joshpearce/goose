@@ -766,7 +766,7 @@ Known deferred: hardware-gated BLE tests; real-device MG sync validation; ARCH-0
 - [x] **Phase 120: Sleep Need UI** — Sleep dashboard dynamic need display (replaces static "8h recommended") (completed 2026-06-27)
 - [x] **Phase 121: Body Composition UI** — BodyCompositionEntrySheet + HealthKit weight import + trend chart (completed 2026-06-27)
 - [x] **Phase 122: Stealth UI** — Settings toggle list + dashboard "—" rendering (completed 2026-06-27)
-- [ ] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging
+- [x] **Phase 123: Real-Device Algorithm Validation** — ≥7 real WHOOP 5 overnight sessions for HRV and sleep staging (completed 2026-06-28)
 - [ ] **Phase 124: PIP Server Endpoint** — POST /v1/ingest-realtime + TimescaleDB hypertable
 - [ ] **Phase 125: Cap Sense UUID Discovery** — BLE scan to identify capacitive sense GATT UUID + subscribe
 - [ ] **Phase 126: Wake-Window Engine (HAP-04)** — fill GooseWakeWindowManager stub (hardware+RE gated)
@@ -993,7 +993,8 @@ Plans:
   3. `cargo test --locked` passes with the new Rust fixture tests; no algorithm coefficients or constants were changed to force concordance
 
 **Plans**: 1 plan
-- [ ] 123-01-PLAN.md — Add ≥6 HRV + ≥4 sleep synthetic fixtures; write 123-VALIDATION-ARTIFACT.md
+
+- [x] 123-01-PLAN.md — Add ≥6 HRV + ≥4 sleep synthetic fixtures; write 123-VALIDATION-ARTIFACT.md
 
 ---
 
@@ -1093,7 +1094,7 @@ Plans:
 | 120 | 1/1 | Complete    | 2026-06-27 |
 | 121 | 1/1 | Complete    | 2026-06-27 |
 | 122 | 1/1 | Complete    | 2026-06-27 |
-| 123 | 0/0 | Not started | — |
+| 123 | 1/1 | Complete    | 2026-06-28 |
 | 124 | 0/0 | Not started | — |
 | 125 | 0/0 | Not started | — |
 | 126 | 0/0 | Not started | — |

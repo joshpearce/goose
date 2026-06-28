@@ -23,8 +23,8 @@
 
 ### Real-Device Algorithm Validation (ALG-HRV-04, ALG-SLP-04)
 
-- [ ] **VAL-HRV-04**: RMSSD cross-validated against Python reference pipeline on ≥7 real WHOOP 5 overnight sessions; delta ≤1 ms; validation fixture committed to Rust integration tests (closes ALG-HRV-04)
-- [ ] **VAL-SLP-04**: 4-class sleep staging concordance ≥70% on ≥7 real WHOOP 5 overnight sessions; results documented as validation artifact (closes ALG-SLP-04)
+- [x] **VAL-HRV-04**: RMSSD cross-validated against Python reference pipeline on ≥7 real WHOOP 5 overnight sessions; delta ≤1 ms; validation fixture committed to Rust integration tests (closes ALG-HRV-04)
+- [x] **VAL-SLP-04**: 4-class sleep staging concordance ≥70% on ≥7 real WHOOP 5 overnight sessions; results documented as validation artifact (closes ALG-SLP-04)
 
 ### Feature Flag Discovery (#165)
 
