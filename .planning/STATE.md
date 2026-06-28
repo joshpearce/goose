@@ -6,14 +6,14 @@ current_phase: 128
 current_phase_name: Android Architecture & Best-Practices Fixes
 status: planning
 stopped_at: Phase 128 context gathered
-last_updated: "2026-06-28T14:32:26.151Z"
+last_updated: "2026-06-28T17:55:50.256Z"
 last_activity: 2026-06-28
 last_activity_desc: Phase 127 complete, transitioned to Phase 128
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 4
+  completed_plans: 2
   percent: 20
 ---
 
@@ -69,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 120]: dynamicSleepNeed stored as plain var on HealthDataStore base body (@Observable — no @Published); runDynamicSleepNeed() called FIRST in refreshSleepAfterBandSync; sleep_need_minutes fallback is 450.0 (not 480.0) at all four sites; SleepV2ClockDial required its own @Environment injection (separate struct from SleepV2SleepWindowCard)
 - [Phase ?]: D-01: UUID fd4b0004 (EVENTS_FROM_STRAP) is cap sense characteristic — already subscribed, no new subscription
 - [Phase ?]: D-03: handleCapSenseEventValue wraps isOnWrist in DispatchQueue.main.async matBodyLocationValue pattern
+- [Phase ?]: AtomicBoolean/AtomicReference chosen over Mutex for WhoopBleClient sync state
+- [Phase ?]: @Volatile var scope with rebuild-on-reconnect; onSyncComplete kept as deprecated stub for 128-02
 
 ### Roadmap Evolution
 
@@ -134,6 +136,7 @@ Items deferred from previous milestones:
 | Phase 121 P01 | 7 min | 4 tasks | 7 files |
 | Phase 125 P125-01 | 15 | 2 tasks | 3 files |
 | Phase 126 P126-01 | 3 min | 6 tasks | 1 files |
+| Phase 128 P01 | 4 min | 2 tasks | 1 files |
 
 ## Quick Tasks Completed
 
@@ -144,7 +147,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-28T14:32:26.032Z
+Last session: 2026-06-28T17:55:29.537Z
 Stopped at: Phase 128 context gathered
 Resume file: .planning/phases/128-android-architecture-best-practices-fixes/128-CONTEXT.md
 Next action: /gsd-discuss-phase 112

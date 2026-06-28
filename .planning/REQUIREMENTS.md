@@ -16,12 +16,12 @@
 ### Code Audit — Multi-Model (RUST-AUD)
 
 - [x] **RUST-AUD-01**: Opus + Gemini + Codex analyse Rust core + Android Kotlin in parallel → structured findings report (module organisation, god-files, JNI patterns, threading, null-safety, coroutine scope)
-- [ ] **RUST-AUD-02**: Android architecture fixes applied from RUST-AUD-01 findings (JNI error propagation, coroutine scope hygiene, Compose state management)
+- [x] **RUST-AUD-02**: Android architecture fixes applied from RUST-AUD-01 findings (JNI error propagation, coroutine scope hygiene, Compose state management)
 
 ### Android Best Practices (BP-AND)
 
-- [ ] **BP-AND-01**: All JNI calls in GooseBridge.kt propagate errors — no silent `Result` discards
-- [ ] **BP-AND-02**: WhoopBleClient + BleViewModel use `CoroutineScope(lifecycle)` — zero GlobalScope usage
+- [x] **BP-AND-01**: All JNI calls in GooseBridge.kt propagate errors — no silent `Result` discards
+- [x] **BP-AND-02**: WhoopBleClient + BleViewModel use `CoroutineScope(lifecycle)` — zero GlobalScope usage
 
 ### Android Comments (COMM-AND)
 
@@ -50,8 +50,8 @@
 | AND-UI-03 | Phase 130 | Pending |
 | AND-UI-04 | Phase 131 | Pending |
 | RUST-AUD-01 | Phase 127 | Complete |
-| RUST-AUD-02 | Phase 128 | Pending |
-| BP-AND-01 | Phase 128 | Pending |
-| BP-AND-02 | Phase 128 | Pending |
+| RUST-AUD-02 | Phase 128 | Complete |
+| BP-AND-01 | Phase 128 | Complete |
+| BP-AND-02 | Phase 128 | Complete |
 | COMM-AND-01 | Phase 131 | Pending |
 | COMM-AND-02 | Phase 131 | Pending |
