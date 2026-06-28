@@ -1,10 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v16.0
-milestone_name: Android UI Parity, Rust Architecture & Code Health
+milestone_name: — Android UI Parity, Rust Architecture & Code Health
+current_phase_name: roadmap defined
 status: planning
-last_updated: "2026-06-28T12:15:03.186Z"
+stopped_at: Phase 127 context gathered
+last_updated: "2026-06-28T12:39:03.513Z"
 last_activity: 2026-06-28
+last_activity_desc: Roadmap v16.0 created (Phases 127–131)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -140,9 +143,9 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-28T01:29:54.167Z
-Stopped at: Phase 118 context gathered
-Resume file: .planning/phases/118-pip-realtime-queue/118-CONTEXT.md
+Last session: 2026-06-28T12:39:03.178Z
+Stopped at: Phase 127 context gathered
+Resume file: .planning/phases/127-multi-model-code-audit/127-CONTEXT.md
 Next action: /gsd-discuss-phase 112
 
 ## Operator Next Steps
