@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v15.0
 milestone_name: Protocol Depth, Algorithms & UX
-current_phase: 126
-status: completed
+current_phase: 0
+status: Awaiting next milestone
 stopped_at: Phase 118 context gathered
-last_updated: "2026-06-28T11:02:46.655Z"
+last_updated: "2026-06-28T11:04:43.480Z"
 last_activity: 2026-06-28
-last_activity_desc: Phase 126 complete
+last_activity_desc: Milestone v15.0 completed and archived
 progress:
   total_phases: 15
   completed_phases: 14
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-21)
 
 ## Current Position
 
-Phase: 126
-Plan: Not started
-Status: Phase 120 complete — all plans done
-Last activity: 2026-06-28 — Phase 126 complete
+Phase: Milestone v15.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-28 — Milestone v15.0 completed and archived
 
 ## Performance Metrics
 
@@ -149,5 +149,4 @@ Next action: /gsd-discuss-phase 112
 
 ## Operator Next Steps
 
-- Roadmap approved — 15 phases (112-126) defined
-- Next: `/gsd-discuss-phase 112` to plan Phase 112 (Optical Protocol Decode)
+- Start the next milestone with /gsd-new-milestone

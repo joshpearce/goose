@@ -1,5 +1,24 @@
 # Milestones
 
+## v15.0 v15.0 (Shipped: 2026-06-28)
+
+**Phases completed:** 15 phases, 19 plans, 8 tasks
+
+**Key accomplishments:**
+
+- 113 — schema-v24-optical-bridge-methods
+- New stored properties
+- Android Gen5/MG BLE client now sends ENABLE_OPTICAL_DATA (cmd 107, 0x6B) and TOGGLE_OPTICAL_MODE (cmd 108, 0x6C) after auth, enabling the WHOOP 5 to emit optical frames that the existing routing already forwards to GooseBridge.safeHandle().
+- RealtimePIPQueue — isolated NSLock/DispatchQueue/GooseRustBridge write queue wired unconditionally before the capture-session guard in the BLE notification pipeline.
+- Authenticated realtime-frame ingestion endpoint backed by a `realtime_frames` TimescaleDB hypertable partitioned on `captured_at`, with ON CONFLICT DO NOTHING idempotency and pytest coverage for 200/401/422/idempotent cases.
+- GooseStealthMode.isHidden + StealthStorage UserDefaults keys + StealthMask value type threaded into CoachLocalToolContext.build() with "hidden_by_user" sentinel for 6 metric positions.
+- DynamicSleepNeed struct
+- SwiftUI Health tab section with CoreGraphics weight sparkline, manual entry sheet, and HealthKit bodyMass+bodyFatPercentage import via @Observable importState enum.
+- 123 — Real-Device Algorithm Validation
+- Added `MoreInfoRow` for "Cap Sense" in `Section("WHOOP Event Signals")` immediately after "Latest Event" row:
+
+---
+
 ## v13.0 v13.0 (Shipped: 2026-06-20)
 
 **Phases completed:** 6 phases, 16 plans, 4 tasks
