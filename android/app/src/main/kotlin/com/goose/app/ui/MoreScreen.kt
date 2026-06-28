@@ -8,20 +8,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.StateFlow
+import com.goose.app.viewmodel.UploadState
 
 @Composable
 fun MoreScreen(
     modifier: Modifier = Modifier,
-    serverUrl: StateFlow<String>,
+    serverUrl: String,
     onServerUrlChange: (String) -> Unit,
+    uploadStatus: UploadState,
 ) {
-    val url by serverUrl.collectAsStateWithLifecycle()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -38,12 +35,25 @@ fun MoreScreen(
             modifier = Modifier.padding(bottom = 4.dp),
         )
         OutlinedTextField(
-            value = url,
+            value = serverUrl,
             onValueChange = onServerUrlChange,
             label = { Text("e.g. http://192.168.1.10:8000") },
             placeholder = { Text("http://your-server:8000") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+        val statusText = when (uploadStatus) {
+            is UploadState.Idle -> null
+            is UploadState.Uploading -> "Uploading..."
+            is UploadState.Success -> "Uploaded ${uploadStatus.count}"
+            is UploadState.Error -> "Upload error: ${uploadStatus.msg}"
+        }
+        if (statusText != null) {
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }

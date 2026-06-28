@@ -19,11 +19,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             GooseTheme {
                 val connectionState by appViewModel.connectionState.collectAsStateWithLifecycle()
-                val liveHeartRateBPM = appViewModel.liveHeartRateBPM
-                val recoveryScore = appViewModel.recoveryScore
-                val strainScore = appViewModel.strainScore
-                val sleepScore = appViewModel.sleepScore
-                val serverUrl = appViewModel.serverUrl
+                val liveHeartRateBPM by appViewModel.liveHeartRateBPM.collectAsStateWithLifecycle()
+                val recoveryScore by appViewModel.recoveryScore.collectAsStateWithLifecycle()
+                val strainScore by appViewModel.strainScore.collectAsStateWithLifecycle()
+                val sleepScore by appViewModel.sleepScore.collectAsStateWithLifecycle()
+                val serverUrl by appViewModel.serverUrl.collectAsStateWithLifecycle()
+                val uploadStatus by appViewModel.uploadStatus.collectAsStateWithLifecycle()
 
                 AppShell(
                     connectionState = connectionState,
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
                     sleepScore = sleepScore,
                     serverUrl = serverUrl,
                     onServerUrlChange = { appViewModel.setServerUrl(it) },
+                    uploadStatus = uploadStatus,
                 )
             }
         }

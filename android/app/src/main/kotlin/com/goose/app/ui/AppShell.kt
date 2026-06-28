@@ -18,17 +18,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.goose.app.ble.BleConnectionState
-import kotlinx.coroutines.flow.StateFlow
+import com.goose.app.viewmodel.UploadState
 
 @Composable
 fun AppShell(
     connectionState: BleConnectionState = BleConnectionState.Idle,
-    liveHeartRateBPM: StateFlow<Int?>,
-    recoveryScore: StateFlow<Float?>,
-    strainScore: StateFlow<Float?>,
-    sleepScore: StateFlow<Float?>,
-    serverUrl: StateFlow<String>,
+    liveHeartRateBPM: Int?,
+    recoveryScore: Float?,
+    strainScore: Float?,
+    sleepScore: Float?,
+    serverUrl: String,
     onServerUrlChange: (String) -> Unit,
+    uploadStatus: UploadState,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -79,6 +80,7 @@ fun AppShell(
                 modifier = Modifier.padding(padding),
                 serverUrl = serverUrl,
                 onServerUrlChange = onServerUrlChange,
+                uploadStatus = uploadStatus,
             )
         }
     }

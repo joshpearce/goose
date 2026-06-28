@@ -12,18 +12,19 @@ import kotlinx.coroutines.launch
 /**
  * AppViewModel — central coordinator for the Android app.
  *
- * Owns WhoopBleClient lifecycle, wires post-sync callbacks:
- *   - MetricsViewModel.refresh() after sync (D-05)
- *   - GooseUploadClient.upload() after sync (D-02)
+ * Owns WhoopBleClient lifecycle, wires post-sync triggers via syncCompleteEvent SharedFlow:
+ *   - MetricsViewModel.refresh() after sync
+ *   - GooseUploadClient.upload() after sync
  *
  * Exposes delegated StateFlows for UI consumption:
  *   - connectionState, liveHeartRateBPM (from BLE)
  *   - recoveryScore, strainScore, sleepScore (from MetricsViewModel)
  *   - serverUrl, setServerUrl (from SettingsViewModel)
+ *   - uploadStatus (from GooseUploadClient)
  */
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
-  val bleClient = WhoopBleClient(app.applicationContext)
+  private val bleClient = WhoopBleClient(app.applicationContext)
 
   private val metricsViewModel = MetricsViewModel(app)
   private val settingsViewModel = SettingsViewModel(app)
@@ -41,11 +42,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
   val serverUrl: StateFlow<String> = settingsViewModel.serverUrl
   fun setServerUrl(url: String) = settingsViewModel.setServerUrl(url)
 
+  // Upload status — republishes GooseUploadClient's object-level StateFlow
+  val uploadStatus: StateFlow<UploadState> = GooseUploadClient.uploadState
+
   init {
-    // Wire post-sync callback: refresh metrics + trigger upload (D-02)
-    bleClient.onSyncComplete = {
-      metricsViewModel.refresh()
-      triggerUpload()
+    // Collect sync-complete events from WhoopBleClient and trigger refresh + upload.
+    // The collector runs on the Main dispatcher (viewModelScope default); triggerUpload()
+    // dispatches its network work to Dispatchers.IO internally.
+    viewModelScope.launch {
+      bleClient.syncCompleteEvent.collect {
+        metricsViewModel.refresh()
+        triggerUpload()
+      }
     }
   }
 

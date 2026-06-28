@@ -8,24 +8,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun HealthScreen(
     modifier: Modifier = Modifier,
-    recoveryScore: StateFlow<Float?>,
-    strainScore: StateFlow<Float?>,
-    sleepScore: StateFlow<Float?>,
+    recoveryScore: Float?,
+    strainScore: Float?,
+    sleepScore: Float?,
 ) {
-    val recovery by recoveryScore.collectAsStateWithLifecycle()
-    val strain by strainScore.collectAsStateWithLifecycle()
-    val sleep by sleepScore.collectAsStateWithLifecycle()
-
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -34,15 +27,15 @@ fun HealthScreen(
         ) {
             Text("Health", style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "Recovery: ${recovery?.let { "%.0f%%".format(it) } ?: "—"}",
+                text = "Recovery: ${recoveryScore?.let { "%.0f%%".format(it) } ?: "—"}",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                text = "Strain: ${strain?.let { "%.1f".format(it) } ?: "—"}",
+                text = "Strain: ${strainScore?.let { "%.1f".format(it) } ?: "—"}",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                text = "Sleep: ${sleep?.let { "%.0f%%".format(it) } ?: "—"}",
+                text = "Sleep: ${sleepScore?.let { "%.0f%%".format(it) } ?: "—"}",
                 style = MaterialTheme.typography.bodyLarge,
             )
         }

@@ -7,22 +7,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goose.app.ble.BleConnectionState
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     connectionState: BleConnectionState = BleConnectionState.Idle,
-    liveHeartRateBPM: StateFlow<Int?>,
+    liveHeartRateBPM: Int?,
 ) {
-    val hr by liveHeartRateBPM.collectAsStateWithLifecycle()
-
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -31,7 +26,7 @@ fun HomeScreen(
             Text("Home")
             Text("BLE: ${connectionState.statusLabel()}")
             Text(
-                text = "HR: ${hr?.let { "$it bpm" } ?: "—"}",
+                text = "HR: ${liveHeartRateBPM?.let { "$it bpm" } ?: "—"}",
                 style = MaterialTheme.typography.headlineMedium,
             )
         }
