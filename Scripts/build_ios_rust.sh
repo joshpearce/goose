@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:$PATH"
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CORE_DIR="$APP_DIR/Rust/core"
 RUST_DIR="$APP_DIR/Rust"
+
+# Xcode build phases run with a minimal PATH that omits the cargo install
+# location, so `cargo` is not found even though it works in an interactive
+# shell. Prepend the common locations so the build works from Xcode too.
+for candidate in "$HOME/.cargo/bin" /run/current-system/sw/bin /opt/homebrew/bin /usr/local/bin; do
+  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+    PATH="$candidate:$PATH"
+  fi
+done
+export PATH
+
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "error: cargo not found on PATH. Install Rust (https://rustup.rs) or add cargo to PATH." >&2
+  exit 1
+fi
 
 if [[ "${GOOSE_SKIP_RUST_CORE_BUILD:-0}" == "1" ]]; then
   echo "Skipping Goose Rust core build because GOOSE_SKIP_RUST_CORE_BUILD=1"
